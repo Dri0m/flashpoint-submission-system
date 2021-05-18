@@ -15,11 +15,6 @@ func (a *App) handleRequests(srv *http.Server, router *mux.Router) {
 	srv.ListenAndServe()
 }
 
-// This is the state key used for security, sent in login, validated in callback.
-// For this example we keep it simple and hardcode a string
-// TODO provide real, secure state
-var state = "random"
-
 func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, a.conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
@@ -35,6 +30,9 @@ type DiscordMeResponse struct {
 	MFAEnabled    bool   `json:"mfa_enabled"`
 }
 
+// TODO provide real, secure oauth state
+var state = "random"
+
 func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -46,14 +44,14 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := a.conf.OauthConf.Exchange(context.Background(), r.FormValue("code"))
 
 	if err != nil {
-		http.Error(w, "failed to obtain auth token", http.StatusInternalServerError)
+		http.Error(w, "failed to obtain discord auth token", http.StatusInternalServerError)
 		return
 	}
 
 	resp, err := a.conf.OauthConf.Client(context.Background(), token).Get("https://discordapp.com/api/users/@me")
 
 	if err != nil || resp.StatusCode != 200 {
-		http.Error(w, "failed to obtain user data", http.StatusInternalServerError)
+		http.Error(w, "failed to obtain discord user data", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
