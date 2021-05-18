@@ -1,10 +1,47 @@
 package main
 
-import "time"
+import (
+	"database/sql"
+	"github.com/sirupsen/logrus"
+	"os"
+	"time"
+)
+
+// OpenDB opens DB or panics
+func OpenDB(l *logrus.Logger) *sql.DB {
+	l.Infof("opening database '%s'...", dbName)
+	db, err := sql.Open("sqlite3", dbName)
+	if err != nil {
+		l.Fatal(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	db.SetMaxOpenConns(1)
+
+	//_, err = db.Exec(`PRAGMA journal_mode = WAL`)
+	//if err != nil {
+	//	l.Fatal(err)
+	//}
+
+	file, err := os.ReadFile("sql.sql")
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	_, err = db.Exec(string(file))
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	return db
+}
 
 // StoreSession store session into the DB with set expiration date
 func (a *App) StoreSession(key string, uid string) error {
-	expiration := time.Now().Add(time.Second * 30).Unix()
+	expiration := time.Now().Add(time.Hour * 24).Unix()
 	_, err := a.db.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
 }

@@ -18,8 +18,8 @@ var Cookies = cookies{
 }
 
 // TODO rolling keys, see the github page
-var cookieHashKey = []byte(RandomString(64))  // TODO persist and generate securely
-var cookieBlockKey = []byte(RandomString(32)) // TODO persist and generate securely
+var cookieHashKey = []byte("fpl4b11zfpl4b11zfpl4b11zfpl4b11z")  // TODO persist and generate securely
+var cookieBlockKey = []byte("fpl4b11zfpl4b11zfpl4b11zfpl4b11z") // TODO persist and generate securely
 var cookieOven = securecookie.New(cookieHashKey, cookieBlockKey)
 var decoder = schema.NewDecoder()
 

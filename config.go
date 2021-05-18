@@ -10,8 +10,10 @@ import (
 )
 
 type Config struct {
-	Port      int64
-	OauthConf *oauth2.Config
+	Port               int64
+	OauthConf          *oauth2.Config
+	BotToken           string
+	FlashpointServerID string
 }
 
 func EnvString(name string) string {
@@ -56,5 +58,7 @@ func GetConfig(l *logrus.Logger) *Config {
 				AuthStyle: oauth2.AuthStyleInParams,
 			},
 		},
+		BotToken:           EnvString("BOT_TOKEN"),
+		FlashpointServerID: EnvString("FLASHPOINT_SERVER_ID"),
 	}
 }

@@ -28,8 +28,23 @@ func (a *App) HandleHomePage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to load user data", http.StatusInternalServerError)
 		return
 	}
+
+	userRoles, err := a.GetFlashpointRolesForUser(userID)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to load user roles", http.StatusInternalServerError)
+		return
+	}
+
+	roles := ""
+	for _, role := range userRoles {
+		LogCtx(ctx).Infof("%+v", role)
+		roles += fmt.Sprintf("<b><p style='color:#%06x;'>%s </p></b>", role.Color, role.Name)
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(fmt.Sprintf("<html>hello %s, this is your home now. <img src='https://cdn.discordapp.com/avatars/%s/%s'></html>", discordUser.Username, discordUser.ID, discordUser.Avatar)))
+	w.Write([]byte(fmt.Sprintf("<html style='background-color:#333; color:#eee'>hello %s, this is your home now. <img src='https://cdn.discordapp.com/avatars/%s/%s'><br>roles: %s<br></html>",
+		discordUser.Username, discordUser.ID, discordUser.Avatar, roles)))
 }
 
 func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {

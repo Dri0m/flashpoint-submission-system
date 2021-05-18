@@ -8,6 +8,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
@@ -23,37 +24,7 @@ const dbName = "db.db"
 type App struct {
 	conf *Config
 	db   *sql.DB
-}
-
-func OpenDB(l *logrus.Logger) *sql.DB {
-	l.Infof("opening database '%s'...", dbName)
-	db, err := sql.Open("sqlite3", dbName)
-	if err != nil {
-		l.Fatal(err)
-	}
-	err = db.Ping()
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	db.SetMaxOpenConns(1)
-
-	_, err = db.Exec(`PRAGMA journal_mode = WAL`)
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	file, err := os.ReadFile("sql.sql")
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	_, err = db.Exec(string(file))
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	return db
+	bot  *discordgo.Session
 }
 
 func main() {
@@ -63,13 +34,14 @@ func main() {
 	conf := GetConfig(l)
 	db := OpenDB(l)
 	defer db.Close()
+	bot := ConnectBot(l, conf.BotToken)
 
-	runServer(l, conf, db)
+	runServer(l, conf, db, bot)
 
 	l.Infoln("goodbye")
 }
 
-func runServer(l *logrus.Logger, conf *Config, db *sql.DB) {
+func runServer(l *logrus.Logger, conf *Config, db *sql.DB, bot *discordgo.Session) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
@@ -80,6 +52,7 @@ func runServer(l *logrus.Logger, conf *Config, db *sql.DB) {
 	a := &App{
 		conf: conf,
 		db:   db,
+		bot:  bot,
 	}
 
 	l.WithField("port", conf.Port).Infoln("starting the server...")

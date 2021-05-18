@@ -3,6 +3,7 @@ module github.com/Dri0m/flashpoint-submission-system
 go 1.16
 
 require (
+	github.com/bwmarrin/discordgo v0.23.2
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gorilla/mux v1.8.0
