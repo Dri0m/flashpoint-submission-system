@@ -6,17 +6,54 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/gorilla/mux"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
+const dbName = "db.db"
+
 // App is App
 type App struct {
 	conf *Config
+	db   *sql.DB
+}
+
+func OpenDB(l *logrus.Logger) *sql.DB {
+	l.Infof("opening database '%s'...", dbName)
+	db, err := sql.Open("sqlite3", dbName)
+	if err != nil {
+		l.Fatal(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	db.SetMaxOpenConns(1)
+
+	_, err = db.Exec(`PRAGMA journal_mode = WAL`)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	file, err := os.ReadFile("sql.sql")
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	_, err = db.Exec(string(file))
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	return db
 }
 
 func main() {
@@ -24,7 +61,15 @@ func main() {
 	l.Infoln("hi")
 
 	conf := GetConfig(l)
+	db := OpenDB(l)
+	defer db.Close()
 
+	runServer(l, conf, db)
+
+	l.Infoln("goodbye")
+}
+
+func runServer(l *logrus.Logger, conf *Config, db *sql.DB) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
@@ -34,6 +79,7 @@ func main() {
 
 	a := &App{
 		conf: conf,
+		db:   db,
 	}
 
 	l.WithField("port", conf.Port).Infoln("starting the server...")
@@ -49,6 +95,4 @@ func main() {
 	if err := srv.Shutdown(context.Background()); err != nil {
 		l.WithError(err).Errorln("server shutdown failed")
 	}
-
-	l.Infoln("goodbye")
 }
