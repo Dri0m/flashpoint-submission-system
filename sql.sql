@@ -1,5 +1,5 @@
-CREATE TABLE IF NOT EXISTS data
+CREATE TABLE IF NOT EXISTS session
 (
-    username TEXT,
-    response TEXT
+    key TEXT,
+    uid TEXT
 );

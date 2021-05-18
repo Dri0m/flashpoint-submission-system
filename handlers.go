@@ -12,7 +12,16 @@ func (a *App) handleRequests(srv *http.Server, router *mux.Router) {
 	router.Handle("/auth", http.HandlerFunc(a.HandleDiscordAuth)).Methods("GET")
 	router.Handle("/auth/callback", http.HandlerFunc(a.HandleDiscordCallback)).Methods("GET")
 
+	//home
+	router.Handle("/home", http.HandlerFunc(UserAuth(a.HandleHomePage))).Methods("GET")
 	srv.ListenAndServe()
+}
+
+func (a *App) HandleHomePage(w http.ResponseWriter, r *http.Request) {
+	//ctx := r.Context()
+	//userID := UserIDFromContext(ctx)
+
+	w.Write([]byte("this is your home now"))
 }
 
 func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
@@ -36,11 +45,13 @@ var state = "random"
 func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// verify state
 	if r.FormValue("state") != state {
 		http.Error(w, "state does not match", http.StatusBadRequest)
 		return
 	}
 
+	// obtain token
 	token, err := a.conf.OauthConf.Exchange(context.Background(), r.FormValue("code"))
 
 	if err != nil {
@@ -48,6 +59,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// obtain user data
 	resp, err := a.conf.OauthConf.Client(context.Background(), token).Get("https://discordapp.com/api/users/@me")
 
 	if err != nil || resp.StatusCode != 200 {
@@ -62,6 +74,21 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
 		return
 	}
-
 	LogCtx(ctx).Infof("%+v\n", discordUser)
+
+	// create cookie and save session
+	authToken, err := CreateAuthToken()
+	if err != nil {
+		http.Error(w, "failed to generate auth token", http.StatusInternalServerError)
+		return
+	}
+	if err := SetSecureCookie(w, Cookies.Login, mapAuthToken(authToken)); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
+		return
+	}
+
+	sessionStore[authToken.Secret] = discordUser.ID
+
+	w.Write([]byte("you are now logged it, pretty cool isn't it"))
 }
