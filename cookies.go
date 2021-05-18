@@ -18,11 +18,10 @@ var Cookies = cookies{
 }
 
 // TODO rolling keys, see the github page
-var cookieHashKey = []byte(RandomString(128)) // TODO persist and generate securely
+var cookieHashKey = []byte(RandomString(64))  // TODO persist and generate securely
 var cookieBlockKey = []byte(RandomString(32)) // TODO persist and generate securely
 var cookieOven = securecookie.New(cookieHashKey, cookieBlockKey)
 var decoder = schema.NewDecoder()
-var sessionStore = make(map[string]string) // TODO persist
 
 // AuthToken is AuthToken
 type AuthToken struct {

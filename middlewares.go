@@ -6,7 +6,7 @@ import (
 )
 
 // UserAuth accepts access keys intended for data collectors
-func UserAuth(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+func (a *App) UserAuth(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookieMap, err := GetSecureCookie(r, Cookies.Login)
 		if err != nil {
@@ -22,10 +22,15 @@ func UserAuth(next func(http.ResponseWriter, *http.Request)) func(http.ResponseW
 			return
 		}
 
-		userID, ok := sessionStore[token.Secret]
+		userID, ok, err := a.GetUIDFromSession(token.Secret)
+		if err != nil {
+			LogCtx(r.Context()).Error(err)
+			http.Error(w, "failed to load session", http.StatusInternalServerError)
+			return
+		}
 		if !ok {
 			LogCtx(r.Context()).Error(err)
-			http.Error(w, "please log in to continue", http.StatusUnauthorized)
+			http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
 			return
 		}
 

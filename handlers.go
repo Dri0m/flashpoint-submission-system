@@ -13,7 +13,7 @@ func (a *App) handleRequests(srv *http.Server, router *mux.Router) {
 	router.Handle("/auth/callback", http.HandlerFunc(a.HandleDiscordCallback)).Methods("GET")
 
 	//home
-	router.Handle("/home", http.HandlerFunc(UserAuth(a.HandleHomePage))).Methods("GET")
+	router.Handle("/home", http.HandlerFunc(a.UserAuth(a.HandleHomePage))).Methods("GET")
 	srv.ListenAndServe()
 }
 
@@ -88,7 +88,9 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionStore[authToken.Secret] = discordUser.ID
+	if err = a.StoreSession(authToken.Secret, discordUser.ID); err != nil {
+		http.Error(w, "failed to store session", http.StatusInternalServerError)
+	}
 
 	w.Write([]byte("you are now logged it, pretty cool isn't it"))
 }
