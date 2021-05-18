@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS session
 
 CREATE TABLE IF NOT EXISTS discord_user
 (
-    id       TEXT NOT NULL,
+    uid       TEXT PRIMARY KEY,
     username TEXT NOT NULL,
     avatar   TEXT NOT NULL,
     discriminator TEXT NOT NULL,

@@ -2,7 +2,7 @@ package main
 
 import "time"
 
-// StoreSession save session into the DB with set expiration date
+// StoreSession store session into the DB with set expiration date
 func (a *App) StoreSession(key string, uid string) error {
 	expiration := time.Now().Add(time.Second * 30).Unix()
 	_, err := a.db.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
@@ -25,4 +25,34 @@ func (a *App) GetUIDFromSession(key string) (string, bool, error) {
 	}
 
 	return uid, true, nil
+}
+
+// StoreDiscordUser store discord user or replace with new data
+func (a *App) StoreDiscordUser(discordUser *DiscordUserResponse) error {
+	mfa := 0
+	if discordUser.MFAEnabled {
+		mfa = 1
+	}
+	_, err := a.db.Exec(
+		`INSERT OR REPLACE INTO discord_user (uid, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, mfa)
+	return err
+}
+
+// GetDiscordUser returns DiscordUserResponse
+func (a *App) GetDiscordUser(uid string) (*DiscordUserResponse, error) {
+	row := a.db.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE uid=?`, uid)
+
+	discordUser := &DiscordUserResponse{ID: uid}
+	var mfa int64
+	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &mfa)
+	if err != nil {
+		return nil, err
+	}
+
+	if mfa == 1 {
+		discordUser.MFAEnabled = true
+	}
+
+	return discordUser, nil
 }

@@ -15,4 +15,4 @@
 # vendor/
 .env
 log.log
-db.db
+db.db*

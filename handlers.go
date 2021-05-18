@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -18,17 +19,24 @@ func (a *App) handleRequests(srv *http.Server, router *mux.Router) {
 }
 
 func (a *App) HandleHomePage(w http.ResponseWriter, r *http.Request) {
-	//ctx := r.Context()
-	//userID := UserIDFromContext(ctx)
+	ctx := r.Context()
+	userID := UserIDFromContext(ctx)
 
-	w.Write([]byte("this is your home now"))
+	discordUser, err := a.GetDiscordUser(userID)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to load user data", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(fmt.Sprintf("<html>hello %s, this is your home now. <img src='https://cdn.discordapp.com/avatars/%s/%s'></html>", discordUser.Username, discordUser.ID, discordUser.Avatar)))
 }
 
 func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, a.conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
 
-type DiscordMeResponse struct {
+type DiscordUserResponse struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`
 	Avatar        string `json:"avatar"`
@@ -55,6 +63,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := a.conf.OauthConf.Exchange(context.Background(), r.FormValue("code"))
 
 	if err != nil {
+		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to obtain discord auth token", http.StatusInternalServerError)
 		return
 	}
@@ -68,17 +77,26 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	var discordUser DiscordMeResponse
+	var discordUser DiscordUserResponse
 	err = json.NewDecoder(resp.Body).Decode(&discordUser)
 	if err != nil {
+		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
 		return
 	}
 	LogCtx(ctx).Infof("%+v\n", discordUser)
 
+	// save discord user data
+	if err := a.StoreDiscordUser(&discordUser); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to store discord user", http.StatusInternalServerError)
+		return
+	}
+
 	// create cookie and save session
 	authToken, err := CreateAuthToken()
 	if err != nil {
+		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to generate auth token", http.StatusInternalServerError)
 		return
 	}
@@ -89,6 +107,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = a.StoreSession(authToken.Secret, discordUser.ID); err != nil {
+		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store session", http.StatusInternalServerError)
 	}
 
