@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/schema"
@@ -26,15 +27,17 @@ var decoder = schema.NewDecoder()
 // AuthToken is AuthToken
 type AuthToken struct {
 	Secret string
+	UserID string
 }
 
-func CreateAuthToken() (*AuthToken, error) {
+func CreateAuthToken(userID string) (*AuthToken, error) {
 	s, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
 	}
 	return &AuthToken{
 		Secret: s.String(),
+		UserID: userID,
 	}, nil
 }
 
@@ -44,13 +47,18 @@ func ParseAuthToken(value map[string]string) (*AuthToken, error) {
 	if !ok {
 		return nil, fmt.Errorf("missing secret")
 	}
+	userID, ok := value["userID"]
+	if !ok {
+		return nil, fmt.Errorf("missing userid")
+	}
 	return &AuthToken{
 		Secret: secret,
+		UserID: userID,
 	}, nil
 }
 
 func mapAuthToken(token *AuthToken) map[string]string {
-	return map[string]string{"secret": token.Secret}
+	return map[string]string{"secret": token.Secret, "userID": token.UserID}
 }
 
 // SetSecureCookie sets cookie
@@ -70,6 +78,19 @@ func SetSecureCookie(w http.ResponseWriter, name string, value map[string]string
 	return nil
 }
 
+// UnsetCookie unsets cookie
+func UnsetCookie(w http.ResponseWriter, name string) {
+	cookie := &http.Cookie{
+		Name:     name,
+		Value:    "",
+		Path:     "/",
+		Secure:   true,
+		MaxAge:   -1,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, cookie)
+}
+
 // GetSecureCookie gets cookie
 func GetSecureCookie(r *http.Request, name string) (map[string]string, error) {
 	cookie, err := r.Cookie(name)
@@ -85,6 +106,9 @@ func GetSecureCookie(r *http.Request, name string) (map[string]string, error) {
 
 func (a *App) GetUserIDFromCookie(r *http.Request) (string, error) {
 	cookieMap, err := GetSecureCookie(r, Cookies.Login)
+	if errors.Is(err, http.ErrNoCookie) {
+		return "", nil
+	}
 	if err != nil {
 		return "", err
 	}
@@ -94,13 +118,5 @@ func (a *App) GetUserIDFromCookie(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	userID, ok, err := a.GetUIDFromSession(token.Secret)
-	if err != nil {
-		return "", err
-	}
-	if !ok {
-		return "", nil
-	}
-
-	return userID, nil
+	return token.UserID, nil
 }

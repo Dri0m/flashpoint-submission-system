@@ -46,6 +46,12 @@ func (a *App) StoreSession(key string, uid string) error {
 	return err
 }
 
+// DeleteSession deletes specific session
+func (a *App) DeleteSession(secret string) error {
+	_, err := a.db.Exec(`DELETE FROM session WHERE secret=?`, secret)
+	return err
+}
+
 // GetUIDFromSession returns user ID and/or expiration state
 func (a *App) GetUIDFromSession(key string) (string, bool, error) {
 	row := a.db.QueryRow(`SELECT uid, expires_at FROM session WHERE secret=?`, key)
