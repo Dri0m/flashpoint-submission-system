@@ -5,30 +5,16 @@ import (
 	"net/http"
 )
 
-// UserAuth accepts access keys intended for data collectors
+// UserAuth accepts valid session cookie
 func (a *App) UserAuth(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookieMap, err := GetSecureCookie(r, Cookies.Login)
-		if err != nil {
-			LogCtx(r.Context()).Error(err)
-			http.Error(w, "please log in to continue", http.StatusUnauthorized)
-			return
-		}
-
-		token, err := ParseAuthToken(cookieMap)
-		if err != nil {
-			LogCtx(r.Context()).Error(err)
-			http.Error(w, "please log in to continue", http.StatusUnauthorized)
-			return
-		}
-
-		userID, ok, err := a.GetUIDFromSession(token.Secret)
+		userID, err := a.GetUserIDFromCookie(r)
 		if err != nil {
 			LogCtx(r.Context()).Error(err)
 			http.Error(w, "failed to load session", http.StatusInternalServerError)
 			return
 		}
-		if !ok {
+		if userID == "" {
 			LogCtx(r.Context()).Error(err)
 			http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
 			return

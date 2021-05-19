@@ -1,0 +1,92 @@
+{{define "layout"}}
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description"
+              content="A layout example with a side menu that hides on mobile, just like the Pure website.">
+        <title>Flashpoint's Fantastic Submission System</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css"
+              integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5"
+              crossorigin="anonymous">
+        <link rel="stylesheet" href="/static/css/styles.css">
+    </head>
+    <body>
+
+    <div id="layout">
+        <div class="navbar">
+            <div class="pure-g">
+                <div class="pure-u-5-6">
+                    <div class="pure-menu pure-menu-horizontal">
+                        <a href="#" class="pure-menu-heading pure-menu-link">BRAND</a>
+                        <ul class="pure-menu-list">
+                            <li class="pure-menu-item">
+                                <a href="#" class="pure-menu-link">News</a>
+                            </li>
+                            <li class="pure-menu-item">
+                                <a href="#" class="pure-menu-link">Sports</a>
+                            </li>
+                            <li class="pure-menu-item">
+                                <a href="#" class="pure-menu-link">Finance</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="pure-u-1-6">
+                    <div class="pure-menu pure-menu-horizontal navbar-right">
+                        {{if .Username}}
+                            <ul class="pure-menu-list">
+                                <li class="pure-menu-item">
+                                    <a href="/profile" class="pure-menu-link">Profile</a>
+                                </li>
+                                <li class="pure-menu-item">
+                                    <a href="/logout" class="pure-menu-link">Log out</a>
+                                </li>
+                            </ul>
+                        {{else}}
+                            <ul class="pure-menu-list">
+                                <li class="pure-menu-item">
+                                    <a href="/auth" class="pure-menu-link">Log in</a>
+                                </li>
+                            </ul>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="main">
+        <div class="content">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean volutpat dignissim accumsan. Sed laoreet
+            fermentum elit, at interdum enim tincidunt et. Etiam ultrices purus metus, vehicula auctor purus molestie a.
+            Vivamus quam massa, fringilla nec tempus at, dignissim in justo. Curabitur ullamcorper libero ligula, at
+            bibendum ex viverra nec. Cras ut feugiat ligula. Integer iaculis vitae neque a lobortis. Donec aliquam ex
+            eget
+            felis volutpat mollis. Vestibulum nunc nibh, tempus a pulvinar ut, dapibus ut dolor. Etiam iaculis velit
+            odio,
+            non eleifend dui ornare non. Proin id ex sit amet quam faucibus viverra ac a metus. Integer orci nibh,
+            egestas
+            eget dolor sit amet, iaculis mollis sapien.
+
+            Nullam tortor nisi, feugiat at purus in, luctus facilisis mauris. Proin malesuada enim quis tellus maximus
+            finibus. Maecenas a ex efficitur ante hendrerit porta. Quisque posuere, leo vel suscipit convallis, elit
+            lorem
+            sollicitudin neque, a sodales purus nulla vitae lorem. Nullam cursus porta metus mattis sagittis. Cras sed
+            nunc
+            nec augue porta venenatis. Integer viverra, tortor sed molestie euismod, dolor ipsum fermentum tellus, ut
+            imperdiet mauris sapien at enim. Nullam gravida sem massa, a ornare mauris tristique a. Nam ultricies nec
+            ipsum
+            nec egestas. Vestibulum lectus felis, scelerisque id felis nec, lobortis consequat augue. Integer nisi leo,
+            malesuada non gravida et, iaculis eu arcu. Integer at tortor ornare, commodo turpis ac, suscipit massa.
+            Morbi
+            leo purus, scelerisque a tempor nec, auctor eu elit. Mauris porta porttitor interdum. Sed ut suscipit
+            tellus. In
+            nulla sem, blandit sit amet lacus at, dignissim efficitur quam.
+        </div>
+        </div>
+    </div>
+
+    </body>
+    </html>
+{{end}}

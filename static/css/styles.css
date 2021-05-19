@@ -1,0 +1,31 @@
+body {
+    color: #444;
+}
+
+#layout {
+    position: relative;
+    left: 0;
+    padding-left: 0;
+}
+
+.navbar {
+    max-width: 1000px;
+    margin: 0 auto 10px;
+    border: 1px solid #444;
+    vertical-align: middle;
+    padding: 0 1px;
+}
+
+.navbar-right {
+    text-align: right;
+}
+
+.main {
+    max-width: 1000px;
+    margin: 0 auto 50px;
+    border: 1px solid #444;
+}
+
+.content {
+    padding: 1em 2em;
+}
