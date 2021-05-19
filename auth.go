@@ -7,10 +7,6 @@ import (
 	"net/http"
 )
 
-func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, a.conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
-}
-
 type DiscordUserResponse struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`
@@ -20,6 +16,10 @@ type DiscordUserResponse struct {
 	Flags         int    `json:"flags"`
 	Locale        string `json:"locale"`
 	MFAEnabled    bool   `json:"mfa_enabled"`
+}
+
+func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, a.conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
 
 // TODO provide real, secure oauth state

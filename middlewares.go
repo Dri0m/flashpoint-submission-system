@@ -11,7 +11,7 @@ func (a *App) UserAuth(next func(http.ResponseWriter, *http.Request)) func(http.
 		userID, err := a.GetUserIDFromCookie(r)
 		if err != nil {
 			LogCtx(r.Context()).Error(err)
-			http.Error(w, "failed to load session", http.StatusInternalServerError)
+			http.Error(w, "failed to load session, please clear cookies and try again", http.StatusInternalServerError)
 			return
 		}
 		if userID == "" {

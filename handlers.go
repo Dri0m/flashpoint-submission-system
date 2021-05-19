@@ -20,12 +20,17 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	//file server
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
-	//home
+	//pages
 	router.Handle("/", http.HandlerFunc(a.HandleRootPage)).Methods("GET")
+	router.Handle("/profile", http.HandlerFunc(a.UserAuth(a.HandleProfilePage))).Methods("GET")
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)
 	}
+}
+
+func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, a.conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
 
 type basePageData struct {
@@ -44,7 +49,7 @@ func (a *App) GetBasePageData(userID string) (*basePageData, error) {
 	}, nil
 }
 
-type homePageData struct {
+type rootPageData struct {
 	basePageData
 }
 
@@ -55,7 +60,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 		LogCtx(ctx).Error(err)
 	}
 
-	hpd := homePageData{}
+	rpd := rootPageData{}
 	if userID != "" {
 		bpd, err := a.GetBasePageData(userID)
 		if err != nil {
@@ -64,7 +69,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hpd.basePageData = *bpd
+		rpd.basePageData = *bpd
 	}
 
 	//userRoles, err := a.GetFlashpointRolesForUser(userID)
@@ -84,14 +89,14 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 	//w.Write([]byte(fmt.Sprintf("<html style='background-color:#333; color:#eee'>hello %s, this is your home now. <img src='https://cdn.discordapp.com/avatars/%s/%s'><br>roles: %s<br></html>",
 	//	discordUser.Username, discordUser.ID, discordUser.Avatar, roles)))
 
-	tmpl, err := template.ParseFiles("templates/base.gohtml")
+	tmpl, err := template.ParseFiles("templates/base.gohtml", "templates/root.gohtml")
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)
 		return
 	}
 	pageData := &bytes.Buffer{}
-	err = tmpl.ExecuteTemplate(pageData, "layout", hpd)
+	err = tmpl.ExecuteTemplate(pageData, "layout", rpd)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to execute html templates", http.StatusInternalServerError)
