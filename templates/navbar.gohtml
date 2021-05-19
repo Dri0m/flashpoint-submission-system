@@ -1,0 +1,39 @@
+{{define "navbar"}}
+    <div class="navbar">
+        <div class="pure-g">
+            <div class="pure-u-5-6">
+                <div class="pure-menu pure-menu-horizontal">
+                    <a href="/" class="pure-menu-heading pure-menu-link">FPFSS</a>
+                    <ul class="pure-menu-list">
+                        <li class="pure-menu-item">
+                            <a href="/submit" class="pure-menu-link">Submit</a>
+                        </li>
+                        <li class="pure-menu-item pure-menu-disabled">
+                            <a href="#" class="pure-menu-link">Test</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pure-u-1-6">
+                <div class="pure-menu pure-menu-horizontal navbar-right">
+                    {{if .Username}}
+                        <ul class="pure-menu-list">
+                            <li class="pure-menu-item">
+                                <a href="/profile" class="pure-menu-link">Profile</a>
+                            </li>
+                            <li class="pure-menu-item">
+                                <a href="/logout" class="pure-menu-link">Log out</a>
+                            </li>
+                        </ul>
+                    {{else}}
+                        <ul class="pure-menu-list">
+                            <li class="pure-menu-item">
+                                <a href="/auth" class="pure-menu-link">Log in</a>
+                            </li>
+                        </ul>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+{{end}}
