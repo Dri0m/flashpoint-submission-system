@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"html/template"
 	"net/http"
 )
 
-func (a *App) handleRequests(srv *http.Server, router *mux.Router) {
+func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Router) {
 	// oauth
 	router.Handle("/auth", http.HandlerFunc(a.HandleDiscordAuth)).Methods("GET")
 	router.Handle("/auth/callback", http.HandlerFunc(a.HandleDiscordCallback)).Methods("GET")
@@ -20,7 +21,10 @@ func (a *App) handleRequests(srv *http.Server, router *mux.Router) {
 
 	//home
 	router.Handle("/", http.HandlerFunc(a.HandleRootPage)).Methods("GET")
-	srv.ListenAndServe()
+	err := srv.ListenAndServe()
+	if err != nil {
+		l.Fatal(err)
+	}
 }
 
 type homePageData struct {

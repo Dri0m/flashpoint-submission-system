@@ -57,7 +57,7 @@ func runServer(l *logrus.Logger, conf *Config, db *sql.DB, bot *discordgo.Sessio
 
 	l.WithField("port", conf.Port).Infoln("starting the server...")
 	go func() {
-		a.handleRequests(srv, router)
+		a.handleRequests(l, srv, router)
 	}()
 
 	term := make(chan os.Signal, 1)
