@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 )
@@ -16,8 +17,8 @@ func ConnectBot(l *logrus.Logger, token string) *discordgo.Session {
 }
 
 // GetFlashpointRoleIDsForUser returns user role IDs
-func (a *App) GetFlashpointRoleIDsForUser(uid string) ([]string, error) {
-	member, err := a.bot.GuildMember(a.conf.FlashpointServerID, uid)
+func (a *App) GetFlashpointRoleIDsForUser(uid int64) ([]string, error) {
+	member, err := a.bot.GuildMember(a.conf.FlashpointServerID, fmt.Sprint(uid))
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +27,7 @@ func (a *App) GetFlashpointRoleIDsForUser(uid string) ([]string, error) {
 }
 
 // GetFlashpointRolesForUser returns user role IDs
-func (a *App) GetFlashpointRolesForUser(uid string) ([]*discordgo.Role, error) {
+func (a *App) GetFlashpointRolesForUser(uid int64) ([]*discordgo.Role, error) {
 	roleIds, err := a.GetFlashpointRoleIDsForUser(uid)
 	if err != nil {
 		return nil, err

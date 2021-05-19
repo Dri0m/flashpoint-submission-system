@@ -40,7 +40,7 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 }
 
 // StoreSession store session into the DB with set expiration date
-func (a *App) StoreSession(key string, uid string) error {
+func (a *App) StoreSession(key string, uid int64) error {
 	expiration := time.Now().Add(time.Hour * 24).Unix()
 	_, err := a.db.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
@@ -71,7 +71,7 @@ func (a *App) GetUIDFromSession(key string) (string, bool, error) {
 }
 
 // StoreDiscordUser store discord user or replace with new data
-func (a *App) StoreDiscordUser(discordUser *DiscordUserResponse) error {
+func (a *App) StoreDiscordUser(discordUser *DiscordUser) error {
 	mfa := 0
 	if discordUser.MFAEnabled {
 		mfa = 1
@@ -83,10 +83,10 @@ func (a *App) StoreDiscordUser(discordUser *DiscordUserResponse) error {
 }
 
 // GetDiscordUser returns DiscordUserResponse
-func (a *App) GetDiscordUser(uid string) (*DiscordUserResponse, error) {
+func (a *App) GetDiscordUser(uid int64) (*DiscordUser, error) {
 	row := a.db.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE uid=?`, uid)
 
-	discordUser := &DiscordUserResponse{ID: uid}
+	discordUser := &DiscordUser{ID: uid}
 	var mfa int64
 	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &mfa)
 	if err != nil {

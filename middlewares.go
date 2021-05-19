@@ -14,7 +14,7 @@ func (a *App) UserAuth(next func(http.ResponseWriter, *http.Request)) func(http.
 			http.Error(w, "failed to load session, please clear cookies and try again", http.StatusInternalServerError)
 			return
 		}
-		if userID == "" {
+		if userID == 0 {
 			LogCtx(r.Context()).Error(err)
 			http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
 			return

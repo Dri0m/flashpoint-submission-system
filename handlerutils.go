@@ -28,8 +28,8 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 		LogCtx(ctx).Error(err)
 	}
 
-	if userID == "" {
-		return nil, nil
+	if userID == 0 {
+		return &basePageData{}, nil
 	}
 
 	discordUser, err := a.GetDiscordUser(userID)

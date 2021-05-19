@@ -22,12 +22,12 @@ var CtxKeys = ctxKeys{
 }
 
 // UserIDFromContext extracts userID from context
-func UserIDFromContext(ctx context.Context) string {
+func UserIDFromContext(ctx context.Context) int64 {
 	v := ctx.Value(CtxKeys.UserID)
 	if v == nil {
-		return ""
+		return 0
 	}
-	return v.(string)
+	return v.(int64)
 }
 
 // RequestIDFromContext extracts requestID from context
@@ -44,7 +44,7 @@ func LogCtx(ctx context.Context) *logrus.Entry {
 	l := ctx.Value(CtxKeys.Log).(*logrus.Logger)
 	entry := logrus.NewEntry(l)
 
-	if userID := UserIDFromContext(ctx); len(userID) > 0 {
+	if userID := UserIDFromContext(ctx); userID != 0 {
 		entry = entry.WithField(string(CtxKeys.UserID), userID)
 	}
 	if requestID := RequestIDFromContext(ctx); len(requestID) > 0 {

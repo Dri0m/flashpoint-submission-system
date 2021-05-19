@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/gorilla/securecookie"
 	"net/http"
+	"strconv"
 )
 
 type cookies struct {
@@ -30,14 +31,14 @@ type AuthToken struct {
 	UserID string
 }
 
-func CreateAuthToken(userID string) (*AuthToken, error) {
+func CreateAuthToken(userID int64) (*AuthToken, error) {
 	s, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
 	}
 	return &AuthToken{
 		Secret: s.String(),
-		UserID: userID,
+		UserID: fmt.Sprint(userID),
 	}, nil
 }
 
@@ -104,19 +105,24 @@ func GetSecureCookie(r *http.Request, name string) (map[string]string, error) {
 	return value, nil
 }
 
-func (a *App) GetUserIDFromCookie(r *http.Request) (string, error) {
+func (a *App) GetUserIDFromCookie(r *http.Request) (int64, error) {
 	cookieMap, err := GetSecureCookie(r, Cookies.Login)
 	if errors.Is(err, http.ErrNoCookie) {
-		return "", nil
+		return 0, nil
 	}
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
 	token, err := ParseAuthToken(cookieMap)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	return token.UserID, nil
+	uid, err := strconv.ParseInt(token.UserID, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return uid, nil
 }

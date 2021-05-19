@@ -5,15 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 )
 
-type DiscordUserResponse struct {
+type discordUserResponse struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`
 	Avatar        string `json:"avatar"`
 	Discriminator string `json:"discriminator"`
-	PublicFlags   int    `json:"public_flags"`
-	Flags         int    `json:"flags"`
+	PublicFlags   int64  `json:"public_flags"`
+	Flags         int64  `json:"flags"`
+	Locale        string `json:"locale"`
+	MFAEnabled    bool   `json:"mfa_enabled"`
+}
+
+type DiscordUser struct {
+	ID            int64  `json:"id"`
+	Username      string `json:"username"`
+	Avatar        string `json:"avatar"`
+	Discriminator string `json:"discriminator"`
+	PublicFlags   int64  `json:"public_flags"`
+	Flags         int64  `json:"flags"`
 	Locale        string `json:"locale"`
 	MFAEnabled    bool   `json:"mfa_enabled"`
 }
@@ -52,14 +64,31 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	var discordUser DiscordUserResponse
-	err = json.NewDecoder(resp.Body).Decode(&discordUser)
+	var discordUserResp discordUserResponse
+	err = json.NewDecoder(resp.Body).Decode(&discordUserResp)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
 		return
 	}
-	LogCtx(ctx).Infof("%+v\n", discordUser)
+
+	uid, err := strconv.ParseInt(discordUserResp.ID, 10, 64)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
+		return
+	}
+
+	discordUser := DiscordUser{
+		ID:            uid,
+		Username:      discordUserResp.Username,
+		Avatar:        discordUserResp.Avatar,
+		Discriminator: discordUserResp.Discriminator,
+		PublicFlags:   discordUserResp.PublicFlags,
+		Flags:         discordUserResp.Flags,
+		Locale:        discordUserResp.Locale,
+		MFAEnabled:    discordUserResp.MFAEnabled,
+	}
 
 	// save discord user data
 	if err := a.StoreDiscordUser(&discordUser); err != nil {
