@@ -1,0 +1,26 @@
+{{define "main"}}
+    <div class="main" xmlns="http://www.w3.org/1999/html">
+        <div class="content">
+            <h1>Profile</h1>
+
+            Hi, {{.Username}}!<br>
+            <img src="{{.AvatarURL}}" alt="profile picture">
+            <br>
+            <br>
+            Your server roles are:
+            <ul>
+                {{range .Roles}}
+                    <li><span style="color: {{.Color}}">{{.Name}}</span></li>
+                {{end}}
+            </ul>
+
+            {{if .IsAuthorizedToUseSystem}}
+                Congratulations, you have sufficient server roles to use this system!
+            {{else}}
+                You <b>do not</b> have sufficient server roles to use this system, so you cannot do anything here.
+                That's tough.
+            {{end}}
+
+        </div>
+    </div>
+{{end}}

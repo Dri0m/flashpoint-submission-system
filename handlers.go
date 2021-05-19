@@ -29,65 +29,108 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	}
 }
 
-func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, a.conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
+type formattedRole struct {
+	Name  string
+	Color string
 }
 
 type basePageData struct {
-	Username  string
-	AvatarURL string
+	Username                string
+	AvatarURL               string
+	Roles                   []formattedRole
+	IsAuthorizedToUseSystem bool
 }
 
-func (a *App) GetBasePageData(userID string) (*basePageData, error) {
-	discordUser, err := a.GetDiscordUser(userID)
-	if err != nil {
-		return nil, err
-	}
-	return &basePageData{
-		Username:  discordUser.Username,
-		AvatarURL: fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s", discordUser.ID, discordUser.Avatar),
-	}, nil
-}
-
-type rootPageData struct {
-	basePageData
-}
-
-func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
+// GetBasePageData loads base user data, does not return error if user is not logged in
+func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 	ctx := r.Context()
 	userID, err := a.GetUserIDFromCookie(r)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 	}
 
-	rpd := rootPageData{}
-	if userID != "" {
-		bpd, err := a.GetBasePageData(userID)
-		if err != nil {
-			LogCtx(ctx).Error(err)
-			http.Error(w, "failed to load user data", http.StatusInternalServerError)
-			return
-		}
-
-		rpd.basePageData = *bpd
+	if userID == "" {
+		return nil, nil
 	}
 
-	//userRoles, err := a.GetFlashpointRolesForUser(userID)
-	//if err != nil {
-	//	LogCtx(ctx).Error(err)
-	//	http.Error(w, "failed to load user roles", http.StatusInternalServerError)
-	//	return
-	//}
-	//
-	//roles := ""
-	//for _, role := range userRoles {
-	//	LogCtx(ctx).Infof("%+v", role)
-	//	roles += fmt.Sprintf("<b><p style='color:#%06x;'>%s </p></b>", role.Color, role.Name)
-	//}
-	//
-	//w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//w.Write([]byte(fmt.Sprintf("<html style='background-color:#333; color:#eee'>hello %s, this is your home now. <img src='https://cdn.discordapp.com/avatars/%s/%s'><br>roles: %s<br></html>",
-	//	discordUser.Username, discordUser.ID, discordUser.Avatar, roles)))
+	discordUser, err := a.GetDiscordUser(userID)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to get user data from db")
+	}
+
+	userRoles, err := a.GetFlashpointRolesForUser(userID)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load user roles")
+	}
+
+	formattedRoles := make([]formattedRole, 0, len(userRoles))
+	for _, role := range userRoles {
+		formattedRoles = append(formattedRoles, formattedRole{Name: role.Name, Color: fmt.Sprintf("#%06x", role.Color)})
+	}
+
+	authorizedRoles := []string{"Administrator", "Moderator", "Curator", "Tester", "Mechanic", "Hunter", "Hacker"}
+
+	isAuthorized := false
+	for _, role := range formattedRoles {
+		for _, authorizedRole := range authorizedRoles {
+			if role.Name == authorizedRole {
+				isAuthorized = true
+				break
+			}
+		}
+	}
+
+	bpd := &basePageData{
+		Username:                discordUser.Username,
+		AvatarURL:               fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s", discordUser.ID, discordUser.Avatar),
+		Roles:                   formattedRoles,
+		IsAuthorizedToUseSystem: isAuthorized,
+	}
+
+	return bpd, nil
+}
+
+func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bpd, err := a.GetBasePageData(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("templates/base.gohtml", "templates/profile.gohtml")
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)
+		return
+	}
+	pageData := &bytes.Buffer{}
+	err = tmpl.ExecuteTemplate(pageData, "layout", bpd)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to execute html templates", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if _, err := w.Write(pageData.Bytes()); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to write page data", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	bpd, err := a.GetBasePageData(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	tmpl, err := template.ParseFiles("templates/base.gohtml", "templates/root.gohtml")
 	if err != nil {
@@ -96,7 +139,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pageData := &bytes.Buffer{}
-	err = tmpl.ExecuteTemplate(pageData, "layout", rpd)
+	err = tmpl.ExecuteTemplate(pageData, "layout", bpd)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to execute html templates", http.StatusInternalServerError)
