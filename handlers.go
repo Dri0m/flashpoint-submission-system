@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -92,63 +93,52 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 	return bpd, nil
 }
 
-func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	bpd, err := a.GetBasePageData(r)
-	if err != nil {
-		LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	tmpl, err := template.ParseFiles("templates/base.gohtml", "templates/profile.gohtml")
+// RenderTemplates is a helper for rendering templates
+func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}, filenames ...string) {
+	templates := []string{"templates/base.gohtml"}
+	templates = append(templates, filenames...)
+	tmpl, err := template.ParseFiles(templates...)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)
 		return
 	}
-	pageData := &bytes.Buffer{}
-	err = tmpl.ExecuteTemplate(pageData, "layout", bpd)
+	templateBuffer := &bytes.Buffer{}
+	err = tmpl.ExecuteTemplate(templateBuffer, "layout", data)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to execute html templates", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := w.Write(pageData.Bytes()); err != nil {
+	if _, err := w.Write(templateBuffer.Bytes()); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to write page data", http.StatusInternalServerError)
 		return
 	}
 }
 
-func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
+func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	bpd, err := a.GetBasePageData(r)
+	pageData, err := a.GetBasePageData(r)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/base.gohtml", "templates/root.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData, "templates/profile.gohtml")
+}
+
+func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.GetBasePageData(r)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pageData := &bytes.Buffer{}
-	err = tmpl.ExecuteTemplate(pageData, "layout", bpd)
-	if err != nil {
-		LogCtx(ctx).Error(err)
-		http.Error(w, "failed to execute html templates", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := w.Write(pageData.Bytes()); err != nil {
-		LogCtx(ctx).Error(err)
-		http.Error(w, "failed to write page data", http.StatusInternalServerError)
-		return
-	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/root.gohtml")
 }
