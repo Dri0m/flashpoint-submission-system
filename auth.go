@@ -91,9 +91,22 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save discord user data
-	if err := a.StoreDiscordUser(&discordUser); err != nil {
+	if err := a.db.StoreDiscordUser(&discordUser); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store discord user", http.StatusInternalServerError)
+		return
+	}
+
+	// get and save discord user authorization
+	isAuthorized, err := a.bot.IsUserAuthorized(discordUser.ID)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to obtain discord user's roles", http.StatusInternalServerError)
+		return
+	}
+	if err := a.db.StoreDiscordUserAuthorization(discordUser.ID, isAuthorized); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to store discord user's authorization", http.StatusInternalServerError)
 		return
 	}
 
@@ -110,7 +123,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.StoreSession(authToken.Secret, discordUser.ID); err != nil {
+	if err = a.db.StoreSession(authToken.Secret, discordUser.ID); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store session", http.StatusInternalServerError)
 	}
@@ -133,7 +146,7 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	if err := a.DeleteSession(token.Secret); err != nil {
+	if err := a.db.DeleteSession(token.Secret); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return

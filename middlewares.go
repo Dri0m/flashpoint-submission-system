@@ -16,7 +16,7 @@ func (a *App) UserAuth(next func(http.ResponseWriter, *http.Request)) func(http.
 		}
 		if userID == 0 {
 			LogCtx(r.Context()).Error(err)
-			http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
+			http.Error(w, "please log in to continue", http.StatusUnauthorized)
 			return
 		}
 

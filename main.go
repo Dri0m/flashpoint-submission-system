@@ -23,8 +23,18 @@ const dbName = "db.db"
 // App is App
 type App struct {
 	conf *Config
-	db   *sql.DB
-	bot  *discordgo.Session
+	db   DB
+	bot  Bot
+}
+
+type Bot struct {
+	session            *discordgo.Session
+	flashpointServerID string
+	l                  *logrus.Logger
+}
+
+type DB struct {
+	conn *sql.DB
 }
 
 func main() {
@@ -36,12 +46,12 @@ func main() {
 	defer db.Close()
 	bot := ConnectBot(l, conf.BotToken)
 
-	runServer(l, conf, db, bot)
+	initApp(l, conf, db, bot)
 
 	l.Infoln("goodbye")
 }
 
-func runServer(l *logrus.Logger, conf *Config, db *sql.DB, bot *discordgo.Session) {
+func initApp(l *logrus.Logger, conf *Config, db *sql.DB, botSession *discordgo.Session) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
@@ -51,8 +61,14 @@ func runServer(l *logrus.Logger, conf *Config, db *sql.DB, bot *discordgo.Sessio
 
 	a := &App{
 		conf: conf,
-		db:   db,
-		bot:  bot,
+		db: DB{
+			conn: db,
+		},
+		bot: Bot{
+			session:            botSession,
+			flashpointServerID: conf.FlashpointServerID,
+			l:                  l,
+		},
 	}
 
 	l.WithField("port", conf.Port).Infoln("starting the server...")

@@ -8,7 +8,8 @@ import (
 	"net/http"
 )
 
-type formattedRole struct {
+type DiscordRole struct {
+	ID    int64
 	Name  string
 	Color string
 }
@@ -16,7 +17,6 @@ type formattedRole struct {
 type basePageData struct {
 	Username                string
 	AvatarURL               string
-	Roles                   []formattedRole
 	IsAuthorizedToUseSystem bool
 }
 
@@ -32,39 +32,21 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 		return &basePageData{}, nil
 	}
 
-	discordUser, err := a.GetDiscordUser(userID)
+	discordUser, err := a.db.GetDiscordUser(userID)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to get user data from db")
 	}
 
-	userRoles, err := a.GetFlashpointRolesForUser(userID)
+	isAuthorized, err := a.db.IsDiscordUserAuthorized(userID)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to load user roles")
-	}
-
-	formattedRoles := make([]formattedRole, 0, len(userRoles))
-	for _, role := range userRoles {
-		formattedRoles = append(formattedRoles, formattedRole{Name: role.Name, Color: fmt.Sprintf("#%06x", role.Color)})
-	}
-
-	authorizedRoles := []string{"Administrator", "Moderator", "Curator", "Tester", "Mechanic", "Hunter", "Hacker"}
-
-	isAuthorized := false
-	for _, role := range formattedRoles {
-		for _, authorizedRole := range authorizedRoles {
-			if role.Name == authorizedRole {
-				isAuthorized = true
-				break
-			}
-		}
+		return nil, fmt.Errorf("failed to load user authorization")
 	}
 
 	bpd := &basePageData{
 		Username:                discordUser.Username,
-		AvatarURL:               fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s", discordUser.ID, discordUser.Avatar),
-		Roles:                   formattedRoles,
+		AvatarURL:               fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", discordUser.ID, discordUser.Avatar),
 		IsAuthorizedToUseSystem: isAuthorized,
 	}
 

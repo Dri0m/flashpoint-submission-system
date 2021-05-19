@@ -7,12 +7,6 @@
             <img src="{{.AvatarURL}}" alt="profile picture">
             <br>
             <br>
-            Your server roles are:
-            <ul>
-                {{range .Roles}}
-                    <li><span style="color: {{.Color}}">{{.Name}}</span></li>
-                {{end}}
-            </ul>
 
             {{if .IsAuthorizedToUseSystem}}
                 Congratulations, you have sufficient server roles to use this system!
