@@ -99,7 +99,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		OriginalFilename: fileHeader.Filename,
 		CurrentFilename:  destinationFilename,
 		Size:             fileHeader.Size,
-		UploadedAt:       time.Now().Unix(),
+		UploadedAt:       time.Now(),
 	}
 
 	if err := a.db.StoreSubmission(tx, s); err != nil {

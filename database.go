@@ -132,19 +132,19 @@ type Submission struct {
 	OriginalFilename string
 	CurrentFilename  string
 	Size             int64
-	UploadedAt       int64
+	UploadedAt       time.Time
 }
 
 // StoreSubmission stores submission entry
 func (db *DB) StoreSubmission(tx *sql.Tx, s *Submission) error {
 	_, err := tx.Exec(`INSERT INTO submission (fk_uploader_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?)`,
-		s.UploaderID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt)
+		s.UploaderID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix())
 	return err
 }
 
 // GetSubmissionsForUser returns all submissions for a given user, sorted by date
 func (db *DB) GetSubmissionsForUser(uid int64) ([]*Submission, error) {
-	rows, err := db.conn.Query(`SELECT id, original_filename, current_filename, size, uploaded_at FROM submission WHERE fk_uploader_id=? ORDER BY uploaded_at DESC, original_filename`, uid)
+	rows, err := db.conn.Query(`SELECT id, original_filename, current_filename, size, uploaded_at FROM submission WHERE fk_uploader_id=? ORDER BY uploaded_at DESC, id`, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -152,11 +152,14 @@ func (db *DB) GetSubmissionsForUser(uid int64) ([]*Submission, error) {
 
 	result := make([]*Submission, 0)
 
+	var uploadedAt int64
+
 	for rows.Next() {
 		s := &Submission{UploaderID: uid}
-		if err := rows.Scan(&s.ID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &s.UploadedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt); err != nil {
 			return nil, err
 		}
+		s.UploadedAt = time.Unix(uploadedAt, 0)
 		result = append(result, s)
 	}
 
