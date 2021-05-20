@@ -5,12 +5,14 @@
                 <div class="pure-menu pure-menu-horizontal">
                     <a href="/" class="pure-menu-heading pure-menu-link">FPFSS</a>
                     <ul class="pure-menu-list">
-                        <li class="pure-menu-item">
-                            <a href="/submit" class="pure-menu-link">Submit</a>
-                        </li>
-                        <li class="pure-menu-item pure-menu-disabled">
-                            <a href="#" class="pure-menu-link">Browse Submissions</a>
-                        </li>
+                        {{if .IsAuthorizedToUseSystem}}
+                            <li class="pure-menu-item">
+                                <a href="/submit" class="pure-menu-link">Submit</a>
+                            </li>
+                            <li class="pure-menu-item">
+                                <a href="#" class="pure-menu-link">Browse Submissions</a>
+                            </li>
+                        {{end}}
                     </ul>
                 </div>
             </div>
@@ -18,9 +20,11 @@
                 <div class="pure-menu pure-menu-horizontal navbar-right">
                     {{if .Username}}
                         <ul class="pure-menu-list">
-                            <li class="pure-menu-item">
-                                <a href="/my-submissions" class="pure-menu-link">My Submissions</a>
-                            </li>
+                            {{if .IsAuthorizedToUseSystem}}
+                                <li class="pure-menu-item">
+                                    <a href="/my-submissions" class="pure-menu-link">My Submissions</a>
+                                </li>
+                            {{end}}
                             <li class="pure-menu-item">
                                 <a href="/profile" class="pure-menu-link">Profile</a>
                             </li>

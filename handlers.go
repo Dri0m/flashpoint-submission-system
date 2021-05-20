@@ -23,12 +23,12 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	// pages
 	router.Handle("/", http.HandlerFunc(a.HandleRootPage)).Methods("GET")
-	router.Handle("/profile", http.HandlerFunc(a.UserAuth(a.HandleProfilePage))).Methods("GET")
-	router.Handle("/submit", http.HandlerFunc(a.UserAuth(a.HandleSubmitPage))).Methods("GET")
-	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuth(a.HandleMySubmissionsPage))).Methods("GET")
+	router.Handle("/profile", http.HandlerFunc(a.UserAuthentication(a.HandleProfilePage))).Methods("GET")
+	router.Handle("/submit", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmitPage)))).Methods("GET")
+	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleMySubmissionsPage)))).Methods("GET")
 
 	// form receivers
-	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuth(a.HandleSubmissionReceiver))).Methods("POST")
+	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)
