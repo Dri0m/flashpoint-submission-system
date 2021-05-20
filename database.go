@@ -136,8 +136,8 @@ type Submission struct {
 }
 
 // StoreSubmission stores submission entry
-func (db *DB) StoreSubmission(s *Submission) error {
-	_, err := db.conn.Exec(`INSERT INTO submission (fk_uploader_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?)`,
+func (db *DB) StoreSubmission(tx *sql.Tx, s *Submission) error {
+	_, err := tx.Exec(`INSERT INTO submission (fk_uploader_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?)`,
 		s.UploaderID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt)
 	return err
 }

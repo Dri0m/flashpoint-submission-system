@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"time"
@@ -35,34 +38,33 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	}
 }
 
-func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID, err := a.GetUserIDFromCookie(r)
+func (a *App) LogIfErr(ctx context.Context, err error) {
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "invalid cookie", http.StatusInternalServerError)
-		return
 	}
+}
 
-	// limit RAM usage to 100MB
-	r.ParseMultipartForm(100 * 1000 * 1000)
-
-	file, fileHandler, err := r.FormFile("file")
+func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader) error {
+	userID := UserIDFromContext(ctx)
+	if userID == 0 {
+		err := fmt.Errorf("no user associated with request")
+		LogCtx(ctx).Error(err)
+		return err
+	}
+	file, err := fileHeader.Open()
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "could not retrieve the file", http.StatusBadRequest)
-		return
+		return fmt.Errorf("failed to open received file")
 	}
 	defer file.Close()
 
-	LogCtx(ctx).Debugf("Received a file '%s' - %d bytes, MIME Header: %+v", fileHandler.Filename, fileHandler.Size, fileHandler.Header)
+	LogCtx(ctx).Debugf("received a file '%s' - %d bytes, MIME header: %+v", fileHeader.Filename, fileHeader.Size, fileHeader.Header)
 
 	const dir = "submissions"
 
 	if err := os.MkdirAll(dir, os.ModeDir); err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "could not make directory structure", http.StatusInternalServerError)
-		return
+		return fmt.Errorf("failed to make directory structure")
 	}
 
 	destinationFilename := RandomString(64)
@@ -71,8 +73,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	destination, err := os.Create(destinationFilePath)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "could not create destination file", http.StatusInternalServerError)
-		return
+		return fmt.Errorf("failed to create destination file")
 	}
 	defer destination.Close()
 
@@ -81,36 +82,69 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	nBytes, err := io.Copy(destination, file)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "could not copy file to destination", http.StatusInternalServerError)
 		_ = destination.Close()
 		_ = os.Remove(destinationFilePath)
-		return
+		return fmt.Errorf("failed to copy file to destination")
 	}
-	if nBytes != fileHandler.Size {
+	if nBytes != fileHeader.Size {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "incorrect number of bytes copied to destination", http.StatusInternalServerError)
 		_ = destination.Close()
 		_ = os.Remove(destinationFilePath)
-		return
+		return fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
 	s := &Submission{
 		ID:               0,
-		UploaderID:       userID,
-		OriginalFilename: fileHandler.Filename,
+		UploaderID:       UserIDFromContext(ctx),
+		OriginalFilename: fileHeader.Filename,
 		CurrentFilename:  destinationFilename,
-		Size:             fileHandler.Size,
+		Size:             fileHeader.Size,
 		UploadedAt:       time.Now().Unix(),
 	}
 
-	if err := a.db.StoreSubmission(s); err != nil {
+	if err := a.db.StoreSubmission(tx, s); err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "incorrect number of bytes copied to destination", http.StatusInternalServerError)
 		_ = destination.Close()
 		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("failed to store submission")
+	}
+
+	return nil
+}
+
+func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	tx, err := a.db.conn.Begin()
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
 		return
 	}
 
+	// limit RAM usage to 100MB
+	if err := r.ParseMultipartForm(100 * 1000 * 1000); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to parse form", http.StatusInternalServerError)
+		return
+	}
+
+	fileHeaders := r.MultipartForm.File["files"]
+	for _, fileHeader := range fileHeaders {
+		err := a.ProcessReceivedSubmission(ctx, tx, fileHeader)
+		if err != nil {
+			LogCtx(ctx).Error(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			a.LogIfErr(ctx, tx.Rollback())
+			return
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
+		a.LogIfErr(ctx, tx.Rollback())
+	}
 }
 
 func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {

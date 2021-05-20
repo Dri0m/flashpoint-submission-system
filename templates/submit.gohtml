@@ -1,13 +1,13 @@
 {{define "main"}}
     <div class="main" xmlns="http://www.w3.org/1999/html">
         <div class="content">
-            <h1>Submit a curation</h1>
+            <h1>Submit curation(s)</h1>
 
-            This is currently just a basic HTML file upload. Some browsers show the upload progress in the bottom corner.
+            This is currently just a basic HTML multifile upload. Some browsers show the upload progress in the bottom corner.
             <br>
             <br>
             <form action='/submission-receiver' method='post' enctype='multipart/form-data'>
-                <input type='file' name='file' id='file'>
+                <input type="file" name="files" multiple="multiple">
                 <input type='submit' value='Upload'>
             </form>
 
