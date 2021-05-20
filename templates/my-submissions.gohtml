@@ -3,11 +3,24 @@
         <div class="content">
             <h1>My Submissions</h1>
 
-            <ul>
-            {{range .Submissions}}
-                <li>{{.ID}} - {{.OriginalFilename}} - {{.Size}}B</li>
-            {{end}}
-            </ul>
+            <table class="pure-table pure-table-striped">
+                <thead>
+                <tr>
+                    <th>GET</th>
+                    <th>Original Filename</th>
+                    <th>Size</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .Submissions}}
+                    <tr>
+                        <td><a href="/download-submission/{{.ID}}">GET</a></td>
+                        <td>{{.OriginalFilename}}</td>
+                        <td>{{.Size}}B</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
 
         </div>
     </div>
