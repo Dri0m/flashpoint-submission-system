@@ -3,9 +3,15 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"html/template"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 type DiscordRole struct {
@@ -77,4 +83,79 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		http.Error(w, "failed to write page data", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (a *App) LogIfErr(ctx context.Context, err error) {
+	if err != nil {
+		LogCtx(ctx).Error(err)
+	}
+}
+
+func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader) error {
+	userID := UserIDFromContext(ctx)
+	if userID == 0 {
+		err := fmt.Errorf("no user associated with request")
+		LogCtx(ctx).Error(err)
+		return err
+	}
+	file, err := fileHeader.Open()
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to open received file")
+	}
+	defer file.Close()
+
+	LogCtx(ctx).Debugf("received a file '%s' - %d bytes, MIME header: %+v", fileHeader.Filename, fileHeader.Size, fileHeader.Header)
+
+	const dir = "submissions"
+
+	if err := os.MkdirAll(dir, os.ModeDir); err != nil {
+		LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to make directory structure")
+	}
+
+	destinationFilename := RandomString(64) + filepath.Ext(fileHeader.Filename)
+	destinationFilePath := fmt.Sprintf("%s/%s", dir, destinationFilename)
+
+	destination, err := os.Create(destinationFilePath)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to create destination file")
+	}
+	defer destination.Close()
+
+	LogCtx(ctx).Debugf("copying received file to '%s'...", destinationFilePath)
+
+	nBytes, err := io.Copy(destination, file)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		return fmt.Errorf("failed to copy file to destination")
+	}
+	if nBytes != fileHeader.Size {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		return fmt.Errorf("incorrect number of bytes copied to destination")
+	}
+
+	s := &Submission{
+		ID:               0,
+		UploaderID:       UserIDFromContext(ctx),
+		OriginalFilename: fileHeader.Filename,
+		CurrentFilename:  destinationFilename,
+		Size:             fileHeader.Size,
+		UploadedAt:       time.Now(),
+	}
+
+	if err := a.db.StoreSubmission(tx, s); err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("failed to store submission")
+	}
+
+	return nil
 }

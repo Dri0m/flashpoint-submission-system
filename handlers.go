@@ -1,16 +1,12 @@
 package main
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
-	"time"
+	"strconv"
 )
 
 func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Router) {
@@ -30,87 +26,46 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle("/submit", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmitPage)))).Methods("GET")
 	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleMySubmissionsPage)))).Methods("GET")
 
-	// form receivers
+	// file shenanigans
 	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
+	router.Handle("/download-submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmission)))).Methods("GET")
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)
 	}
 }
 
-func (a *App) LogIfErr(ctx context.Context, err error) {
+func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionID := params["id"]
+
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		LogCtx(ctx).Error(err)
+		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		return
 	}
-}
-
-func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader) error {
-	userID := UserIDFromContext(ctx)
-	if userID == 0 {
-		err := fmt.Errorf("no user associated with request")
-		LogCtx(ctx).Error(err)
-		return err
-	}
-	file, err := fileHeader.Open()
-	if err != nil {
-		LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to open received file")
-	}
-	defer file.Close()
-
-	LogCtx(ctx).Debugf("received a file '%s' - %d bytes, MIME header: %+v", fileHeader.Filename, fileHeader.Size, fileHeader.Header)
 
 	const dir = "submissions"
 
-	if err := os.MkdirAll(dir, os.ModeDir); err != nil {
-		LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to make directory structure")
-	}
-
-	destinationFilename := RandomString(64)
-	destinationFilePath := fmt.Sprintf("%s/%s", dir, destinationFilename)
-
-	destination, err := os.Create(destinationFilePath)
+	s, err := a.db.GetSubmission(sid)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to create destination file")
+		http.Error(w, "failed to find submission", http.StatusInternalServerError) // TODO discern 404 here
+		return
 	}
-	defer destination.Close()
 
-	LogCtx(ctx).Debugf("copying received file to '%s'...", destinationFilePath)
-
-	nBytes, err := io.Copy(destination, file)
+	f, err := os.Open(fmt.Sprintf("%s/%s", dir, s.CurrentFilename))
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		return fmt.Errorf("failed to copy file to destination")
+		http.Error(w, "failed open file", http.StatusInternalServerError)
+		return
 	}
-	if nBytes != fileHeader.Size {
-		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		return fmt.Errorf("incorrect number of bytes copied to destination")
-	}
-
-	s := &Submission{
-		ID:               0,
-		UploaderID:       UserIDFromContext(ctx),
-		OriginalFilename: fileHeader.Filename,
-		CurrentFilename:  destinationFilename,
-		Size:             fileHeader.Size,
-		UploadedAt:       time.Now(),
-	}
-
-	if err := a.db.StoreSubmission(tx, s); err != nil {
-		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
-		return fmt.Errorf("failed to store submission")
-	}
-
-	return nil
+	defer f.Close()
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", s.CurrentFilename))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	http.ServeContent(w, r, s.CurrentFilename, s.UploadedAt, f)
 }
 
 func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {

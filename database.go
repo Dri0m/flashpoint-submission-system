@@ -165,3 +165,18 @@ func (db *DB) GetSubmissionsForUser(uid int64) ([]*Submission, error) {
 
 	return result, nil
 }
+
+// GetSubmission returns DiscordUserResponse
+func (db *DB) GetSubmission(sid int64) (*Submission, error) {
+	row := db.conn.QueryRow(`SELECT fk_uploader_id, original_filename, current_filename, size, uploaded_at FROM submission WHERE id=?`, sid)
+
+	s := &Submission{ID: sid}
+	var uploadedAt int64
+	err := row.Scan(&s.UploaderID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt)
+	if err != nil {
+		return nil, err
+	}
+	s.UploadedAt = time.Unix(uploadedAt, 0)
+
+	return s, nil
+}
