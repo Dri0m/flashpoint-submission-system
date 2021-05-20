@@ -54,8 +54,6 @@ func main() {
 	bot := ConnectBot(l, conf.BotToken)
 
 	initApp(l, conf, db, bot)
-
-	l.Infoln("goodbye")
 }
 
 func initApp(l *logrus.Logger, conf *Config, db *sql.DB, botSession *discordgo.Session) {
@@ -95,4 +93,6 @@ func initApp(l *logrus.Logger, conf *Config, db *sql.DB, botSession *discordgo.S
 	if err := srv.Shutdown(context.Background()); err != nil {
 		l.WithError(err).Errorln("server shutdown failed")
 	}
+
+	l.Infoln("goodbye")
 }
