@@ -143,7 +143,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submit.gohtml")
 }
 
-type mySubmissionsPageData struct {
+type submissionsPageData struct {
 	basePageData
 	Submissions []*Submission
 }
@@ -171,7 +171,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageData := mySubmissionsPageData{basePageData: *bpd, Submissions: submissions}
+	pageData := submissionsPageData{basePageData: *bpd, Submissions: submissions}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/my-submissions.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData, "templates/my-submissions.gohtml", "templates/submission-table.gohtml")
 }
