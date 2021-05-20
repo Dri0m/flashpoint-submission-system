@@ -128,7 +128,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to store session", http.StatusInternalServerError)
 	}
 
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
@@ -152,5 +152,5 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	UnsetCookie(w, Cookies.Login)
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/", http.StatusFound)
 }

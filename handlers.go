@@ -145,6 +145,8 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
 		a.LogIfErr(ctx, tx.Rollback())
 	}
+
+	http.Redirect(w, r, "/my-submissions", http.StatusFound)
 }
 
 func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
