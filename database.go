@@ -40,8 +40,8 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 }
 
 // StoreSession store session into the DB with set expiration date
-func (db *DB) StoreSession(key string, uid int64) error {
-	expiration := time.Now().Add(time.Hour * 24).Unix()
+func (db *DB) StoreSession(key string, uid int64, durationSeconds int64) error {
+	expiration := time.Now().Add(time.Second * time.Duration(durationSeconds)).Unix()
 	_, err := db.conn.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
 }

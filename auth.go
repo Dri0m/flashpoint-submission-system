@@ -123,7 +123,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = a.db.StoreSession(authToken.Secret, discordUser.ID); err != nil {
+	if err = a.db.StoreSession(authToken.Secret, discordUser.ID, a.conf.SessionExpirationSeconds); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store session", http.StatusInternalServerError)
 	}
