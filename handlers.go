@@ -24,6 +24,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle("/", http.HandlerFunc(a.HandleRootPage)).Methods("GET")
 	router.Handle("/profile", http.HandlerFunc(a.UserAuthentication(a.HandleProfilePage))).Methods("GET")
 	router.Handle("/submit", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmitPage)))).Methods("GET")
+	router.Handle("/submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionsPage)))).Methods("GET")
 	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleMySubmissionsPage)))).Methods("GET")
 
 	// file shenanigans
@@ -146,6 +147,28 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 type submissionsPageData struct {
 	basePageData
 	Submissions []*Submission
+}
+
+func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	bpd, err := a.GetBasePageData(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	submissions, err := a.db.GetAllSubmissions()
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to load submissions", http.StatusInternalServerError)
+		return
+	}
+
+	pageData := submissionsPageData{basePageData: *bpd, Submissions: submissions}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/submissions.gohtml", "templates/submission-table.gohtml")
 }
 
 func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {

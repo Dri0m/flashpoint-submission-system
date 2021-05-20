@@ -180,3 +180,27 @@ func (db *DB) GetSubmission(sid int64) (*Submission, error) {
 
 	return s, nil
 }
+
+// GetAllSubmissions returns all submissions
+func (db *DB) GetAllSubmissions() ([]*Submission, error) {
+	rows, err := db.conn.Query(`SELECT id, fk_uploader_id, original_filename, current_filename, size, uploaded_at FROM submission ORDER BY uploaded_at DESC, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]*Submission, 0)
+
+	var uploadedAt int64
+
+	for rows.Next() {
+		s := &Submission{}
+		if err := rows.Scan(&s.ID, &s.UploaderID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt); err != nil {
+			return nil, err
+		}
+		s.UploadedAt = time.Unix(uploadedAt, 0)
+		result = append(result, s)
+	}
+
+	return result, nil
+}
