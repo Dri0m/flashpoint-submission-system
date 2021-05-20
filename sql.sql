@@ -23,3 +23,14 @@ CREATE TABLE IF NOT EXISTS authorization
     authorized INTEGER NOT NULL,
     FOREIGN KEY (fk_uid) REFERENCES discord_user (id)
 );
+
+CREATE TABLE IF NOT EXISTS submission
+(
+    id                INTEGER PRIMARY KEY,
+    fk_uploader_id    INTEGER     NOT NULL,
+    original_filename TEXT        NOT NULL,
+    current_filename  TEXT UNIQUE NOT NULL,
+    size              INTEGER     NOT NULL,
+    uploaded_at       INTEGER     NOT NULL,
+    FOREIGN KEY (fk_uploader_id) REFERENCES discord_user (id)
+);

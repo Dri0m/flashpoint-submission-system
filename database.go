@@ -125,3 +125,19 @@ func (db *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
 	}
 	return false, nil
 }
+
+type Submission struct {
+	ID               int64
+	UploaderID       int64
+	OriginalFilename string
+	CurrentFilename  string
+	Size             int64
+	UploadedAt       int64
+}
+
+// StoreSubmission stores submission entry
+func (db *DB) StoreSubmission(s *Submission) error {
+	_, err := db.conn.Exec(`INSERT INTO submission (fk_uploader_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?)`,
+		s.UploaderID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt)
+	return err
+}

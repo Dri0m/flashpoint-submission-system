@@ -26,6 +26,7 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 	userID, err := a.GetUserIDFromCookie(r)
 	if err != nil {
 		LogCtx(ctx).Error(err)
+		return &basePageData{}, nil
 	}
 
 	if userID == 0 {

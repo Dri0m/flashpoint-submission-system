@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Router) {
@@ -34,6 +36,12 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	userID, err := a.GetUserIDFromCookie(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "invalid cookie", http.StatusInternalServerError)
+		return
+	}
 
 	// limit RAM usage to 100MB
 	r.ParseMultipartForm(100 * 1000 * 1000)
@@ -46,7 +54,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	LogCtx(ctx).Infof("Received a file '%s' - %d bytes, MIME Header: %+v", fileHandler.Filename, fileHandler.Size, fileHandler.Header)
+	LogCtx(ctx).Debugf("Received a file '%s' - %d bytes, MIME Header: %+v", fileHandler.Filename, fileHandler.Size, fileHandler.Header)
 
 	const dir = "submissions"
 
@@ -56,22 +64,49 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	destination, err := os.Create(dir + "/" + fileHandler.Filename)
+	destinationFilename := RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", dir, destinationFilename)
+
+	destination, err := os.Create(destinationFilePath)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "could not create destination file", http.StatusInternalServerError)
 		return
 	}
+	defer destination.Close()
+
+	LogCtx(ctx).Debugf("copying received file to '%s'...", destinationFilePath)
 
 	nBytes, err := io.Copy(destination, file)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "could not copy file to destination", http.StatusInternalServerError)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
 		return
 	}
 	if nBytes != fileHandler.Size {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "incorrect number of bytes copied to destination", http.StatusInternalServerError)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		return
+	}
+
+	s := &Submission{
+		ID:               0,
+		UploaderID:       userID,
+		OriginalFilename: fileHandler.Filename,
+		CurrentFilename:  destinationFilename,
+		Size:             fileHandler.Size,
+		UploadedAt:       time.Now().Unix(),
+	}
+
+	if err := a.db.StoreSubmission(s); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "incorrect number of bytes copied to destination", http.StatusInternalServerError)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
 		return
 	}
 
