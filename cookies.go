@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gofrs/uuid"
-	"github.com/gorilla/schema"
 	"github.com/gorilla/securecookie"
 	"net/http"
 	"strconv"
@@ -18,12 +17,6 @@ type cookies struct {
 var Cookies = cookies{
 	Login: "login",
 }
-
-// TODO rolling keys, see the github page
-var cookieHashKey = []byte("fpl4b11zfpl4b11zfpl4b11zfpl4b11z")  // TODO persist and generate securely
-var cookieBlockKey = []byte("fpl4b11zfpl4b11zfpl4b11zfpl4b11z") // TODO persist and generate securely
-var cookieOven = securecookie.New(cookieHashKey, cookieBlockKey)
-var decoder = schema.NewDecoder()
 
 // AuthToken is AuthToken
 type AuthToken struct {
@@ -63,8 +56,8 @@ func mapAuthToken(token *AuthToken) map[string]string {
 }
 
 // SetSecureCookie sets cookie
-func SetSecureCookie(w http.ResponseWriter, name string, value map[string]string) error {
-	encoded, err := cookieOven.Encode(name, value)
+func (cc *CookieCutter) SetSecureCookie(w http.ResponseWriter, name string, value map[string]string) error {
+	encoded, err := securecookie.EncodeMulti(name, value, cc.current)
 	if err != nil {
 		return err
 	}
@@ -93,20 +86,20 @@ func UnsetCookie(w http.ResponseWriter, name string) {
 }
 
 // GetSecureCookie gets cookie
-func GetSecureCookie(r *http.Request, name string) (map[string]string, error) {
+func (cc *CookieCutter) GetSecureCookie(r *http.Request, name string) (map[string]string, error) {
 	cookie, err := r.Cookie(name)
 	if err != nil {
 		return nil, err
 	}
 	value := make(map[string]string)
-	if err := cookieOven.Decode(name, cookie.Value, &value); err != nil {
+	if err := securecookie.DecodeMulti(name, cookie.Value, &value, cc.current, cc.previous); err != nil {
 		return nil, err
 	}
 	return value, nil
 }
 
 func (a *App) GetUserIDFromCookie(r *http.Request) (int64, error) {
-	cookieMap, err := GetSecureCookie(r, Cookies.Login)
+	cookieMap, err := a.cc.GetSecureCookie(r, Cookies.Login)
 	if errors.Is(err, http.ErrNoCookie) {
 		return 0, nil
 	}

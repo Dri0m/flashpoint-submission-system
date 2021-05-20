@@ -117,7 +117,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to generate auth token", http.StatusInternalServerError)
 		return
 	}
-	if err := SetSecureCookie(w, Cookies.Login, mapAuthToken(authToken)); err != nil {
+	if err := a.cc.SetSecureCookie(w, Cookies.Login, mapAuthToken(authToken)); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
 		return
@@ -134,7 +134,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	const msg = "unable to log out, please clear your cookies and try again"
-	cookieMap, err := GetSecureCookie(r, Cookies.Login)
+	cookieMap, err := a.cc.GetSecureCookie(r, Cookies.Login)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)

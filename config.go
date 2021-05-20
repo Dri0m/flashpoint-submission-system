@@ -10,10 +10,14 @@ import (
 )
 
 type Config struct {
-	Port               int64
-	OauthConf          *oauth2.Config
-	BotToken           string
-	FlashpointServerID string
+	Port                         int64
+	OauthConf                    *oauth2.Config
+	BotToken                     string
+	FlashpointServerID           string
+	SecurecookieHashKeyPrevious  string
+	SecurecookieBlockKeyPrevious string
+	SecurecookieHashKeyCurrent   string
+	SecurecookieBlockKeyCurrent  string
 }
 
 func EnvString(name string) string {
@@ -58,7 +62,11 @@ func GetConfig(l *logrus.Logger) *Config {
 				AuthStyle: oauth2.AuthStyleInParams,
 			},
 		},
-		BotToken:           EnvString("BOT_TOKEN"),
-		FlashpointServerID: EnvString("FLASHPOINT_SERVER_ID"),
+		BotToken:                     EnvString("BOT_TOKEN"),
+		FlashpointServerID:           EnvString("FLASHPOINT_SERVER_ID"),
+		SecurecookieHashKeyPrevious:  EnvString("SECURECOOKIE_HASH_KEY_PREVIOUS"),
+		SecurecookieBlockKeyPrevious: EnvString("SECURECOOKIE_BLOCK_KEY_PREVIOUS"),
+		SecurecookieHashKeyCurrent:   EnvString("SECURECOOKIE_HASH_KEY_CURRENT"),
+		SecurecookieBlockKeyCurrent:  EnvString("SECURECOOKIE_BLOCK_KEY_CURRENT"),
 	}
 }

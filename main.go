@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/securecookie"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -25,6 +26,7 @@ type App struct {
 	conf *Config
 	db   DB
 	bot  Bot
+	cc   CookieCutter
 }
 
 type Bot struct {
@@ -35,6 +37,11 @@ type Bot struct {
 
 type DB struct {
 	conn *sql.DB
+}
+
+type CookieCutter struct {
+	previous *securecookie.SecureCookie
+	current  *securecookie.SecureCookie
 }
 
 func main() {
@@ -68,6 +75,10 @@ func initApp(l *logrus.Logger, conf *Config, db *sql.DB, botSession *discordgo.S
 			session:            botSession,
 			flashpointServerID: conf.FlashpointServerID,
 			l:                  l,
+		},
+		cc: CookieCutter{
+			previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
+			current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
 	}
 
