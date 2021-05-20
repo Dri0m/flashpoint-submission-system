@@ -40,21 +40,21 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 }
 
 // StoreSession store session into the DB with set expiration date
-func (d *DB) StoreSession(key string, uid int64) error {
+func (db *DB) StoreSession(key string, uid int64) error {
 	expiration := time.Now().Add(time.Hour * 24).Unix()
-	_, err := d.conn.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
+	_, err := db.conn.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
 }
 
 // DeleteSession deletes specific session
-func (d *DB) DeleteSession(secret string) error {
-	_, err := d.conn.Exec(`DELETE FROM session WHERE secret=?`, secret)
+func (db *DB) DeleteSession(secret string) error {
+	_, err := db.conn.Exec(`DELETE FROM session WHERE secret=?`, secret)
 	return err
 }
 
 // GetUIDFromSession returns user ID and/or expiration state
-func (d *DB) GetUIDFromSession(key string) (string, bool, error) {
-	row := d.conn.QueryRow(`SELECT uid, expires_at FROM session WHERE secret=?`, key)
+func (db *DB) GetUIDFromSession(key string) (string, bool, error) {
+	row := db.conn.QueryRow(`SELECT uid, expires_at FROM session WHERE secret=?`, key)
 
 	var uid string
 	var expiration int64
@@ -71,20 +71,20 @@ func (d *DB) GetUIDFromSession(key string) (string, bool, error) {
 }
 
 // StoreDiscordUser store discord user or replace with new data
-func (d *DB) StoreDiscordUser(discordUser *DiscordUser) error {
+func (db *DB) StoreDiscordUser(discordUser *DiscordUser) error {
 	mfa := 0
 	if discordUser.MFAEnabled {
 		mfa = 1
 	}
-	_, err := d.conn.Exec(
+	_, err := db.conn.Exec(
 		`INSERT OR REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, mfa)
 	return err
 }
 
 // GetDiscordUser returns DiscordUserResponse
-func (d *DB) GetDiscordUser(uid int64) (*DiscordUser, error) {
-	row := d.conn.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
+func (db *DB) GetDiscordUser(uid int64) (*DiscordUser, error) {
+	row := db.conn.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
 
 	discordUser := &DiscordUser{ID: uid}
 	var mfa int64
@@ -101,19 +101,19 @@ func (d *DB) GetDiscordUser(uid int64) (*DiscordUser, error) {
 }
 
 // StoreDiscordUserAuthorization stores discord user auth state
-func (d *DB) StoreDiscordUserAuthorization(uid int64, isAuthorized bool) error {
+func (db *DB) StoreDiscordUserAuthorization(uid int64, isAuthorized bool) error {
 	a := 0
 	if isAuthorized {
 		a = 1
 	}
 
-	_, err := d.conn.Exec(`INSERT OR REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
+	_, err := db.conn.Exec(`INSERT OR REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
 	return err
 }
 
 // IsDiscordUserAuthorized returns discord user auth state
-func (d *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
-	row := d.conn.QueryRow(`SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
+func (db *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
+	row := db.conn.QueryRow(`SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
 	var a int64
 	err := row.Scan(&a)
 	if err != nil {
