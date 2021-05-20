@@ -18,15 +18,16 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	// logout
 	router.Handle("/logout", http.HandlerFunc(a.HandleLogout)).Methods("GET")
 
-	//file server
+	// file server
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
-	//pages
+	// pages
 	router.Handle("/", http.HandlerFunc(a.HandleRootPage)).Methods("GET")
 	router.Handle("/profile", http.HandlerFunc(a.UserAuth(a.HandleProfilePage))).Methods("GET")
 	router.Handle("/submit", http.HandlerFunc(a.UserAuth(a.HandleSubmitPage))).Methods("GET")
+	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuth(a.HandleMySubmissionsPage))).Methods("GET")
 
-	//API
+	// form receivers
 	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuth(a.HandleSubmissionReceiver))).Methods("POST")
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -149,4 +150,37 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submit.gohtml")
+}
+
+type mySubmissionsPageData struct {
+	basePageData
+	Submissions []*Submission
+}
+
+func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, err := a.GetUserIDFromCookie(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "invalid cookie", http.StatusInternalServerError)
+		return
+	}
+
+	bpd, err := a.GetBasePageData(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	submissions, err := a.db.GetSubmissionsForUser(userID)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to load user submissions", http.StatusInternalServerError)
+		return
+	}
+
+	pageData := mySubmissionsPageData{basePageData: *bpd, Submissions: submissions}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/my-submissions.gohtml")
 }

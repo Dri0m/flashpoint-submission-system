@@ -141,3 +141,24 @@ func (db *DB) StoreSubmission(s *Submission) error {
 		s.UploaderID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt)
 	return err
 }
+
+// GetSubmissionsForUser returns all submissions for a given user, sorted by date
+func (db *DB) GetSubmissionsForUser(uid int64) ([]*Submission, error) {
+	rows, err := db.conn.Query(`SELECT id, original_filename, current_filename, size, uploaded_at FROM submission WHERE fk_uploader_id=? ORDER BY uploaded_at DESC, original_filename`, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]*Submission, 0)
+
+	for rows.Next() {
+		s := &Submission{UploaderID: uid}
+		if err := rows.Scan(&s.ID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &s.UploadedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+
+	return result, nil
+}

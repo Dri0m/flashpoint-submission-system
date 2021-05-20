@@ -1,0 +1,14 @@
+{{define "main"}}
+    <div class="main" xmlns="http://www.w3.org/1999/html">
+        <div class="content">
+            <h1>My Submissions</h1>
+
+            <ul>
+            {{range .Submissions}}
+                <li>{{.ID}} - {{.OriginalFilename}} - {{.Size}}B</li>
+            {{end}}
+            </ul>
+
+        </div>
+    </div>
+{{end}}
