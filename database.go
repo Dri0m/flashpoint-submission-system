@@ -224,6 +224,23 @@ func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *CurationMeta) error {
 	return err
 }
 
+// GetCurationMetaBySubmissionID returns curation meta for given submission
+func (db *DB) GetCurationMetaBySubmissionID(sid int64) (*CurationMeta, error) {
+	row := db.conn.QueryRow(`SELECT application_path, developer, extreme, game_notes, languages,
+                           launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
+                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters FROM curation_meta WHERE fk_submission_id=?`, sid)
+
+	c := &CurationMeta{SubmissionID: sid}
+	err := row.Scan(&c.ApplicationPath, &c.Developer, &c.Extreme, &c.GameNotes, &c.Languages,
+		&c.LaunchCommand, &c.OriginalDescription, &c.PlayMode, &c.Platform, &c.Publisher, &c.ReleaseDate, &c.Series, &c.Source, &c.Status,
+		&c.Tags, &c.TagCategories, &c.Title, &c.AlternateTitles, &c.Library, &c.Version, &c.CurationNotes, &c.MountParameters)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
 // StoreComment stores curation meta
 func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
 	_, err := tx.Exec(`INSERT INTO comment (fk_author_id, fk_submission_id, message, is_approving, created_at) 

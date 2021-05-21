@@ -26,6 +26,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle("/submit", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmitPage)))).Methods("GET")
 	router.Handle("/submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionsPage)))).Methods("GET")
 	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleMySubmissionsPage)))).Methods("GET")
+	router.Handle("/view-submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleViewSubmissionPage)))).Methods("GET")
 
 	// file shenanigans
 	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
@@ -197,4 +198,48 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	pageData := submissionsPageData{basePageData: *bpd, Submissions: submissions}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/my-submissions.gohtml", "templates/submission-table.gohtml")
+}
+
+type viewSubmissionPageData struct {
+	basePageData
+	Submissions  []*Submission
+	CurationMeta CurationMeta
+}
+
+func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionID := params["id"]
+
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		return
+	}
+
+	bpd, err := a.GetBasePageData(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	submission, err := a.db.GetSubmission(sid)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to load submission", http.StatusInternalServerError)
+		return
+	}
+
+	meta, err := a.db.GetCurationMetaBySubmissionID(sid)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to load curation meta", http.StatusInternalServerError)
+		return
+	}
+
+	pageData := viewSubmissionPageData{basePageData: *bpd, Submissions: []*Submission{submission}, CurationMeta: *meta}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/view-submission.gohtml", "templates/submission-table.gohtml")
 }

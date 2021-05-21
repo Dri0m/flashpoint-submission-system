@@ -1,0 +1,114 @@
+{{define "main"}}
+    <div class="main" xmlns="http://www.w3.org/1999/html">
+        <div class="content">
+            <h1>View Submission</h1>
+
+            <h3>Table data</h3>
+            {{template "submission-table" .}}
+
+            <h3>Curation meta</h3>
+            <table class="pure-table pure-table-bordered">
+                <tbody>
+                <tr>
+                    <td>Application Path</td>
+                    <td>{{.CurationMeta.ApplicationPath}}</td>
+                </tr>
+                <tr>
+                    <td>Developer</td>
+                    <td>{{.CurationMeta.Developer}}</td>
+                </tr>
+                <tr>
+                    <td>Extreme</td>
+                    <td>{{.CurationMeta.Extreme}}</td>
+                </tr>
+                <tr>
+                    <td>Game Notes</td>
+                    <td>{{.CurationMeta.GameNotes}}</td>
+                </tr>
+                <tr>
+                    <td>Languages</td>
+                    <td>{{.CurationMeta.Languages}}</td>
+                </tr>
+                <tr>
+                    <td>Launch Command</td>
+                    <td>{{.CurationMeta.LaunchCommand}}</td>
+                </tr>
+                <tr>
+                    <td>Original Description</td>
+                    <td>{{.CurationMeta.OriginalDescription}}</td>
+                </tr>
+                <tr>
+                    <td>Play Mode</td>
+                    <td>{{.CurationMeta.PlayMode}}</td>
+                </tr>
+                <tr>
+                    <td>Platform</td>
+                    <td>{{.CurationMeta.Platform}}</td>
+                </tr>
+                <tr>
+                    <td>Publisher</td>
+                    <td>{{.CurationMeta.Publisher}}</td>
+                </tr>
+                <tr>
+                    <td>ReleaseDate</td>
+                    <td>{{.CurationMeta.ReleaseDate}}</td>
+                </tr>
+                <tr>
+                    <td>Series</td>
+                    <td>{{.CurationMeta.Series}}</td>
+                </tr>
+                <tr>
+                    <td>Source</td>
+                    <td>{{.CurationMeta.Source}}</td>
+                </tr>
+                <tr>
+                    <td>Status</td>
+                    <td>{{.CurationMeta.Status}}</td>
+                </tr>
+                <tr>
+                    <td>Tags</td>
+                    <td>{{.CurationMeta.Tags}}</td>
+                </tr>
+                <tr>
+                    <td>Tag Categories</td>
+                    <td>{{.CurationMeta.TagCategories}}</td>
+                </tr>
+                <tr>
+                    <td>Title</td>
+                    <td>{{.CurationMeta.Title}}</td>
+                </tr>
+                <tr>
+                    <td>Alternate Titles</td>
+                    <td>{{.CurationMeta.AlternateTitles}}</td>
+                </tr>
+                <tr>
+                    <td>Library</td>
+                    <td>{{.CurationMeta.Library}}</td>
+                </tr>
+                <tr>
+                    <td>Version</td>
+                    <td>{{.CurationMeta.Version}}</td>
+                </tr>
+                <tr>
+                    <td>Curation Notes</td>
+                    <td>{{.CurationMeta.CurationNotes}}</td>
+                </tr>
+                <tr>
+                    <td>MountParameters</td>
+                    <td>{{.CurationMeta.MountParameters}}</td>
+                </tr>
+                <tr>
+                    <td>Additional Applications</td>
+                    <td>--Not Implemented--</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h3>Comments</h3>
+            TODO
+
+
+
+        </div>
+    </div>
+{{end}}
