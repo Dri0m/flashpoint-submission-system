@@ -20,6 +20,7 @@ import (
 )
 
 const dbName = "db.db"
+const validatorID = 810112564787675166
 
 // App is App
 type App struct {

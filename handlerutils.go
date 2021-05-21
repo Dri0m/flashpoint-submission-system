@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -91,6 +93,43 @@ func (a *App) LogIfErr(ctx context.Context, err error) {
 	}
 }
 
+type ValidatorResponse struct {
+	Filename         string       `json:"filename"`
+	Path             string       `json:"path"`
+	CurationErrors   []string     `json:"curation_errors"`
+	CurationWarnings []string     `json:"curation_warnings"`
+	IsExtreme        bool         `json:"is_extreme"`
+	CurationType     int          `json:"curation_type"`
+	Meta             CurationMeta `json:"meta"`
+}
+
+type CurationMeta struct {
+	SubmissionID        int64
+	ApplicationPath     *string `json:"Application Path"`
+	Developer           *string `json:"Developer"`
+	Extreme             *string `json:"Extreme"`
+	GameNotes           *string `json:"Game Notes"`
+	Languages           *string `json:"Languages"`
+	LaunchCommand       *string `json:"Launch Command"`
+	OriginalDescription *string `json:"Original Description"`
+	PlayMode            *string `json:"Play Mode"`
+	Platform            *string `json:"Platform"`
+	Publisher           *string `json:"Publisher"`
+	ReleaseDate         *string `json:"Release Date"`
+	Series              *string `json:"Series"`
+	Source              *string `json:"Source"`
+	Status              *string `json:"Status"`
+	Tags                *string `json:"Tags"`
+	TagCategories       *string `json:"Tag Categories"`
+	Title               *string `json:"Title"`
+	AlternateTitles     *string `json:"Alternate Title"`
+	Library             *string `json:"Library"`
+	Version             *string `json:"Version"`
+	CurationNotes       *string `json:"Curation Notes"`
+	MountParameters     *string `json:"Mount Parameters"`
+	//AdditionalApplications *CurationFormatAddApps `json:"Additional Applications"`
+}
+
 func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader) error {
 	userID := UserIDFromContext(ctx)
 	if userID == 0 {
@@ -124,7 +163,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	}
 	defer destination.Close()
 
-	LogCtx(ctx).Debugf("copying received file to '%s'...", destinationFilePath)
+	LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
 
 	nBytes, err := io.Copy(destination, file)
 	if err != nil {
@@ -149,7 +188,10 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		UploadedAt:       time.Now(),
 	}
 
-	if err := a.db.StoreSubmission(tx, s); err != nil {
+	LogCtx(ctx).Debug("storing submission...")
+
+	sid, err := a.db.StoreSubmission(tx, s)
+	if err != nil {
 		LogCtx(ctx).Error(err)
 		_ = destination.Close()
 		_ = os.Remove(destinationFilePath)
@@ -157,5 +199,150 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		return fmt.Errorf("failed to store submission")
 	}
 
+	LogCtx(ctx).Debug("processing curation meta...")
+
+	resp, err := a.UploadFile(ctx, a.conf.ValidatorServerURL, destinationFilePath)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("validator: %w", err)
+	}
+
+	var vr ValidatorResponse
+	err = json.Unmarshal(resp, &vr)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("failed to decode validator response")
+	}
+
+	vr.Meta.SubmissionID = sid
+
+	if err := a.db.StoreCurationMeta(tx, &vr.Meta); err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("failed to store curation meta")
+	}
+
+	LogCtx(ctx).Debug("processing bot event...")
+
+	c := ProcessValidatorResponse(&vr)
+	if err := a.db.StoreComment(tx, c); err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("failed to store validator comment")
+	}
+
 	return nil
+}
+
+type Comment struct {
+	AuthorID     int64
+	SubmissionID int64
+	IsApproving  *bool
+	Message      *string
+	CreatedAt    time.Time
+}
+
+// ProcessValidatorResponse determines if the validation is OK and produces appropriate comment
+func ProcessValidatorResponse(vr *ValidatorResponse) *Comment {
+	c := &Comment{
+		AuthorID:     validatorID,
+		SubmissionID: vr.Meta.SubmissionID,
+		CreatedAt:    time.Now(),
+	}
+
+	message := ""
+
+	if len(vr.CurationErrors) > 0 {
+		message += "Your curation is invalid:\n"
+	}
+	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) > 0 {
+		message += "Your curation might have some problems:\n"
+	}
+
+	for _, e := range vr.CurationErrors {
+		message += fmt.Sprintf("🚫 %s\n", e)
+	}
+	for _, w := range vr.CurationWarnings {
+		message += fmt.Sprintf("🚫 %s\n", w)
+	}
+
+	c.Message = &message
+
+	isApproving := false
+	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0 {
+		isApproving = true
+	}
+	c.IsApproving = &isApproving
+
+	return c
+}
+
+// UploadFile POSTs a given file to a given URL via multipart writer and returns the response body if OK
+func (a *App) UploadFile(ctx context.Context, url string, filePath string) ([]byte, error) {
+	LogCtx(ctx).WithField("filepath", filePath).Debug("opening file for upload")
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	client := http.Client{}
+	// Prepare a form that you will submit to that URL.
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	var fw io.Writer
+
+	if fw, err = w.CreateFormFile("file", f.Name()); err != nil {
+		return nil, err
+	}
+
+	LogCtx(ctx).WithField("filepath", filePath).Debug("copying file into multipart writer")
+	if _, err = io.Copy(fw, f); err != nil {
+		return nil, err
+	}
+
+	// Don't forget to close the multipart writer.
+	// If you don't close it, your request will be missing the terminating boundary.
+	w.Close()
+
+	// Now that you have a form, you can submit it to your handler.
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		return nil, err
+	}
+	// Don't forget to set the content type, this will contain the boundary.
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	// Submit the request
+	LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("uploading file")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Check the response
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("response OK")
+
+	return bodyBytes, nil
 }

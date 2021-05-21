@@ -19,6 +19,7 @@ type Config struct {
 	SecurecookieHashKeyCurrent   string
 	SecurecookieBlockKeyCurrent  string
 	SessionExpirationSeconds     int64
+	ValidatorServerURL           string
 }
 
 func EnvString(name string) string {
@@ -70,5 +71,6 @@ func GetConfig(l *logrus.Logger) *Config {
 		SecurecookieHashKeyCurrent:   EnvString("SECURECOOKIE_HASH_KEY_CURRENT"),
 		SecurecookieBlockKeyCurrent:  EnvString("SECURECOOKIE_BLOCK_KEY_CURRENT"),
 		SessionExpirationSeconds:     EnvInt("SESSION_EXPIRATION_SECONDS"),
+		ValidatorServerURL:           EnvString("VALIDATOR_SERVER_URL"),
 	}
 }

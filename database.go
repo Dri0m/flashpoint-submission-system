@@ -136,10 +136,17 @@ type Submission struct {
 }
 
 // StoreSubmission stores submission entry
-func (db *DB) StoreSubmission(tx *sql.Tx, s *Submission) error {
-	_, err := tx.Exec(`INSERT INTO submission (fk_uploader_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?)`,
+func (db *DB) StoreSubmission(tx *sql.Tx, s *Submission) (int64, error) {
+	res, err := tx.Exec(`INSERT INTO submission (fk_uploader_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?)`,
 		s.UploaderID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix())
-	return err
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 // GetSubmissionsForUser returns all submissions for a given user, sorted by date
@@ -203,4 +210,24 @@ func (db *DB) GetAllSubmissions() ([]*Submission, error) {
 	}
 
 	return result, nil
+}
+
+// StoreCurationMeta stores curation meta
+func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *CurationMeta) error {
+	_, err := tx.Exec(`INSERT INTO curation_meta (fk_submission_id, application_path, developer, extreme, game_notes, languages,
+                           launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
+                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		cm.SubmissionID, cm.ApplicationPath, cm.Developer, cm.Extreme, cm.GameNotes, cm.Languages,
+		cm.LaunchCommand, cm.OriginalDescription, cm.PlayMode, cm.Platform, cm.Publisher, cm.ReleaseDate, cm.Series, cm.Source, cm.Status,
+		cm.Tags, cm.TagCategories, cm.Title, cm.AlternateTitles, cm.Library, cm.Version, cm.CurationNotes, cm.MountParameters)
+	return err
+}
+
+// StoreComment stores curation meta
+func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
+	_, err := tx.Exec(`INSERT INTO comment (fk_author_id, fk_submission_id, message, is_approving, created_at) 
+                           VALUES (?, ?, ?, ?, ?)`,
+		c.AuthorID, c.SubmissionID, c.Message, c.IsApproving, c.CreatedAt.Unix())
+	return err
 }
