@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/sirupsen/logrus"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -240,25 +241,47 @@ func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
 	return err
 }
 
-// GetCommentsBySubmissionID stores curation meta
-func (db *DB) GetCommentsBySubmissionID(sid int64) ([]*Comment, error) {
-	rows, err := db.conn.Query(`SELECT fk_author_id, message, is_approving, created_at FROM comment WHERE fk_submission_id=? ORDER BY created_at DESC`, sid)
+type ExtendedComment struct {
+	AuthorID     int64
+	Username     string
+	AvatarURL    string
+	SubmissionID int64
+	IsApproving  *bool
+	Message      []string
+	CreatedAt    time.Time
+}
+
+// GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
+func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, error) {
+	rows, err := db.conn.Query(`
+		SELECT discord_user.id, username, avatar, message, is_approving, created_at 
+		FROM comment 
+		JOIN discord_user ON discord_user.id = fk_author_id
+		WHERE fk_submission_id=? 
+		ORDER BY created_at DESC;`, sid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	result := make([]*Comment, 0)
+	result := make([]*ExtendedComment, 0)
 
 	var createdAt int64
+	var avatar string
+	var message *string
 
 	for rows.Next() {
-		c := &Comment{SubmissionID: sid}
-		if err := rows.Scan(&c.AuthorID, &c.Message, &c.IsApproving, &createdAt); err != nil {
+
+		ec := &ExtendedComment{SubmissionID: sid}
+		if err := rows.Scan(&ec.AuthorID, &ec.Username, &avatar, &message, &ec.IsApproving, &createdAt); err != nil {
 			return nil, err
 		}
-		c.CreatedAt = time.Unix(createdAt, 0)
-		result = append(result, c)
+		ec.CreatedAt = time.Unix(createdAt, 0)
+		ec.AvatarURL = FormatAvatarURL(ec.AuthorID, avatar)
+		if message != nil {
+			ec.Message = strings.Split(*message, "\n")
+		}
+		result = append(result, ec)
 	}
 
 	return result, nil

@@ -109,9 +109,10 @@
                 <tbody>
                 {{range .Comments}}
                 <tr>
-                    <td class="comment-header {{if eq .Status "good"}}bgr-success{{else if eq .Status "bad"}}bgr-failure{{else}}{{end}}">
-                        <b>{{.AuthorID}}</b><br>
-                        {{.CreatedAt.Format "2006-01-02T15:04:05-0700"}}
+                    <td class="comment-header {{if eq (boolString .IsApproving) "true"}}bgr-success{{else if eq (boolString .IsApproving) "false"}}bgr-failure{{else}}{{end}}">
+                        <img src="{{.AvatarURL}}" class="comment-avatar">
+                        <b>{{.Username}}</b><br>
+                        <span class="comment-date">{{.CreatedAt.Format "2006-01-02T15:04:05-0700"}}</span>
                     </td>
                     <td>
                         {{range .Message}}{{.}}<br>{{end}}
@@ -120,7 +121,6 @@
                 </tbody>
                 {{end}}
             </table>
-
 
 
         </div>

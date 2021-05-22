@@ -29,6 +29,10 @@ type basePageData struct {
 	IsAuthorizedToUseSystem bool
 }
 
+func FormatAvatarURL(uid int64, avatar string) string {
+	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", uid, avatar)
+}
+
 // GetBasePageData loads base user data, does not return error if user is not logged in
 func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 	ctx := r.Context()
@@ -56,7 +60,7 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 
 	bpd := &basePageData{
 		Username:                discordUser.Username,
-		AvatarURL:               fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", discordUser.ID, discordUser.Avatar),
+		AvatarURL:               FormatAvatarURL(discordUser.ID, discordUser.Avatar),
 		IsAuthorizedToUseSystem: isAuthorized,
 	}
 
@@ -67,7 +71,7 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}, filenames ...string) {
 	templates := []string{"templates/base.gohtml", "templates/navbar.gohtml"}
 	templates = append(templates, filenames...)
-	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).ParseFiles(templates...)
+	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{"boolString": BoolString}).ParseFiles(templates...)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)
@@ -346,4 +350,15 @@ func (a *App) UploadFile(ctx context.Context, url string, filePath string) ([]by
 	LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("response OK")
 
 	return bodyBytes, nil
+}
+
+// BoolString is a little hack to make handling tri-state bool in go templates trivial
+func BoolString(b *bool) string {
+	if b == nil {
+		return "nil"
+	}
+	if *b {
+		return "true"
+	}
+	return "false"
 }

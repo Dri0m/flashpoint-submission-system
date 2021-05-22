@@ -30,7 +30,7 @@ body {
 }
 
 .comment-header {
-    margin: auto auto;
+    margin: auto 0;
     text-align: center;
 }
 
@@ -44,4 +44,15 @@ body {
 
 .bgr-failure {
     background-color: #ff8080 !important;
+}
+
+.comment-avatar {
+    width: 32px;
+    height: auto;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.3);
+}
+
+.comment-date {
+    font-size: 70%;
 }
