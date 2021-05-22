@@ -107,8 +107,7 @@
             <h3>Comments</h3>
             {{range .Comments}}
                 <div class="pure-g comment">
-                    {{$ap := boolString .IsApproving}}
-                    <div class="pure-u-1-6 {{if eq $ap "true"}}bgr-success{{else if eq $ap "false"}}bgr-failure{{else}}bgr-neutral{{end}}">
+                    <div class="pure-u-1-6 bgr-{{.Action}}">
                         <div class="comment-header">
                             <img src="{{.AvatarURL}}" class="comment-avatar" alt="avatar"><br>
                             <b>{{.Username}}</b><br>
@@ -129,9 +128,12 @@
                     <textarea class="pure-input-1 comment-textarea" name="message" placeholder="Add a comment"></textarea>
                 </fieldset>
                 <div class="right">
-                    <button type="submit" class="pure-button pure-button-primary" name="submit" value="comment">Comment</button>
-                    <button type="submit" class="pure-button pure-button button-success" name="submit" value="approve">Approve</button>
-                    <button type="submit" class="pure-button pure-button button-error" name="submit" value="reject">Request Changes</button>
+                    <button type="submit" class="pure-button pure-button button-comment" name="action" value="comment">Comment</button>
+                    <button type="submit" class="pure-button pure-button button-approve" name="action" value="approve">Approve</button>
+                    <button type="submit" class="pure-button pure-button button-request-changes" name="action" value="request-changes">Request Changes</button>
+                    <button type="submit" class="pure-button pure-button button-accept" name="action" value="accept">Accept</button>
+                    <button type="submit" class="pure-button pure-button button-mark-added" name="action" value="mark-added">Mark as Added</button>
+                    <button type="submit" class="pure-button pure-button button-reject" name="action" value="reject">Reject</button>
                 </div>
             </form>
 

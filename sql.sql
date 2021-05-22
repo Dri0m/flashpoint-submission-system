@@ -69,14 +69,24 @@ CREATE TABLE IF NOT EXISTS curation_meta
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
 );
 
+CREATE TABLE IF NOT EXISTS action
+(
+    id   INTEGER PRIMARY KEY,
+    name TEXT UNIQUE
+);
+
+INSERT OR IGNORE INTO action (id, name)
+VALUES (1, 'comment'), (2, 'approve'), (3, 'request-changes'), (4, 'accept'), (5, 'mark-added'), (6, 'reject');
+
 CREATE TABLE IF NOT EXISTS comment
 (
     id               INTEGER PRIMARY KEY,
     fk_author_id     INTEGER NOT NULL,
     fk_submission_id INTEGER NOT NULL,
     message          TEXT,
-    is_approving     INTEGER,
+    fk_action_id        INTEGER,
     created_at       INTEGER NOT NULL,
     FOREIGN KEY (fk_author_id) REFERENCES discord_user (id),
-    FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
+    FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
+    FOREIGN KEY (fk_action_id) REFERENCES action (id)
 );

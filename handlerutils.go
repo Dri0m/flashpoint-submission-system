@@ -249,14 +249,6 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	return nil
 }
 
-type Comment struct {
-	AuthorID     int64
-	SubmissionID int64
-	IsApproving  *bool
-	Message      *string
-	CreatedAt    time.Time
-}
-
 // ProcessValidatorResponse determines if the validation is OK and produces appropriate comment
 func ProcessValidatorResponse(vr *ValidatorResponse) *Comment {
 	c := &Comment{
@@ -284,12 +276,11 @@ func ProcessValidatorResponse(vr *ValidatorResponse) *Comment {
 
 	c.Message = &message
 
-	isApproving := false
+	c.Action = ActionReject
 	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0 {
-		isApproving = true
+		c.Action = ActionApprove
 		c.Message = &approvalMessage
 	}
-	c.IsApproving = &isApproving
 
 	return c
 }

@@ -233,11 +233,28 @@ func (db *DB) GetCurationMetaBySubmissionID(sid int64) (*CurationMeta, error) {
 	return c, nil
 }
 
+const (
+	ActionComment        = "comment"
+	ActionApprove        = "approve"
+	ActionRequestChanges = "request-changes"
+	ActionAccept         = "accept"
+	ActionMarkAdded      = "mark-added"
+	ActionReject         = "reject"
+)
+
+type Comment struct {
+	AuthorID     int64
+	SubmissionID int64
+	Action       string
+	Message      *string
+	CreatedAt    time.Time
+}
+
 // StoreComment stores curation meta
 func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
-	_, err := tx.Exec(`INSERT INTO comment (fk_author_id, fk_submission_id, message, is_approving, created_at) 
-                           VALUES (?, ?, ?, ?, ?)`,
-		c.AuthorID, c.SubmissionID, c.Message, c.IsApproving, c.CreatedAt.Unix())
+	_, err := tx.Exec(`INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
+                           VALUES (?, ?, ?, (SELECT id FROM "action" WHERE name=?), ?)`,
+		c.AuthorID, c.SubmissionID, c.Message, c.Action, c.CreatedAt.Unix())
 	return err
 }
 
@@ -246,7 +263,7 @@ type ExtendedComment struct {
 	Username     string
 	AvatarURL    string
 	SubmissionID int64
-	IsApproving  *bool
+	Action       string
 	Message      []string
 	CreatedAt    time.Time
 }
@@ -254,7 +271,7 @@ type ExtendedComment struct {
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
 func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, error) {
 	rows, err := db.conn.Query(`
-		SELECT discord_user.id, username, avatar, message, is_approving, created_at 
+		SELECT discord_user.id, username, avatar, message, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
 		WHERE fk_submission_id=? 
@@ -273,7 +290,7 @@ func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, 
 	for rows.Next() {
 
 		ec := &ExtendedComment{SubmissionID: sid}
-		if err := rows.Scan(&ec.AuthorID, &ec.Username, &avatar, &message, &ec.IsApproving, &createdAt); err != nil {
+		if err := rows.Scan(&ec.AuthorID, &ec.Username, &avatar, &message, &ec.Action, &createdAt); err != nil {
 			return nil, err
 		}
 		ec.CreatedAt = time.Unix(createdAt, 0)

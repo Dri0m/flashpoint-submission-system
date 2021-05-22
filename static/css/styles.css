@@ -46,18 +46,6 @@ body {
     overflow-wrap: break-word;
 }
 
-.bgr-success {
-    background-color: #aaf2aa !important;
-}
-
-.bgr-failure {
-    background-color: #f2aaaa !important;
-}
-
-.bgr-neutral {
-    background-color: #f2f2f2 !important;
-}
-
 
 .comment-avatar {
     width: 32px;
@@ -82,19 +70,76 @@ textarea {
     border-radius: 4px;
 }
 
-.button-success,
-.button-error {
+.button-approve,
+.button-approve,
+.button-request-changes,
+.button-accept,
+.button-mark-added,
+.button-reject {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
-.button-success {
+.button-comment {
+    background: rgb(184, 184, 184);
+}
+
+.button-approve {
     background: rgb(28, 184, 65);
 }
 
-.button-error {
+.button-request-changes {
     background: rgb(202, 60, 60);
 }
+
+.button-accept {
+    background: rgb(24, 83, 175);
+}
+
+.button-mark-added {
+    background: rgb(128, 17, 167);
+}
+
+.button-reject {
+    background: rgb(20, 20, 20);
+}
+
+.bgr-comment {
+    background-color: rgb(184, 184, 184); !important;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.bgr-approve {
+    background-color: rgb(28, 184, 65); !important;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.bgr-request-changes {
+    background-color: rgb(202, 60, 60); !important;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.bgr-accept {
+    background-color: rgb(24, 83, 175); !important;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.bgr-mark-added {
+    background-color: rgb(128, 17, 167); !important;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.bgr-reject {
+    background-color: rgb(20, 20, 20); !important;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
 
 .meta-table {
     font-size: 80%;

@@ -70,31 +70,38 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	action := r.FormValue("submit")
+	action := r.FormValue("action")
 	m := r.FormValue("message")
 	var message *string
 	if m != "" {
 		message = &m
 	}
 
+	actions := []string{ActionComment, ActionApprove, ActionRequestChanges, ActionAccept, ActionMarkAdded, ActionReject}
+
+	isActionValid := false
+	for _, a := range actions {
+		if action == a {
+			isActionValid = true
+			break
+		}
+	}
+
+	if !isActionValid {
+		err := fmt.Errorf("invalid comment action")
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	c := &Comment{
 		AuthorID:     uid,
 		SubmissionID: sid,
 		Message:      message,
+		Action:       action,
 		CreatedAt:    time.Now(),
 	}
 
-	var isApproving *bool
-
-	if action == "approve" {
-		t := true
-		isApproving = &t
-	} else if action == "reject" {
-		f := false
-		isApproving = &f
-	}
-
-	c.IsApproving = isApproving
 	if err := a.db.StoreComment(tx, c); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store comment", http.StatusInternalServerError)
