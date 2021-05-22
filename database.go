@@ -72,13 +72,9 @@ func (db *DB) GetUIDFromSession(key string) (string, bool, error) {
 
 // StoreDiscordUser store discord user or replace with new data
 func (db *DB) StoreDiscordUser(discordUser *DiscordUser) error {
-	mfa := 0
-	if discordUser.MFAEnabled {
-		mfa = 1
-	}
 	_, err := db.conn.Exec(
 		`INSERT OR REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, mfa)
+		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, discordUser.MFAEnabled)
 	return err
 }
 
@@ -87,14 +83,9 @@ func (db *DB) GetDiscordUser(uid int64) (*DiscordUser, error) {
 	row := db.conn.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
 
 	discordUser := &DiscordUser{ID: uid}
-	var mfa int64
-	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &mfa)
+	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &discordUser.MFAEnabled)
 	if err != nil {
 		return nil, err
-	}
-
-	if mfa == 1 {
-		discordUser.MFAEnabled = true
 	}
 
 	return discordUser, nil
@@ -149,8 +140,8 @@ func (db *DB) StoreSubmission(tx *sql.Tx, s *Submission) (int64, error) {
 	return id, nil
 }
 
-// GetSubmissionsForUser returns all submissions for a given user, sorted by date
-func (db *DB) GetSubmissionsForUser(uid int64) ([]*Submission, error) {
+// GetSubmissionsByUserID returns all submissions for a given user, sorted by date
+func (db *DB) GetSubmissionsByUserID(uid int64) ([]*Submission, error) {
 	rows, err := db.conn.Query(`SELECT id, original_filename, current_filename, size, uploaded_at FROM submission WHERE fk_uploader_id=? ORDER BY uploaded_at DESC, id`, uid)
 	if err != nil {
 		return nil, err
@@ -247,4 +238,28 @@ func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
                            VALUES (?, ?, ?, ?, ?)`,
 		c.AuthorID, c.SubmissionID, c.Message, c.IsApproving, c.CreatedAt.Unix())
 	return err
+}
+
+// GetCommentsBySubmissionID stores curation meta
+func (db *DB) GetCommentsBySubmissionID(sid int64) ([]*Comment, error) {
+	rows, err := db.conn.Query(`SELECT fk_author_id, message, is_approving, created_at FROM comment WHERE fk_submission_id=? ORDER BY created_at DESC`, sid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]*Comment, 0)
+
+	var createdAt int64
+
+	for rows.Next() {
+		c := &Comment{SubmissionID: sid}
+		if err := rows.Scan(&c.AuthorID, &c.Message, &c.IsApproving, &createdAt); err != nil {
+			return nil, err
+		}
+		c.CreatedAt = time.Unix(createdAt, 0)
+		result = append(result, c)
+	}
+
+	return result, nil
 }

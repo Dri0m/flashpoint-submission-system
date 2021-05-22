@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Router) {
@@ -188,7 +190,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	submissions, err := a.db.GetSubmissionsForUser(userID)
+	submissions, err := a.db.GetSubmissionsByUserID(userID)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load user submissions", http.StatusInternalServerError)
@@ -204,6 +206,15 @@ type viewSubmissionPageData struct {
 	basePageData
 	Submissions  []*Submission
 	CurationMeta CurationMeta
+	Comments     []*pageComment
+}
+
+type pageComment struct {
+	AuthorID     int64
+	SubmissionID int64
+	Status       string
+	Message      []string
+	CreatedAt    time.Time
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
@@ -239,7 +250,47 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageData := viewSubmissionPageData{basePageData: *bpd, Submissions: []*Submission{submission}, CurationMeta: *meta}
+	comments, err := a.db.GetCommentsBySubmissionID(sid)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to load curation comments", http.StatusInternalServerError)
+		return
+	}
+
+	pageComments := make([]*pageComment, 0, len(comments))
+
+	for _, c := range comments {
+		status := ""
+		if c.IsApproving != nil {
+			if *c.IsApproving {
+				status = "good"
+			} else {
+				status = "bad"
+			}
+		}
+		pageComments = append(pageComments, &pageComment{
+			AuthorID:     c.AuthorID,
+			SubmissionID: c.SubmissionID,
+			Status:       status,
+			Message:      make([]string, 0),
+			CreatedAt:    c.CreatedAt,
+		})
+	}
+
+	for i := range comments {
+		if comments[i].Message == nil {
+			continue
+		}
+		s := strings.Split(*comments[i].Message, "\n")
+		pageComments[i].Message = s
+	}
+
+	pageData := viewSubmissionPageData{
+		basePageData: *bpd,
+		Submissions:  []*Submission{submission},
+		CurationMeta: *meta,
+		Comments:     pageComments,
+	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/view-submission.gohtml", "templates/submission-table.gohtml")
 }

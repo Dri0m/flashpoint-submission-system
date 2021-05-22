@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -66,7 +67,7 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}, filenames ...string) {
 	templates := []string{"templates/base.gohtml", "templates/navbar.gohtml"}
 	templates = append(templates, filenames...)
-	tmpl, err := template.ParseFiles(templates...)
+	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).ParseFiles(templates...)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)

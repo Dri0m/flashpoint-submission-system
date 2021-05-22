@@ -28,3 +28,20 @@ body {
 .content {
     padding: 1em 2em;
 }
+
+.comment-header {
+    margin: auto auto;
+    text-align: center;
+}
+
+.comment-body {
+
+}
+
+.bgr-success {
+    background-color: #80ff80 !important;
+}
+
+.bgr-failure {
+    background-color: #ff8080 !important;
+}

@@ -105,7 +105,21 @@
             </table>
 
             <h3>Comments</h3>
-            TODO
+            <table class="pure-table pure-table-bordered">
+                <tbody>
+                {{range .Comments}}
+                <tr>
+                    <td class="comment-header {{if eq .Status "good"}}bgr-success{{else if eq .Status "bad"}}bgr-failure{{else}}{{end}}">
+                        <b>{{.AuthorID}}</b><br>
+                        {{.CreatedAt.Format "2006-01-02T15:04:05-0700"}}
+                    </td>
+                    <td>
+                        {{range .Message}}{{.}}<br>{{end}}
+                    </td>
+                </tr>
+                </tbody>
+                {{end}}
+            </table>
 
 
 
