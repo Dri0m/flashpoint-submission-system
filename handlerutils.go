@@ -265,6 +265,7 @@ func ProcessValidatorResponse(vr *ValidatorResponse) *Comment {
 		CreatedAt:    time.Now(),
 	}
 
+	approvalMessage := "LGTM 🤖"
 	message := ""
 
 	if len(vr.CurationErrors) > 0 {
@@ -286,6 +287,7 @@ func ProcessValidatorResponse(vr *ValidatorResponse) *Comment {
 	isApproving := false
 	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0 {
 		isApproving = true
+		c.Message = &approvalMessage
 	}
 	c.IsApproving = &isApproving
 
