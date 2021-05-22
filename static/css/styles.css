@@ -37,11 +37,13 @@ body {
     margin: auto 0;
     text-align: center;
     padding: 1em;
+    overflow-wrap: break-word;
 }
 
 .comment-body {
     padding: 1em;
     letter-spacing: normal;
+    overflow-wrap: break-word;
 }
 
 .bgr-success {
@@ -65,5 +67,5 @@ body {
 }
 
 .comment-date {
-    font-size: 70%;
+    font-size: 60%;
 }

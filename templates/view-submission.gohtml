@@ -107,15 +107,18 @@
             <h3>Comments</h3>
             {{range .Comments}}
                 <div class="pure-g comment">
-                    <div class="pure-u-1-6 {{if eq (boolString .IsApproving) "true"}}bgr-success{{else if eq (boolString .IsApproving) "false"}}bgr-failure{{else}}bgr-neutral{{end}}">
+                    {{$ap := boolString .IsApproving}}
+                    <div class="pure-u-1-6 {{if eq $ap "true"}}bgr-success{{else if eq $ap "false"}}bgr-failure{{else}}bgr-neutral{{end}}">
                         <div class="comment-header">
-                            <img src="{{.AvatarURL}}" class="comment-avatar">
+                            <img src="{{.AvatarURL}}" class="comment-avatar" alt="avatar"><br>
                             <b>{{.Username}}</b><br>
-                            <span class="comment-date">{{.CreatedAt.Format "2006-01-02T15:04:05-0700"}}</span>
+                            <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
                         </div>
                     </div>
-                    <div class="pure-u-5- comment-body">
-                        {{range .Message}}{{.}}<br>{{end}}
+                    <div class="pure-u-5-6">
+                        <div class="comment-body">
+                            {{range .Message}}{{.}}<br>{{end}}
+                        </div>
                     </div>
                 </div>
             {{end}}

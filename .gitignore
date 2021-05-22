@@ -17,6 +17,5 @@
 log.log
 db.db*
 static/fancy-logo.gif
-static/opal.png
 
 submissions/*
