@@ -95,3 +95,11 @@ textarea {
 .button-error {
     background: rgb(202, 60, 60);
 }
+
+.meta-table {
+    font-size: 80%;
+}
+
+.meta-table td {
+    padding: .2em .5em;
+}
