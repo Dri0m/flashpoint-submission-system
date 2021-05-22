@@ -258,7 +258,7 @@ func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
 		WHERE fk_submission_id=? 
-		ORDER BY created_at DESC;`, sid)
+		ORDER BY created_at;`, sid)
 	if err != nil {
 		return nil, err
 	}

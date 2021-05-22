@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Router) {
@@ -26,7 +27,8 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle("/submit", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmitPage)))).Methods("GET")
 	router.Handle("/submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionsPage)))).Methods("GET")
 	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleMySubmissionsPage)))).Methods("GET")
-	router.Handle("/view-submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleViewSubmissionPage)))).Methods("GET")
+	router.Handle("/submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleViewSubmissionPage)))).Methods("GET")
+	router.Handle("/submission/{id}/comment", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleCommentReceiver)))).Methods("POST")
 
 	// file shenanigans
 	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
@@ -35,6 +37,79 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	if err != nil {
 		l.Fatal(err)
 	}
+}
+
+func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	uid, err := a.GetUserIDFromCookie(r)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "invalid cookie", http.StatusInternalServerError)
+		return
+	}
+
+	params := mux.Vars(r)
+	submissionID := params["id"]
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	tx, err := a.db.conn.Begin()
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
+		return
+	}
+
+	action := r.FormValue("submit")
+	m := r.FormValue("message")
+	var message *string
+	if m != "" {
+		message = &m
+	}
+
+	c := &Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      message,
+		CreatedAt:    time.Now(),
+	}
+
+	var isApproving *bool
+
+	if action == "approve" {
+		t := true
+		isApproving = &t
+	} else if action == "reject" {
+		f := false
+		isApproving = &f
+	}
+
+	c.IsApproving = isApproving
+	if err := a.db.StoreComment(tx, c); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to store comment", http.StatusInternalServerError)
+		a.LogIfErr(ctx, tx.Rollback())
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		LogCtx(ctx).Error(err)
+		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
+		a.LogIfErr(ctx, tx.Rollback())
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/submission/%d", sid), http.StatusFound)
 }
 
 func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
@@ -254,5 +329,5 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		Comments:     comments,
 	}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/view-submission.gohtml", "templates/submission-table.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData, "templates/submission.gohtml", "templates/submission-table.gohtml")
 }

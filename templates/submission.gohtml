@@ -123,6 +123,18 @@
                 </div>
             {{end}}
 
+            <br>
+            <form class="pure-form" action="/submission/{{(index .Submissions 0).ID}}/comment" method="POST">
+                <fieldset class="pure-group">
+                    <textarea class="pure-input-1 comment-textarea" name="message" placeholder="Add a comment"></textarea>
+                </fieldset>
+                <div class="right">
+                    <button type="submit" class="pure-button pure-button-primary" name="submit" value="comment">Comment</button>
+                    <button type="submit" class="pure-button pure-button button-success" name="submit" value="approve">Approve</button>
+                    <button type="submit" class="pure-button pure-button button-error" name="submit" value="reject">Request Changes</button>
+                </div>
+            </form>
+
 
         </div>
     </div>

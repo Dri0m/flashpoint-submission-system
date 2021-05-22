@@ -15,7 +15,7 @@ body {
     vertical-align: middle;
 }
 
-.navbar-right {
+.right {
     text-align: right;
 }
 
@@ -47,11 +47,11 @@ body {
 }
 
 .bgr-success {
-    background-color: #80ff80 !important;
+    background-color: #aaf2aa !important;
 }
 
 .bgr-failure {
-    background-color: #ff8080 !important;
+    background-color: #f2aaaa !important;
 }
 
 .bgr-neutral {
@@ -68,4 +68,30 @@ body {
 
 .comment-date {
     font-size: 60%;
+}
+
+textarea {
+    resize: none;
+}
+
+.comment-textarea {
+    height: 8em;
+}
+
+.pure-button {
+    border-radius: 4px;
+}
+
+.button-success,
+.button-error {
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.button-success {
+    background: rgb(28, 184, 65);
+}
+
+.button-error {
+    background: rgb(202, 60, 60);
 }
