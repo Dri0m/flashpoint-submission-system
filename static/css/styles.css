@@ -51,7 +51,7 @@ body {
     width: 32px;
     height: auto;
     border-radius: 50%;
-    border: 1px solid rgba(0, 0, 0, 0.3);
+    background-color: rgb(64, 64, 64) !important;
 }
 
 .comment-date {
@@ -147,4 +147,12 @@ textarea {
 
 .meta-table td {
     padding: .2em .5em;
+}
+
+.submissions-table {
+    font-size: 90%;
+}
+
+.submissions-table td {
+    padding: .3em .7em;
 }
