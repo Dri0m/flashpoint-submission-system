@@ -29,13 +29,19 @@ body {
     padding: 1em 2em;
 }
 
+.comment {
+    border: 1px solid #cbcbcb;
+}
+
 .comment-header {
     margin: auto 0;
     text-align: center;
+    padding: 1em;
 }
 
 .comment-body {
-
+    padding: 1em;
+    letter-spacing: normal;
 }
 
 .bgr-success {
@@ -46,11 +52,16 @@ body {
     background-color: #ff8080 !important;
 }
 
+.bgr-neutral {
+    background-color: #f2f2f2 !important;
+}
+
+
 .comment-avatar {
     width: 32px;
     height: auto;
     border-radius: 50%;
-    border: 1px solid rgba(0,0,0,0.3);
+    border: 1px solid rgba(0, 0, 0, 0.3);
 }
 
 .comment-date {

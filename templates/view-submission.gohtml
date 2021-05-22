@@ -105,22 +105,20 @@
             </table>
 
             <h3>Comments</h3>
-            <table class="pure-table pure-table-bordered">
-                <tbody>
-                {{range .Comments}}
-                <tr>
-                    <td class="comment-header {{if eq (boolString .IsApproving) "true"}}bgr-success{{else if eq (boolString .IsApproving) "false"}}bgr-failure{{else}}{{end}}">
-                        <img src="{{.AvatarURL}}" class="comment-avatar">
-                        <b>{{.Username}}</b><br>
-                        <span class="comment-date">{{.CreatedAt.Format "2006-01-02T15:04:05-0700"}}</span>
-                    </td>
-                    <td>
+            {{range .Comments}}
+                <div class="pure-g comment">
+                    <div class="pure-u-1-6 {{if eq (boolString .IsApproving) "true"}}bgr-success{{else if eq (boolString .IsApproving) "false"}}bgr-failure{{else}}bgr-neutral{{end}}">
+                        <div class="comment-header">
+                            <img src="{{.AvatarURL}}" class="comment-avatar">
+                            <b>{{.Username}}</b><br>
+                            <span class="comment-date">{{.CreatedAt.Format "2006-01-02T15:04:05-0700"}}</span>
+                        </div>
+                    </div>
+                    <div class="pure-u-5- comment-body">
                         {{range .Message}}{{.}}<br>{{end}}
-                    </td>
-                </tr>
-                </tbody>
-                {{end}}
-            </table>
+                    </div>
+                </div>
+            {{end}}
 
 
         </div>
