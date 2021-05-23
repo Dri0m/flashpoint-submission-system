@@ -287,7 +287,7 @@ func ProcessValidatorResponse(vr *ValidatorResponse) *Comment {
 
 	c.Message = &message
 
-	c.Action = ActionReject
+	c.Action = ActionRequestChanges
 	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0 {
 		c.Action = ActionApprove
 		c.Message = &approvalMessage

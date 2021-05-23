@@ -155,15 +155,22 @@ func (db *DB) StoreSubmissionFile(tx *sql.Tx, s *SubmissionFile) (int64, error) 
 }
 
 type ExtendedSubmission struct {
-	SubmissionID     int64
-	SubmitterID      int64     // oldest file
-	UpdaterID        int64     // newest file
-	FileID           int64     // newest file
-	OriginalFilename string    // newest file
-	CurrentFilename  string    // newest file
-	Size             int64     // newest file
-	UploadedAt       time.Time // oldest file
-	UpdatedAt        time.Time // newest file
+	SubmissionID            int64
+	SubmitterID             int64     // oldest file
+	SubmitterUsername       string    // oldest file
+	SubmitterAvatarURL      string    // oldest file
+	UpdaterID               int64     // newest file
+	UpdaterUsername         string    // newest file
+	UpdaterAvatarURL        string    // newest file
+	FileID                  int64     // newest file
+	OriginalFilename        string    // newest file
+	CurrentFilename         string    // newest file
+	Size                    int64     // newest file
+	UploadedAt              time.Time // oldest file
+	UpdatedAt               time.Time // newest file
+	CurationTitle           *string   // newest file
+	CurationAlternateTitles *string   //newest file
+	CurationLaunchCommand   *string   // newest file
 }
 
 type SubmissionsFilter struct {
@@ -182,7 +189,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 			data = append(data, *filter.SubmissionID)
 		}
 		if filter.SubmitterID != nil {
-			filters = append(filters, "oldest.fk_uploader_id=?")
+			filters = append(filters, "uploader.id=?")
 			data = append(data, *filter.SubmitterID)
 		}
 	}
@@ -193,22 +200,28 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 	}
 
 	rows, err := db.conn.Query(`
-		SELECT submission.id AS submission_id, oldest.fk_uploader_id, newest.fk_uploader_id AS updater_id, 
-			newest.id as submission_file_id, newest.original_filename, newest.current_filename, newest.size, 
-			oldest.uploaded_at, newest.uploaded_at AS updated_at
+		SELECT submission.id AS submission_id, 
+			uploader.id AS uploader_id, uploader.username AS uploader_username, uploader.avatar AS uploader_avatar,
+			updater.id AS updater_id, updater.username AS updater_username, updater.avatar AS updater_avatar,
+			files.submission_file_id, files.original_filename, files.current_filename, files.size, 
+			files.uploaded_at, files.updated_at,
+			meta.title, meta.alternate_titles, meta.launch_command
 		FROM submission
-		    JOIN 
-				(SELECT fk_uploader_id, uploaded_at 
-				FROM submission_file 
-					JOIN submission ON fk_submission_id=submission.id 
-				ORDER BY uploaded_at LIMIT 1) AS oldest
-			JOIN 
-				(SELECT submission_file.id, fk_uploader_id, original_filename, current_filename, size, uploaded_at 
-				FROM submission_file 
-					JOIN submission ON fk_submission_id=submission.id 
-				ORDER BY uploaded_at DESC LIMIT 1) AS newest
+		
+		LEFT JOIN 
+			(SELECT submission.id AS submission_id, 
+					oldest.fk_uploader_id AS uploader_id, newest.fk_uploader_id AS updater_id, 
+					newest.id AS submission_file_id, newest.original_filename, newest.current_filename, newest.size, 
+					oldest.uploaded_at AS uploaded_at, newest.uploaded_at AS updated_at, 
+					MIN(oldest.uploaded_at), MAX(newest.uploaded_at) FROM submission 
+				LEFT JOIN submission_file oldest ON oldest.fk_submission_id=submission.id
+				LEFT JOIN submission_file newest ON newest.fk_submission_id=submission.id
+				GROUP BY submission.id) as files ON files.submission_id=submission.id
+		LEFT JOIN discord_user uploader ON files.uploader_id = uploader.id
+		LEFT JOIN discord_user updater ON files.updater_id = updater.id
+		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = files.submission_file_id
 		`+where+strings.Join(filters, " AND ")+`
-		ORDER BY newest.uploaded_at DESC`, data...)
+		ORDER BY files.updated_at DESC`, data...)
 	if err != nil {
 		return nil, err
 	}
@@ -218,12 +231,22 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 
 	var uploadedAt int64
 	var updatedAt int64
+	var submitterAvatar string
+	var updaterAvatar string
 
 	for rows.Next() {
 		s := &ExtendedSubmission{}
-		if err := rows.Scan(&s.SubmissionID, &s.SubmitterID, &s.UpdaterID, &s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt, &updatedAt); err != nil {
+		if err := rows.Scan(
+			&s.SubmissionID,
+			&s.SubmitterID, &s.SubmitterUsername, &submitterAvatar,
+			&s.UpdaterID, &s.UpdaterUsername, &updaterAvatar,
+			&s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size,
+			&uploadedAt, &updatedAt,
+			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationLaunchCommand); err != nil {
 			return nil, err
 		}
+		s.SubmitterAvatarURL = FormatAvatarURL(s.SubmitterID, submitterAvatar)
+		s.UpdaterAvatarURL = FormatAvatarURL(s.UpdaterID, updaterAvatar)
 		s.UploadedAt = time.Unix(uploadedAt, 0)
 		s.UpdatedAt = time.Unix(updatedAt, 0)
 		result = append(result, s)

@@ -4,9 +4,12 @@
         <tr>
             <th>Get</th>
             <th>View</th>
+            <th>Title</th>
             <th>Original Filename</th>
             <th>Size</th>
-            <th>Submission Date</th>
+            <th>Uploaded by</th>
+            <th>Updated by</th>
+            <th>File Updated at</th>
         </tr>
         </thead>
         <tbody>
@@ -14,9 +17,12 @@
             <tr>
                 <td><a href="/download-submission{{.SubmissionID}}">Get</a></td>
                 <td><a href="/submission/{{.SubmissionID}}">View</a></td>
+                <td>{{.CurationTitle}}</td>
                 <td>{{.OriginalFilename}}</td>
                 <td>{{.Size}}B</td>
-                <td>{{.UploadedAt.Format "2006-01-02T15:04:05-0700"}}</td>
+                <td>{{.SubmitterUsername}}</td>
+                <td>{{.UpdaterUsername}}</td>
+                <td>{{.UpdatedAt.Format "2006-01-02T15:04:05-0700"}}</td>
             </tr>
         {{end}}
         </tbody>

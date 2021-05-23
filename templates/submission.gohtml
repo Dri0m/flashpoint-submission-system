@@ -7,102 +7,106 @@
             {{template "submission-table" .}}
 
             <h3>Curation meta</h3>
-            <table class="pure-table pure-table-bordered meta-table">
-                <tbody>
-                <tr>
-                    <td>Application Path</td>
-                    <td>{{.CurationMeta.ApplicationPath}}</td>
-                </tr>
-                <tr>
-                    <td>Developer</td>
-                    <td>{{.CurationMeta.Developer}}</td>
-                </tr>
-                <tr>
-                    <td>Extreme</td>
-                    <td>{{.CurationMeta.Extreme}}</td>
-                </tr>
-                <tr>
-                    <td>Game Notes</td>
-                    <td>{{.CurationMeta.GameNotes}}</td>
-                </tr>
-                <tr>
-                    <td>Languages</td>
-                    <td>{{.CurationMeta.Languages}}</td>
-                </tr>
-                <tr>
-                    <td>Launch Command</td>
-                    <td>{{.CurationMeta.LaunchCommand}}</td>
-                </tr>
-                <tr>
-                    <td>Original Description</td>
-                    <td>{{.CurationMeta.OriginalDescription}}</td>
-                </tr>
-                <tr>
-                    <td>Play Mode</td>
-                    <td>{{.CurationMeta.PlayMode}}</td>
-                </tr>
-                <tr>
-                    <td>Platform</td>
-                    <td>{{.CurationMeta.Platform}}</td>
-                </tr>
-                <tr>
-                    <td>Publisher</td>
-                    <td>{{.CurationMeta.Publisher}}</td>
-                </tr>
-                <tr>
-                    <td>ReleaseDate</td>
-                    <td>{{.CurationMeta.ReleaseDate}}</td>
-                </tr>
-                <tr>
-                    <td>Series</td>
-                    <td>{{.CurationMeta.Series}}</td>
-                </tr>
-                <tr>
-                    <td>Source</td>
-                    <td>{{.CurationMeta.Source}}</td>
-                </tr>
-                <tr>
-                    <td>Status</td>
-                    <td>{{.CurationMeta.Status}}</td>
-                </tr>
-                <tr>
-                    <td>Tags</td>
-                    <td>{{.CurationMeta.Tags}}</td>
-                </tr>
-                <tr>
-                    <td>Tag Categories</td>
-                    <td>{{.CurationMeta.TagCategories}}</td>
-                </tr>
-                <tr>
-                    <td>Title</td>
-                    <td>{{.CurationMeta.Title}}</td>
-                </tr>
-                <tr>
-                    <td>Alternate Titles</td>
-                    <td>{{.CurationMeta.AlternateTitles}}</td>
-                </tr>
-                <tr>
-                    <td>Library</td>
-                    <td>{{.CurationMeta.Library}}</td>
-                </tr>
-                <tr>
-                    <td>Version</td>
-                    <td>{{.CurationMeta.Version}}</td>
-                </tr>
-                <tr>
-                    <td>Curation Notes</td>
-                    <td>{{.CurationMeta.CurationNotes}}</td>
-                </tr>
-                <tr>
-                    <td>MountParameters</td>
-                    <td>{{.CurationMeta.MountParameters}}</td>
-                </tr>
-                <tr>
-                    <td>Additional Applications</td>
-                    <td>--Not Implemented--</td>
-                </tr>
-                </tbody>
-            </table>
+            {{if .CurationMeta}}
+                <table class="pure-table pure-table-bordered meta-table">
+                    <tbody>
+                    <tr>
+                        <td>Application Path</td>
+                        <td>{{.CurationMeta.ApplicationPath}}</td>
+                    </tr>
+                    <tr>
+                        <td>Developer</td>
+                        <td>{{.CurationMeta.Developer}}</td>
+                    </tr>
+                    <tr>
+                        <td>Extreme</td>
+                        <td>{{.CurationMeta.Extreme}}</td>
+                    </tr>
+                    <tr>
+                        <td>Game Notes</td>
+                        <td>{{.CurationMeta.GameNotes}}</td>
+                    </tr>
+                    <tr>
+                        <td>Languages</td>
+                        <td>{{.CurationMeta.Languages}}</td>
+                    </tr>
+                    <tr>
+                        <td>Launch Command</td>
+                        <td>{{.CurationMeta.LaunchCommand}}</td>
+                    </tr>
+                    <tr>
+                        <td>Original Description</td>
+                        <td>{{.CurationMeta.OriginalDescription}}</td>
+                    </tr>
+                    <tr>
+                        <td>Play Mode</td>
+                        <td>{{.CurationMeta.PlayMode}}</td>
+                    </tr>
+                    <tr>
+                        <td>Platform</td>
+                        <td>{{.CurationMeta.Platform}}</td>
+                    </tr>
+                    <tr>
+                        <td>Publisher</td>
+                        <td>{{.CurationMeta.Publisher}}</td>
+                    </tr>
+                    <tr>
+                        <td>ReleaseDate</td>
+                        <td>{{.CurationMeta.ReleaseDate}}</td>
+                    </tr>
+                    <tr>
+                        <td>Series</td>
+                        <td>{{.CurationMeta.Series}}</td>
+                    </tr>
+                    <tr>
+                        <td>Source</td>
+                        <td>{{.CurationMeta.Source}}</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td>{{.CurationMeta.Status}}</td>
+                    </tr>
+                    <tr>
+                        <td>Tags</td>
+                        <td>{{.CurationMeta.Tags}}</td>
+                    </tr>
+                    <tr>
+                        <td>Tag Categories</td>
+                        <td>{{.CurationMeta.TagCategories}}</td>
+                    </tr>
+                    <tr>
+                        <td>Title</td>
+                        <td>{{.CurationMeta.Title}}</td>
+                    </tr>
+                    <tr>
+                        <td>Alternate Titles</td>
+                        <td>{{.CurationMeta.AlternateTitles}}</td>
+                    </tr>
+                    <tr>
+                        <td>Library</td>
+                        <td>{{.CurationMeta.Library}}</td>
+                    </tr>
+                    <tr>
+                        <td>Version</td>
+                        <td>{{.CurationMeta.Version}}</td>
+                    </tr>
+                    <tr>
+                        <td>Curation Notes</td>
+                        <td>{{.CurationMeta.CurationNotes}}</td>
+                    </tr>
+                    <tr>
+                        <td>MountParameters</td>
+                        <td>{{.CurationMeta.MountParameters}}</td>
+                    </tr>
+                    <tr>
+                        <td>Additional Applications</td>
+                        <td>--Not Implemented--</td>
+                    </tr>
+                    </tbody>
+                </table>
+            {{else}}
+                Curation meta not available.
+            {{end}}
 
             <h3>Comments</h3>
             {{range .Comments}}
@@ -125,15 +129,28 @@
             <br>
             <form class="pure-form" action="/submission/{{(index .Submissions 0).SubmissionID}}/comment" method="POST">
                 <fieldset class="pure-group">
-                    <textarea class="pure-input-1 comment-textarea" name="message" placeholder="Add a comment"></textarea>
+                    <textarea class="pure-input-1 comment-textarea" name="message"
+                              placeholder="Add a comment"></textarea>
                 </fieldset>
                 <div class="right">
-                    <button type="submit" class="pure-button pure-button button-comment" name="action" value="comment">Comment</button>
-                    <button type="submit" class="pure-button pure-button button-approve" name="action" value="approve">Approve</button>
-                    <button type="submit" class="pure-button pure-button button-request-changes" name="action" value="request-changes">Request Changes</button>
-                    <button type="submit" class="pure-button pure-button button-accept" name="action" value="accept">Accept</button>
-                    <button type="submit" class="pure-button pure-button button-mark-added" name="action" value="mark-added">Mark as Added</button>
-                    <button type="submit" class="pure-button pure-button button-reject" name="action" value="reject">Reject</button>
+                    <button type="submit" class="pure-button pure-button button-comment" name="action" value="comment">
+                        Comment
+                    </button>
+                    <button type="submit" class="pure-button pure-button button-approve" name="action" value="approve">
+                        Approve
+                    </button>
+                    <button type="submit" class="pure-button pure-button button-request-changes" name="action"
+                            value="request-changes">Request Changes
+                    </button>
+                    <button type="submit" class="pure-button pure-button button-accept" name="action" value="accept">
+                        Accept
+                    </button>
+                    <button type="submit" class="pure-button pure-button button-mark-added" name="action"
+                            value="mark-added">Mark as Added
+                    </button>
+                    <button type="submit" class="pure-button pure-button button-reject" name="action" value="reject">
+                        Reject
+                    </button>
                 </div>
             </form>
 

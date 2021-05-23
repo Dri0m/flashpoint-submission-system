@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -295,7 +296,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 type viewSubmissionPageData struct {
 	basePageData
 	Submissions  []*ExtendedSubmission
-	CurationMeta CurationMeta
+	CurationMeta *CurationMeta
 	Comments     []*ExtendedComment
 }
 
@@ -332,7 +333,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	submission := submissions[0]
 
 	meta, err := a.db.GetCurationMetaBySubmissionFileID(submission.FileID)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load curation meta", http.StatusInternalServerError)
 		return
@@ -348,7 +349,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	pageData := viewSubmissionPageData{
 		basePageData: *bpd,
 		Submissions:  submissions,
-		CurationMeta: *meta,
+		CurationMeta: meta,
 		Comments:     comments,
 	}
 
