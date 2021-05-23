@@ -54,7 +54,7 @@ func GetConfig(l *logrus.Logger) *Config {
 	return &Config{
 		Port: EnvInt("PORT"),
 		OauthConf: &oauth2.Config{
-			RedirectURL:  "http://localhost:3000/auth/callback",
+			RedirectURL:  EnvString("OAUTH_REDIRECT_URL"),
 			ClientID:     EnvString("OAUTH_CLIENT_ID"),
 			ClientSecret: EnvString("OAUTH_CLIENT_SECRET"),
 			Scopes:       []string{ScopeIdentify},
