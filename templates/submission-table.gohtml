@@ -12,8 +12,8 @@
         <tbody>
         {{range .Submissions}}
             <tr>
-                <td><a href="/download-submission/{{.ID}}">Get</a></td>
-                <td><a href="/submission/{{.ID}}">View</a></td>
+                <td><a href="/download-submission{{.SubmissionID}}">Get</a></td>
+                <td><a href="/submission/{{.SubmissionID}}">View</a></td>
                 <td>{{.OriginalFilename}}</td>
                 <td>{{.Size}}B</td>
                 <td>{{.UploadedAt.Format "2006-01-02T15:04:05-0700"}}</td>

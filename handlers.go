@@ -133,12 +133,18 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 
 	const dir = "submissions"
 
-	s, err := a.db.GetSubmission(sid)
+	filter := &SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions, err := a.db.SearchSubmissions(filter)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to find submission", http.StatusInternalServerError) // TODO discern 404 here
 		return
 	}
+
+	s := submissions[0]
 
 	f, err := os.Open(fmt.Sprintf("%s/%s", dir, s.CurrentFilename))
 	if err != nil {
@@ -229,7 +235,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 
 type submissionsPageData struct {
 	basePageData
-	Submissions []*Submission
+	Submissions []*ExtendedSubmission
 }
 
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
@@ -242,7 +248,7 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	submissions, err := a.db.GetAllSubmissions()
+	submissions, err := a.db.SearchSubmissions(nil)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submissions", http.StatusInternalServerError)
@@ -270,7 +276,11 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	submissions, err := a.db.GetSubmissionsByUserID(userID)
+	filter := &SubmissionsFilter{
+		SubmitterID: &userID,
+	}
+
+	submissions, err := a.db.SearchSubmissions(filter)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load user submissions", http.StatusInternalServerError)
@@ -284,7 +294,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 type viewSubmissionPageData struct {
 	basePageData
-	Submissions  []*Submission
+	Submissions  []*ExtendedSubmission
 	CurationMeta CurationMeta
 	Comments     []*ExtendedComment
 }
@@ -308,14 +318,20 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	submission, err := a.db.GetSubmission(sid)
+	filter := &SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions, err := a.db.SearchSubmissions(filter)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submission", http.StatusInternalServerError)
 		return
 	}
 
-	meta, err := a.db.GetCurationMetaBySubmissionID(sid)
+	submission := submissions[0]
+
+	meta, err := a.db.GetCurationMetaBySubmissionFileID(submission.FileID)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load curation meta", http.StatusInternalServerError)
@@ -331,7 +347,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData := viewSubmissionPageData{
 		basePageData: *bpd,
-		Submissions:  []*Submission{submission},
+		Submissions:  submissions,
 		CurationMeta: *meta,
 		Comments:     comments,
 	}

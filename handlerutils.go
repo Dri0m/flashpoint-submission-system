@@ -110,6 +110,7 @@ type ValidatorResponse struct {
 
 type CurationMeta struct {
 	SubmissionID        int64
+	SubmissionFileID    int64
 	ApplicationPath     *string `json:"Application Path"`
 	Developer           *string `json:"Developer"`
 	Extreme             *string `json:"Extreme"`
@@ -184,18 +185,27 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		return fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
-	s := &Submission{
-		ID:               0,
-		UploaderID:       UserIDFromContext(ctx),
+	LogCtx(ctx).Debug("storing submission...")
+
+	sid, err := a.db.StoreSubmission(tx)
+	if err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("failed to store submission")
+	}
+
+	s := &SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      UserIDFromContext(ctx),
 		OriginalFilename: fileHeader.Filename,
 		CurrentFilename:  destinationFilename,
 		Size:             fileHeader.Size,
 		UploadedAt:       time.Now(),
 	}
 
-	LogCtx(ctx).Debug("storing submission...")
-
-	sid, err := a.db.StoreSubmission(tx, s)
+	fid, err := a.db.StoreSubmissionFile(tx, s)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		_ = destination.Close()
@@ -226,6 +236,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	}
 
 	vr.Meta.SubmissionID = sid
+	vr.Meta.SubmissionFileID = fid
 
 	if err := a.db.StoreCurationMeta(tx, &vr.Meta); err != nil {
 		LogCtx(ctx).Error(err)

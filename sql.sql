@@ -31,42 +31,49 @@ CREATE TABLE IF NOT EXISTS authorization
 
 CREATE TABLE IF NOT EXISTS submission
 (
+    id INTEGER PRIMARY KEY
+);
+
+CREATE TABLE IF NOT EXISTS submission_file
+(
     id                INTEGER PRIMARY KEY,
     fk_uploader_id    INTEGER     NOT NULL,
+    fk_submission_id  INTEGER     NOT NULL,
     original_filename TEXT        NOT NULL,
     current_filename  TEXT UNIQUE NOT NULL,
     size              INTEGER     NOT NULL,
     uploaded_at       INTEGER     NOT NULL,
-    FOREIGN KEY (fk_uploader_id) REFERENCES discord_user (id)
+    FOREIGN KEY (fk_uploader_id) REFERENCES discord_user (id),
+    FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
 );
 
 CREATE TABLE IF NOT EXISTS curation_meta
 (
-    id                   INTEGER PRIMARY KEY,
-    fk_submission_id     INTEGER NOT NULL,
-    application_path     TEXT,
-    developer            TEXT,
-    extreme              TEXT,
-    game_notes           TEXT,
-    languages            TEXT,
-    launch_command       TEXT,
-    original_description TEXT,
-    play_mode            TEXT,
-    platform             TEXT,
-    publisher            TEXT,
-    release_date         TEXT,
-    series               TEXT,
-    source               TEXT,
-    status               TEXT,
-    tags                 TEXT,
-    tag_categories       TEXT,
-    title                TEXT,
-    alternate_titles     TEXT,
-    library              TEXT,
-    version              TEXT,
-    curation_notes       TEXT,
-    mount_parameters     TEXT,
-    FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
+    id                    INTEGER PRIMARY KEY,
+    fk_submission_file_id INTEGER NOT NULL,
+    application_path      TEXT,
+    developer             TEXT,
+    extreme               TEXT,
+    game_notes            TEXT,
+    languages             TEXT,
+    launch_command        TEXT,
+    original_description  TEXT,
+    play_mode             TEXT,
+    platform              TEXT,
+    publisher             TEXT,
+    release_date          TEXT,
+    series                TEXT,
+    source                TEXT,
+    status                TEXT,
+    tags                  TEXT,
+    tag_categories        TEXT,
+    title                 TEXT,
+    alternate_titles      TEXT,
+    library               TEXT,
+    version               TEXT,
+    curation_notes        TEXT,
+    mount_parameters      TEXT,
+    FOREIGN KEY (fk_submission_file_id) REFERENCES submission_file (id)
 );
 
 CREATE TABLE IF NOT EXISTS action
@@ -76,7 +83,12 @@ CREATE TABLE IF NOT EXISTS action
 );
 
 INSERT OR IGNORE INTO action (id, name)
-VALUES (1, 'comment'), (2, 'approve'), (3, 'request-changes'), (4, 'accept'), (5, 'mark-added'), (6, 'reject');
+VALUES (1, 'comment'),
+       (2, 'approve'),
+       (3, 'request-changes'),
+       (4, 'accept'),
+       (5, 'mark-added'),
+       (6, 'reject');
 
 CREATE TABLE IF NOT EXISTS comment
 (
@@ -84,7 +96,7 @@ CREATE TABLE IF NOT EXISTS comment
     fk_author_id     INTEGER NOT NULL,
     fk_submission_id INTEGER NOT NULL,
     message          TEXT,
-    fk_action_id        INTEGER,
+    fk_action_id     INTEGER,
     created_at       INTEGER NOT NULL,
     FOREIGN KEY (fk_author_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id),

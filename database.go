@@ -118,19 +118,18 @@ func (db *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
 	return false, nil
 }
 
-type Submission struct {
-	ID               int64
-	UploaderID       int64
+type SubmissionFile struct {
+	SubmitterID      int64
+	SubmissionID     int64
 	OriginalFilename string
 	CurrentFilename  string
 	Size             int64
 	UploadedAt       time.Time
 }
 
-// StoreSubmission stores submission entry
-func (db *DB) StoreSubmission(tx *sql.Tx, s *Submission) (int64, error) {
-	res, err := tx.Exec(`INSERT INTO submission (fk_uploader_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?)`,
-		s.UploaderID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix())
+// StoreSubmission stores plain submission
+func (db *DB) StoreSubmission(tx *sql.Tx) (int64, error) {
+	res, err := tx.Exec(`INSERT INTO submission DEFAULT VALUES`)
 	if err != nil {
 		return 0, err
 	}
@@ -141,63 +140,92 @@ func (db *DB) StoreSubmission(tx *sql.Tx, s *Submission) (int64, error) {
 	return id, nil
 }
 
-// GetSubmissionsByUserID returns all submissions for a given user, sorted by date
-func (db *DB) GetSubmissionsByUserID(uid int64) ([]*Submission, error) {
-	rows, err := db.conn.Query(`SELECT id, original_filename, current_filename, size, uploaded_at FROM submission WHERE fk_uploader_id=? ORDER BY uploaded_at DESC, id`, uid)
+// StoreSubmissionFile stores submission file
+func (db *DB) StoreSubmissionFile(tx *sql.Tx, s *SubmissionFile) (int64, error) {
+	res, err := tx.Exec(`INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		s.SubmitterID, s.SubmissionID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix())
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+type ExtendedSubmission struct {
+	SubmissionID     int64
+	SubmitterID      int64     // oldest file
+	UpdaterID        int64     // newest file
+	FileID           int64     // newest file
+	OriginalFilename string    // newest file
+	CurrentFilename  string    // newest file
+	Size             int64     // newest file
+	UploadedAt       time.Time // oldest file
+	UpdatedAt        time.Time // newest file
+}
+
+type SubmissionsFilter struct {
+	SubmissionID *int64
+	SubmitterID  *int64
+}
+
+// SearchSubmissions returns extended submissions based on given filter
+func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmission, error) {
+	filters := make([]string, 0)
+	data := make([]interface{}, 0)
+
+	if filter != nil {
+		if filter.SubmissionID != nil {
+			filters = append(filters, "submission.id=?")
+			data = append(data, *filter.SubmissionID)
+		}
+		if filter.SubmitterID != nil {
+			filters = append(filters, "oldest.fk_uploader_id=?")
+			data = append(data, *filter.SubmitterID)
+		}
+	}
+
+	where := ""
+	if len(filters) > 0 {
+		where = " WHERE "
+	}
+
+	rows, err := db.conn.Query(`
+		SELECT submission.id AS submission_id, oldest.fk_uploader_id, newest.fk_uploader_id AS updater_id, 
+			newest.id as submission_file_id, newest.original_filename, newest.current_filename, newest.size, 
+			oldest.uploaded_at, newest.uploaded_at AS updated_at
+		FROM submission
+		    JOIN 
+				(SELECT fk_uploader_id, uploaded_at 
+				FROM submission_file 
+					JOIN submission ON fk_submission_id=submission.id 
+				ORDER BY uploaded_at LIMIT 1) AS oldest
+			JOIN 
+				(SELECT submission_file.id, fk_uploader_id, original_filename, current_filename, size, uploaded_at 
+				FROM submission_file 
+					JOIN submission ON fk_submission_id=submission.id 
+				ORDER BY uploaded_at DESC LIMIT 1) AS newest
+		`+where+strings.Join(filters, " AND ")+`
+		ORDER BY newest.uploaded_at DESC`, data...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	result := make([]*Submission, 0)
+	result := make([]*ExtendedSubmission, 0)
 
 	var uploadedAt int64
+	var updatedAt int64
 
 	for rows.Next() {
-		s := &Submission{UploaderID: uid}
-		if err := rows.Scan(&s.ID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt); err != nil {
+		s := &ExtendedSubmission{}
+		if err := rows.Scan(&s.SubmissionID, &s.SubmitterID, &s.UpdaterID, &s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		s.UploadedAt = time.Unix(uploadedAt, 0)
-		result = append(result, s)
-	}
-
-	return result, nil
-}
-
-// GetSubmission returns DiscordUserResponse
-func (db *DB) GetSubmission(sid int64) (*Submission, error) {
-	row := db.conn.QueryRow(`SELECT fk_uploader_id, original_filename, current_filename, size, uploaded_at FROM submission WHERE id=?`, sid)
-
-	s := &Submission{ID: sid}
-	var uploadedAt int64
-	err := row.Scan(&s.UploaderID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt)
-	if err != nil {
-		return nil, err
-	}
-	s.UploadedAt = time.Unix(uploadedAt, 0)
-
-	return s, nil
-}
-
-// GetAllSubmissions returns all submissions
-func (db *DB) GetAllSubmissions() ([]*Submission, error) {
-	rows, err := db.conn.Query(`SELECT id, fk_uploader_id, original_filename, current_filename, size, uploaded_at FROM submission ORDER BY uploaded_at DESC, id`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make([]*Submission, 0)
-
-	var uploadedAt int64
-
-	for rows.Next() {
-		s := &Submission{}
-		if err := rows.Scan(&s.ID, &s.UploaderID, &s.OriginalFilename, &s.CurrentFilename, &s.Size, &uploadedAt); err != nil {
-			return nil, err
-		}
-		s.UploadedAt = time.Unix(uploadedAt, 0)
+		s.UpdatedAt = time.Unix(updatedAt, 0)
 		result = append(result, s)
 	}
 
@@ -206,24 +234,26 @@ func (db *DB) GetAllSubmissions() ([]*Submission, error) {
 
 // StoreCurationMeta stores curation meta
 func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *CurationMeta) error {
-	_, err := tx.Exec(`INSERT INTO curation_meta (fk_submission_id, application_path, developer, extreme, game_notes, languages,
+	_, err := tx.Exec(`INSERT INTO curation_meta (fk_submission_file_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters) 
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		cm.SubmissionID, cm.ApplicationPath, cm.Developer, cm.Extreme, cm.GameNotes, cm.Languages,
+		cm.SubmissionFileID, cm.ApplicationPath, cm.Developer, cm.Extreme, cm.GameNotes, cm.Languages,
 		cm.LaunchCommand, cm.OriginalDescription, cm.PlayMode, cm.Platform, cm.Publisher, cm.ReleaseDate, cm.Series, cm.Source, cm.Status,
 		cm.Tags, cm.TagCategories, cm.Title, cm.AlternateTitles, cm.Library, cm.Version, cm.CurationNotes, cm.MountParameters)
 	return err
 }
 
-// GetCurationMetaBySubmissionID returns curation meta for given submission
-func (db *DB) GetCurationMetaBySubmissionID(sid int64) (*CurationMeta, error) {
-	row := db.conn.QueryRow(`SELECT application_path, developer, extreme, game_notes, languages,
+// GetCurationMetaBySubmissionFileID returns curation meta for given submission file
+func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*CurationMeta, error) {
+	row := db.conn.QueryRow(`SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
-                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters FROM curation_meta WHERE fk_submission_id=?`, sid)
+                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
+		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
+		WHERE fk_submission_file_id=?`, sfid, sfid)
 
-	c := &CurationMeta{SubmissionID: sid}
-	err := row.Scan(&c.ApplicationPath, &c.Developer, &c.Extreme, &c.GameNotes, &c.Languages,
+	c := &CurationMeta{SubmissionFileID: sfid}
+	err := row.Scan(&c.SubmissionID, &c.ApplicationPath, &c.Developer, &c.Extreme, &c.GameNotes, &c.Languages,
 		&c.LaunchCommand, &c.OriginalDescription, &c.PlayMode, &c.Platform, &c.Publisher, &c.ReleaseDate, &c.Series, &c.Source, &c.Status,
 		&c.Tags, &c.TagCategories, &c.Title, &c.AlternateTitles, &c.Library, &c.Version, &c.CurationNotes, &c.MountParameters)
 	if err != nil {
