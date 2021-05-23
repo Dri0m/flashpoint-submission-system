@@ -1,30 +1,40 @@
 {{define "submission-table"}}
-    <table class="pure-table pure-table-striped submissions-table">
-        <thead>
-        <tr>
-            <th>Get</th>
-            <th>View</th>
-            <th>Title</th>
-            <th>Original Filename</th>
-            <th>Size</th>
-            <th>Uploaded by</th>
-            <th>Updated by</th>
-            <th>File Updated at</th>
-        </tr>
-        </thead>
-        <tbody>
-        {{range .Submissions}}
-            <tr>
-                <td><a href="/download-submission{{.SubmissionID}}">Get</a></td>
-                <td><a href="/submission/{{.SubmissionID}}">View</a></td>
-                <td>{{.CurationTitle}}</td>
-                <td>{{.OriginalFilename}}</td>
-                <td>{{.Size}}B</td>
-                <td>{{.SubmitterUsername}}</td>
-                <td>{{.UpdaterUsername}}</td>
-                <td>{{.UpdatedAt.Format "2006-01-02T15:04:05-0700"}}</td>
-            </tr>
-        {{end}}
-        </tbody>
-    </table>
+    <div id="table-wrapper">
+        <div id="table-scroll">
+            <table class="pure-table pure-table-striped submissions-table">
+                <thead>
+                <tr>
+                    <th>Get</th>
+                    <th>View</th>
+                    <th>Title</th>
+                    <th>Original Filename</th>
+                    <th>Size</th>
+                    <th>Uploaded by</th>
+                    <th>Updated by</th>
+                    <th>Bot</th>
+                    <th>Uploaded at</th>
+                    <th>Updated at</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .Submissions}}
+                    <tr>
+                        <td><a href="/download-submission{{.SubmissionID}}">Get</a></td>
+                        <td><a href="/submission/{{.SubmissionID}}">View</a></td>
+                        <td>{{.CurationTitle}}</td>
+                        <td>{{.OriginalFilename}}</td>
+                        <td>{{.Size}}B</td>
+                        <td>{{.SubmitterUsername}}</td>
+                        <td>{{.UpdaterUsername}}</td>
+                        <td>
+                            <div class="{{if eq .BotAction "approve"}}bot-dot-approve{{else}}bot-dot-request-changes{{end}}"></div>
+                        </td>
+                        <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
+                        <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
 {{end}}

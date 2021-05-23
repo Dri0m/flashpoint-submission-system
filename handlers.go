@@ -181,7 +181,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		err := a.ProcessReceivedSubmission(ctx, tx, fileHeader)
 		if err != nil {
 			LogCtx(ctx).Error(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("error processing file '%s': %s", fileHeader.Filename, err.Error()), http.StatusInternalServerError)
 			a.LogIfErr(ctx, tx.Rollback())
 			return
 		}

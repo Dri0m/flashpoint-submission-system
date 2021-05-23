@@ -171,6 +171,7 @@ type ExtendedSubmission struct {
 	CurationTitle           *string   // newest file
 	CurationAlternateTitles *string   //newest file
 	CurationLaunchCommand   *string   // newest file
+	BotAction               string
 }
 
 type SubmissionsFilter struct {
@@ -205,7 +206,8 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 			updater.id AS updater_id, updater.username AS updater_username, updater.avatar AS updater_avatar,
 			files.submission_file_id, files.original_filename, files.current_filename, files.size, 
 			files.uploaded_at, files.updated_at,
-			meta.title, meta.alternate_titles, meta.launch_command
+			meta.title, meta.alternate_titles, meta.launch_command,
+			bot_comment.action as bot_action
 		FROM submission
 		
 		LEFT JOIN 
@@ -216,10 +218,15 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 					MIN(oldest.uploaded_at), MAX(newest.uploaded_at) FROM submission 
 				LEFT JOIN submission_file oldest ON oldest.fk_submission_id=submission.id
 				LEFT JOIN submission_file newest ON newest.fk_submission_id=submission.id
-				GROUP BY submission.id) as files ON files.submission_id=submission.id
+				GROUP BY submission.id) 
+			AS files ON files.submission_id=submission.id
 		LEFT JOIN discord_user uploader ON files.uploader_id = uploader.id
 		LEFT JOIN discord_user updater ON files.updater_id = updater.id
 		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = files.submission_file_id
+		LEFT JOIN 
+			(SELECT submission.id AS submission_id, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action
+				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id) 
+			AS bot_comment ON bot_comment.submission_id=submission.id
 		`+where+strings.Join(filters, " AND ")+`
 		ORDER BY files.updated_at DESC`, data...)
 	if err != nil {
@@ -242,7 +249,8 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 			&s.UpdaterID, &s.UpdaterUsername, &updaterAvatar,
 			&s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size,
 			&uploadedAt, &updatedAt,
-			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationLaunchCommand); err != nil {
+			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationLaunchCommand,
+			&s.BotAction); err != nil {
 			return nil, err
 		}
 		s.SubmitterAvatarURL = FormatAvatarURL(s.SubmitterID, submitterAvatar)

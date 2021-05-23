@@ -9,7 +9,7 @@ body {
 }
 
 .navbar {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto 10px;
     border: 1px solid #444;
     vertical-align: middle;
@@ -20,7 +20,7 @@ body {
 }
 
 .main {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto 50px;
     border: 1px solid #444;
 }
@@ -105,37 +105,43 @@ textarea {
 }
 
 .bgr-comment {
-    background-color: rgb(184, 184, 184); !important;
+    background-color: rgb(184, 184, 184);
+!important;
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .bgr-approve {
-    background-color: rgb(28, 184, 65); !important;
+    background-color: rgb(28, 184, 65);
+!important;
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .bgr-request-changes {
-    background-color: rgb(202, 60, 60); !important;
+    background-color: rgb(202, 60, 60);
+!important;
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .bgr-accept {
-    background-color: rgb(24, 83, 175); !important;
+    background-color: rgb(24, 83, 175);
+!important;
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .bgr-mark-added {
-    background-color: rgb(128, 17, 167); !important;
+    background-color: rgb(128, 17, 167);
+!important;
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .bgr-reject {
-    background-color: rgb(20, 20, 20); !important;
+    background-color: rgb(20, 20, 20);
+!important;
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
@@ -155,4 +161,42 @@ textarea {
 
 .submissions-table td {
     padding: .3em .7em;
+}
+
+.bot-dot-approve,
+.bot-dot-request-changes {
+    border-radius: 50%;
+    width: 1em;
+    height: 1em;
+}
+
+.bot-dot-approve {
+    background-color: rgb(28, 184, 65) !important;
+}
+
+.bot-dot-request-changes {
+    background-color: rgb(202, 60, 60) !important;
+}
+
+
+
+#table-wrapper {
+    position:relative;
+}
+#table-scroll {
+    height:auto;
+    overflow:auto;
+    margin-top:20px;
+}
+#table-wrapper table {
+    width:100%;
+
+}
+#table-wrapper table thead th .text {
+    position:absolute;
+    top:-20px;
+    z-index:2;
+    height:20px;
+    width:35%;
+    border:1px solid red;
 }
