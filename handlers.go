@@ -92,6 +92,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		err := fmt.Errorf("invalid comment action")
 		LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
@@ -108,6 +109,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		err := fmt.Errorf("cannot post comment action '%s' without a message", action)
 		LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		a.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
