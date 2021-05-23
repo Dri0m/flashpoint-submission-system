@@ -75,87 +75,80 @@ textarea {
     border-radius: 4px;
 }
 
+
+.bgr-comment,
+.bgr-approve,
+.bgr-request-changes,
+.bgr-accept,
+.bgr-mark-added,
+.bgr-reject,
+.bgr-upload-file {
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.dot-approve,
+.dot-request-changes,
+.dot-accept,
+.dot-mark-added,
+.dot-reject,
+.dot-upload-file {
+    border-radius: 50%;
+    width: 1em;
+    height: 1em;
+}
+
 .button-approve,
 .button-approve,
 .button-request-changes,
 .button-accept,
 .button-mark-added,
-.button-reject {
+.button-reject,
+.button-upload-file {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
+.bgr-comment,
+.dot-comment,
 .button-comment {
-    background: rgb(184, 184, 184);
+    background: rgb(184, 184, 184) !important;
 }
 
+.bgr-approve,
+.dot-approve,
 .button-approve {
-    background: rgb(28, 184, 65);
+    background: rgb(28, 184, 65) !important;
 }
 
+.bgr-request-changes,
+.dot-request-changes,
 .button-request-changes {
-    background: rgb(202, 60, 60);
+    background: rgb(202, 60, 60) !important;
 }
 
+.bgr-accept,
+.dot-accept,
 .button-accept {
-    background: rgb(24, 83, 175);
+    background: rgb(24, 83, 175) !important;
 }
 
+.bgr-mark-added,
+.dot-mark-added,
 .button-mark-added {
-    background: rgb(128, 17, 167);
+    background: rgb(128, 17, 167) !important;
 }
 
+.bgr-reject,
+.dot-reject,
 .button-reject {
-    background: rgb(20, 20, 20);
+    background: rgb(20, 20, 20) !important;
 }
 
-.bgr-comment {
-    background-color: rgb(184, 184, 184);
-!important;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.bgr-approve {
-    background-color: rgb(28, 184, 65);
-!important;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.bgr-request-changes {
-    background-color: rgb(202, 60, 60);
-!important;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.bgr-accept {
-    background-color: rgb(24, 83, 175);
-!important;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.bgr-mark-added {
-    background-color: rgb(128, 17, 167);
-!important;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.bgr-reject {
-    background-color: rgb(20, 20, 20);
-!important;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.bgr-upload-file {
-    background-color: rgb(14, 175, 175);
-!important;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+.bgr-upload-file,
+.dot-upload-file,
+.button-upload-file {
+    background: rgb(14, 175, 175) !important;
 }
 
 
@@ -175,42 +168,29 @@ textarea {
     padding: .3em .7em;
 }
 
-.bot-dot-approve,
-.bot-dot-request-changes {
-    border-radius: 50%;
-    width: 1em;
-    height: 1em;
-}
-
-.bot-dot-approve {
-    background-color: rgb(28, 184, 65) !important;
-}
-
-.bot-dot-request-changes {
-    background-color: rgb(202, 60, 60) !important;
-}
-
-
 
 #table-wrapper {
-    position:relative;
+    position: relative;
 }
+
 #table-scroll {
-    height:auto;
-    overflow:auto;
-    margin-top:20px;
+    height: auto;
+    overflow: auto;
+    margin-top: 20px;
 }
+
 #table-wrapper table {
-    width:100%;
+    width: 100%;
 
 }
+
 #table-wrapper table thead th .text {
-    position:absolute;
-    top:-20px;
-    z-index:2;
-    height:20px;
-    width:35%;
-    border:1px solid red;
+    position: absolute;
+    top: -20px;
+    z-index: 2;
+    height: 20px;
+    width: 35%;
+    border: 1px solid red;
 }
 
 .default-comment {

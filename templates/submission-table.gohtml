@@ -12,6 +12,7 @@
                     <th>Uploaded by</th>
                     <th>Updated by</th>
                     <th>Bot</th>
+                    <th>Latest Action</th>
                     <th>Uploaded at</th>
                     <th>Updated at</th>
                 </tr>
@@ -26,9 +27,8 @@
                         <td>{{.Size}}B</td>
                         <td>{{.SubmitterUsername}}</td>
                         <td>{{.UpdaterUsername}}</td>
-                        <td>
-                            <div class="{{if eq .BotAction "approve"}}bot-dot-approve{{else}}bot-dot-request-changes{{end}}"></div>
-                        </td>
+                        <td><div class="dot-{{.BotAction}}"></div></td>
+                        <td><div class="dot-{{.LatestAction}}"></div></td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                     </tr>

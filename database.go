@@ -172,6 +172,7 @@ type ExtendedSubmission struct {
 	CurationAlternateTitles *string   //newest file
 	CurationLaunchCommand   *string   // newest file
 	BotAction               string
+	LatestAction            string
 }
 
 type SubmissionsFilter struct {
@@ -184,7 +185,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
-	data = append(data, validatorID)
+	data = append(data, validatorID, validatorID)
 
 	if filter != nil {
 		if filter.SubmissionID != nil {
@@ -209,7 +210,8 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 			files.submission_file_id, files.original_filename, files.current_filename, files.size, 
 			files.uploaded_at, files.updated_at,
 			meta.title, meta.alternate_titles, meta.launch_command,
-			bot_comment.action as bot_action
+			bot_comment.action as bot_action,
+			latest_action.action as latest_action
 		FROM submission
 		
 		LEFT JOIN 
@@ -230,6 +232,14 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id
 				WHERE comment.fk_author_id=?) 
 			AS bot_comment ON bot_comment.submission_id=submission.id
+		LEFT JOIN 
+			(SELECT submission.id AS submission_id, comment.created_at, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action
+				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id
+				WHERE fk_action_id!=(SELECT id FROM "action" WHERE name="comment")
+				AND comment.fk_author_id!=?
+				GROUP BY submission.id
+				HAVING MAX(comment.created_at)) 
+			AS latest_action ON latest_action.submission_id=submission.id
 		`+where+strings.Join(filters, " AND ")+`
 		GROUP BY submission.id
 		ORDER BY files.updated_at DESC`, data...)
@@ -254,7 +264,8 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 			&s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size,
 			&uploadedAt, &updatedAt,
 			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationLaunchCommand,
-			&s.BotAction); err != nil {
+			&s.BotAction,
+			&s.LatestAction); err != nil {
 			return nil, err
 		}
 		s.SubmitterAvatarURL = FormatAvatarURL(s.SubmitterID, submitterAvatar)
