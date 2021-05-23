@@ -142,7 +142,14 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 	submissions, err := a.db.SearchSubmissions(filter)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		http.Error(w, "failed to find submission", http.StatusInternalServerError) // TODO discern 404 here
+		http.Error(w, "failed to load submission", http.StatusInternalServerError)
+		return
+	}
+
+	if len(submissions) == 0 {
+		err = fmt.Errorf("submission not found")
+		LogCtx(ctx).Warn(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -350,6 +357,13 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submission", http.StatusInternalServerError)
+		return
+	}
+
+	if len(submissions) == 0 {
+		err = fmt.Errorf("submission not found")
+		LogCtx(ctx).Warn(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
