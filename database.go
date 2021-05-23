@@ -11,7 +11,7 @@ import (
 // OpenDB opens DB or panics
 func OpenDB(l *logrus.Logger) *sql.DB {
 	l.Infof("opening database '%s'...", dbName)
-	db, err := sql.Open("sqlite3", dbName)
+	db, err := sql.Open("sqlite3", dbName+"?cache=shared")
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -20,12 +20,12 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 		l.Fatal(err)
 	}
 
-	db.SetMaxOpenConns(1)
+	db.SetMaxOpenConns(0)
 
-	//_, err = db.Exec(`PRAGMA journal_mode = WAL`)
-	//if err != nil {
-	//	l.Fatal(err)
-	//}
+	_, err = db.Exec(`PRAGMA journal_mode = WAL`)
+	if err != nil {
+		l.Fatal(err)
+	}
 
 	file, err := os.ReadFile("sql.sql")
 	if err != nil {
