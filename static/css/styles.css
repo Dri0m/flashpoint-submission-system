@@ -19,6 +19,11 @@ body {
     text-align: right;
 }
 
+.center-image {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .main {
     max-width: 1200px;
     margin: 0 auto 50px;
