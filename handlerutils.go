@@ -174,14 +174,14 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	nBytes, err := io.Copy(destination, file)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("failed to copy file to destination")
 	}
 	if nBytes != fileHeader.Size {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
@@ -193,9 +193,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		submissionID, err = a.db.StoreSubmission(tx)
 		if err != nil {
 			LogCtx(ctx).Error(err)
-			_ = destination.Close()
-			_ = os.Remove(destinationFilePath)
-			a.LogIfErr(ctx, tx.Rollback())
+			a.LogIfErr(ctx, destination.Close())
+			a.LogIfErr(ctx, os.Remove(destinationFilePath))
 			return fmt.Errorf("failed to store submission")
 		}
 	} else {
@@ -214,9 +213,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	fid, err := a.db.StoreSubmissionFile(tx, s)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("failed to store submission")
 	}
 
@@ -230,9 +228,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	if err := a.db.StoreComment(tx, c); err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("failed to store uploader comment")
 	}
 
@@ -241,9 +238,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	resp, err := a.UploadFile(ctx, a.conf.ValidatorServerURL, destinationFilePath)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("validator: %w", err)
 	}
 
@@ -251,9 +247,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	err = json.Unmarshal(resp, &vr)
 	if err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("failed to decode validator response")
 	}
 
@@ -262,9 +257,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	if err := a.db.StoreCurationMeta(tx, &vr.Meta); err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("failed to store curation meta")
 	}
 
@@ -273,9 +267,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	bc := ProcessValidatorResponse(&vr)
 	if err := a.db.StoreComment(tx, bc); err != nil {
 		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
+		a.LogIfErr(ctx, destination.Close())
+		a.LogIfErr(ctx, os.Remove(destinationFilePath))
 		return fmt.Errorf("failed to store validator comment")
 	}
 

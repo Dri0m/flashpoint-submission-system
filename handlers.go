@@ -224,6 +224,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO handle cleanup of all files in case of errors here
 	for _, fileHeader := range fileHeaders {
 		err := a.ProcessReceivedSubmission(ctx, tx, fileHeader, sid)
 		if err != nil {
