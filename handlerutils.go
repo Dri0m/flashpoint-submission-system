@@ -136,7 +136,7 @@ type CurationMeta struct {
 	//AdditionalApplications *CurationFormatAddApps `json:"Additional Applications"`
 }
 
-func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader) error {
+func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) error {
 	userID := UserIDFromContext(ctx)
 	if userID == 0 {
 		err := fmt.Errorf("no user associated with request")
@@ -187,17 +187,23 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	LogCtx(ctx).Debug("storing submission...")
 
-	sid, err := a.db.StoreSubmission(tx)
-	if err != nil {
-		LogCtx(ctx).Error(err)
-		_ = destination.Close()
-		_ = os.Remove(destinationFilePath)
-		a.LogIfErr(ctx, tx.Rollback())
-		return fmt.Errorf("failed to store submission")
+	var submissionID int64
+
+	if sid == nil {
+		submissionID, err = a.db.StoreSubmission(tx)
+		if err != nil {
+			LogCtx(ctx).Error(err)
+			_ = destination.Close()
+			_ = os.Remove(destinationFilePath)
+			a.LogIfErr(ctx, tx.Rollback())
+			return fmt.Errorf("failed to store submission")
+		}
+	} else {
+		submissionID = *sid
 	}
 
 	s := &SubmissionFile{
-		SubmissionID:     sid,
+		SubmissionID:     submissionID,
 		SubmitterID:      UserIDFromContext(ctx),
 		OriginalFilename: fileHeader.Filename,
 		CurrentFilename:  destinationFilename,
@@ -235,7 +241,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		return fmt.Errorf("failed to decode validator response")
 	}
 
-	vr.Meta.SubmissionID = sid
+	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
 
 	if err := a.db.StoreCurationMeta(tx, &vr.Meta); err != nil {

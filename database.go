@@ -228,6 +228,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id) 
 			AS bot_comment ON bot_comment.submission_id=submission.id
 		`+where+strings.Join(filters, " AND ")+`
+		GROUP BY submission.id
 		ORDER BY files.updated_at DESC`, data...)
 	if err != nil {
 		return nil, err

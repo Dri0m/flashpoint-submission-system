@@ -6,6 +6,11 @@
             <h3>Table data</h3>
             {{template "submission-table" .}}
 
+            <h3>Upload a fixed version</h3>
+            <form action='/submission-receiver/{{(index .Submissions 0).SubmissionID}}' method='post' enctype='multipart/form-data'>
+                <input type="file" name="files" multiple="multiple">
+                <input type='submit' value='Upload'>
+            </form>
             <h3>Curation meta</h3>
             {{if .CurationMeta}}
                 <table class="pure-table pure-table-bordered meta-table">

@@ -33,6 +33,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	// file shenanigans
 	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
+	router.Handle("/submission-receiver/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
 	router.Handle("/download-submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmission)))).Methods("GET")
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -161,6 +162,20 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionID := params["id"]
+
+	var sid *int64
+
+	if submissionID != "" {
+		sidParsed, err := strconv.ParseInt(submissionID, 10, 64)
+		if err != nil {
+			LogCtx(ctx).Error(err)
+			http.Error(w, "invalid submission id", http.StatusBadRequest)
+			return
+		}
+		sid = &sidParsed
+	}
 
 	tx, err := a.db.conn.Begin()
 	if err != nil {
@@ -177,8 +192,16 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fileHeaders := r.MultipartForm.File["files"]
+
+	if len(fileHeaders) == 0 {
+		err = fmt.Errorf("no files received")
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	for _, fileHeader := range fileHeaders {
-		err := a.ProcessReceivedSubmission(ctx, tx, fileHeader)
+		err := a.ProcessReceivedSubmission(ctx, tx, fileHeader, sid)
 		if err != nil {
 			LogCtx(ctx).Error(err)
 			http.Error(w, fmt.Sprintf("error processing file '%s': %s", fileHeader.Filename, err.Error()), http.StatusInternalServerError)
