@@ -80,7 +80,6 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	}
 
 	actions := []string{ActionComment, ActionApprove, ActionRequestChanges, ActionAccept, ActionMarkAdded, ActionReject, ActionUpload}
-
 	isActionValid := false
 	for _, a := range actions {
 		if action == a {
@@ -93,6 +92,22 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		err := fmt.Errorf("invalid comment action")
 		LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	actionsWithMandatoryMessage := []string{ActionComment, ActionRequestChanges, ActionReject}
+	isActionWithMandatoryMessage := false
+	for _, a := range actionsWithMandatoryMessage {
+		if action == a {
+			isActionWithMandatoryMessage = true
+			break
+		}
+	}
+
+	if isActionWithMandatoryMessage && (message == nil || *message == "") {
+		err := fmt.Errorf("cannot post comment action '%s' without a message", action)
+		LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
