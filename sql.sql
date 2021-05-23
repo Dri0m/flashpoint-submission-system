@@ -88,7 +88,8 @@ VALUES (1, 'comment'),
        (3, 'request-changes'),
        (4, 'accept'),
        (5, 'mark-added'),
-       (6, 'reject');
+       (6, 'reject'),
+       (7, 'upload-file');
 
 CREATE TABLE IF NOT EXISTS comment
 (

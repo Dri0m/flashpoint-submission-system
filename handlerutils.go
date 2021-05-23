@@ -220,6 +220,22 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		return fmt.Errorf("failed to store submission")
 	}
 
+	c := &Comment{
+		AuthorID:     userID,
+		SubmissionID: submissionID,
+		Message:      nil,
+		Action:       ActionUpload,
+		CreatedAt:    time.Now(),
+	}
+
+	if err := a.db.StoreComment(tx, c); err != nil {
+		LogCtx(ctx).Error(err)
+		_ = destination.Close()
+		_ = os.Remove(destinationFilePath)
+		a.LogIfErr(ctx, tx.Rollback())
+		return fmt.Errorf("failed to store uploader comment")
+	}
+
 	LogCtx(ctx).Debug("processing curation meta...")
 
 	resp, err := a.UploadFile(ctx, a.conf.ValidatorServerURL, destinationFilePath)
@@ -254,8 +270,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	LogCtx(ctx).Debug("processing bot event...")
 
-	c := ProcessValidatorResponse(&vr)
-	if err := a.db.StoreComment(tx, c); err != nil {
+	bc := ProcessValidatorResponse(&vr)
+	if err := a.db.StoreComment(tx, bc); err != nil {
 		LogCtx(ctx).Error(err)
 		_ = destination.Close()
 		_ = os.Remove(destinationFilePath)

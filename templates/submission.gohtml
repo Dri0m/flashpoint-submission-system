@@ -7,7 +7,8 @@
             {{template "submission-table" .}}
 
             <h3>Upload a fixed version</h3>
-            <form action='/submission-receiver/{{(index .Submissions 0).SubmissionID}}' method='post' enctype='multipart/form-data'>
+            <form action='/submission-receiver/{{(index .Submissions 0).SubmissionID}}' method='post'
+                  enctype='multipart/form-data'>
                 <input type="file" name="files" multiple="multiple">
                 <input type='submit' value='Upload'>
             </form>
@@ -125,7 +126,19 @@
                     </div>
                     <div class="pure-u-5-6">
                         <div class="comment-body">
-                            {{range .Message}}{{.}}<br>{{end}}
+                            {{if .Message}}
+                                {{range .Message}}{{.}}<br>{{end}}
+                            {{else}}
+                                {{if eq .Action "approve"}}
+                                    <i class="default-comment">Approved the submission.</i>
+                                {{else if eq .Action "accept"}}
+                                    <i class="default-comment">Accepted the submission.</i>
+                                {{else if eq .Action "mark-added"}}
+                                    <i class="default-comment">Marked the submission as added to Flashpoint.</i>
+                                {{else if eq .Action "upload-file"}}
+                                    <i class="default-comment">Uploaded a new file.</i>
+                                {{end}}
+                            {{end}}
                         </div>
                     </div>
                 </div>

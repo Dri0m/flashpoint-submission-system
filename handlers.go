@@ -79,7 +79,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		message = &m
 	}
 
-	actions := []string{ActionComment, ActionApprove, ActionRequestChanges, ActionAccept, ActionMarkAdded, ActionReject}
+	actions := []string{ActionComment, ActionApprove, ActionRequestChanges, ActionAccept, ActionMarkAdded, ActionReject, ActionUpload}
 
 	isActionValid := false
 	for _, a := range actions {

@@ -184,6 +184,8 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
+	data = append(data, validatorID)
+
 	if filter != nil {
 		if filter.SubmissionID != nil {
 			filters = append(filters, "submission.id=?")
@@ -225,7 +227,8 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = files.submission_file_id
 		LEFT JOIN 
 			(SELECT submission.id AS submission_id, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action
-				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id) 
+				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id
+				WHERE comment.fk_author_id=?) 
 			AS bot_comment ON bot_comment.submission_id=submission.id
 		`+where+strings.Join(filters, " AND ")+`
 		GROUP BY submission.id
@@ -295,15 +298,6 @@ func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*CurationMeta, erro
 	return c, nil
 }
 
-const (
-	ActionComment        = "comment"
-	ActionApprove        = "approve"
-	ActionRequestChanges = "request-changes"
-	ActionAccept         = "accept"
-	ActionMarkAdded      = "mark-added"
-	ActionReject         = "reject"
-)
-
 type Comment struct {
 	AuthorID     int64
 	SubmissionID int64
@@ -314,9 +308,14 @@ type Comment struct {
 
 // StoreComment stores curation meta
 func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
+	var msg *string
+	if c.Message != nil {
+		s := strings.TrimSpace(*c.Message)
+		msg = &s
+	}
 	_, err := tx.Exec(`INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
                            VALUES (?, ?, ?, (SELECT id FROM "action" WHERE name=?), ?)`,
-		c.AuthorID, c.SubmissionID, c.Message, c.Action, c.CreatedAt.Unix())
+		c.AuthorID, c.SubmissionID, msg, c.Action, c.CreatedAt.Unix())
 	return err
 }
 

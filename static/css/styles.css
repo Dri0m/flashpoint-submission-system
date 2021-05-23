@@ -146,6 +146,13 @@ textarea {
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
+.bgr-upload-file {
+    background-color: rgb(14, 175, 175);
+!important;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
 
 .meta-table {
     font-size: 80%;
@@ -199,4 +206,8 @@ textarea {
     height:20px;
     width:35%;
     border:1px solid red;
+}
+
+.default-comment {
+    color: #000;
 }
