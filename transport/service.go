@@ -10,7 +10,6 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -23,25 +22,19 @@ type basePageData struct {
 }
 
 // GetBasePageData loads base user data, does not return error if user is not logged in
-func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
-	ctx := r.Context()
-	userID, err := a.GetUserIDFromCookie(r)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
+func (a *App) GetBasePageData(ctx context.Context) (*basePageData, error) {
+	uid := utils.UserIDFromContext(ctx)
+	if uid == 0 {
 		return &basePageData{}, nil
 	}
 
-	if userID == 0 {
-		return &basePageData{}, nil
-	}
-
-	discordUser, err := a.DB.GetDiscordUser(ctx, userID)
+	discordUser, err := a.DB.GetDiscordUser(ctx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to get user data from database")
 	}
 
-	isAuthorized, err := a.DB.IsDiscordUserAuthorized(ctx, userID)
+	isAuthorized, err := a.DB.IsDiscordUserAuthorized(ctx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user authorization")
@@ -292,4 +285,60 @@ func (a *App) ProcessReceivedComment(ctx context.Context, tx *sql.Tx, uid, sid i
 	}
 
 	return nil
+}
+
+func (a *App) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSubmissionPageData, error) {
+	bpd, err := a.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions, err := a.DB.SearchSubmissions(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submission")
+	}
+
+	if len(submissions) == 0 {
+		return nil, fmt.Errorf("submission not found")
+	}
+
+	submission := submissions[0]
+
+	meta, err := a.DB.GetCurationMetaBySubmissionFileID(ctx, submission.FileID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("failed to load curation meta")
+	}
+
+	comments, err := a.DB.GetExtendedCommentsBySubmissionID(ctx, sid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load curation comments")
+	}
+
+	pageData := &viewSubmissionPageData{
+		basePageData: *bpd,
+		Submissions:  submissions,
+		CurationMeta: meta,
+		Comments:     comments,
+	}
+
+	return pageData, nil
+}
+
+func (a *App) ProcessSubmissionsPage(ctx context.Context) (*submissionsPageData, error) {
+	bpd, err := a.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	submissions, err := a.DB.SearchSubmissions(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load submissions")
+	}
+
+	pageData := &submissionsPageData{basePageData: *bpd, Submissions: submissions}
+	return pageData, nil
 }

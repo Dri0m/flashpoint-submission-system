@@ -102,12 +102,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	uid, err := a.GetUserIDFromCookie(r)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid cookie", http.StatusInternalServerError)
-		return
-	}
+	uid := utils.UserIDFromContext(ctx)
 
 	params := mux.Vars(r)
 	submissionID := params["id"]
@@ -243,9 +238,17 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
+	uid, err := a.GetUserIDFromCookie(r)
 	ctx := r.Context()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
+	ctx = r.Context()
 
-	pageData, err := a.GetBasePageData(r)
+	pageData, err := a.GetBasePageData(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -258,7 +261,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.GetBasePageData(r)
+	pageData, err := a.GetBasePageData(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -271,7 +274,7 @@ func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.GetBasePageData(r)
+	pageData, err := a.GetBasePageData(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -289,35 +292,21 @@ type submissionsPageData struct {
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	bpd, err := a.GetBasePageData(r)
+	pageData, err := a.ProcessSubmissionsPage(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	submissions, err := a.DB.SearchSubmissions(ctx, nil)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to load submissions", http.StatusInternalServerError)
-		return
-	}
-
-	pageData := submissionsPageData{basePageData: *bpd, Submissions: submissions}
-
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submissions.gohtml", "templates/submission-table.gohtml")
 }
 
 func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID, err := a.GetUserIDFromCookie(r)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid cookie", http.StatusInternalServerError)
-		return
-	}
+	uid := utils.UserIDFromContext(ctx)
 
-	bpd, err := a.GetBasePageData(r)
+	bpd, err := a.GetBasePageData(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -325,7 +314,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := &types.SubmissionsFilter{
-		SubmitterID: &userID,
+		SubmitterID: &uid,
 	}
 
 	submissions, err := a.DB.SearchSubmissions(ctx, filter)
@@ -359,53 +348,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bpd, err := a.GetBasePageData(r)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	filter := &types.SubmissionsFilter{
-		SubmissionID: &sid,
-	}
-
-	submissions, err := a.DB.SearchSubmissions(ctx, filter)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to load submission", http.StatusInternalServerError)
-		return
-	}
-
-	if len(submissions) == 0 {
-		err = fmt.Errorf("submission not found")
-		utils.LogCtx(ctx).Warn(err)
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-
-	submission := submissions[0]
-
-	meta, err := a.DB.GetCurationMetaBySubmissionFileID(ctx, submission.FileID)
-	if err != nil && err != sql.ErrNoRows {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to load curation meta", http.StatusInternalServerError)
-		return
-	}
-
-	comments, err := a.DB.GetExtendedCommentsBySubmissionID(ctx, sid)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to load curation comments", http.StatusInternalServerError)
-		return
-	}
-
-	pageData := viewSubmissionPageData{
-		basePageData: *bpd,
-		Submissions:  submissions,
-		CurationMeta: meta,
-		Comments:     comments,
-	}
+	pageData, err := a.ProcessViewSubmission(ctx, sid)
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submission.gohtml", "templates/submission-table.gohtml")
 }
