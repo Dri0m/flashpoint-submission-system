@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+type DB struct {
+	Conn *sql.DB
+}
+
 // OpenDB opens DB or panics
 func OpenDB(l *logrus.Logger) *sql.DB {
 	l.Infof("opening database '%s'...", dbName)
@@ -43,19 +47,19 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 // StoreSession store session into the DB with set expiration date
 func (db *DB) StoreSession(key string, uid int64, durationSeconds int64) error {
 	expiration := time.Now().Add(time.Second * time.Duration(durationSeconds)).Unix()
-	_, err := db.conn.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
+	_, err := db.Conn.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
 }
 
 // DeleteSession deletes specific session
 func (db *DB) DeleteSession(secret string) error {
-	_, err := db.conn.Exec(`DELETE FROM session WHERE secret=?`, secret)
+	_, err := db.Conn.Exec(`DELETE FROM session WHERE secret=?`, secret)
 	return err
 }
 
 // GetUIDFromSession returns user ID and/or expiration state
 func (db *DB) GetUIDFromSession(key string) (string, bool, error) {
-	row := db.conn.QueryRow(`SELECT uid, expires_at FROM session WHERE secret=?`, key)
+	row := db.Conn.QueryRow(`SELECT uid, expires_at FROM session WHERE secret=?`, key)
 
 	var uid string
 	var expiration int64
@@ -73,7 +77,7 @@ func (db *DB) GetUIDFromSession(key string) (string, bool, error) {
 
 // StoreDiscordUser store discord user or replace with new data
 func (db *DB) StoreDiscordUser(discordUser *DiscordUser) error {
-	_, err := db.conn.Exec(
+	_, err := db.Conn.Exec(
 		`INSERT OR REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, discordUser.MFAEnabled)
 	return err
@@ -81,7 +85,7 @@ func (db *DB) StoreDiscordUser(discordUser *DiscordUser) error {
 
 // GetDiscordUser returns DiscordUserResponse
 func (db *DB) GetDiscordUser(uid int64) (*DiscordUser, error) {
-	row := db.conn.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
+	row := db.Conn.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
 
 	discordUser := &DiscordUser{ID: uid}
 	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &discordUser.MFAEnabled)
@@ -99,13 +103,13 @@ func (db *DB) StoreDiscordUserAuthorization(uid int64, isAuthorized bool) error 
 		a = 1
 	}
 
-	_, err := db.conn.Exec(`INSERT OR REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
+	_, err := db.Conn.Exec(`INSERT OR REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
 	return err
 }
 
 // IsDiscordUserAuthorized returns discord user auth state
 func (db *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
-	row := db.conn.QueryRow(`SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
+	row := db.Conn.QueryRow(`SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
 	var a int64
 	err := row.Scan(&a)
 	if err != nil {
@@ -203,7 +207,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 		where = " WHERE "
 	}
 
-	rows, err := db.conn.Query(`
+	rows, err := db.Conn.Query(`
 		SELECT submission.id AS submission_id, 
 			uploader.id AS uploader_id, uploader.username AS uploader_username, uploader.avatar AS uploader_avatar,
 			updater.id AS updater_id, updater.username AS updater_username, updater.avatar AS updater_avatar,
@@ -292,7 +296,7 @@ func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *CurationMeta) error {
 
 // GetCurationMetaBySubmissionFileID returns curation meta for given submission file
 func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*CurationMeta, error) {
-	row := db.conn.QueryRow(`SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
+	row := db.Conn.QueryRow(`SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
@@ -342,7 +346,7 @@ type ExtendedComment struct {
 
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
 func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, error) {
-	rows, err := db.conn.Query(`
+	rows, err := db.Conn.Query(`
 		SELECT discord_user.id, username, avatar, message, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id

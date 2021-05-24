@@ -46,13 +46,13 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 		return &basePageData{}, nil
 	}
 
-	discordUser, err := a.db.GetDiscordUser(userID)
+	discordUser, err := a.DB.GetDiscordUser(userID)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to get user data from db")
 	}
 
-	isAuthorized, err := a.db.IsDiscordUserAuthorized(userID)
+	isAuthorized, err := a.DB.IsDiscordUserAuthorized(userID)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user authorization")
@@ -190,7 +190,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	var submissionID int64
 
 	if sid == nil {
-		submissionID, err = a.db.StoreSubmission(tx)
+		submissionID, err = a.DB.StoreSubmission(tx)
 		if err != nil {
 			LogCtx(ctx).Error(err)
 			a.LogIfErr(ctx, destination.Close())
@@ -210,7 +210,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		UploadedAt:       time.Now(),
 	}
 
-	fid, err := a.db.StoreSubmissionFile(tx, s)
+	fid, err := a.DB.StoreSubmissionFile(tx, s)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		a.LogIfErr(ctx, destination.Close())
@@ -226,7 +226,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		CreatedAt:    time.Now(),
 	}
 
-	if err := a.db.StoreComment(tx, c); err != nil {
+	if err := a.DB.StoreComment(tx, c); err != nil {
 		LogCtx(ctx).Error(err)
 		a.LogIfErr(ctx, destination.Close())
 		a.LogIfErr(ctx, os.Remove(destinationFilePath))
@@ -235,7 +235,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	LogCtx(ctx).Debug("processing curation meta...")
 
-	resp, err := a.UploadFile(ctx, a.conf.ValidatorServerURL, destinationFilePath)
+	resp, err := a.UploadFile(ctx, a.Conf.ValidatorServerURL, destinationFilePath)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		a.LogIfErr(ctx, destination.Close())
@@ -255,7 +255,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
 
-	if err := a.db.StoreCurationMeta(tx, &vr.Meta); err != nil {
+	if err := a.DB.StoreCurationMeta(tx, &vr.Meta); err != nil {
 		LogCtx(ctx).Error(err)
 		a.LogIfErr(ctx, destination.Close())
 		a.LogIfErr(ctx, os.Remove(destinationFilePath))
@@ -265,7 +265,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	LogCtx(ctx).Debug("processing bot event...")
 
 	bc := ProcessValidatorResponse(&vr)
-	if err := a.db.StoreComment(tx, bc); err != nil {
+	if err := a.DB.StoreComment(tx, bc); err != nil {
 		LogCtx(ctx).Error(err)
 		a.LogIfErr(ctx, destination.Close())
 		a.LogIfErr(ctx, os.Remove(destinationFilePath))

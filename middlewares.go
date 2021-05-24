@@ -39,7 +39,7 @@ func (a *App) UserAuthorization(next func(http.ResponseWriter, *http.Request)) f
 			http.Error(w, "please log in to continue", http.StatusUnauthorized)
 			return
 		}
-		isAuthorized, err := a.db.IsDiscordUserAuthorized(userID)
+		isAuthorized, err := a.DB.IsDiscordUserAuthorized(userID)
 		if err != nil {
 			LogCtx(r.Context()).Error(err)
 			http.Error(w, "failed to load user authorization", http.StatusInternalServerError)

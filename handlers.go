@@ -65,7 +65,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := a.db.conn.Begin()
+	tx, err := a.DB.Conn.Begin()
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
@@ -121,7 +121,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:    time.Now(),
 	}
 
-	if err := a.db.StoreComment(tx, c); err != nil {
+	if err := a.DB.StoreComment(tx, c); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store comment", http.StatusInternalServerError)
 		a.LogIfErr(ctx, tx.Rollback())
@@ -156,7 +156,7 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 		SubmissionID: &sid,
 	}
 
-	submissions, err := a.db.SearchSubmissions(filter)
+	submissions, err := a.DB.SearchSubmissions(filter)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submission", http.StatusInternalServerError)
@@ -201,7 +201,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		sid = &sidParsed
 	}
 
-	tx, err := a.db.conn.Begin()
+	tx, err := a.DB.Conn.Begin()
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
@@ -297,7 +297,7 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	submissions, err := a.db.SearchSubmissions(nil)
+	submissions, err := a.DB.SearchSubmissions(nil)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submissions", http.StatusInternalServerError)
@@ -329,7 +329,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		SubmitterID: &userID,
 	}
 
-	submissions, err := a.db.SearchSubmissions(filter)
+	submissions, err := a.DB.SearchSubmissions(filter)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load user submissions", http.StatusInternalServerError)
@@ -371,7 +371,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		SubmissionID: &sid,
 	}
 
-	submissions, err := a.db.SearchSubmissions(filter)
+	submissions, err := a.DB.SearchSubmissions(filter)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submission", http.StatusInternalServerError)
@@ -387,14 +387,14 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 
 	submission := submissions[0]
 
-	meta, err := a.db.GetCurationMetaBySubmissionFileID(submission.FileID)
+	meta, err := a.DB.GetCurationMetaBySubmissionFileID(submission.FileID)
 	if err != nil && err != sql.ErrNoRows {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load curation meta", http.StatusInternalServerError)
 		return
 	}
 
-	comments, err := a.db.GetExtendedCommentsBySubmissionID(sid)
+	comments, err := a.DB.GetExtendedCommentsBySubmissionID(sid)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load curation comments", http.StatusInternalServerError)

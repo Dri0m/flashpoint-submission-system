@@ -19,8 +19,8 @@ func ConnectBot(l *logrus.Logger, token string) *discordgo.Session {
 
 // GetFlashpointRoleIDsForUser returns user role IDs
 func (b *Bot) GetFlashpointRoleIDsForUser(uid int64) ([]string, error) {
-	b.l.WithField("uid", uid).Info("getting flashpoint role ID for user")
-	member, err := b.session.GuildMember(b.flashpointServerID, fmt.Sprint(uid))
+	b.L.WithField("uid", uid).Info("getting flashpoint role ID for user")
+	member, err := b.Session.GuildMember(b.FlashpointServerID, fmt.Sprint(uid))
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +30,8 @@ func (b *Bot) GetFlashpointRoleIDsForUser(uid int64) ([]string, error) {
 
 // GetFlashpointRoles returns list of flashpoint server roles
 func (b *Bot) GetFlashpointRoles() ([]DiscordRole, error) {
-	b.l.Info("getting flashpoint roles")
-	roles, err := b.session.GuildRoles(b.flashpointServerID)
+	b.L.Info("getting flashpoint roles")
+	roles, err := b.Session.GuildRoles(b.FlashpointServerID)
 	if err != nil {
 		return nil, err
 	}

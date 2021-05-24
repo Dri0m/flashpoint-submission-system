@@ -31,7 +31,7 @@ type DiscordUser struct {
 }
 
 func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, a.conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, a.Conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
 }
 
 // TODO provide real, secure oauth state
@@ -47,7 +47,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// obtain token
-	token, err := a.conf.OauthConf.Exchange(context.Background(), r.FormValue("code"))
+	token, err := a.Conf.OauthConf.Exchange(context.Background(), r.FormValue("code"))
 
 	if err != nil {
 		LogCtx(ctx).Error(err)
@@ -56,7 +56,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// obtain user data
-	resp, err := a.conf.OauthConf.Client(context.Background(), token).Get("https://discordapp.com/api/users/@me")
+	resp, err := a.Conf.OauthConf.Client(context.Background(), token).Get("https://discordapp.com/api/users/@me")
 
 	if err != nil || resp.StatusCode != 200 {
 		http.Error(w, "failed to obtain discord user data", http.StatusInternalServerError)
@@ -91,20 +91,20 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save discord user data
-	if err := a.db.StoreDiscordUser(&discordUser); err != nil {
+	if err := a.DB.StoreDiscordUser(&discordUser); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store discord user", http.StatusInternalServerError)
 		return
 	}
 
 	// get and save discord user authorization
-	isAuthorized, err := a.bot.IsUserAuthorized(discordUser.ID)
+	isAuthorized, err := a.Bot.IsUserAuthorized(discordUser.ID)
 	if err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to obtain discord user's roles", http.StatusInternalServerError)
 		return
 	}
-	if err := a.db.StoreDiscordUserAuthorization(discordUser.ID, isAuthorized); err != nil {
+	if err := a.DB.StoreDiscordUserAuthorization(discordUser.ID, isAuthorized); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store discord user's authorization", http.StatusInternalServerError)
 		return
@@ -117,13 +117,13 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to generate auth token", http.StatusInternalServerError)
 		return
 	}
-	if err := a.cc.SetSecureCookie(w, Cookies.Login, mapAuthToken(authToken)); err != nil {
+	if err := a.CC.SetSecureCookie(w, Cookies.Login, mapAuthToken(authToken)); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
 		return
 	}
 
-	if err = a.db.StoreSession(authToken.Secret, discordUser.ID, a.conf.SessionExpirationSeconds); err != nil {
+	if err = a.DB.StoreSession(authToken.Secret, discordUser.ID, a.Conf.SessionExpirationSeconds); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store session", http.StatusInternalServerError)
 	}
@@ -134,7 +134,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	const msg = "unable to log out, please clear your cookies and try again"
-	cookieMap, err := a.cc.GetSecureCookie(r, Cookies.Login)
+	cookieMap, err := a.CC.GetSecureCookie(r, Cookies.Login)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -146,7 +146,7 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	if err := a.db.DeleteSession(token.Secret); err != nil {
+	if err := a.DB.DeleteSession(token.Secret); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return

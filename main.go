@@ -21,25 +21,21 @@ import (
 
 // App is App
 type App struct {
-	conf *Config
-	db   DB
-	bot  Bot
-	cc   CookieCutter
+	Conf *Config
+	DB   DB
+	Bot  Bot
+	CC   CookieCutter
 }
 
 type Bot struct {
-	session            *discordgo.Session
-	flashpointServerID string
-	l                  *logrus.Logger
-}
-
-type DB struct {
-	conn *sql.DB
+	Session            *discordgo.Session
+	FlashpointServerID string
+	L                  *logrus.Logger
 }
 
 type CookieCutter struct {
-	previous *securecookie.SecureCookie
-	current  *securecookie.SecureCookie
+	Previous *securecookie.SecureCookie
+	Current  *securecookie.SecureCookie
 }
 
 func main() {
@@ -63,18 +59,18 @@ func initApp(l *logrus.Logger, conf *Config, db *sql.DB, botSession *discordgo.S
 	}
 
 	a := &App{
-		conf: conf,
-		db: DB{
-			conn: db,
+		Conf: conf,
+		DB: DB{
+			Conn: db,
 		},
-		bot: Bot{
-			session:            botSession,
-			flashpointServerID: conf.FlashpointServerID,
-			l:                  l,
+		Bot: Bot{
+			Session:            botSession,
+			FlashpointServerID: conf.FlashpointServerID,
+			L:                  l,
 		},
-		cc: CookieCutter{
-			previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
-			current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
+		CC: CookieCutter{
+			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
+			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
 	}
 

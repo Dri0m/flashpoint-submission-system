@@ -57,7 +57,7 @@ func mapAuthToken(token *AuthToken) map[string]string {
 
 // SetSecureCookie sets cookie
 func (cc *CookieCutter) SetSecureCookie(w http.ResponseWriter, name string, value map[string]string) error {
-	encoded, err := securecookie.EncodeMulti(name, value, cc.current)
+	encoded, err := securecookie.EncodeMulti(name, value, cc.Current)
 	if err != nil {
 		return err
 	}
@@ -92,14 +92,14 @@ func (cc *CookieCutter) GetSecureCookie(r *http.Request, name string) (map[strin
 		return nil, err
 	}
 	value := make(map[string]string)
-	if err := securecookie.DecodeMulti(name, cookie.Value, &value, cc.current, cc.previous); err != nil {
+	if err := securecookie.DecodeMulti(name, cookie.Value, &value, cc.Current, cc.Previous); err != nil {
 		return nil, err
 	}
 	return value, nil
 }
 
 func (a *App) GetUserIDFromCookie(r *http.Request) (int64, error) {
-	cookieMap, err := a.cc.GetSecureCookie(r, Cookies.Login)
+	cookieMap, err := a.CC.GetSecureCookie(r, Cookies.Login)
 	if errors.Is(err, http.ErrNoCookie) {
 		return 0, nil
 	}
