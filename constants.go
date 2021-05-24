@@ -1,7 +1,7 @@
 package main
 
-const dbName = "db.db"
-const validatorID = 810112564787675166
+const DbName = "db.db"
+const ValidatorID = 810112564787675166
 
 const (
 	ActionComment        = "comment"

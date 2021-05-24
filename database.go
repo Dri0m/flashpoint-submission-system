@@ -14,8 +14,8 @@ type DB struct {
 
 // OpenDB opens DB or panics
 func OpenDB(l *logrus.Logger) *sql.DB {
-	l.Infof("opening database '%s'...", dbName)
-	db, err := sql.Open("sqlite3", dbName+"?cache=shared")
+	l.Infof("opening database '%s'...", DbName)
+	db, err := sql.Open("sqlite3", DbName+"?cache=shared")
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -189,7 +189,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
-	data = append(data, validatorID, validatorID)
+	data = append(data, ValidatorID, ValidatorID)
 
 	if filter != nil {
 		if filter.SubmissionID != nil {

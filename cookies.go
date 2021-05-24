@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+// CookieCutter is the cookie handler
 type CookieCutter struct {
 	Previous *securecookie.SecureCookie
 	Current  *securecookie.SecureCookie
@@ -56,7 +57,7 @@ func ParseAuthToken(value map[string]string) (*AuthToken, error) {
 	}, nil
 }
 
-func mapAuthToken(token *AuthToken) map[string]string {
+func MapAuthToken(token *AuthToken) map[string]string {
 	return map[string]string{"secret": token.Secret, "userID": token.UserID}
 }
 

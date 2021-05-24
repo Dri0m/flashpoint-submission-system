@@ -278,7 +278,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 // ProcessValidatorResponse determines if the validation is OK and produces appropriate comment
 func ProcessValidatorResponse(vr *ValidatorResponse) *Comment {
 	c := &Comment{
-		AuthorID:     validatorID,
+		AuthorID:     ValidatorID,
 		SubmissionID: vr.Meta.SubmissionID,
 		CreatedAt:    time.Now(),
 	}

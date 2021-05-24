@@ -117,7 +117,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to generate auth token", http.StatusInternalServerError)
 		return
 	}
-	if err := a.CC.SetSecureCookie(w, Cookies.Login, mapAuthToken(authToken)); err != nil {
+	if err := a.CC.SetSecureCookie(w, Cookies.Login, MapAuthToken(authToken)); err != nil {
 		LogCtx(ctx).Error(err)
 		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
 		return
