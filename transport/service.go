@@ -328,13 +328,13 @@ func (a *App) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSubmis
 	return pageData, nil
 }
 
-func (a *App) ProcessSubmissionsPage(ctx context.Context) (*submissionsPageData, error) {
+func (a *App) ProcessSearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) (*submissionsPageData, error) {
 	bpd, err := a.GetBasePageData(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	submissions, err := a.DB.SearchSubmissions(ctx, nil)
+	submissions, err := a.DB.SearchSubmissions(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load submissions")
 	}

@@ -292,7 +292,7 @@ type submissionsPageData struct {
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.ProcessSubmissionsPage(ctx)
+	pageData, err := a.ProcessSearchSubmissions(ctx, nil)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -306,25 +306,16 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid := utils.UserIDFromContext(ctx)
 
-	bpd, err := a.GetBasePageData(ctx)
+	filter := &types.SubmissionsFilter{
+		SubmitterID: &uid,
+	}
+
+	pageData, err := a.ProcessSearchSubmissions(ctx, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	filter := &types.SubmissionsFilter{
-		SubmitterID: &uid,
-	}
-
-	submissions, err := a.DB.SearchSubmissions(ctx, filter)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to load user submissions", http.StatusInternalServerError)
-		return
-	}
-
-	pageData := submissionsPageData{basePageData: *bpd, Submissions: submissions}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/my-submissions.gohtml", "templates/submission-table.gohtml")
 }
