@@ -1,8 +1,15 @@
 package utils
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"math/rand"
+	"mime/multipart"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -39,4 +46,70 @@ func RandomString(n int) string {
 
 func FormatAvatarURL(uid int64, avatar string) string {
 	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", uid, avatar)
+}
+
+func LogIfErr(ctx context.Context, err error) {
+	if err != nil {
+		LogCtx(ctx).Error(err)
+	}
+}
+
+// UploadFile POSTs a given file to a given URL via multipart writer and returns the response body if OK
+func UploadFile(ctx context.Context, url string, filePath string) ([]byte, error) {
+	LogCtx(ctx).WithField("filepath", filePath).Debug("opening file for upload")
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	client := http.Client{}
+	// Prepare a form that you will submit to that URL.
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	var fw io.Writer
+
+	if fw, err = w.CreateFormFile("file", f.Name()); err != nil {
+		return nil, err
+	}
+
+	LogCtx(ctx).WithField("filepath", filePath).Debug("copying file into multipart writer")
+	if _, err = io.Copy(fw, f); err != nil {
+		return nil, err
+	}
+
+	// Don't forget to close the multipart writer.
+	// If you don't close it, your request will be missing the terminating boundary.
+	w.Close()
+
+	// Now that you have a form, you can submit it to your handler.
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		return nil, err
+	}
+	// Don't forget to set the content type, this will contain the boundary.
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	// Submit the request
+	LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("uploading file")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Check the response
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("response OK")
+
+	return bodyBytes, nil
 }

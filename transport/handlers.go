@@ -153,7 +153,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		err := fmt.Errorf("invalid comment action")
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		a.LogIfErr(ctx, tx.Rollback())
+		utils.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
@@ -170,7 +170,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		err := fmt.Errorf("cannot post comment action '%s' without a message", action)
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		a.LogIfErr(ctx, tx.Rollback())
+		utils.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
@@ -185,14 +185,14 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	if err := a.DB.StoreComment(tx, c); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store comment", http.StatusInternalServerError)
-		a.LogIfErr(ctx, tx.Rollback())
+		utils.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
-		a.LogIfErr(ctx, tx.Rollback())
+		utils.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
@@ -291,14 +291,14 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
 			http.Error(w, fmt.Sprintf("error processing file '%s': %s", fileHeader.Filename, err.Error()), http.StatusInternalServerError)
-			a.LogIfErr(ctx, tx.Rollback())
+			utils.LogIfErr(ctx, tx.Rollback())
 			return
 		}
 	}
 	if err := tx.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
-		a.LogIfErr(ctx, tx.Rollback())
+		utils.LogIfErr(ctx, tx.Rollback())
 	}
 
 	http.Redirect(w, r, "/my-submissions", http.StatusFound)
