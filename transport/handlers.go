@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
-	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	bot2 "github.com/Dri0m/flashpoint-submission-system/types"
@@ -20,7 +19,6 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-	"time"
 )
 
 // App is App
@@ -133,67 +131,12 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	action := r.FormValue("action")
-	m := r.FormValue("message")
-	var message *string
-	if m != "" {
-		message = &m
-	}
+	formAction := r.FormValue("action")
+	formMessage := r.FormValue("message")
 
-	actions := []string{constants.ActionComment, constants.ActionApprove, constants.ActionRequestChanges, constants.ActionAccept, constants.ActionMarkAdded, constants.ActionReject, constants.ActionUpload}
-	isActionValid := false
-	for _, a := range actions {
-		if action == a {
-			isActionValid = true
-			break
-		}
-	}
-
-	if !isActionValid {
-		err := fmt.Errorf("invalid comment action")
+	if err := a.ProcessReceivedComment(ctx, tx, uid, sid, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		utils.LogIfErr(ctx, tx.Rollback())
-		return
-	}
-
-	actionsWithMandatoryMessage := []string{constants.ActionComment, constants.ActionRequestChanges, constants.ActionReject}
-	isActionWithMandatoryMessage := false
-	for _, a := range actionsWithMandatoryMessage {
-		if action == a {
-			isActionWithMandatoryMessage = true
-			break
-		}
-	}
-
-	if isActionWithMandatoryMessage && (message == nil || *message == "") {
-		err := fmt.Errorf("cannot post comment action '%s' without a message", action)
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		utils.LogIfErr(ctx, tx.Rollback())
-		return
-	}
-
-	c := &database.Comment{
-		AuthorID:     uid,
-		SubmissionID: sid,
-		Message:      message,
-		Action:       action,
-		CreatedAt:    time.Now(),
-	}
-
-	if err := a.DB.StoreComment(tx, c); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to store comment", http.StatusInternalServerError)
-		utils.LogIfErr(ctx, tx.Rollback())
-		return
-	}
-
-	if err := tx.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
-		utils.LogIfErr(ctx, tx.Rollback())
-		return
+		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/submission/%d", sid), http.StatusFound)
@@ -213,7 +156,7 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 
 	const dir = "submissions"
 
-	filter := &database.SubmissionsFilter{
+	filter := &bot2.SubmissionsFilter{
 		SubmissionID: &sid,
 	}
 
@@ -262,13 +205,6 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		sid = &sidParsed
 	}
 
-	tx, err := a.DB.Conn.Begin()
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
-		return
-	}
-
 	// limit RAM usage to 100MB
 	if err := r.ParseMultipartForm(100 * 1000 * 1000); err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -279,26 +215,23 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	fileHeaders := r.MultipartForm.File["files"]
 
 	if len(fileHeaders) == 0 {
-		err = fmt.Errorf("no files received")
+		err := fmt.Errorf("no files received")
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// TODO handle cleanup of all files in case of errors here
-	for _, fileHeader := range fileHeaders {
-		err := a.ProcessReceivedSubmission(ctx, tx, fileHeader, sid)
-		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			http.Error(w, fmt.Sprintf("error processing file '%s': %s", fileHeader.Filename, err.Error()), http.StatusInternalServerError)
-			utils.LogIfErr(ctx, tx.Rollback())
-			return
-		}
-	}
-	if err := tx.Commit(); err != nil {
+	tx, err := a.DB.Conn.Begin()
+	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
-		utils.LogIfErr(ctx, tx.Rollback())
+		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
+		return
+	}
+
+	if err := a.ProcessReceivedSubmissions(ctx, tx, sid, fileHeaders); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, fmt.Sprintf("submission processor: %s", err.Error()), http.StatusInternalServerError)
+		return
 	}
 
 	http.Redirect(w, r, "/my-submissions", http.StatusFound)
@@ -345,7 +278,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 
 type submissionsPageData struct {
 	basePageData
-	Submissions []*database.ExtendedSubmission
+	Submissions []*bot2.ExtendedSubmission
 }
 
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
@@ -386,7 +319,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filter := &database.SubmissionsFilter{
+	filter := &bot2.SubmissionsFilter{
 		SubmitterID: &userID,
 	}
 
@@ -404,9 +337,9 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 type viewSubmissionPageData struct {
 	basePageData
-	Submissions  []*database.ExtendedSubmission
+	Submissions  []*bot2.ExtendedSubmission
 	CurationMeta *bot2.CurationMeta
-	Comments     []*database.ExtendedComment
+	Comments     []*bot2.ExtendedComment
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
@@ -428,7 +361,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filter := &database.SubmissionsFilter{
+	filter := &bot2.SubmissionsFilter{
 		SubmissionID: &sid,
 	}
 

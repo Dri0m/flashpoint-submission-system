@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
-	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"io"
@@ -67,17 +66,48 @@ type validatorResponse struct {
 	Meta             types.CurationMeta `json:"meta"`
 }
 
-func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) error {
+func (a *App) ProcessReceivedSubmissions(ctx context.Context, tx *sql.Tx, sid *int64, fileHeaders []*multipart.FileHeader) error {
+	destinationFilenames := make([]string, 0)
+
+	for _, fileHeader := range fileHeaders {
+		destinationFilename, err := a.ProcessReceivedSubmission(ctx, tx, fileHeader, sid)
+
+		if destinationFilename != nil {
+			destinationFilenames = append(destinationFilenames, *destinationFilename)
+		}
+
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			utils.LogIfErr(ctx, tx.Rollback())
+			for _, df := range destinationFilenames {
+				utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
+				utils.LogIfErr(ctx, os.Remove(df))
+			}
+			return fmt.Errorf("file '%s': %s", fileHeader.Filename, err.Error())
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		utils.LogIfErr(ctx, tx.Rollback())
+		for _, df := range destinationFilenames {
+			utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
+			utils.LogIfErr(ctx, os.Remove(df))
+		}
+		return fmt.Errorf("failed to commit transaction")
+	}
+
+	return nil
+}
+
+func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
-		err := fmt.Errorf("no user associated with request")
-		utils.LogCtx(ctx).Error(err)
-		return err
+		return nil, fmt.Errorf("no user associated with request")
 	}
 	file, err := fileHeader.Open()
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to open received file")
+		return nil, fmt.Errorf("failed to open received file")
 	}
 	defer file.Close()
 
@@ -86,8 +116,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	const dir = "submissions"
 
 	if err := os.MkdirAll(dir, os.ModeDir); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to make directory structure")
+		return nil, fmt.Errorf("failed to make directory structure")
 	}
 
 	destinationFilename := utils.RandomString(64) + filepath.Ext(fileHeader.Filename)
@@ -95,25 +124,18 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	destination, err := os.Create(destinationFilePath)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to create destination file")
+		return nil, fmt.Errorf("failed to create destination file")
 	}
-	defer destination.Close()
+	defer utils.LogIfErr(ctx, destination.Close())
 
 	utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
 
 	nBytes, err := io.Copy(destination, file)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("failed to copy file to destination")
+		return &destinationFilePath, fmt.Errorf("failed to copy file to destination")
 	}
 	if nBytes != fileHeader.Size {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("incorrect number of bytes copied to destination")
+		return &destinationFilePath, fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
 	utils.LogCtx(ctx).Debug("storing submission...")
@@ -123,16 +145,13 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	if sid == nil {
 		submissionID, err = a.DB.StoreSubmission(tx)
 		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			utils.LogIfErr(ctx, destination.Close())
-			utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-			return fmt.Errorf("failed to store submission")
+			return &destinationFilePath, fmt.Errorf("failed to store submission")
 		}
 	} else {
 		submissionID = *sid
 	}
 
-	s := &database.SubmissionFile{
+	s := &types.SubmissionFile{
 		SubmissionID:     submissionID,
 		SubmitterID:      utils.UserIDFromContext(ctx),
 		OriginalFilename: fileHeader.Filename,
@@ -143,13 +162,10 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	fid, err := a.DB.StoreSubmissionFile(tx, s)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("failed to store submission")
+		return &destinationFilePath, fmt.Errorf("failed to store submission")
 	}
 
-	c := &database.Comment{
+	c := &types.Comment{
 		AuthorID:     userID,
 		SubmissionID: submissionID,
 		Message:      nil,
@@ -158,57 +174,42 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	}
 
 	if err := a.DB.StoreComment(tx, c); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("failed to store uploader comment")
+		return &destinationFilePath, fmt.Errorf("failed to store uploader comment")
 	}
 
 	utils.LogCtx(ctx).Debug("processing curation meta...")
 
 	resp, err := utils.UploadFile(ctx, a.Conf.ValidatorServerURL, destinationFilePath)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("validator: %w", err)
+		return &destinationFilePath, fmt.Errorf("validator: %w", err)
 	}
 
 	var vr validatorResponse
 	err = json.Unmarshal(resp, &vr)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("failed to decode validator response")
+		return &destinationFilePath, fmt.Errorf("failed to decode validator response")
 	}
 
 	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
 
 	if err := a.DB.StoreCurationMeta(tx, &vr.Meta); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("failed to store curation meta")
+		return &destinationFilePath, fmt.Errorf("failed to store curation meta")
 	}
 
 	utils.LogCtx(ctx).Debug("processing bot event...")
 
-	bc := ProcessValidatorResponse(&vr)
+	bc := convertValidatorResponseToComment(&vr)
 	if err := a.DB.StoreComment(tx, bc); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, destination.Close())
-		utils.LogIfErr(ctx, os.Remove(destinationFilePath))
-		return fmt.Errorf("failed to store validator comment")
+		return &destinationFilePath, fmt.Errorf("failed to store validator comment")
 	}
 
-	return nil
+	return &destinationFilePath, nil
 }
 
-// ProcessValidatorResponse determines if the validation is OK and produces appropriate comment
-func ProcessValidatorResponse(vr *validatorResponse) *database.Comment {
-	c := &database.Comment{
+// convertValidatorResponseToComment produces appropriate comment based on validator response
+func convertValidatorResponseToComment(vr *validatorResponse) *types.Comment {
+	c := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: vr.Meta.SubmissionID,
 		CreatedAt:    time.Now(),
@@ -240,4 +241,55 @@ func ProcessValidatorResponse(vr *validatorResponse) *database.Comment {
 	}
 
 	return c
+}
+
+func (a *App) ProcessReceivedComment(ctx context.Context, tx *sql.Tx, uid, sid int64, formAction, formMessage string) error {
+	var message *string
+	if formMessage != "" {
+		message = &formMessage
+	}
+
+	actions := []string{constants.ActionComment, constants.ActionApprove, constants.ActionRequestChanges, constants.ActionAccept, constants.ActionMarkAdded, constants.ActionReject, constants.ActionUpload}
+	isActionValid := false
+	for _, a := range actions {
+		if formAction == a {
+			isActionValid = true
+			break
+		}
+	}
+
+	if !isActionValid {
+		return fmt.Errorf("invalid comment action")
+	}
+
+	actionsWithMandatoryMessage := []string{constants.ActionComment, constants.ActionRequestChanges, constants.ActionReject}
+	isActionWithMandatoryMessage := false
+	for _, a := range actionsWithMandatoryMessage {
+		if formAction == a {
+			isActionWithMandatoryMessage = true
+			break
+		}
+	}
+
+	if isActionWithMandatoryMessage && (message == nil || *message == "") {
+		return fmt.Errorf("cannot post comment action '%s' without a message", formAction)
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      message,
+		Action:       formAction,
+		CreatedAt:    time.Now(),
+	}
+
+	if err := a.DB.StoreComment(tx, c); err != nil {
+		return fmt.Errorf("failed to store comment")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction")
+	}
+
+	return nil
 }

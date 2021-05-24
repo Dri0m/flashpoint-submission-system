@@ -125,15 +125,6 @@ func (db *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
 	return false, nil
 }
 
-type SubmissionFile struct {
-	SubmitterID      int64
-	SubmissionID     int64
-	OriginalFilename string
-	CurrentFilename  string
-	Size             int64
-	UploadedAt       time.Time
-}
-
 // StoreSubmission stores plain submission
 func (db *DB) StoreSubmission(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(`INSERT INTO submission DEFAULT VALUES`)
@@ -148,7 +139,7 @@ func (db *DB) StoreSubmission(tx *sql.Tx) (int64, error) {
 }
 
 // StoreSubmissionFile stores submission file
-func (db *DB) StoreSubmissionFile(tx *sql.Tx, s *SubmissionFile) (int64, error) {
+func (db *DB) StoreSubmissionFile(tx *sql.Tx, s *types.SubmissionFile) (int64, error) {
 	res, err := tx.Exec(`INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)`,
 		s.SubmitterID, s.SubmissionID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix())
 	if err != nil {
@@ -161,34 +152,8 @@ func (db *DB) StoreSubmissionFile(tx *sql.Tx, s *SubmissionFile) (int64, error) 
 	return id, nil
 }
 
-type ExtendedSubmission struct {
-	SubmissionID            int64
-	SubmitterID             int64     // oldest file
-	SubmitterUsername       string    // oldest file
-	SubmitterAvatarURL      string    // oldest file
-	UpdaterID               int64     // newest file
-	UpdaterUsername         string    // newest file
-	UpdaterAvatarURL        string    // newest file
-	FileID                  int64     // newest file
-	OriginalFilename        string    // newest file
-	CurrentFilename         string    // newest file
-	Size                    int64     // newest file
-	UploadedAt              time.Time // oldest file
-	UpdatedAt               time.Time // newest file
-	CurationTitle           *string   // newest file
-	CurationAlternateTitles *string   //newest file
-	CurationLaunchCommand   *string   // newest file
-	BotAction               string
-	LatestAction            string
-}
-
-type SubmissionsFilter struct {
-	SubmissionID *int64
-	SubmitterID  *int64
-}
-
 // SearchSubmissions returns extended submissions based on given filter
-func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmission, error) {
+func (db *DB) SearchSubmissions(filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
@@ -255,7 +220,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 	}
 	defer rows.Close()
 
-	result := make([]*ExtendedSubmission, 0)
+	result := make([]*types.ExtendedSubmission, 0)
 
 	var uploadedAt int64
 	var updatedAt int64
@@ -263,7 +228,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 	var updaterAvatar string
 
 	for rows.Next() {
-		s := &ExtendedSubmission{}
+		s := &types.ExtendedSubmission{}
 		if err := rows.Scan(
 			&s.SubmissionID,
 			&s.SubmitterID, &s.SubmitterUsername, &submitterAvatar,
@@ -316,16 +281,8 @@ func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*types.CurationMeta
 	return c, nil
 }
 
-type Comment struct {
-	AuthorID     int64
-	SubmissionID int64
-	Action       string
-	Message      *string
-	CreatedAt    time.Time
-}
-
 // StoreComment stores curation meta
-func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
+func (db *DB) StoreComment(tx *sql.Tx, c *types.Comment) error {
 	var msg *string
 	if c.Message != nil {
 		s := strings.TrimSpace(*c.Message)
@@ -337,18 +294,8 @@ func (db *DB) StoreComment(tx *sql.Tx, c *Comment) error {
 	return err
 }
 
-type ExtendedComment struct {
-	AuthorID     int64
-	Username     string
-	AvatarURL    string
-	SubmissionID int64
-	Action       string
-	Message      []string
-	CreatedAt    time.Time
-}
-
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
-func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, error) {
+func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*types.ExtendedComment, error) {
 	rows, err := db.Conn.Query(`
 		SELECT discord_user.id, username, avatar, message, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
@@ -360,7 +307,7 @@ func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, 
 	}
 	defer rows.Close()
 
-	result := make([]*ExtendedComment, 0)
+	result := make([]*types.ExtendedComment, 0)
 
 	var createdAt int64
 	var avatar string
@@ -368,7 +315,7 @@ func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, 
 
 	for rows.Next() {
 
-		ec := &ExtendedComment{SubmissionID: sid}
+		ec := &types.ExtendedComment{SubmissionID: sid}
 		if err := rows.Scan(&ec.AuthorID, &ec.Username, &avatar, &message, &ec.Action, &createdAt); err != nil {
 			return nil, err
 		}
