@@ -35,13 +35,13 @@ func (a *App) GetBasePageData(r *http.Request) (*basePageData, error) {
 		return &basePageData{}, nil
 	}
 
-	discordUser, err := a.DB.GetDiscordUser(userID)
+	discordUser, err := a.DB.GetDiscordUser(ctx, userID)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to get user data from database")
 	}
 
-	isAuthorized, err := a.DB.IsDiscordUserAuthorized(userID)
+	isAuthorized, err := a.DB.IsDiscordUserAuthorized(ctx, userID)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user authorization")
@@ -126,7 +126,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	if err != nil {
 		return nil, fmt.Errorf("failed to create destination file")
 	}
-	defer utils.LogIfErr(ctx, destination.Close())
+	defer func() { utils.LogIfErr(ctx, destination.Close()) }()
 
 	utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
 
@@ -143,7 +143,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	var submissionID int64
 
 	if sid == nil {
-		submissionID, err = a.DB.StoreSubmission(tx)
+		submissionID, err = a.DB.StoreSubmission(ctx, tx)
 		if err != nil {
 			return &destinationFilePath, fmt.Errorf("failed to store submission")
 		}
@@ -160,7 +160,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		UploadedAt:       time.Now(),
 	}
 
-	fid, err := a.DB.StoreSubmissionFile(tx, s)
+	fid, err := a.DB.StoreSubmissionFile(ctx, tx, s)
 	if err != nil {
 		return &destinationFilePath, fmt.Errorf("failed to store submission")
 	}
@@ -173,7 +173,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 		CreatedAt:    time.Now(),
 	}
 
-	if err := a.DB.StoreComment(tx, c); err != nil {
+	if err := a.DB.StoreComment(ctx, tx, c); err != nil {
 		return &destinationFilePath, fmt.Errorf("failed to store uploader comment")
 	}
 
@@ -193,14 +193,14 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
 
-	if err := a.DB.StoreCurationMeta(tx, &vr.Meta); err != nil {
+	if err := a.DB.StoreCurationMeta(ctx, tx, &vr.Meta); err != nil {
 		return &destinationFilePath, fmt.Errorf("failed to store curation meta")
 	}
 
 	utils.LogCtx(ctx).Debug("processing bot event...")
 
 	bc := convertValidatorResponseToComment(&vr)
-	if err := a.DB.StoreComment(tx, bc); err != nil {
+	if err := a.DB.StoreComment(ctx, tx, bc); err != nil {
 		return &destinationFilePath, fmt.Errorf("failed to store validator comment")
 	}
 
@@ -283,7 +283,7 @@ func (a *App) ProcessReceivedComment(ctx context.Context, tx *sql.Tx, uid, sid i
 		CreatedAt:    time.Now(),
 	}
 
-	if err := a.DB.StoreComment(tx, c); err != nil {
+	if err := a.DB.StoreComment(ctx, tx, c); err != nil {
 		return fmt.Errorf("failed to store comment")
 	}
 

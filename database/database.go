@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
@@ -48,21 +49,21 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 }
 
 // StoreSession store session into the DB with set expiration date
-func (db *DB) StoreSession(key string, uid int64, durationSeconds int64) error {
+func (db *DB) StoreSession(ctx context.Context, key string, uid int64, durationSeconds int64) error {
 	expiration := time.Now().Add(time.Second * time.Duration(durationSeconds)).Unix()
-	_, err := db.Conn.Exec(`INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
+	_, err := db.Conn.ExecContext(ctx, `INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
 }
 
 // DeleteSession deletes specific session
-func (db *DB) DeleteSession(secret string) error {
-	_, err := db.Conn.Exec(`DELETE FROM session WHERE secret=?`, secret)
+func (db *DB) DeleteSession(ctx context.Context, secret string) error {
+	_, err := db.Conn.ExecContext(ctx, `DELETE FROM session WHERE secret=?`, secret)
 	return err
 }
 
 // GetUIDFromSession returns user ID and/or expiration state
-func (db *DB) GetUIDFromSession(key string) (string, bool, error) {
-	row := db.Conn.QueryRow(`SELECT uid, expires_at FROM session WHERE secret=?`, key)
+func (db *DB) GetUIDFromSession(ctx context.Context, key string) (string, bool, error) {
+	row := db.Conn.QueryRowContext(ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
 
 	var uid string
 	var expiration int64
@@ -79,16 +80,16 @@ func (db *DB) GetUIDFromSession(key string) (string, bool, error) {
 }
 
 // StoreDiscordUser store discord user or replace with new data
-func (db *DB) StoreDiscordUser(discordUser *types.DiscordUser) error {
-	_, err := db.Conn.Exec(
+func (db *DB) StoreDiscordUser(ctx context.Context, discordUser *types.DiscordUser) error {
+	_, err := db.Conn.ExecContext(ctx,
 		`INSERT OR REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, discordUser.MFAEnabled)
 	return err
 }
 
 // GetDiscordUser returns DiscordUserResponse
-func (db *DB) GetDiscordUser(uid int64) (*types.DiscordUser, error) {
-	row := db.Conn.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
+func (db *DB) GetDiscordUser(ctx context.Context, uid int64) (*types.DiscordUser, error) {
+	row := db.Conn.QueryRowContext(ctx, `SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
 
 	discordUser := &types.DiscordUser{ID: uid}
 	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &discordUser.MFAEnabled)
@@ -100,19 +101,19 @@ func (db *DB) GetDiscordUser(uid int64) (*types.DiscordUser, error) {
 }
 
 // StoreDiscordUserAuthorization stores discord user auth state
-func (db *DB) StoreDiscordUserAuthorization(uid int64, isAuthorized bool) error {
+func (db *DB) StoreDiscordUserAuthorization(ctx context.Context, uid int64, isAuthorized bool) error {
 	a := 0
 	if isAuthorized {
 		a = 1
 	}
 
-	_, err := db.Conn.Exec(`INSERT OR REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
+	_, err := db.Conn.ExecContext(ctx, `INSERT OR REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
 	return err
 }
 
 // IsDiscordUserAuthorized returns discord user auth state
-func (db *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
-	row := db.Conn.QueryRow(`SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
+func (db *DB) IsDiscordUserAuthorized(ctx context.Context, uid int64) (bool, error) {
+	row := db.Conn.QueryRowContext(ctx, `SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
 	var a int64
 	err := row.Scan(&a)
 	if err != nil {
@@ -126,8 +127,8 @@ func (db *DB) IsDiscordUserAuthorized(uid int64) (bool, error) {
 }
 
 // StoreSubmission stores plain submission
-func (db *DB) StoreSubmission(tx *sql.Tx) (int64, error) {
-	res, err := tx.Exec(`INSERT INTO submission DEFAULT VALUES`)
+func (db *DB) StoreSubmission(ctx context.Context, tx *sql.Tx) (int64, error) {
+	res, err := tx.ExecContext(ctx, `INSERT INTO submission DEFAULT VALUES`)
 	if err != nil {
 		return 0, err
 	}
@@ -139,8 +140,8 @@ func (db *DB) StoreSubmission(tx *sql.Tx) (int64, error) {
 }
 
 // StoreSubmissionFile stores submission file
-func (db *DB) StoreSubmissionFile(tx *sql.Tx, s *types.SubmissionFile) (int64, error) {
-	res, err := tx.Exec(`INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)`,
+func (db *DB) StoreSubmissionFile(ctx context.Context, tx *sql.Tx, s *types.SubmissionFile) (int64, error) {
+	res, err := tx.ExecContext(ctx, `INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)`,
 		s.SubmitterID, s.SubmissionID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix())
 	if err != nil {
 		return 0, err
@@ -153,7 +154,7 @@ func (db *DB) StoreSubmissionFile(tx *sql.Tx, s *types.SubmissionFile) (int64, e
 }
 
 // SearchSubmissions returns extended submissions based on given filter
-func (db *DB) SearchSubmissions(filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+func (db *DB) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
@@ -175,7 +176,7 @@ func (db *DB) SearchSubmissions(filter *types.SubmissionsFilter) ([]*types.Exten
 		where = " WHERE "
 	}
 
-	rows, err := db.Conn.Query(`
+	rows, err := db.Conn.QueryContext(ctx, `
 		SELECT submission.id AS submission_id, 
 			uploader.id AS uploader_id, uploader.username AS uploader_username, uploader.avatar AS uploader_avatar,
 			updater.id AS updater_id, updater.username AS updater_username, updater.avatar AS updater_avatar,
@@ -251,8 +252,8 @@ func (db *DB) SearchSubmissions(filter *types.SubmissionsFilter) ([]*types.Exten
 }
 
 // StoreCurationMeta stores curation meta
-func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *types.CurationMeta) error {
-	_, err := tx.Exec(`INSERT INTO curation_meta (fk_submission_file_id, application_path, developer, extreme, game_notes, languages,
+func (db *DB) StoreCurationMeta(ctx context.Context, tx *sql.Tx, cm *types.CurationMeta) error {
+	_, err := tx.ExecContext(ctx, `INSERT INTO curation_meta (fk_submission_file_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters) 
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -263,8 +264,8 @@ func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *types.CurationMeta) error {
 }
 
 // GetCurationMetaBySubmissionFileID returns curation meta for given submission file
-func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*types.CurationMeta, error) {
-	row := db.Conn.QueryRow(`SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
+func (db *DB) GetCurationMetaBySubmissionFileID(ctx context.Context, sfid int64) (*types.CurationMeta, error) {
+	row := db.Conn.QueryRowContext(ctx, `SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
@@ -282,21 +283,21 @@ func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*types.CurationMeta
 }
 
 // StoreComment stores curation meta
-func (db *DB) StoreComment(tx *sql.Tx, c *types.Comment) error {
+func (db *DB) StoreComment(ctx context.Context, tx *sql.Tx, c *types.Comment) error {
 	var msg *string
 	if c.Message != nil {
 		s := strings.TrimSpace(*c.Message)
 		msg = &s
 	}
-	_, err := tx.Exec(`INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
+	_, err := tx.ExecContext(ctx, `INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
                            VALUES (?, ?, ?, (SELECT id FROM "action" WHERE name=?), ?)`,
 		c.AuthorID, c.SubmissionID, msg, c.Action, c.CreatedAt.Unix())
 	return err
 }
 
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
-func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*types.ExtendedComment, error) {
-	rows, err := db.Conn.Query(`
+func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, sid int64) ([]*types.ExtendedComment, error) {
+	rows, err := db.Conn.QueryContext(ctx, `
 		SELECT discord_user.id, username, avatar, message, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
