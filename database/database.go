@@ -1,7 +1,10 @@
-package main
+package database
 
 import (
 	"database/sql"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/types"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
@@ -14,8 +17,8 @@ type DB struct {
 
 // OpenDB opens DB or panics
 func OpenDB(l *logrus.Logger) *sql.DB {
-	l.Infof("opening database '%s'...", DbName)
-	db, err := sql.Open("sqlite3", DbName+"?cache=shared")
+	l.Infof("opening database '%s'...", constants.DbName)
+	db, err := sql.Open("sqlite3", constants.DbName+"?cache=shared")
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -76,7 +79,7 @@ func (db *DB) GetUIDFromSession(key string) (string, bool, error) {
 }
 
 // StoreDiscordUser store discord user or replace with new data
-func (db *DB) StoreDiscordUser(discordUser *DiscordUser) error {
+func (db *DB) StoreDiscordUser(discordUser *types.DiscordUser) error {
 	_, err := db.Conn.Exec(
 		`INSERT OR REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, discordUser.MFAEnabled)
@@ -84,10 +87,10 @@ func (db *DB) StoreDiscordUser(discordUser *DiscordUser) error {
 }
 
 // GetDiscordUser returns DiscordUserResponse
-func (db *DB) GetDiscordUser(uid int64) (*DiscordUser, error) {
+func (db *DB) GetDiscordUser(uid int64) (*types.DiscordUser, error) {
 	row := db.Conn.QueryRow(`SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
 
-	discordUser := &DiscordUser{ID: uid}
+	discordUser := &types.DiscordUser{ID: uid}
 	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &discordUser.MFAEnabled)
 	if err != nil {
 		return nil, err
@@ -189,7 +192,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
-	data = append(data, ValidatorID, ValidatorID)
+	data = append(data, constants.ValidatorID, constants.ValidatorID)
 
 	if filter != nil {
 		if filter.SubmissionID != nil {
@@ -272,8 +275,8 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 			&s.LatestAction); err != nil {
 			return nil, err
 		}
-		s.SubmitterAvatarURL = FormatAvatarURL(s.SubmitterID, submitterAvatar)
-		s.UpdaterAvatarURL = FormatAvatarURL(s.UpdaterID, updaterAvatar)
+		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)
+		s.UpdaterAvatarURL = utils.FormatAvatarURL(s.UpdaterID, updaterAvatar)
 		s.UploadedAt = time.Unix(uploadedAt, 0)
 		s.UpdatedAt = time.Unix(updatedAt, 0)
 		result = append(result, s)
@@ -283,7 +286,7 @@ func (db *DB) SearchSubmissions(filter *SubmissionsFilter) ([]*ExtendedSubmissio
 }
 
 // StoreCurationMeta stores curation meta
-func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *CurationMeta) error {
+func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *types.CurationMeta) error {
 	_, err := tx.Exec(`INSERT INTO curation_meta (fk_submission_file_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters) 
@@ -295,14 +298,14 @@ func (db *DB) StoreCurationMeta(tx *sql.Tx, cm *CurationMeta) error {
 }
 
 // GetCurationMetaBySubmissionFileID returns curation meta for given submission file
-func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*CurationMeta, error) {
+func (db *DB) GetCurationMetaBySubmissionFileID(sfid int64) (*types.CurationMeta, error) {
 	row := db.Conn.QueryRow(`SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
 		WHERE fk_submission_file_id=?`, sfid, sfid)
 
-	c := &CurationMeta{SubmissionFileID: sfid}
+	c := &types.CurationMeta{SubmissionFileID: sfid}
 	err := row.Scan(&c.SubmissionID, &c.ApplicationPath, &c.Developer, &c.Extreme, &c.GameNotes, &c.Languages,
 		&c.LaunchCommand, &c.OriginalDescription, &c.PlayMode, &c.Platform, &c.Publisher, &c.ReleaseDate, &c.Series, &c.Source, &c.Status,
 		&c.Tags, &c.TagCategories, &c.Title, &c.AlternateTitles, &c.Library, &c.Version, &c.CurationNotes, &c.MountParameters)
@@ -370,7 +373,7 @@ func (db *DB) GetExtendedCommentsBySubmissionID(sid int64) ([]*ExtendedComment, 
 			return nil, err
 		}
 		ec.CreatedAt = time.Unix(createdAt, 0)
-		ec.AvatarURL = FormatAvatarURL(ec.AuthorID, avatar)
+		ec.AvatarURL = utils.FormatAvatarURL(ec.AuthorID, avatar)
 		if message != nil {
 			ec.Message = strings.Split(*message, "\n")
 		}

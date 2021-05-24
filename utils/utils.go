@@ -1,6 +1,7 @@
-package main
+package utils
 
 import (
+	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -34,4 +35,8 @@ func RandomString(n int) string {
 	}
 
 	return sb.String()
+}
+
+func FormatAvatarURL(uid int64, avatar string) string {
+	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", uid, avatar)
 }

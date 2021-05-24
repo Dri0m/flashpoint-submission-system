@@ -1,26 +1,17 @@
-package main
+package transport
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Dri0m/flashpoint-submission-system/types"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"net/http"
 	"strconv"
 )
 
 type discordUserResponse struct {
 	ID            string `json:"id"`
-	Username      string `json:"username"`
-	Avatar        string `json:"avatar"`
-	Discriminator string `json:"discriminator"`
-	PublicFlags   int64  `json:"public_flags"`
-	Flags         int64  `json:"flags"`
-	Locale        string `json:"locale"`
-	MFAEnabled    bool   `json:"mfa_enabled"`
-}
-
-type DiscordUser struct {
-	ID            int64  `json:"id"`
 	Username      string `json:"username"`
 	Avatar        string `json:"avatar"`
 	Discriminator string `json:"discriminator"`
@@ -50,7 +41,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := a.Conf.OauthConf.Exchange(context.Background(), r.FormValue("code"))
 
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to obtain discord auth token", http.StatusInternalServerError)
 		return
 	}
@@ -67,19 +58,19 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	var discordUserResp discordUserResponse
 	err = json.NewDecoder(resp.Body).Decode(&discordUserResp)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
 		return
 	}
 
 	uid, err := strconv.ParseInt(discordUserResp.ID, 10, 64)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
 		return
 	}
 
-	discordUser := DiscordUser{
+	discordUser := types.DiscordUser{
 		ID:            uid,
 		Username:      discordUserResp.Username,
 		Avatar:        discordUserResp.Avatar,
@@ -92,7 +83,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 
 	// save discord user data
 	if err := a.DB.StoreDiscordUser(&discordUser); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store discord user", http.StatusInternalServerError)
 		return
 	}
@@ -100,12 +91,12 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	// get and save discord user authorization
 	isAuthorized, err := a.Bot.IsUserAuthorized(discordUser.ID)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to obtain discord user's roles", http.StatusInternalServerError)
 		return
 	}
 	if err := a.DB.StoreDiscordUserAuthorization(discordUser.ID, isAuthorized); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store discord user's authorization", http.StatusInternalServerError)
 		return
 	}
@@ -113,18 +104,18 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	// create cookie and save session
 	authToken, err := CreateAuthToken(discordUser.ID)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to generate auth token", http.StatusInternalServerError)
 		return
 	}
 	if err := a.CC.SetSecureCookie(w, Cookies.Login, MapAuthToken(authToken)); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
 		return
 	}
 
 	if err = a.DB.StoreSession(authToken.Secret, discordUser.ID, a.Conf.SessionExpirationSeconds); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store session", http.StatusInternalServerError)
 	}
 
@@ -136,18 +127,18 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	const msg = "unable to log out, please clear your cookies and try again"
 	cookieMap, err := a.CC.GetSecureCookie(r, Cookies.Login)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
 	token, err := ParseAuthToken(cookieMap)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
 	if err := a.DB.DeleteSession(token.Secret); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}

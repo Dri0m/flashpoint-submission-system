@@ -1,7 +1,8 @@
-package main
+package bot
 
 import (
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -35,7 +36,7 @@ func (b *Bot) GetFlashpointRoleIDsForUser(uid int64) ([]string, error) {
 }
 
 // GetFlashpointRoles returns list of flashpoint server roles
-func (b *Bot) GetFlashpointRoles() ([]DiscordRole, error) {
+func (b *Bot) GetFlashpointRoles() ([]types.DiscordRole, error) {
 	b.L.Info("getting flashpoint roles")
 	roles, err := b.Session.GuildRoles(b.FlashpointServerID)
 	if err != nil {
@@ -50,21 +51,21 @@ func (b *Bot) GetFlashpointRoles() ([]DiscordRole, error) {
 	return result, nil
 }
 
-func formatDiscordgoRoles(roles []*discordgo.Role) ([]DiscordRole, error) {
-	formattedRoles := make([]DiscordRole, 0, len(roles))
+func formatDiscordgoRoles(roles []*discordgo.Role) ([]types.DiscordRole, error) {
+	formattedRoles := make([]types.DiscordRole, 0, len(roles))
 	for _, role := range roles {
 		id, err := strconv.ParseInt(role.ID, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		formattedRoles = append(formattedRoles, DiscordRole{ID: id, Name: role.Name, Color: fmt.Sprintf("#%06x", role.Color)})
+		formattedRoles = append(formattedRoles, types.DiscordRole{ID: id, Name: role.Name, Color: fmt.Sprintf("#%06x", role.Color)})
 	}
 	return formattedRoles, nil
 }
 
 // IsUserAuthorized contacts discord api to check if user has sufficient roles to use this site
 func (b *Bot) IsUserAuthorized(uid int64) (bool, error) {
-	userRoles := make([]DiscordRole, 0)
+	userRoles := make([]types.DiscordRole, 0)
 
 	roles, err := b.GetFlashpointRoles()
 	if err != nil {

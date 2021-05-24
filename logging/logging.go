@@ -1,8 +1,9 @@
-package main
+package logging
 
 import (
 	"context"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"io"
 	"net/http"
 	"os"
@@ -56,8 +57,8 @@ type HTTPReqInfo struct {
 // LogRequestHandler is logging handler
 func LogRequestHandler(l *logrus.Logger, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r = r.WithContext(context.WithValue(r.Context(), CtxKeys.Log, l))
-		r = r.WithContext(context.WithValue(r.Context(), CtxKeys.RequestID, RandomString(16)))
+		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.Log, l))
+		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.RequestID, utils.RandomString(16)))
 		ri := &HTTPReqInfo{
 			method:    r.Method,
 			uri:       r.URL.String(),
@@ -74,7 +75,7 @@ func LogRequestHandler(l *logrus.Logger, h http.Handler) http.Handler {
 		ri.code = m.Code
 		ri.size = m.Written
 		ri.duration = m.Duration
-		LogCtx(r.Context()).WithFields(logrus.Fields{"method": ri.method, "ip": ri.ipaddr, "uri": ri.uri, "statusCode": ri.code, "size": ri.size, "duration": fmt.Sprintf("%.6fms", float64(ri.duration.Nanoseconds())/1000000.0), "userAgent": ri.userAgent}).Debugln()
+		utils.LogCtx(r.Context()).WithFields(logrus.Fields{"method": ri.method, "ip": ri.ipaddr, "uri": ri.uri, "statusCode": ri.code, "size": ri.size, "duration": fmt.Sprintf("%.6fms", float64(ri.duration.Nanoseconds())/1000000.0), "userAgent": ri.userAgent}).Debugln()
 	})
 }
 

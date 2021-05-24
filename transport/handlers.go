@@ -1,9 +1,16 @@
-package main
+package transport
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/bot"
+	"github.com/Dri0m/flashpoint-submission-system/config"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/database"
+	"github.com/Dri0m/flashpoint-submission-system/logging"
+	bot2 "github.com/Dri0m/flashpoint-submission-system/types"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
@@ -18,26 +25,26 @@ import (
 
 // App is App
 type App struct {
-	Conf *Config
-	DB   DB
-	Bot  Bot
+	Conf *config.Config
+	DB   database.DB
+	Bot  bot.Bot
 	CC   CookieCutter
 }
 
-func InitApp(l *logrus.Logger, conf *Config, db *sql.DB, botSession *discordgo.Session) {
+func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *discordgo.Session) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", conf.Port),
-		Handler: LogRequestHandler(l, router),
+		Handler: logging.LogRequestHandler(l, router),
 	}
 
 	a := &App{
 		Conf: conf,
-		DB: DB{
+		DB: database.DB{
 			Conn: db,
 		},
-		Bot: Bot{
+		Bot: bot.Bot{
 			Session:            botSession,
 			FlashpointServerID: conf.FlashpointServerID,
 			L:                  l,
@@ -99,7 +106,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid, err := a.GetUserIDFromCookie(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid cookie", http.StatusInternalServerError)
 		return
 	}
@@ -108,20 +115,20 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	submissionID := params["id"]
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid submission id", http.StatusBadRequest)
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse form", http.StatusBadRequest)
 		return
 	}
 
 	tx, err := a.DB.Conn.Begin()
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
 		return
 	}
@@ -133,7 +140,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		message = &m
 	}
 
-	actions := []string{ActionComment, ActionApprove, ActionRequestChanges, ActionAccept, ActionMarkAdded, ActionReject, ActionUpload}
+	actions := []string{constants.ActionComment, constants.ActionApprove, constants.ActionRequestChanges, constants.ActionAccept, constants.ActionMarkAdded, constants.ActionReject, constants.ActionUpload}
 	isActionValid := false
 	for _, a := range actions {
 		if action == a {
@@ -144,13 +151,13 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 
 	if !isActionValid {
 		err := fmt.Errorf("invalid comment action")
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		a.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
-	actionsWithMandatoryMessage := []string{ActionComment, ActionRequestChanges, ActionReject}
+	actionsWithMandatoryMessage := []string{constants.ActionComment, constants.ActionRequestChanges, constants.ActionReject}
 	isActionWithMandatoryMessage := false
 	for _, a := range actionsWithMandatoryMessage {
 		if action == a {
@@ -161,13 +168,13 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 
 	if isActionWithMandatoryMessage && (message == nil || *message == "") {
 		err := fmt.Errorf("cannot post comment action '%s' without a message", action)
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		a.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
-	c := &Comment{
+	c := &database.Comment{
 		AuthorID:     uid,
 		SubmissionID: sid,
 		Message:      message,
@@ -176,14 +183,14 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.DB.StoreComment(tx, c); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store comment", http.StatusInternalServerError)
 		a.LogIfErr(ctx, tx.Rollback())
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
 		a.LogIfErr(ctx, tx.Rollback())
 		return
@@ -199,27 +206,27 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid submission id", http.StatusBadRequest)
 		return
 	}
 
 	const dir = "submissions"
 
-	filter := &SubmissionsFilter{
+	filter := &database.SubmissionsFilter{
 		SubmissionID: &sid,
 	}
 
 	submissions, err := a.DB.SearchSubmissions(filter)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submission", http.StatusInternalServerError)
 		return
 	}
 
 	if len(submissions) == 0 {
 		err = fmt.Errorf("submission not found")
-		LogCtx(ctx).Warn(err)
+		utils.LogCtx(ctx).Warn(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -228,7 +235,7 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 
 	f, err := os.Open(fmt.Sprintf("%s/%s", dir, s.CurrentFilename))
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed open file", http.StatusInternalServerError)
 		return
 	}
@@ -248,7 +255,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	if submissionID != "" {
 		sidParsed, err := strconv.ParseInt(submissionID, 10, 64)
 		if err != nil {
-			LogCtx(ctx).Error(err)
+			utils.LogCtx(ctx).Error(err)
 			http.Error(w, "invalid submission id", http.StatusBadRequest)
 			return
 		}
@@ -257,14 +264,14 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := a.DB.Conn.Begin()
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
 		return
 	}
 
 	// limit RAM usage to 100MB
 	if err := r.ParseMultipartForm(100 * 1000 * 1000); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse form", http.StatusInternalServerError)
 		return
 	}
@@ -273,7 +280,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 
 	if len(fileHeaders) == 0 {
 		err = fmt.Errorf("no files received")
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -282,14 +289,14 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	for _, fileHeader := range fileHeaders {
 		err := a.ProcessReceivedSubmission(ctx, tx, fileHeader, sid)
 		if err != nil {
-			LogCtx(ctx).Error(err)
+			utils.LogCtx(ctx).Error(err)
 			http.Error(w, fmt.Sprintf("error processing file '%s': %s", fileHeader.Filename, err.Error()), http.StatusInternalServerError)
 			a.LogIfErr(ctx, tx.Rollback())
 			return
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to commit transaction", http.StatusInternalServerError)
 		a.LogIfErr(ctx, tx.Rollback())
 	}
@@ -302,7 +309,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.GetBasePageData(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -315,7 +322,7 @@ func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.GetBasePageData(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -328,7 +335,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.GetBasePageData(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -338,7 +345,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 
 type submissionsPageData struct {
 	basePageData
-	Submissions []*ExtendedSubmission
+	Submissions []*database.ExtendedSubmission
 }
 
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
@@ -346,14 +353,14 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	bpd, err := a.GetBasePageData(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	submissions, err := a.DB.SearchSubmissions(nil)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submissions", http.StatusInternalServerError)
 		return
 	}
@@ -367,25 +374,25 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, err := a.GetUserIDFromCookie(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid cookie", http.StatusInternalServerError)
 		return
 	}
 
 	bpd, err := a.GetBasePageData(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	filter := &SubmissionsFilter{
+	filter := &database.SubmissionsFilter{
 		SubmitterID: &userID,
 	}
 
 	submissions, err := a.DB.SearchSubmissions(filter)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load user submissions", http.StatusInternalServerError)
 		return
 	}
@@ -397,9 +404,9 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 type viewSubmissionPageData struct {
 	basePageData
-	Submissions  []*ExtendedSubmission
-	CurationMeta *CurationMeta
-	Comments     []*ExtendedComment
+	Submissions  []*database.ExtendedSubmission
+	CurationMeta *bot2.CurationMeta
+	Comments     []*database.ExtendedComment
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
@@ -409,32 +416,32 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid submission id", http.StatusBadRequest)
 		return
 	}
 
 	bpd, err := a.GetBasePageData(r)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	filter := &SubmissionsFilter{
+	filter := &database.SubmissionsFilter{
 		SubmissionID: &sid,
 	}
 
 	submissions, err := a.DB.SearchSubmissions(filter)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load submission", http.StatusInternalServerError)
 		return
 	}
 
 	if len(submissions) == 0 {
 		err = fmt.Errorf("submission not found")
-		LogCtx(ctx).Warn(err)
+		utils.LogCtx(ctx).Warn(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -443,14 +450,14 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 
 	meta, err := a.DB.GetCurationMetaBySubmissionFileID(submission.FileID)
 	if err != nil && err != sql.ErrNoRows {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load curation meta", http.StatusInternalServerError)
 		return
 	}
 
 	comments, err := a.DB.GetExtendedCommentsBySubmissionID(sid)
 	if err != nil {
-		LogCtx(ctx).Error(err)
+		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to load curation comments", http.StatusInternalServerError)
 		return
 	}
