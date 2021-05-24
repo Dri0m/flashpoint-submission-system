@@ -7,6 +7,12 @@ import (
 	"strconv"
 )
 
+type Bot struct {
+	Session            *discordgo.Session
+	FlashpointServerID string
+	L                  *logrus.Logger
+}
+
 // ConnectBot connects bot or panics
 func ConnectBot(l *logrus.Logger, token string) *discordgo.Session {
 	l.Infoln("connecting discord bot...")

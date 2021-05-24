@@ -9,6 +9,11 @@ import (
 	"strconv"
 )
 
+type CookieCutter struct {
+	Previous *securecookie.SecureCookie
+	Current  *securecookie.SecureCookie
+}
+
 type cookies struct {
 	Login string
 }
