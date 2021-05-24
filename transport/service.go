@@ -15,12 +15,6 @@ import (
 	"time"
 )
 
-type basePageData struct {
-	Username                string
-	AvatarURL               string
-	IsAuthorizedToUseSystem bool
-}
-
 // GetBasePageData loads base user data, does not return error if user is not logged in
 func (a *App) GetBasePageData(ctx context.Context) (*basePageData, error) {
 	uid := utils.UserIDFromContext(ctx)
@@ -47,16 +41,6 @@ func (a *App) GetBasePageData(ctx context.Context) (*basePageData, error) {
 	}
 
 	return bpd, nil
-}
-
-type validatorResponse struct {
-	Filename         string             `json:"filename"`
-	Path             string             `json:"path"`
-	CurationErrors   []string           `json:"curation_errors"`
-	CurationWarnings []string           `json:"curation_warnings"`
-	IsExtreme        bool               `json:"is_extreme"`
-	CurationType     int                `json:"curation_type"`
-	Meta             types.CurationMeta `json:"meta"`
 }
 
 func (a *App) ProcessReceivedSubmissions(ctx context.Context, tx *sql.Tx, sid *int64, fileHeaders []*multipart.FileHeader) error {
@@ -319,8 +303,10 @@ func (a *App) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSubmis
 	}
 
 	pageData := &viewSubmissionPageData{
-		basePageData: *bpd,
-		Submissions:  submissions,
+		submissionsPageData: submissionsPageData{
+			basePageData: *bpd,
+			Submissions:  submissions,
+		},
 		CurationMeta: meta,
 		Comments:     comments,
 	}

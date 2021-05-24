@@ -284,11 +284,6 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submit.gohtml")
 }
 
-type submissionsPageData struct {
-	basePageData
-	Submissions []*types.ExtendedSubmission
-}
-
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -318,13 +313,6 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/my-submissions.gohtml", "templates/submission-table.gohtml")
-}
-
-type viewSubmissionPageData struct {
-	basePageData
-	Submissions  []*types.ExtendedSubmission
-	CurationMeta *types.CurationMeta
-	Comments     []*types.ExtendedComment
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
