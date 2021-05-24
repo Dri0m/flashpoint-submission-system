@@ -15,34 +15,6 @@ import (
 	"time"
 )
 
-// GetBasePageData loads base user data, does not return error if user is not logged in
-func (a *App) GetBasePageData(ctx context.Context) (*basePageData, error) {
-	uid := utils.UserIDFromContext(ctx)
-	if uid == 0 {
-		return &basePageData{}, nil
-	}
-
-	discordUser, err := a.DB.GetDiscordUser(ctx, uid)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to get user data from database")
-	}
-
-	isAuthorized, err := a.DB.IsDiscordUserAuthorized(ctx, uid)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to load user authorization")
-	}
-
-	bpd := &basePageData{
-		Username:                discordUser.Username,
-		AvatarURL:               utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
-		IsAuthorizedToUseSystem: isAuthorized,
-	}
-
-	return bpd, nil
-}
-
 func (a *App) ProcessReceivedSubmissions(ctx context.Context, tx *sql.Tx, sid *int64, fileHeaders []*multipart.FileHeader) error {
 	destinationFilenames := make([]string, 0)
 
