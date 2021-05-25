@@ -3,11 +3,15 @@ package database
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/mysql"
+	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/sirupsen/logrus"
-	"os"
 	"strings"
 	"time"
 )
@@ -18,29 +22,43 @@ type DB struct {
 
 // OpenDB opens DB or panics
 func OpenDB(l *logrus.Logger) *sql.DB {
-	l.Infof("opening database '%s'...", constants.DbName)
-	db, err := sql.Open("sqlite3", constants.DbName+"?cache=shared")
+
+	rootUser := "root"
+	rootPass := "fpfss"
+	ip := "127.0.0.1"
+	port := "3306"
+	dbName := "fpfss"
+
+	rootDB, err := sql.Open("mysql",
+		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?multiStatements=true", rootUser, rootPass, ip, port, dbName))
 	if err != nil {
 		l.Fatal(err)
 	}
-	err = db.Ping()
+	driver, err := mysql.WithInstance(rootDB, &mysql.Config{})
 	if err != nil {
 		l.Fatal(err)
 	}
-
-	db.SetMaxOpenConns(0)
-
-	_, err = db.Exec(`PRAGMA journal_mode = WAL`)
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations/",
+		"mysql",
+		driver,
+	)
 	if err != nil {
 		l.Fatal(err)
 	}
-
-	file, err := os.ReadFile("sql.sql")
-	if err != nil {
+	err = m.Up()
+	if err != nil && err.Error() != "no change" {
 		l.Fatal(err)
 	}
+	m.Close()
+	driver.Close()
+	rootDB.Close()
 
-	_, err = db.Exec(string(file))
+	user := "fpfss"
+	pass := "fpfss"
+
+	db, err := sql.Open("mysql",
+		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?multiStatements=true", user, pass, ip, port, dbName))
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -82,7 +100,7 @@ func (db *DB) GetUIDFromSession(ctx context.Context, key string) (string, bool, 
 // StoreDiscordUser store discord user or replace with new data
 func (db *DB) StoreDiscordUser(ctx context.Context, discordUser *types.DiscordUser) error {
 	_, err := db.Conn.ExecContext(ctx,
-		`INSERT OR REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		`REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, discordUser.MFAEnabled)
 	return err
 }
@@ -107,7 +125,7 @@ func (db *DB) StoreDiscordUserAuthorization(ctx context.Context, uid int64, isAu
 		a = 1
 	}
 
-	_, err := db.Conn.ExecContext(ctx, `INSERT OR REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
+	_, err := db.Conn.ExecContext(ctx, `REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
 	return err
 }
 
@@ -128,7 +146,7 @@ func (db *DB) IsDiscordUserAuthorized(ctx context.Context, uid int64) (bool, err
 
 // StoreSubmission stores plain submission
 func (db *DB) StoreSubmission(ctx context.Context, tx *sql.Tx) (int64, error) {
-	res, err := tx.ExecContext(ctx, `INSERT INTO submission DEFAULT VALUES`)
+	res, err := tx.ExecContext(ctx, `INSERT INTO submission (id) VALUES (DEFAULT)`)
 	if err != nil {
 		return 0, err
 	}
@@ -177,45 +195,81 @@ func (db *DB) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFi
 	}
 
 	rows, err := db.Conn.QueryContext(ctx, `
-		SELECT submission.id AS submission_id, 
-			uploader.id AS uploader_id, uploader.username AS uploader_username, uploader.avatar AS uploader_avatar,
-			updater.id AS updater_id, updater.username AS updater_username, updater.avatar AS updater_avatar,
-			files.submission_file_id, files.original_filename, files.current_filename, files.size, 
-			files.uploaded_at, files.updated_at,
-			meta.title, meta.alternate_titles, meta.launch_command,
-			bot_comment.action as bot_action,
-			latest_action.action as latest_action
+		SELECT submission.id        AS submission_id,
+			   uploader.id          AS uploader_id,
+			   uploader.username    AS uploader_username,
+			   uploader.avatar      AS uploader_avatar,
+			   updater.id           AS updater_id,
+			   updater.username     AS updater_username,
+			   updater.avatar       AS updater_avatar,
+			   oldest.id            AS submission_file_id,
+			   newest.original_filename,
+			   newest.current_filename,
+			   newest.size,
+			   oldest.uploaded_at,
+			   newest.updated_at,
+			   meta.title,
+			   meta.alternate_titles,
+			   meta.launch_command,
+			   bot_comment.action   AS bot_action,
+			   latest_action.action AS latest_action
 		FROM submission
 		
-		LEFT JOIN 
-			(SELECT submission.id AS submission_id, 
-					oldest.fk_uploader_id AS uploader_id, newest.fk_uploader_id AS updater_id, 
-					newest.id AS submission_file_id, newest.original_filename, newest.current_filename, newest.size, 
-					oldest.uploaded_at AS uploaded_at, newest.uploaded_at AS updated_at, 
-					MIN(oldest.uploaded_at), MAX(newest.uploaded_at) FROM submission 
-				LEFT JOIN submission_file oldest ON oldest.fk_submission_id=submission.id
-				LEFT JOIN submission_file newest ON newest.fk_submission_id=submission.id
-				GROUP BY submission.id) 
-			AS files ON files.submission_id=submission.id
-		LEFT JOIN discord_user uploader ON files.uploader_id = uploader.id
-		LEFT JOIN discord_user updater ON files.updater_id = updater.id
-		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = files.submission_file_id
-		LEFT JOIN 
-			(SELECT submission.id AS submission_id, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action
-				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id
-				WHERE comment.fk_author_id=?) 
-			AS bot_comment ON bot_comment.submission_id=submission.id
-		LEFT JOIN 
-			(SELECT submission.id AS submission_id, comment.created_at, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action
-				FROM submission LEFT JOIN comment ON comment.fk_submission_id=submission.id
-				WHERE fk_action_id!=(SELECT id FROM "action" WHERE name="comment")
-				AND comment.fk_author_id!=?
-				GROUP BY submission.id
-				HAVING MAX(comment.created_at)) 
-			AS latest_action ON latest_action.submission_id=submission.id
+				 LEFT JOIN
+			 (WITH ranked_file AS (
+				 SELECT s.*, ROW_NUMBER() OVER (PARTITION BY fk_submission_id ORDER BY uploaded_at ASC) AS rn
+				 FROM submission_file AS s)
+			  SELECT id, fk_uploader_id AS uploader_id, fk_submission_id, uploaded_at AS uploaded_at
+			  FROM ranked_file
+			  WHERE rn = 1)
+				 AS oldest ON oldest.fk_submission_id = submission.id
+				 LEFT JOIN
+			 (WITH ranked_file AS (
+				 SELECT s.*,
+						ROW_NUMBER()
+								OVER (PARTITION BY fk_submission_id ORDER BY uploaded_at DESC) AS rn
+				 FROM submission_file AS s)
+			  SELECT fk_uploader_id AS updater_id,
+					 fk_submission_id,
+					 original_filename,
+					 current_filename,
+					 size,
+					 uploaded_at    AS updated_at
+			  FROM ranked_file
+			  WHERE rn = 1)
+				 AS newest ON newest.fk_submission_id = submission.id
+				 LEFT JOIN discord_user uploader ON oldest.uploader_id = uploader.id
+				 LEFT JOIN discord_user updater ON newest.updater_id = updater.id
+				 LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = oldest.id
+				 LEFT JOIN
+			  (WITH ranked_comment AS (
+				 SELECT c.*,
+						ROW_NUMBER()
+								OVER (PARTITION BY fk_submission_id ORDER BY created_at DESC) AS rn
+				 FROM comment AS c
+				 WHERE c.fk_author_id = ?)
+			  SELECT ranked_comment.fk_submission_id                                         AS submission_id,
+					 (SELECT name FROM action WHERE action.id = ranked_comment.fk_action_id) AS action
+			  FROM ranked_comment
+			  WHERE rn = 1 )
+			 AS bot_comment ON bot_comment.submission_id = submission.id
+			 LEFT JOIN
+			 (WITH ranked_comment AS (
+				 SELECT c.*,
+						ROW_NUMBER()
+								OVER (PARTITION BY fk_submission_id ORDER BY created_at DESC) AS rn
+				 FROM comment AS c
+				 WHERE c.fk_author_id != ?)
+			  SELECT ranked_comment.fk_submission_id                                         AS submission_id,
+					 ranked_comment.created_at,
+					 (SELECT name FROM action WHERE action.id = ranked_comment.fk_action_id) AS action
+			  FROM ranked_comment
+			  WHERE rn = 1 )
+				 AS latest_action ON latest_action.submission_id = submission.id
+
 		`+where+strings.Join(filters, " AND ")+`
 		GROUP BY submission.id
-		ORDER BY files.updated_at DESC`, data...)
+		ORDER BY newest.updated_at DESC`, data...)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +323,7 @@ func (db *DB) GetCurationMetaBySubmissionFileID(ctx context.Context, sfid int64)
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
-		WHERE fk_submission_file_id=?`, sfid, sfid)
+		WHERE fk_submission_file_id=?`, sfid)
 
 	c := &types.CurationMeta{SubmissionFileID: sfid}
 	err := row.Scan(&c.SubmissionID, &c.ApplicationPath, &c.Developer, &c.Extreme, &c.GameNotes, &c.Languages,
@@ -290,7 +344,7 @@ func (db *DB) StoreComment(ctx context.Context, tx *sql.Tx, c *types.Comment) er
 		msg = &s
 	}
 	_, err := tx.ExecContext(ctx, `INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
-                           VALUES (?, ?, ?, (SELECT id FROM "action" WHERE name=?), ?)`,
+                           VALUES (?, ?, ?, (SELECT id FROM action WHERE name=?), ?)`,
 		c.AuthorID, c.SubmissionID, msg, c.Action, c.CreatedAt.Unix())
 	return err
 }
@@ -298,7 +352,7 @@ func (db *DB) StoreComment(ctx context.Context, tx *sql.Tx, c *types.Comment) er
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
 func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, sid int64) ([]*types.ExtendedComment, error) {
 	rows, err := db.Conn.QueryContext(ctx, `
-		SELECT discord_user.id, username, avatar, message, (SELECT name FROM "action" WHERE id=comment.fk_action_id) as action, created_at 
+		SELECT discord_user.id, username, avatar, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
 		WHERE fk_submission_id=? 

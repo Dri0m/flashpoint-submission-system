@@ -1,6 +1,5 @@
 package constants
 
-const DbName = "db.db"
 const ValidatorID = 810112564787675166
 
 const (

@@ -26,8 +26,6 @@ func (a *App) ProcessReceivedSubmissions(ctx context.Context, tx *sql.Tx, sid *i
 		}
 
 		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			utils.LogIfErr(ctx, tx.Rollback())
 			for _, df := range destinationFilenames {
 				utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
 				utils.LogIfErr(ctx, os.Remove(df))
@@ -37,12 +35,11 @@ func (a *App) ProcessReceivedSubmissions(ctx context.Context, tx *sql.Tx, sid *i
 	}
 
 	if err := tx.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, tx.Rollback())
 		for _, df := range destinationFilenames {
 			utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
 			utils.LogIfErr(ctx, os.Remove(df))
 		}
+		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("failed to commit transaction")
 	}
 
@@ -94,6 +91,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	if sid == nil {
 		submissionID, err = a.DB.StoreSubmission(ctx, tx)
 		if err != nil {
+			utils.LogCtx(ctx).Error(err)
 			return &destinationFilePath, fmt.Errorf("failed to store submission")
 		}
 	} else {
@@ -111,7 +109,8 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	fid, err := a.DB.StoreSubmissionFile(ctx, tx, s)
 	if err != nil {
-		return &destinationFilePath, fmt.Errorf("failed to store submission")
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, fmt.Errorf("failed to store submission file")
 	}
 
 	c := &types.Comment{
@@ -123,6 +122,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	}
 
 	if err := a.DB.StoreComment(ctx, tx, c); err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store uploader comment")
 	}
 
@@ -143,6 +143,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 	vr.Meta.SubmissionFileID = fid
 
 	if err := a.DB.StoreCurationMeta(ctx, tx, &vr.Meta); err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store curation meta")
 	}
 
@@ -150,6 +151,7 @@ func (a *App) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHea
 
 	bc := convertValidatorResponseToComment(&vr)
 	if err := a.DB.StoreComment(ctx, tx, bc); err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store validator comment")
 	}
 
@@ -255,6 +257,7 @@ func (a *App) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSubmis
 
 	submissions, err := a.DB.SearchSubmissions(ctx, filter)
 	if err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission")
 	}
 
@@ -266,11 +269,13 @@ func (a *App) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSubmis
 
 	meta, err := a.DB.GetCurationMetaBySubmissionFileID(ctx, submission.FileID)
 	if err != nil && err != sql.ErrNoRows {
+		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load curation meta")
 	}
 
 	comments, err := a.DB.GetExtendedCommentsBySubmissionID(ctx, sid)
 	if err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load curation comments")
 	}
 
@@ -294,6 +299,7 @@ func (a *App) ProcessSearchSubmissions(ctx context.Context, filter *types.Submis
 
 	submissions, err := a.DB.SearchSubmissions(ctx, filter)
 	if err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submissions")
 	}
 

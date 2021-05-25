@@ -1,0 +1,30 @@
+version: '3.9'
+
+networks:
+  marketnetwork:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
+
+services:
+  database:
+    container_name: fpfssdb
+    restart: unless-stopped
+    image: mysql:8.0.25
+    environment:
+      MYSQL_ROOT_PASSWORD: fpfss
+      MYSQL_DATABASE: fpfss
+      MYSQL_USER: fpfss
+      MYSQL_PASSWORD: fpfss
+    ports:
+      - "3306:3306" # TODO unmap in prod
+    volumes:
+      - fpfssdb_data:/var/lib/mysql
+    networks:
+      marketnetwork:
+        ipv4_address: 10.5.0.2
+
+volumes:
+  fpfssdb_data:

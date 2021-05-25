@@ -7,9 +7,13 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/bwmarrin/discordgo v0.23.2
+	github.com/containerd/containerd v1.5.2 // indirect
+	github.com/docker/docker v20.10.6+incompatible // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.0.0+incompatible
-	github.com/google/uuid v1.2.0 // indirect
+	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/huandu/xstrings v1.3.2 // indirect

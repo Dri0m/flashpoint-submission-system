@@ -230,6 +230,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 
 	if err := a.ProcessReceivedSubmissions(ctx, tx, sid, fileHeaders); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		utils.LogIfErr(ctx, tx.Rollback())
 		http.Error(w, fmt.Sprintf("submission processor: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -328,6 +329,11 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageData, err := a.ProcessViewSubmission(ctx, sid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		return
+	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submission.gohtml", "templates/submission-table.gohtml")
 }
