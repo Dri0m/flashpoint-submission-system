@@ -3,10 +3,12 @@ package transport
 import (
 	"bytes"
 	"context"
+	"errors"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/Masterminds/sprig"
 	"html/template"
 	"net/http"
+	"strconv"
 )
 
 // RenderTemplates is a helper for rendering templates
@@ -43,4 +45,26 @@ func BoolString(b *bool) string {
 		return "true"
 	}
 	return "false"
+}
+
+func (a *App) GetUserIDFromCookie(r *http.Request) (int64, error) {
+	cookieMap, err := a.CC.GetSecureCookie(r, utils.Cookies.Login)
+	if errors.Is(err, http.ErrNoCookie) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	token, err := utils.ParseAuthToken(cookieMap)
+	if err != nil {
+		return 0, err
+	}
+
+	uid, err := strconv.ParseInt(token.UserID, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return uid, nil
 }

@@ -88,7 +88,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.CC.SetSecureCookie(w, Cookies.Login, MapAuthToken(authToken)); err != nil {
+	if err := a.CC.SetSecureCookie(w, utils.Cookies.Login, utils.MapAuthToken(authToken)); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
 		return
@@ -100,14 +100,14 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	const msg = "unable to log out, please clear your cookies"
-	cookieMap, err := a.CC.GetSecureCookie(r, Cookies.Login)
+	cookieMap, err := a.CC.GetSecureCookie(r, utils.Cookies.Login)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
 
-	token, err := ParseAuthToken(cookieMap)
+	token, err := utils.ParseAuthToken(cookieMap)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -120,6 +120,6 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	UnsetCookie(w, Cookies.Login)
+	utils.UnsetCookie(w, utils.Cookies.Login)
 	http.Redirect(w, r, "/", http.StatusFound)
 }

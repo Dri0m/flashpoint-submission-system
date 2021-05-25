@@ -8,6 +8,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
+	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/bwmarrin/discordgo"
@@ -24,8 +25,8 @@ import (
 // App is App
 type App struct {
 	Conf    *config.Config
-	CC      CookieCutter
-	Service Service
+	CC      utils.CookieCutter
+	Service service.Service
 }
 
 func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *discordgo.Session) {
@@ -38,11 +39,11 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 
 	a := &App{
 		Conf: conf,
-		CC: CookieCutter{
+		CC: utils.CookieCutter{
 			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
-		Service: Service{
+		Service: service.Service{
 			Bot: bot.Bot{
 				Session:            botSession,
 				FlashpointServerID: conf.FlashpointServerID,

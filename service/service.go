@@ -1,4 +1,4 @@
-package transport
+package service
 
 import (
 	"context"
@@ -411,7 +411,7 @@ func (s *Service) ProcessDownloadSubmission(ctx context.Context, sid int64) (*ty
 	return submissions[0], nil
 }
 
-func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types.DiscordUser) (*AuthToken, error) {
+func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -437,7 +437,7 @@ func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types
 	}
 
 	// create cookie and save session
-	authToken, err := CreateAuthToken(discordUser.ID)
+	authToken, err := utils.CreateAuthToken(discordUser.ID)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to generate auth token")
