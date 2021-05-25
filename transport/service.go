@@ -25,7 +25,7 @@ type Service struct {
 }
 
 // GetBasePageData loads base user data, does not return error if user is not logged in
-func (s *Service) GetBasePageData(ctx context.Context) (*basePageData, error) {
+func (s *Service) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -35,7 +35,7 @@ func (s *Service) GetBasePageData(ctx context.Context) (*basePageData, error) {
 
 	uid := utils.UserIDFromContext(ctx)
 	if uid == 0 {
-		return &basePageData{}, nil
+		return &types.BasePageData{}, nil
 	}
 
 	discordUser, err := s.DB.GetDiscordUser(ctx, tx, uid)
@@ -50,7 +50,7 @@ func (s *Service) GetBasePageData(ctx context.Context) (*basePageData, error) {
 		return nil, fmt.Errorf("failed to load user authorization")
 	}
 
-	bpd := &basePageData{
+	bpd := &types.BasePageData{
 		Username:                discordUser.Username,
 		AvatarURL:               utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
 		IsAuthorizedToUseSystem: isAuthorized,
@@ -184,7 +184,7 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 		return &destinationFilePath, fmt.Errorf("validator: %w", err)
 	}
 
-	var vr validatorResponse
+	var vr types.ValidatorResponse
 	err = json.Unmarshal(resp, &vr)
 	if err != nil {
 		return &destinationFilePath, fmt.Errorf("failed to decode validator response")
@@ -210,7 +210,7 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 }
 
 // convertValidatorResponseToComment produces appropriate comment based on validator response
-func convertValidatorResponseToComment(vr *validatorResponse) *types.Comment {
+func convertValidatorResponseToComment(vr *types.ValidatorResponse) *types.Comment {
 	c := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: vr.Meta.SubmissionID,
@@ -311,7 +311,7 @@ func (s *Service) ProcessReceivedComment(ctx context.Context, uid, sid int64, fo
 	return nil
 }
 
-func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSubmissionPageData, error) {
+func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -352,9 +352,9 @@ func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSu
 		return nil, fmt.Errorf("failed to load curation comments")
 	}
 
-	pageData := &viewSubmissionPageData{
-		submissionsPageData: submissionsPageData{
-			basePageData: *bpd,
+	pageData := &types.ViewSubmissionPageData{
+		SubmissionsPageData: types.SubmissionsPageData{
+			BasePageData: *bpd,
 			Submissions:  submissions,
 		},
 		CurationMeta: meta,
@@ -364,7 +364,7 @@ func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*viewSu
 	return pageData, nil
 }
 
-func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) (*submissionsPageData, error) {
+func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -383,7 +383,7 @@ func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.Su
 		return nil, fmt.Errorf("failed to load submissions")
 	}
 
-	pageData := &submissionsPageData{basePageData: *bpd, Submissions: submissions}
+	pageData := &types.SubmissionsPageData{BasePageData: *bpd, Submissions: submissions}
 	return pageData, nil
 }
 
