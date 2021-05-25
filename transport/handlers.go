@@ -126,6 +126,13 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	formAction := r.FormValue("action")
 	formMessage := r.FormValue("message")
 
+	if len([]rune(formMessage)) > 20000 {
+		err = fmt.Errorf("message cannot be longer than 20000 characters")
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if err := a.Service.ProcessReceivedComment(ctx, uid, sid, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
