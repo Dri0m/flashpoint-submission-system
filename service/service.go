@@ -50,6 +50,11 @@ func (s *Service) GetBasePageData(ctx context.Context) (*types.BasePageData, err
 		return nil, fmt.Errorf("failed to load user authorization")
 	}
 
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to commit transaction")
+	}
+
 	bpd := &types.BasePageData{
 		Username:                discordUser.Username,
 		AvatarURL:               utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
@@ -209,50 +214,6 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 	return &destinationFilePath, nil
 }
 
-// convertValidatorResponseToComment produces appropriate comment based on validator response
-func convertValidatorResponseToComment(vr *types.ValidatorResponse) *types.Comment {
-	c := &types.Comment{
-		AuthorID:     constants.ValidatorID,
-		SubmissionID: vr.Meta.SubmissionID,
-		CreatedAt:    time.Now(),
-	}
-
-	approvalMessage := "LGTM 🤖"
-	message := ""
-
-	if len(vr.CurationErrors) > 0 {
-		message += "Your curation is invalid:\n"
-	}
-	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) > 0 {
-		message += "Your curation might have some problems:\n"
-	}
-
-	for _, e := range vr.CurationErrors {
-		message += fmt.Sprintf("🚫 %s\n", e)
-	}
-	for _, w := range vr.CurationWarnings {
-		message += fmt.Sprintf("🚫 %s\n", w)
-	}
-
-	c.Message = &message
-
-	c.Action = constants.ActionRequestChanges
-	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0 {
-		c.Action = constants.ActionApprove
-		c.Message = &approvalMessage
-	}
-
-	return c
-}
-
-func (s *Service) beginTx() (*sql.Tx, error) {
-	return s.DB.Conn.Begin()
-}
-
-func (s *Service) rollbackTx(ctx context.Context, tx *sql.Tx) {
-	utils.LogIfErr(ctx, tx.Rollback())
-}
-
 func (s *Service) ProcessReceivedComment(ctx context.Context, uid, sid int64, formAction, formMessage string) error {
 	tx, err := s.beginTx()
 	if err != nil {
@@ -305,6 +266,7 @@ func (s *Service) ProcessReceivedComment(ctx context.Context, uid, sid int64, fo
 	}
 
 	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("failed to commit transaction")
 	}
 
@@ -352,6 +314,11 @@ func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*types.
 		return nil, fmt.Errorf("failed to load curation comments")
 	}
 
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to commit transaction")
+	}
+
 	pageData := &types.ViewSubmissionPageData{
 		SubmissionsPageData: types.SubmissionsPageData{
 			BasePageData: *bpd,
@@ -383,7 +350,16 @@ func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.Su
 		return nil, fmt.Errorf("failed to load submissions")
 	}
 
-	pageData := &types.SubmissionsPageData{BasePageData: *bpd, Submissions: submissions}
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to commit transaction")
+	}
+
+	pageData := &types.SubmissionsPageData{
+		BasePageData: *bpd,
+		Submissions:  submissions,
+	}
+
 	return pageData, nil
 }
 
@@ -406,6 +382,11 @@ func (s *Service) ProcessDownloadSubmission(ctx context.Context, sid int64) (*ty
 
 	if len(submissions) == 0 {
 		return nil, fmt.Errorf("submission not found")
+	}
+
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
 	return submissions[0], nil
@@ -448,6 +429,11 @@ func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types
 		return nil, fmt.Errorf("failed to store session")
 	}
 
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to commit transaction")
+	}
+
 	return authToken, nil
 }
 
@@ -462,6 +448,11 @@ func (s *Service) ProcessLogout(ctx context.Context, secret string) error {
 	if err := s.DB.DeleteSession(ctx, tx, secret); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("unable to delete session")
+	}
+
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to commit transaction")
 	}
 
 	return nil
@@ -479,6 +470,11 @@ func (s *Service) GetUserAuthorization(ctx context.Context, uid int64) (bool, er
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return false, fmt.Errorf("failed to load user authorization")
+	}
+
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return false, fmt.Errorf("failed to commit transaction")
 	}
 
 	return isAuthorized, nil

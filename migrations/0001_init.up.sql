@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS authorization
     id         BIGINT PRIMARY KEY AUTO_INCREMENT,
     fk_uid     BIGINT NOT NULL,
     authorized BIGINT NOT NULL,
-    FOREIGN KEY (fk_uid) REFERENCES discord_user (id)
+    CONSTRAINT authorization_fk_uid FOREIGN KEY (fk_uid) REFERENCES discord_user (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS submission

@@ -6,8 +6,11 @@ import (
 	"errors"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/gofrs/uuid"
 	"net/http"
 	"strconv"
+	"sync"
+	"time"
 )
 
 type discordUserResponse struct {
@@ -21,18 +24,70 @@ type discordUserResponse struct {
 	MFAEnabled    bool   `json:"mfa_enabled"`
 }
 
-func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, a.Conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
+type StateKeeper struct {
+	sync.Mutex
+	states            map[string]time.Time
+	expirationSeconds uint64
 }
 
-// TODO provide real, secure oauth state
-var state = "random"
+func (sk *StateKeeper) Generate() (string, error) {
+	sk.Clean()
+	u, err := uuid.NewV4()
+	if err != nil {
+		return "", err
+	}
+	s := u.String()
+	sk.Lock()
+	sk.states[s] = time.Now()
+	sk.Unlock()
+	return s, nil
+}
+
+func (sk *StateKeeper) Use(s string) bool {
+	sk.Clean()
+	sk.Lock()
+	defer sk.Unlock()
+
+	_, ok := sk.states[s]
+	if ok {
+		delete(sk.states, s)
+	}
+	return ok
+}
+
+func (sk *StateKeeper) Clean() {
+	sk.Lock()
+	defer sk.Unlock()
+	for k, v := range sk.states {
+		if v.After(v.Add(time.Duration(sk.expirationSeconds))) {
+			delete(sk.states, k)
+		}
+	}
+}
+
+var stateKeeper = StateKeeper{
+	states:            make(map[string]time.Time),
+	expirationSeconds: 30,
+}
+
+func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	state, err := stateKeeper.Generate()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to generate state", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, a.Conf.OauthConf.AuthCodeURL(state), http.StatusTemporaryRedirect)
+}
 
 func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// verify state
-	if r.FormValue("state") != state {
+	if !stateKeeper.Use(r.FormValue("state")) {
 		http.Error(w, "state does not match", http.StatusBadRequest)
 		return
 	}
@@ -84,7 +139,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	authToken, err := a.Service.ProcessDiscordCallback(ctx, discordUser)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
+		http.Error(w, "failed to store user data", http.StatusInternalServerError)
 		return
 	}
 
