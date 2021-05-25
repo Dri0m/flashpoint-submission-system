@@ -347,6 +347,38 @@ func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*types.
 	return pageData, nil
 }
 
+func (s *Service) ProcessViewSubmissionFiles(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
+	tx, err := s.beginTx()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to begin transaction")
+	}
+	defer s.rollbackTx(ctx, tx)
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sf, err := s.DB.GetExtendedSubmissionFilesBySubmissionID(ctx, tx, sid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load submission")
+	}
+
+	if err := tx.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to commit transaction")
+	}
+
+	pageData := &types.SubmissionsFilesPageData{
+		BasePageData:    *bpd,
+		SubmissionFiles: sf,
+	}
+
+	return pageData, nil
+}
+
 func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {

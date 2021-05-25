@@ -49,6 +49,20 @@ type SubmissionFile struct {
 	SHA256Sum        string
 }
 
+type ExtendedSubmissionFile struct {
+	FileID             int64
+	SubmissionID       int64
+	SubmitterID        int64
+	SubmitterUsername  string
+	SubmitterAvatarURL string
+	OriginalFilename   string
+	CurrentFilename    string
+	Size               int64
+	UploadedAt         time.Time
+	MD5Sum             string
+	SHA256Sum          string
+}
+
 type ExtendedSubmission struct {
 	SubmissionID            int64
 	SubmitterID             int64     // oldest file

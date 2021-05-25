@@ -180,11 +180,42 @@ func (db *DB) GetSubmissionFile(ctx context.Context, tx *sql.Tx, sfid int64) (*t
 		WHERE id=?`, sfid)
 
 	sf := &types.SubmissionFile{}
-	err := row.Scan(&sf.SubmitterID, &sf.SubmissionID, &sf.OriginalFilename, &sf.CurrentFilename, &sf.Size, &sf.UploadedAt, &sf.MD5Sum, &sf.SHA256Sum)
+	var uploadedAt int64
+	err := row.Scan(&sf.SubmitterID, &sf.SubmissionID, &sf.OriginalFilename, &sf.CurrentFilename, &sf.Size, &uploadedAt, &sf.MD5Sum, &sf.SHA256Sum)
 	if err != nil {
 		return nil, err
 	}
+	sf.UploadedAt = time.Unix(uploadedAt, 0)
 	return sf, nil
+}
+
+// GetExtendedSubmissionFilesBySubmissionID returns all extended submission files for a given submission
+func (db *DB) GetExtendedSubmissionFilesBySubmissionID(ctx context.Context, tx *sql.Tx, sid int64) ([]*types.ExtendedSubmissionFile, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT submission_file.id, fk_uploader_id, username, avatar, 
+		       original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
+		FROM submission_file 
+		LEFT JOIN discord_user ON fk_uploader_id=discord_user.id
+		WHERE fk_submission_id=?
+		ORDER BY uploaded_at DESC`, sid)
+	if err != nil {
+		return nil, err
+	}
+	var result = make([]*types.ExtendedSubmissionFile, 0)
+	var avatar string
+	var uploadedAt int64
+	for rows.Next() {
+		sf := &types.ExtendedSubmissionFile{SubmissionID: sid}
+		err := rows.Scan(&sf.FileID, &sf.SubmitterID, &sf.SubmitterUsername, &avatar,
+			&sf.OriginalFilename, &sf.CurrentFilename, &sf.Size, &uploadedAt, &sf.MD5Sum, &sf.SHA256Sum)
+		if err != nil {
+			return nil, err
+		}
+		sf.SubmitterAvatarURL = utils.FormatAvatarURL(sf.SubmitterID, avatar)
+		sf.UploadedAt = time.Unix(uploadedAt, 0)
+		result = append(result, sf)
+	}
+	return result, nil
 }
 
 // SearchSubmissions returns extended submissions based on given filter

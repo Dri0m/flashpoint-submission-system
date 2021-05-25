@@ -17,6 +17,11 @@ type ViewSubmissionPageData struct {
 	Comments     []*ExtendedComment
 }
 
+type SubmissionsFilesPageData struct {
+	BasePageData
+	SubmissionFiles []*ExtendedSubmissionFile
+}
+
 type ValidatorResponse struct {
 	Filename         string       `json:"filename"`
 	Path             string       `json:"path"`
