@@ -92,12 +92,15 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle("/submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionsPage)))).Methods("GET")
 	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleMySubmissionsPage)))).Methods("GET")
 	router.Handle("/submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleViewSubmissionPage)))).Methods("GET")
-	router.Handle("/submission/{id}/comment", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleCommentReceiver)))).Methods("POST")
 
-	// file shenanigans
+	// receivers
 	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
 	router.Handle("/submission-receiver/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
-	router.Handle("/download-submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmission)))).Methods("GET")
+	router.Handle("/submission/{id}/comment", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleCommentReceiver)))).Methods("POST")
+
+	// providers
+	router.Handle("/submission-file/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionFile)))).Methods("GET")
+
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)
@@ -141,7 +144,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/submission/%d", sid), http.StatusFound)
 }
 
-func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
+func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
 	submissionID := params["id"]
@@ -153,7 +156,7 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := a.Service.ProcessDownloadSubmission(ctx, sid)
+	sf, err := a.Service.ProcessDownloadSubmissionFile(ctx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
@@ -161,7 +164,7 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	const dir = "submissions"
-	f, err := os.Open(fmt.Sprintf("%s/%s", dir, s.CurrentFilename))
+	f, err := os.Open(fmt.Sprintf("%s/%s", dir, sf.CurrentFilename))
 
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -170,9 +173,9 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", s.CurrentFilename))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", sf.CurrentFilename))
 	w.Header().Set("Content-Type", "application/octet-stream")
-	http.ServeContent(w, r, s.CurrentFilename, s.UploadedAt, f)
+	http.ServeContent(w, r, sf.CurrentFilename, sf.UploadedAt, f)
 }
 
 func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {

@@ -4,8 +4,8 @@
             <table class="pure-table pure-table-striped submissions-table">
                 <thead>
                 <tr>
-                    <th>Get</th>
-                    <th>View</th>
+                    <th class="center">Get</th>
+                    <th class="center">View</th>
                     <th>Title</th>
                     <th>Original Filename</th>
                     <th>Size</th>
@@ -20,15 +20,23 @@
                 <tbody>
                 {{range .Submissions}}
                     <tr>
-                        <td><a href="/download-submission/{{.SubmissionID}}">Get</a></td>
-                        <td><a href="/submission/{{.SubmissionID}}">View</a></td>
+                        <td class="center">
+                            <a href="/submission-file/{{.FileID}}">Get{{if gt .FileCount 1}}<br><a
+                                    href="/submission/{{.SubmissionID}}/files">Browse</a>{{end}}
+                            </a>
+                        </td>
+                        <td class="center"><a href="/submission/{{.SubmissionID}}">View</a></td>
                         <td>{{.CurationTitle}}</td>
                         <td>{{.OriginalFilename}}</td>
                         <td>{{.Size}}B</td>
                         <td>{{.SubmitterUsername}}</td>
                         <td>{{.UpdaterUsername}}</td>
-                        <td><div class="dot-{{.BotAction}}"></div></td>
-                        <td><div class="dot-{{.LatestAction}}"></div></td>
+                        <td>
+                            <div class="dot-{{.BotAction}}"></div>
+                        </td>
+                        <td>
+                            <div class="dot-{{.LatestAction}}"></div>
+                        </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                     </tr>

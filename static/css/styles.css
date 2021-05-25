@@ -24,6 +24,10 @@ body {
     margin-right: auto;
 }
 
+.center {
+    text-align: center;
+}
+
 .main {
     max-width: 1200px;
     margin: 0 auto 50px;

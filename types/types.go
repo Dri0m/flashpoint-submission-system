@@ -68,13 +68,12 @@ type ExtendedSubmission struct {
 	CurationLaunchCommand   *string   // newest file
 	BotAction               string
 	LatestAction            string
+	FileCount               uint64
 }
 
 type SubmissionsFilter struct {
 	SubmissionID *int64
 	SubmitterID  *int64
-	MD5Sum       *string
-	SHA256Sum    *string
 }
 
 type ExtendedComment struct {

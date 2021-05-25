@@ -172,6 +172,21 @@ func (db *DB) StoreSubmissionFile(ctx context.Context, tx *sql.Tx, s *types.Subm
 	return id, nil
 }
 
+// GetSubmissionFile gets submission file
+func (db *DB) GetSubmissionFile(ctx context.Context, tx *sql.Tx, sfid int64) (*types.SubmissionFile, error) {
+	row := tx.QueryRowContext(ctx, `
+		SELECT fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
+		FROM submission_file 
+		WHERE id=?`, sfid)
+
+	sf := &types.SubmissionFile{}
+	err := row.Scan(&sf.SubmitterID, &sf.SubmissionID, &sf.OriginalFilename, &sf.CurrentFilename, &sf.Size, &sf.UploadedAt, &sf.MD5Sum, &sf.SHA256Sum)
+	if err != nil {
+		return nil, err
+	}
+	return sf, nil
+}
+
 // SearchSubmissions returns extended submissions based on given filter
 func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	filters := make([]string, 0)
@@ -196,78 +211,99 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT submission.id        AS submission_id,
-			   uploader.id          AS uploader_id,
-			   uploader.username    AS uploader_username,
-			   uploader.avatar      AS uploader_avatar,
-			   updater.id           AS updater_id,
-			   updater.username     AS updater_username,
-			   updater.avatar       AS updater_avatar,
-			   oldest.id            AS submission_file_id,
-			   newest.original_filename,
-			   newest.current_filename,
-			   newest.size,
-			   oldest.uploaded_at,
-			   newest.updated_at,
-			   meta.title,
-			   meta.alternate_titles,
-			   meta.launch_command,
-			   bot_comment.action   AS bot_action,
-			   latest_action.action AS latest_action
+		SELECT  submission.id        AS submission_id 
+			   ,uploader.id          AS uploader_id 
+			   ,uploader.username    AS uploader_username 
+			   ,uploader.avatar      AS uploader_avatar 
+			   ,updater.id           AS updater_id 
+			   ,updater.username     AS updater_username 
+			   ,updater.avatar       AS updater_avatar 
+			   ,newest.id            AS submission_file_id 
+			   ,newest.original_filename 
+			   ,newest.current_filename 
+			   ,newest.size 
+			   ,oldest.uploaded_at 
+			   ,newest.updated_at 
+			   ,meta.title 
+			   ,meta.alternate_titles 
+			   ,meta.launch_command 
+			   ,bot_comment.action   AS bot_action 
+			   ,latest_action.action AS latest_action 
+			   ,file_counter.file_count
 		FROM submission
-		
-				 LEFT JOIN
-			 (WITH ranked_file AS (
-				 SELECT s.*, ROW_NUMBER() OVER (PARTITION BY fk_submission_id ORDER BY uploaded_at ASC) AS rn
-				 FROM submission_file AS s)
-			  SELECT id, fk_uploader_id AS uploader_id, fk_submission_id, uploaded_at AS uploaded_at
-			  FROM ranked_file
-			  WHERE rn = 1)
-				 AS oldest ON oldest.fk_submission_id = submission.id
-				 LEFT JOIN
-			 (WITH ranked_file AS (
-				 SELECT s.*,
-						ROW_NUMBER()
-								OVER (PARTITION BY fk_submission_id ORDER BY uploaded_at DESC) AS rn
-				 FROM submission_file AS s)
-			  SELECT fk_uploader_id AS updater_id,
-					 fk_submission_id,
-					 original_filename,
-					 current_filename,
-					 size,
-					 uploaded_at    AS updated_at
-			  FROM ranked_file
-			  WHERE rn = 1)
-				 AS newest ON newest.fk_submission_id = submission.id
-				 LEFT JOIN discord_user uploader ON oldest.uploader_id = uploader.id
-				 LEFT JOIN discord_user updater ON newest.updater_id = updater.id
-				 LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = oldest.id
-				 LEFT JOIN
-			  (WITH ranked_comment AS (
-				 SELECT c.*,
-						ROW_NUMBER()
-								OVER (PARTITION BY fk_submission_id ORDER BY created_at DESC) AS rn
-				 FROM comment AS c
-				 WHERE c.fk_author_id = ?)
-			  SELECT ranked_comment.fk_submission_id                                         AS submission_id,
-					 (SELECT name FROM action WHERE action.id = ranked_comment.fk_action_id) AS action
-			  FROM ranked_comment
-			  WHERE rn = 1 )
-			 AS bot_comment ON bot_comment.submission_id = submission.id
-			 LEFT JOIN
-			 (WITH ranked_comment AS (
-				 SELECT c.*,
-						ROW_NUMBER()
-								OVER (PARTITION BY fk_submission_id ORDER BY created_at DESC) AS rn
-				 FROM comment AS c
-				 WHERE c.fk_author_id != ?)
-			  SELECT ranked_comment.fk_submission_id                                         AS submission_id,
-					 ranked_comment.created_at,
-					 (SELECT name FROM action WHERE action.id = ranked_comment.fk_action_id) AS action
-			  FROM ranked_comment
-			  WHERE rn = 1 )
-				 AS latest_action ON latest_action.submission_id = submission.id
-
+		LEFT JOIN 
+		(WITH ranked_file AS (
+			SELECT  s.* 
+				   ,ROW_NUMBER() OVER (PARTITION BY fk_submission_id ORDER BY uploaded_at ASC) AS rn
+			FROM submission_file AS s)
+			SELECT  fk_uploader_id AS uploader_id 
+				   ,fk_submission_id 
+				   ,uploaded_at    AS uploaded_at
+			FROM ranked_file
+			WHERE rn = 1  
+		) AS oldest
+		ON oldest.fk_submission_id = submission.id
+		LEFT JOIN 
+		(WITH ranked_file AS (
+			SELECT  s.* 
+				   ,ROW_NUMBER() OVER (PARTITION BY fk_submission_id ORDER BY uploaded_at DESC) AS rn
+			FROM submission_file AS s)
+			SELECT  id
+				   ,fk_uploader_id AS updater_id 
+				   ,fk_submission_id 
+				   ,original_filename 
+				   ,current_filename 
+				   ,size 
+				   ,uploaded_at    AS updated_at
+			FROM ranked_file
+			WHERE rn = 1  
+		) AS newest
+		ON newest.fk_submission_id = submission.id
+		LEFT JOIN discord_user uploader
+		ON oldest.uploader_id = uploader.id
+		LEFT JOIN discord_user updater
+		ON newest.updater_id = updater.id
+		LEFT JOIN curation_meta meta
+		ON meta.fk_submission_file_id = newest.id
+		LEFT JOIN 
+		(WITH ranked_comment AS (
+			SELECT  c.* 
+				   ,ROW_NUMBER() OVER (PARTITION BY fk_submission_id ORDER BY created_at DESC) AS rn
+			FROM comment AS c
+			WHERE c.fk_author_id = ?) 
+			SELECT  ranked_comment.fk_submission_id AS submission_id 
+				   ,(
+			SELECT  name
+			FROM action
+			WHERE action.id = ranked_comment.fk_action_id) AS action 
+			FROM ranked_comment
+			WHERE rn = 1  
+		) AS bot_comment
+		ON bot_comment.submission_id = submission.id
+		LEFT JOIN 
+		(WITH ranked_comment AS (
+			SELECT  c.* 
+				   ,ROW_NUMBER() OVER (PARTITION BY fk_submission_id ORDER BY created_at DESC) AS rn
+			FROM comment AS c
+			WHERE c.fk_author_id != ?) 
+			SELECT  ranked_comment.fk_submission_id AS submission_id 
+				   ,ranked_comment.created_at 
+				   ,(
+			SELECT  name
+			FROM action
+			WHERE action.id = ranked_comment.fk_action_id) AS action 
+			FROM ranked_comment
+			WHERE rn = 1  
+		) AS latest_action
+		ON latest_action.submission_id = submission.id
+		LEFT JOIN 
+		(
+			SELECT  fk_submission_id 
+				   ,COUNT(id) AS file_count
+			FROM submission_file
+			GROUP BY  fk_submission_id 
+		) AS file_counter
+		ON file_counter.fk_submission_id = submission.id
 		`+where+strings.Join(filters, " AND ")+`
 		GROUP BY submission.id
 		ORDER BY newest.updated_at DESC`, data...)
@@ -293,7 +329,8 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			&uploadedAt, &updatedAt,
 			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationLaunchCommand,
 			&s.BotAction,
-			&s.LatestAction); err != nil {
+			&s.LatestAction,
+			&s.FileCount); err != nil {
 			return nil, err
 		}
 		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)

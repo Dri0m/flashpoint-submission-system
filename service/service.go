@@ -379,7 +379,7 @@ func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.Su
 	return pageData, nil
 }
 
-func (s *Service) ProcessDownloadSubmission(ctx context.Context, sid int64) (*types.ExtendedSubmission, error) {
+func (s *Service) ProcessDownloadSubmissionFile(ctx context.Context, sfid int64) (*types.SubmissionFile, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -387,17 +387,10 @@ func (s *Service) ProcessDownloadSubmission(ctx context.Context, sid int64) (*ty
 	}
 	defer s.rollbackTx(ctx, tx)
 
-	filter := &types.SubmissionsFilter{
-		SubmissionID: &sid,
-	}
-
-	submissions, err := s.DB.SearchSubmissions(ctx, tx, filter)
+	sf, err := s.DB.GetSubmissionFile(ctx, tx, sfid)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load submission")
-	}
-
-	if len(submissions) == 0 {
-		return nil, fmt.Errorf("submission not found")
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load submission file")
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -405,7 +398,7 @@ func (s *Service) ProcessDownloadSubmission(ctx context.Context, sid int64) (*ty
 		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
-	return submissions[0], nil
+	return sf, nil
 }
 
 func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
