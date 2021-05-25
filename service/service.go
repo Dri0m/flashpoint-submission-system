@@ -13,6 +13,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/go-sql-driver/mysql"
 	"io"
 	"mime/multipart"
 	"os"
@@ -175,6 +176,12 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 	fid, err := s.DB.StoreSubmissionFile(ctx, tx, sf)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
+		me, ok := err.(*mysql.MySQLError)
+		if ok {
+			if me.Number == 1062 {
+				return &destinationFilePath, fmt.Errorf("file with checksums md5:%s sha256:%s already present in the DB", sf.MD5Sum, sf.SHA256Sum)
+			}
+		}
 		return &destinationFilePath, fmt.Errorf("failed to store submission file")
 	}
 
