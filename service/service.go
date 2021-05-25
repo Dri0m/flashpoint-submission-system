@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/bot"
@@ -132,7 +135,11 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 
 	utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
 
-	nBytes, err := io.Copy(destination, file)
+	md5sum := md5.New()
+	sha256sum := sha256.New()
+	multiWriter := io.MultiWriter(destination, sha256sum, md5sum)
+
+	nBytes, err := io.Copy(multiWriter, file)
 	if err != nil {
 		return &destinationFilePath, fmt.Errorf("failed to copy file to destination")
 	}
@@ -161,6 +168,8 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 		CurrentFilename:  destinationFilename,
 		Size:             fileHeader.Size,
 		UploadedAt:       time.Now(),
+		MD5Sum:           hex.EncodeToString(md5sum.Sum(nil)),
+		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
 	}
 
 	fid, err := s.DB.StoreSubmissionFile(ctx, tx, sf)

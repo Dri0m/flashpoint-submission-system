@@ -159,8 +159,9 @@ func (db *DB) StoreSubmission(ctx context.Context, tx *sql.Tx) (int64, error) {
 
 // StoreSubmissionFile stores submission file
 func (db *DB) StoreSubmissionFile(ctx context.Context, tx *sql.Tx, s *types.SubmissionFile) (int64, error) {
-	res, err := tx.ExecContext(ctx, `INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		s.SubmitterID, s.SubmissionID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix())
+	res, err := tx.ExecContext(ctx, `INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.SubmitterID, s.SubmissionID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix(), s.MD5Sum, s.SHA256Sum)
 	if err != nil {
 		return 0, err
 	}

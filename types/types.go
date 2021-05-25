@@ -45,6 +45,8 @@ type SubmissionFile struct {
 	CurrentFilename  string
 	Size             int64
 	UploadedAt       time.Time
+	MD5Sum           string
+	SHA256Sum        string
 }
 
 type ExtendedSubmission struct {
