@@ -67,20 +67,20 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 }
 
 // StoreSession store session into the DB with set expiration date
-func (db *DB) StoreSession(ctx context.Context, key string, uid int64, durationSeconds int64) error {
+func (db *DB) StoreSession(ctx context.Context, tx *sql.Tx, key string, uid int64, durationSeconds int64) error {
 	expiration := time.Now().Add(time.Second * time.Duration(durationSeconds)).Unix()
-	_, err := db.Conn.ExecContext(ctx, `INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
+	_, err := tx.ExecContext(ctx, `INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
 }
 
 // DeleteSession deletes specific session
-func (db *DB) DeleteSession(ctx context.Context, secret string) error {
+func (db *DB) DeleteSession(ctx context.Context, tx *sql.Tx, secret string) error {
 	_, err := db.Conn.ExecContext(ctx, `DELETE FROM session WHERE secret=?`, secret)
 	return err
 }
 
 // GetUIDFromSession returns user ID and/or expiration state
-func (db *DB) GetUIDFromSession(ctx context.Context, key string) (string, bool, error) {
+func (db *DB) GetUIDFromSession(ctx context.Context, tx *sql.Tx, key string) (string, bool, error) {
 	row := db.Conn.QueryRowContext(ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
 
 	var uid string
@@ -98,16 +98,16 @@ func (db *DB) GetUIDFromSession(ctx context.Context, key string) (string, bool, 
 }
 
 // StoreDiscordUser store discord user or replace with new data
-func (db *DB) StoreDiscordUser(ctx context.Context, discordUser *types.DiscordUser) error {
-	_, err := db.Conn.ExecContext(ctx,
+func (db *DB) StoreDiscordUser(ctx context.Context, tx *sql.Tx, discordUser *types.DiscordUser) error {
+	_, err := tx.ExecContext(ctx,
 		`REPLACE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, discordUser.MFAEnabled)
 	return err
 }
 
 // GetDiscordUser returns DiscordUserResponse
-func (db *DB) GetDiscordUser(ctx context.Context, uid int64) (*types.DiscordUser, error) {
-	row := db.Conn.QueryRowContext(ctx, `SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
+func (db *DB) GetDiscordUser(ctx context.Context, tx *sql.Tx, uid int64) (*types.DiscordUser, error) {
+	row := tx.QueryRowContext(ctx, `SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
 
 	discordUser := &types.DiscordUser{ID: uid}
 	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &discordUser.MFAEnabled)
@@ -119,19 +119,19 @@ func (db *DB) GetDiscordUser(ctx context.Context, uid int64) (*types.DiscordUser
 }
 
 // StoreDiscordUserAuthorization stores discord user auth state
-func (db *DB) StoreDiscordUserAuthorization(ctx context.Context, uid int64, isAuthorized bool) error {
+func (db *DB) StoreDiscordUserAuthorization(ctx context.Context, tx *sql.Tx, uid int64, isAuthorized bool) error {
 	a := 0
 	if isAuthorized {
 		a = 1
 	}
 
-	_, err := db.Conn.ExecContext(ctx, `REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
+	_, err := tx.ExecContext(ctx, `REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
 	return err
 }
 
 // IsDiscordUserAuthorized returns discord user auth state
-func (db *DB) IsDiscordUserAuthorized(ctx context.Context, uid int64) (bool, error) {
-	row := db.Conn.QueryRowContext(ctx, `SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
+func (db *DB) IsDiscordUserAuthorized(ctx context.Context, tx *sql.Tx, uid int64) (bool, error) {
+	row := tx.QueryRowContext(ctx, `SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
 	var a int64
 	err := row.Scan(&a)
 	if err != nil {
@@ -172,7 +172,7 @@ func (db *DB) StoreSubmissionFile(ctx context.Context, tx *sql.Tx, s *types.Subm
 }
 
 // SearchSubmissions returns extended submissions based on given filter
-func (db *DB) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
@@ -318,7 +318,7 @@ func (db *DB) StoreCurationMeta(ctx context.Context, tx *sql.Tx, cm *types.Curat
 }
 
 // GetCurationMetaBySubmissionFileID returns curation meta for given submission file
-func (db *DB) GetCurationMetaBySubmissionFileID(ctx context.Context, sfid int64) (*types.CurationMeta, error) {
+func (db *DB) GetCurationMetaBySubmissionFileID(ctx context.Context, tx *sql.Tx, sfid int64) (*types.CurationMeta, error) {
 	row := db.Conn.QueryRowContext(ctx, `SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
@@ -350,7 +350,7 @@ func (db *DB) StoreComment(ctx context.Context, tx *sql.Tx, c *types.Comment) er
 }
 
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
-func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, sid int64) ([]*types.ExtendedComment, error) {
+func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, tx *sql.Tx, sid int64) ([]*types.ExtendedComment, error) {
 	rows, err := db.Conn.QueryContext(ctx, `
 		SELECT discord_user.id, username, avatar, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 

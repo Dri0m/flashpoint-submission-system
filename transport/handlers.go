@@ -23,10 +23,9 @@ import (
 
 // App is App
 type App struct {
-	Conf *config.Config
-	DB   database.DB
-	Bot  bot.Bot
-	CC   CookieCutter
+	Conf    *config.Config
+	CC      CookieCutter
+	Service Service
 }
 
 func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *discordgo.Session) {
@@ -39,17 +38,21 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 
 	a := &App{
 		Conf: conf,
-		DB: database.DB{
-			Conn: db,
-		},
-		Bot: bot.Bot{
-			Session:            botSession,
-			FlashpointServerID: conf.FlashpointServerID,
-			L:                  l,
-		},
 		CC: CookieCutter{
 			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
+		},
+		Service: Service{
+			Bot: bot.Bot{
+				Session:            botSession,
+				FlashpointServerID: conf.FlashpointServerID,
+				L:                  l,
+			},
+			DB: database.DB{
+				Conn: db,
+			},
+			ValidatorServerURL:       conf.ValidatorServerURL,
+			SessionExpirationSeconds: conf.SessionExpirationSeconds,
 		},
 	}
 
@@ -119,39 +122,15 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := a.DB.Conn.Begin()
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
-		return
-	}
-
 	formAction := r.FormValue("action")
 	formMessage := r.FormValue("message")
 
-	if err := a.ProcessReceivedComment(ctx, tx, uid, sid, formAction, formMessage); err != nil {
+	if err := a.Service.ProcessReceivedComment(ctx, uid, sid, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/submission/%d", sid), http.StatusFound)
-}
-
-func (a *App) ProcessDownloadSubmission(ctx context.Context, sid int64) (*types.ExtendedSubmission, error) {
-	filter := &types.SubmissionsFilter{
-		SubmissionID: &sid,
-	}
-
-	submissions, err := a.DB.SearchSubmissions(ctx, filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load submission")
-	}
-
-	if len(submissions) == 0 {
-		return nil, fmt.Errorf("submission not found")
-	}
-
-	return submissions[0], nil
 }
 
 func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +145,7 @@ func (a *App) HandleDownloadSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := a.ProcessDownloadSubmission(ctx, sid)
+	s, err := a.Service.ProcessDownloadSubmission(ctx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
@@ -221,16 +200,8 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := a.DB.Conn.Begin()
-	if err != nil {
+	if err := a.Service.ProcessReceivedSubmissions(ctx, sid, fileHeaders); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to begin transaction", http.StatusInternalServerError)
-		return
-	}
-
-	if err := a.ProcessReceivedSubmissions(ctx, tx, sid, fileHeaders); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		utils.LogIfErr(ctx, tx.Rollback())
 		http.Error(w, fmt.Sprintf("submission processor: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -249,7 +220,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
 	ctx = r.Context()
 
-	pageData, err := a.GetBasePageData(ctx)
+	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -262,7 +233,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.GetBasePageData(ctx)
+	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -275,7 +246,7 @@ func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.GetBasePageData(ctx)
+	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -288,7 +259,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.ProcessSearchSubmissions(ctx, nil)
+	pageData, err := a.Service.ProcessSearchSubmissions(ctx, nil)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -306,7 +277,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		SubmitterID: &uid,
 	}
 
-	pageData, err := a.ProcessSearchSubmissions(ctx, filter)
+	pageData, err := a.Service.ProcessSearchSubmissions(ctx, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -328,7 +299,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageData, err := a.ProcessViewSubmission(ctx, sid)
+	pageData, err := a.Service.ProcessViewSubmission(ctx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid submission id", http.StatusBadRequest)

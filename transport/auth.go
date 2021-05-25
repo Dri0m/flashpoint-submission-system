@@ -70,7 +70,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	discordUser := types.DiscordUser{
+	discordUser := &types.DiscordUser{
 		ID:            uid,
 		Username:      discordUserResp.Username,
 		Avatar:        discordUserResp.Avatar,
@@ -81,42 +81,17 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		MFAEnabled:    discordUserResp.MFAEnabled,
 	}
 
-	// save discord user data
-	if err := a.DB.StoreDiscordUser(ctx, &discordUser); err != nil {
+	authToken, err := a.Service.ProcessDiscordCallback(ctx, discordUser)
+	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to store discord user", http.StatusInternalServerError)
+		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
 		return
 	}
 
-	// get and save discord user authorization
-	isAuthorized, err := a.Bot.IsUserAuthorized(discordUser.ID)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to obtain discord user's roles", http.StatusInternalServerError)
-		return
-	}
-	if err := a.DB.StoreDiscordUserAuthorization(ctx, discordUser.ID, isAuthorized); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to store discord user's authorization", http.StatusInternalServerError)
-		return
-	}
-
-	// create cookie and save session
-	authToken, err := CreateAuthToken(discordUser.ID)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to generate auth token", http.StatusInternalServerError)
-		return
-	}
 	if err := a.CC.SetSecureCookie(w, Cookies.Login, MapAuthToken(authToken)); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
 		return
-	}
-
-	if err = a.DB.StoreSession(ctx, authToken.Secret, discordUser.ID, a.Conf.SessionExpirationSeconds); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to store session", http.StatusInternalServerError)
 	}
 
 	http.Redirect(w, r, "/profile", http.StatusFound)
@@ -124,24 +99,27 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	const msg = "unable to log out, please clear your cookies and try again"
+	const msg = "unable to log out, please clear your cookies"
 	cookieMap, err := a.CC.GetSecureCookie(r, Cookies.Login)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+
 	token, err := ParseAuthToken(cookieMap)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-	if err := a.DB.DeleteSession(ctx, token.Secret); err != nil {
+
+	if err := a.Service.ProcessLogout(ctx, token.Secret); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
+
 	UnsetCookie(w, Cookies.Login)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
