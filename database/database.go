@@ -75,13 +75,13 @@ func (db *DB) StoreSession(ctx context.Context, tx *sql.Tx, key string, uid int6
 
 // DeleteSession deletes specific session
 func (db *DB) DeleteSession(ctx context.Context, tx *sql.Tx, secret string) error {
-	_, err := db.Conn.ExecContext(ctx, `DELETE FROM session WHERE secret=?`, secret)
+	_, err := tx.ExecContext(ctx, `DELETE FROM session WHERE secret=?`, secret)
 	return err
 }
 
 // GetUIDFromSession returns user ID and/or expiration state
 func (db *DB) GetUIDFromSession(ctx context.Context, tx *sql.Tx, key string) (string, bool, error) {
-	row := db.Conn.QueryRowContext(ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
+	row := tx.QueryRowContext(ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
 
 	var uid string
 	var expiration int64
@@ -195,7 +195,7 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 		where = " WHERE "
 	}
 
-	rows, err := db.Conn.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT submission.id        AS submission_id,
 			   uploader.id          AS uploader_id,
 			   uploader.username    AS uploader_username,
@@ -320,7 +320,7 @@ func (db *DB) StoreCurationMeta(ctx context.Context, tx *sql.Tx, cm *types.Curat
 
 // GetCurationMetaBySubmissionFileID returns curation meta for given submission file
 func (db *DB) GetCurationMetaBySubmissionFileID(ctx context.Context, tx *sql.Tx, sfid int64) (*types.CurationMeta, error) {
-	row := db.Conn.QueryRowContext(ctx, `SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
+	row := tx.QueryRowContext(ctx, `SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
@@ -352,7 +352,7 @@ func (db *DB) StoreComment(ctx context.Context, tx *sql.Tx, c *types.Comment) er
 
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
 func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, tx *sql.Tx, sid int64) ([]*types.ExtendedComment, error) {
-	rows, err := db.Conn.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT discord_user.id, username, avatar, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
