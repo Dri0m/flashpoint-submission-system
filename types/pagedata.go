@@ -9,6 +9,7 @@ type BasePageData struct {
 type SubmissionsPageData struct {
 	BasePageData
 	Submissions []*ExtendedSubmission
+	Filter      SubmissionsFilter
 }
 
 type ViewSubmissionPageData struct {

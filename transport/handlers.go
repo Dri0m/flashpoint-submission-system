@@ -13,6 +13,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 	"github.com/gorilla/securecookie"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -27,6 +28,7 @@ type App struct {
 	Conf    *config.Config
 	CC      utils.CookieCutter
 	Service service.Service
+	decoder *schema.Decoder
 }
 
 func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *discordgo.Session) {
@@ -36,6 +38,9 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 		Addr:    fmt.Sprintf("127.0.0.1:%d", conf.Port),
 		Handler: logging.LogRequestHandler(l, router),
 	}
+
+	decoder := schema.NewDecoder()
+	decoder.ZeroEmpty(false)
 
 	a := &App{
 		Conf: conf,
@@ -55,6 +60,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 			ValidatorServerURL:       conf.ValidatorServerURL,
 			SessionExpirationSeconds: conf.SessionExpirationSeconds,
 		},
+		decoder: decoder,
 	}
 
 	l.WithField("port", conf.Port).Infoln("starting the server...")
@@ -271,14 +277,31 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.Service.ProcessSearchSubmissions(ctx, nil)
+	filter := &types.SubmissionsFilter{
+		SubmissionID: nil,
+		SubmitterID:  nil,
+	}
+
+	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		return
+	}
+
+	if err := filter.Validate(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	pageData, err := a.Service.ProcessSearchSubmissions(ctx, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/submissions.gohtml", "templates/submission-table.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData, "templates/submissions.gohtml", "templates/submission-filter.gohtml", "templates/submission-table.gohtml")
 }
 
 func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {

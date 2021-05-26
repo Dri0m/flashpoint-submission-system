@@ -406,6 +406,7 @@ func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.Su
 	pageData := &types.SubmissionsPageData{
 		BasePageData: *bpd,
 		Submissions:  submissions,
+		Filter:       *filter,
 	}
 
 	return pageData, nil

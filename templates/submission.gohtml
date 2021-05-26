@@ -7,10 +7,10 @@
             {{template "submission-table" .}}
 
             <h3>Upload a fixed version</h3>
-            <form action='/submission-receiver/{{(index .Submissions 0).SubmissionID}}' method='post'
-                  enctype='multipart/form-data'>
+            <form action="/submission-receiver/{{(index .Submissions 0).SubmissionID}}" method="post"
+                  enctype="multipart/form-data">
                 <input type="file" name="files" multiple="multiple">
-                <input class="pure-button pure-button button-upload-file" type='submit' value='Upload'>
+                <input class="pure-button pure-button button-upload-file" type="submit" value="Upload">
             </form>
             <h3>Curation meta</h3>
             {{if .CurationMeta}}

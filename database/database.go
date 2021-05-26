@@ -234,6 +234,10 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			filters = append(filters, "uploader.id=?")
 			data = append(data, *filter.SubmitterID)
 		}
+		if filter.TitlePartial != nil {
+			filters = append(filters, "meta.title LIKE ?")
+			data = append(data, utils.FormatLike(*filter.TitlePartial))
+		}
 	}
 
 	where := ""

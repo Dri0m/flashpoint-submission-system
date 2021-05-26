@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"fmt"
+	"reflect"
+	"time"
+)
 
 type CurationMeta struct {
 	SubmissionID        int64
@@ -86,8 +90,41 @@ type ExtendedSubmission struct {
 }
 
 type SubmissionsFilter struct {
-	SubmissionID *int64
-	SubmitterID  *int64
+	SubmissionID *int64  `schema:"submission-id"`
+	SubmitterID  *int64  `schema:"submitter-id"`
+	TitlePartial *string `schema:"title-partial"`
+}
+
+func (sf *SubmissionsFilter) Validate() error {
+
+	v := reflect.ValueOf(sf) // fucking schema zeroing out my nil pointers
+	for i := 0; i < v.Elem().NumField(); i++ {
+		f := v.Elem().Field(i)
+		e := f.Elem()
+		if e.Kind() == reflect.Int64 && e.Int() == 0 {
+			f.Set(reflect.Zero(f.Type()))
+		}
+		if e.Kind() == reflect.String && e.String() == "" {
+			f.Set(reflect.Zero(f.Type()))
+		}
+	}
+
+	if sf.SubmissionID != nil && *sf.SubmissionID < 1 {
+		if *sf.SubmissionID == 0 { // schema parser zeroes out pointer values ffs
+			sf.SubmissionID = nil
+		} else {
+			return fmt.Errorf("submission id must be >= 1")
+		}
+
+	}
+	if sf.SubmitterID != nil && *sf.SubmitterID < 1 {
+		if *sf.SubmitterID == 0 {
+			sf.SubmitterID = nil
+		} else {
+			return fmt.Errorf("submitter id must be >= 1")
+		}
+	}
+	return nil
 }
 
 type ExtendedComment struct {

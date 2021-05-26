@@ -113,3 +113,7 @@ func UploadFile(ctx context.Context, url string, filePath string) ([]byte, error
 
 	return bodyBytes, nil
 }
+
+func FormatLike(s string) string {
+	return "%" + strings.Replace(strings.Replace(s, "%", `\%`, -1), "_", `\_`, -1) + "%"
+}

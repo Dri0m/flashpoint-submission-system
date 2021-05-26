@@ -210,3 +210,17 @@ textarea {
     padding-bottom: 0.2em;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
+
+.submission-filter-wrapper {
+    padding: 1em;
+    border: 1px solid #444;
+    vertical-align: middle;
+}
+
+.form-column {
+    padding: 0.5em;
+}
+
+.form-column input {
+    width: 100%;
+}
