@@ -90,9 +90,10 @@ type ExtendedSubmission struct {
 }
 
 type SubmissionsFilter struct {
-	SubmissionID *int64  `schema:"submission-id"`
-	SubmitterID  *int64  `schema:"submitter-id"`
-	TitlePartial *string `schema:"title-partial"`
+	SubmissionID             *int64  `schema:"submission-id"`
+	SubmitterID              *int64  `schema:"submitter-id"`
+	TitlePartial             *string `schema:"title-partial"`
+	SubmitterUsernamePartial *string `schema:"submitter-username-partial"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
