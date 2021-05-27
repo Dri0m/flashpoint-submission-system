@@ -225,6 +225,15 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 
 	data = append(data, constants.ValidatorID, constants.ValidatorID)
 
+	const defaultLimit int64 = 100
+	const defaultOffset int64 = 0
+
+	currentLimit := defaultLimit
+	currentOffset := defaultOffset
+
+	limit := "LIMIT ?"
+	offset := "OFFSET ?"
+
 	if filter != nil {
 		if filter.SubmissionID != nil {
 			filters = append(filters, "submission.id=?")
@@ -242,7 +251,19 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			filters = append(filters, "uploader.username LIKE ?")
 			data = append(data, utils.FormatLike(*filter.SubmitterUsernamePartial))
 		}
+		if filter.ResultsPerPage != nil {
+			currentLimit = *filter.ResultsPerPage
+		} else {
+			currentLimit = defaultLimit
+		}
+		if filter.Page != nil {
+			currentOffset = (*filter.Page - 1) * currentLimit
+		} else {
+			currentOffset = defaultOffset
+		}
 	}
+
+	data = append(data, currentLimit, currentOffset)
 
 	where := ""
 	if len(filters) > 0 {
@@ -345,7 +366,8 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 		ON file_counter.fk_submission_id = submission.id
 		`+where+strings.Join(filters, " AND ")+`
 		GROUP BY submission.id
-		ORDER BY newest.updated_at DESC`, data...)
+		ORDER BY newest.updated_at DESC
+		`+limit+` `+offset, data...)
 	if err != nil {
 		return nil, err
 	}

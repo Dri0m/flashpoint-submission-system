@@ -94,6 +94,8 @@ type SubmissionsFilter struct {
 	SubmitterID              *int64  `schema:"submitter-id"`
 	TitlePartial             *string `schema:"title-partial"`
 	SubmitterUsernamePartial *string `schema:"submitter-username-partial"`
+	ResultsPerPage           *int64  `schema:"results-per-page"`
+	Page                     *int64  `schema:"page"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
@@ -123,6 +125,20 @@ func (sf *SubmissionsFilter) Validate() error {
 			sf.SubmitterID = nil
 		} else {
 			return fmt.Errorf("submitter id must be >= 1")
+		}
+	}
+	if sf.ResultsPerPage != nil && *sf.ResultsPerPage < 1 {
+		if *sf.ResultsPerPage == 0 {
+			sf.ResultsPerPage = nil
+		} else {
+			return fmt.Errorf("results per page must be >= 1")
+		}
+	}
+	if sf.Page != nil && *sf.Page < 1 {
+		if *sf.Page == 0 {
+			sf.Page = nil
+		} else {
+			return fmt.Errorf("page must be >= 1")
 		}
 	}
 	return nil
