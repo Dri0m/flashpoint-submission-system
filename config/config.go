@@ -20,6 +20,13 @@ type Config struct {
 	SecurecookieBlockKeyCurrent  string
 	SessionExpirationSeconds     int64
 	ValidatorServerURL           string
+	DBRootUser                   string
+	DBRootPassword               string
+	DBUser                       string
+	DBPassword                   string
+	DBIP                         string
+	DBPort                       int64
+	DBName                       string
 }
 
 func EnvString(name string) string {
@@ -72,5 +79,12 @@ func GetConfig(l *logrus.Logger) *Config {
 		SecurecookieBlockKeyCurrent:  EnvString("SECURECOOKIE_BLOCK_KEY_CURRENT"),
 		SessionExpirationSeconds:     EnvInt("SESSION_EXPIRATION_SECONDS"),
 		ValidatorServerURL:           EnvString("VALIDATOR_SERVER_URL"),
+		DBRootUser:                   EnvString("DB_ROOT_USER"),
+		DBRootPassword:               EnvString("DB_ROOT_PASSWORD"),
+		DBUser:                       EnvString("DB_USER"),
+		DBPassword:                   EnvString("DB_PASSWORD"),
+		DBIP:                         EnvString("DB_IP"),
+		DBPort:                       EnvInt("DB_PORT"),
+		DBName:                       EnvString("DB_NAME"),
 	}
 }

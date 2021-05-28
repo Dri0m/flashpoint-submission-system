@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
@@ -21,16 +22,16 @@ type DB struct {
 }
 
 // OpenDB opens DB or panics
-func OpenDB(l *logrus.Logger) *sql.DB {
+func OpenDB(l *logrus.Logger, conf *config.Config) *sql.DB {
 
-	rootUser := "root"
-	rootPass := "fpfss"
-	ip := "127.0.0.1"
-	port := "3306"
-	dbName := "fpfss"
+	rootUser := conf.DBRootUser
+	rootPass := conf.DBRootPassword
+	ip := conf.DBIP
+	port := conf.DBPort
+	dbName := conf.DBName
 
 	rootDB, err := sql.Open("mysql",
-		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?multiStatements=true", rootUser, rootPass, ip, port, dbName))
+		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", rootUser, rootPass, ip, port, dbName))
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -54,11 +55,11 @@ func OpenDB(l *logrus.Logger) *sql.DB {
 	driver.Close()
 	rootDB.Close()
 
-	user := "fpfss"
-	pass := "fpfss"
+	user := conf.DBUser
+	pass := conf.DBPassword
 
 	db, err := sql.Open("mysql",
-		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?multiStatements=true", user, pass, ip, port, dbName))
+		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", user, pass, ip, port, dbName))
 	if err != nil {
 		l.Fatal(err)
 	}

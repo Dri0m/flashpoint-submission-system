@@ -18,7 +18,7 @@ func main() {
 	l.Infoln("hi")
 
 	conf := config.GetConfig(l)
-	db := database.OpenDB(l)
+	db := database.OpenDB(l, conf)
 	defer db.Close()
 	b := bot.ConnectBot(l, conf.BotToken)
 

@@ -14,10 +14,10 @@ services:
     restart: unless-stopped
     image: mysql:8.0.25
     environment:
-      MYSQL_ROOT_PASSWORD: fpfss
+      MYSQL_ROOT_PASSWORD: jkalsdkjfisabfbasi
       MYSQL_DATABASE: fpfss
       MYSQL_USER: fpfss
-      MYSQL_PASSWORD: fpfss
+      MYSQL_PASSWORD: kjndfskjndsfklfjdbgdfjdsi
     ports:
       - "3306:3306" # TODO unmap in prod
     volumes:
