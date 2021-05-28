@@ -225,7 +225,7 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 
 	data = append(data, constants.ValidatorID, constants.ValidatorID)
 
-	const defaultLimit int64 = 100
+	const defaultLimit int64 = 1000
 	const defaultOffset int64 = 0
 
 	currentLimit := defaultLimit
