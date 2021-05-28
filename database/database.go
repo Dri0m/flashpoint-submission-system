@@ -172,21 +172,42 @@ func (db *DB) StoreSubmissionFile(ctx context.Context, tx *sql.Tx, s *types.Subm
 	return id, nil
 }
 
-// GetSubmissionFile gets submission file
-func (db *DB) GetSubmissionFile(ctx context.Context, tx *sql.Tx, sfid int64) (*types.SubmissionFile, error) {
-	row := tx.QueryRowContext(ctx, `
+// GetSubmissionFiles gets submission files, returns error if input len != output len
+func (db *DB) GetSubmissionFiles(ctx context.Context, tx *sql.Tx, sfids []int64) ([]*types.SubmissionFile, error) {
+	if len(sfids) == 0 {
+		return nil, nil
+	}
+
+	data := make([]interface{}, len(sfids))
+	for i, d := range sfids {
+		data[i] = d
+	}
+
+	rows, err := tx.QueryContext(ctx, `
 		SELECT fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
 		FROM submission_file 
-		WHERE id=?`, sfid)
-
-	sf := &types.SubmissionFile{}
-	var uploadedAt int64
-	err := row.Scan(&sf.SubmitterID, &sf.SubmissionID, &sf.OriginalFilename, &sf.CurrentFilename, &sf.Size, &uploadedAt, &sf.MD5Sum, &sf.SHA256Sum)
+		WHERE id IN(?`+strings.Repeat(",?", len(sfids)-1)+`)`, data...)
 	if err != nil {
 		return nil, err
 	}
-	sf.UploadedAt = time.Unix(uploadedAt, 0)
-	return sf, nil
+
+	var result = make([]*types.SubmissionFile, 0, len(sfids))
+	for rows.Next() {
+		sf := &types.SubmissionFile{}
+		var uploadedAt int64
+		err := rows.Scan(&sf.SubmitterID, &sf.SubmissionID, &sf.OriginalFilename, &sf.CurrentFilename, &sf.Size, &uploadedAt, &sf.MD5Sum, &sf.SHA256Sum)
+		if err != nil {
+			return nil, err
+		}
+		sf.UploadedAt = time.Unix(uploadedAt, 0)
+		result = append(result, sf)
+	}
+
+	if len(result) != len(sfids) {
+		return nil, fmt.Errorf("%s files were not found", len(result)-len(sfids))
+	}
+
+	return result, nil
 }
 
 // GetExtendedSubmissionFilesBySubmissionID returns all extended submission files for a given submission

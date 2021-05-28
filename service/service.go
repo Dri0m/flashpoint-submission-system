@@ -412,7 +412,7 @@ func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.Su
 	return pageData, nil
 }
 
-func (s *Service) ProcessDownloadSubmissionFile(ctx context.Context, sfid int64) (*types.SubmissionFile, error) {
+func (s *Service) ProcessDownloadSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -420,7 +420,7 @@ func (s *Service) ProcessDownloadSubmissionFile(ctx context.Context, sfid int64)
 	}
 	defer s.rollbackTx(ctx, tx)
 
-	sf, err := s.DB.GetSubmissionFile(ctx, tx, sfid)
+	sfs, err := s.DB.GetSubmissionFiles(ctx, tx, sfids)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission file")
@@ -431,7 +431,7 @@ func (s *Service) ProcessDownloadSubmissionFile(ctx context.Context, sfid int64)
 		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
-	return sf, nil
+	return sfs, nil
 }
 
 func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {

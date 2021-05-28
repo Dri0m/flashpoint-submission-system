@@ -163,19 +163,20 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	sf, err := a.Service.ProcessDownloadSubmissionFile(ctx, sid)
+	sfs, err := a.Service.ProcessDownloadSubmissionFiles(ctx, []int64{sid})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
+	sf := sfs[0]
 
 	const dir = "submissions"
 	f, err := os.Open(fmt.Sprintf("%s/%s", dir, sf.CurrentFilename))
 
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed open file", http.StatusInternalServerError)
+		http.Error(w, "failed to open file", http.StatusInternalServerError)
 		return
 	}
 	defer f.Close()
