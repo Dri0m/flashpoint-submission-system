@@ -83,6 +83,7 @@ type ExtendedSubmission struct {
 	UpdatedAt               time.Time // newest file
 	CurationTitle           *string   // newest file
 	CurationAlternateTitles *string   //newest file
+	CurationPlatform        *string   //newest file
 	CurationLaunchCommand   *string   // newest file
 	BotAction               string
 	LatestAction            string
@@ -94,6 +95,7 @@ type SubmissionsFilter struct {
 	SubmitterID              *int64  `schema:"submitter-id"`
 	TitlePartial             *string `schema:"title-partial"`
 	SubmitterUsernamePartial *string `schema:"submitter-username-partial"`
+	PlatformPartial          *string `schema:"platform-partial"`
 	ResultsPerPage           *int64  `schema:"results-per-page"`
 	Page                     *int64  `schema:"page"`
 }

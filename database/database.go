@@ -251,6 +251,10 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			filters = append(filters, "uploader.username LIKE ?")
 			data = append(data, utils.FormatLike(*filter.SubmitterUsernamePartial))
 		}
+		if filter.PlatformPartial != nil {
+			filters = append(filters, "meta.platform LIKE ?")
+			data = append(data, utils.FormatLike(*filter.PlatformPartial))
+		}
 		if filter.ResultsPerPage != nil {
 			currentLimit = *filter.ResultsPerPage
 		} else {
@@ -285,7 +289,8 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			   ,oldest.uploaded_at 
 			   ,newest.updated_at 
 			   ,meta.title 
-			   ,meta.alternate_titles 
+			   ,meta.alternate_titles
+               ,meta.platform
 			   ,meta.launch_command 
 			   ,bot_comment.action   AS bot_action 
 			   ,latest_action.action AS latest_action 
@@ -388,7 +393,7 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			&s.UpdaterID, &s.UpdaterUsername, &updaterAvatar,
 			&s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size,
 			&uploadedAt, &updatedAt,
-			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationLaunchCommand,
+			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationPlatform, &s.CurationLaunchCommand,
 			&s.BotAction,
 			&s.LatestAction,
 			&s.FileCount); err != nil {
