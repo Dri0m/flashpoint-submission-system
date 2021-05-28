@@ -91,26 +91,30 @@ type ExtendedSubmission struct {
 }
 
 type SubmissionsFilter struct {
-	SubmissionID             *int64  `schema:"submission-id"`
-	SubmitterID              *int64  `schema:"submitter-id"`
-	TitlePartial             *string `schema:"title-partial"`
-	SubmitterUsernamePartial *string `schema:"submitter-username-partial"`
-	PlatformPartial          *string `schema:"platform-partial"`
-	ResultsPerPage           *int64  `schema:"results-per-page"`
-	Page                     *int64  `schema:"page"`
+	SubmissionID             *int64   `schema:"submission-id"`
+	SubmitterID              *int64   `schema:"submitter-id"`
+	TitlePartial             *string  `schema:"title-partial"`
+	SubmitterUsernamePartial *string  `schema:"submitter-username-partial"`
+	PlatformPartial          *string  `schema:"platform-partial"`
+	BotActions               []string `schema:"bot-action"`
+	ResultsPerPage           *int64   `schema:"results-per-page"`
+	Page                     *int64   `schema:"page"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
 
-	v := reflect.ValueOf(sf) // fucking schema zeroing out my nil pointers
-	for i := 0; i < v.Elem().NumField(); i++ {
-		f := v.Elem().Field(i)
-		e := f.Elem()
-		if e.Kind() == reflect.Int64 && e.Int() == 0 {
-			f.Set(reflect.Zero(f.Type()))
-		}
-		if e.Kind() == reflect.String && e.String() == "" {
-			f.Set(reflect.Zero(f.Type()))
+	v := reflect.ValueOf(sf).Elem() // fucking schema zeroing out my nil pointers
+	t := reflect.TypeOf(sf).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		if t.Field(i).Type.Kind() == reflect.Ptr {
+			f := v.Field(i)
+			e := f.Elem()
+			if e.Kind() == reflect.Int64 && e.Int() == 0 {
+				f.Set(reflect.Zero(f.Type()))
+			}
+			if e.Kind() == reflect.String && e.String() == "" {
+				f.Set(reflect.Zero(f.Type()))
+			}
 		}
 	}
 

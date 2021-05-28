@@ -276,6 +276,13 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			filters = append(filters, "meta.platform LIKE ?")
 			data = append(data, utils.FormatLike(*filter.PlatformPartial))
 		}
+		if len(filter.BotActions) != 0 {
+			filters = append(filters, `bot_comment.action IN(?`+strings.Repeat(",?", len(filter.BotActions)-1)+`)`)
+			for _, ba := range filter.BotActions {
+				data = append(data, ba)
+			}
+		}
+
 		if filter.ResultsPerPage != nil {
 			currentLimit = *filter.ResultsPerPage
 		} else {
@@ -295,7 +302,7 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 		where = " WHERE "
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	finalQuery := `
 		SELECT  submission.id        AS submission_id 
 			   ,uploader.id          AS uploader_id 
 			   ,uploader.username    AS uploader_username 
@@ -390,10 +397,15 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			GROUP BY  fk_submission_id 
 		) AS file_counter
 		ON file_counter.fk_submission_id = submission.id
-		`+where+strings.Join(filters, " AND ")+`
+		` + where + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		ORDER BY newest.updated_at DESC
-		`+limit+` `+offset, data...)
+		` + limit + ` ` + offset
+
+	utils.LogCtx(ctx).Debug(finalQuery)
+	utils.LogCtx(ctx).Debug(data)
+
+	rows, err := tx.QueryContext(ctx, finalQuery, data...)
 	if err != nil {
 		return nil, err
 	}

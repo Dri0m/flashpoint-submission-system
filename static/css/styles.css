@@ -221,6 +221,11 @@ textarea {
     padding: 0.5em;
 }
 
-.form-column input {
+.form-column-text input {
     width: 100%;
+}
+
+.form-column-checkboxes label {
+    display: initial;
+    padding-right: 1em;
 }
