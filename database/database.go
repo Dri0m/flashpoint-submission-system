@@ -404,9 +404,6 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 		ORDER BY newest.updated_at DESC
 		` + limit + ` ` + offset
 
-	utils.LogCtx(ctx).Debug(finalQuery)
-	utils.LogCtx(ctx).Debug(data)
-
 	rows, err := tx.QueryContext(ctx, finalQuery, data...)
 	if err != nil {
 		return nil, err
