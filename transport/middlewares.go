@@ -104,7 +104,7 @@ func (a *App) UserHasAllRoles(ctx context.Context, uid int64, requiredRoles []st
 func (a *App) UserHasAnyRole(r *http.Request, uid int64, roles []string) (bool, error) {
 	userRoles, err := a.Service.GetUserRoles(r.Context(), uid)
 	if err != nil {
-		return false, fmt.Errorf("failed to get user roles")
+		return false, err
 	}
 
 	isAuthorized := false
@@ -166,4 +166,44 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 	}
 
 	return true, nil
+}
+
+// UserCanCommentAction accepts user that has all of requiredRoles and owns given resource(s)
+func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
+	if err := r.ParseForm(); err != nil {
+		return false, err
+	}
+
+	userRoles, err := a.Service.GetUserRoles(r.Context(), uid)
+	if err != nil {
+		return false, err
+	}
+
+	formAction := r.FormValue("action")
+
+	canDo := func(actions, roles []string) bool {
+		for _, action := range actions {
+			if action == formAction {
+				for _, userRole := range userRoles {
+					hasRole := false
+					for _, role := range roles {
+						if role == userRole {
+							hasRole = true
+							break
+						}
+					}
+					if hasRole {
+						return true
+					}
+				}
+				break
+			}
+		}
+		return false
+	}
+
+	return formAction == constants.ActionComment ||
+			canDo([]string{constants.ActionMarkAdded}, []string{constants.RoleAdministrator}) ||
+			canDo([]string{constants.ActionComment, constants.ActionApprove, constants.ActionReject, constants.ActionRequestChanges, constants.ActionAccept}, []string{constants.RoleCurator, constants.RoleTester}),
+		nil
 }

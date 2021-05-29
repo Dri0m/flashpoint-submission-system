@@ -18,11 +18,10 @@ const (
 	RoleCurator       = "Curator"
 	RoleHacker        = "Hacker"
 	RoleTester        = "Tester"
-	RoleVIP           = "VIP"
 	RoleArchivist     = "Archivist"
 	RoleMechanic      = "Mechanic"
 	RoleHunter        = "Hunter"
-	TrialCurator      = "Trial Curator"
+	RoleTrialCurator  = "Trial Curator"
 )
 
 func StaffRoles() []string {
@@ -40,7 +39,7 @@ func StaffRoles() []string {
 
 func TrialCuratorRoles() []string {
 	return []string{
-		TrialCurator,
+		RoleTrialCurator,
 	}
 }
 

@@ -180,11 +180,13 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	router.Handle(fmt.Sprintf("/submission/{%s}/comment", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleCommentReceiver, any(isStaff, all(isTrialCurator, userOwnsSubmission)))))).Methods("POST")
+			a.HandleCommentReceiver, any(
+				all(isStaff, a.UserCanCommentAction),
+				all(isTrialCurator, userOwnsSubmission, a.UserCanCommentAction)))))).Methods("POST")
 
 	router.Handle(fmt.Sprintf("/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs), // TODO trial curator should be able to use this
 		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleCommentReceiverBatch, any(isStaff))))).Methods("POST")
+			a.HandleCommentReceiverBatch, all(isStaff, a.UserCanCommentAction))))).Methods("POST")
 
 	// providers
 	router.Handle(fmt.Sprintf("/submission-file/{%s}", constants.ResourceKeyFileID),
