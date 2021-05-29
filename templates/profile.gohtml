@@ -10,6 +10,8 @@
 
             {{if isStaff .UserRoles}}
                 Congratulations, you have sufficient staff roles to use this system!
+            {{else if has "Trial Curator" .UserRoles}}
+                Welcome to the club, Trial Curator! Your access to this system is limited only to your submissions.
             {{else}}
                 You <b>do not</b> have sufficient server roles to use this system, so you cannot do anything here.
                 That's tough.
