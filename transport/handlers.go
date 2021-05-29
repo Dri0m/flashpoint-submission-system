@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/service"
@@ -92,24 +93,39 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	// file server
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
+	staffRoles := constants.StaffRoles()
+
 	// pages
-	router.Handle("/", http.HandlerFunc(a.HandleRootPage)).Methods("GET")
-	router.Handle("/profile", http.HandlerFunc(a.UserAuthentication(a.HandleProfilePage))).Methods("GET")
-	router.Handle("/submit", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmitPage)))).Methods("GET")
-	router.Handle("/submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionsPage)))).Methods("GET")
-	router.Handle("/my-submissions", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleMySubmissionsPage)))).Methods("GET")
-	router.Handle("/submission/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleViewSubmissionPage)))).Methods("GET")
-	router.Handle("/submission/{id}/files", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleViewSubmissionFilesPage)))).Methods("GET")
+	router.Handle("/",
+		http.HandlerFunc(a.HandleRootPage)).Methods("GET")
+	router.Handle("/profile",
+		http.HandlerFunc(a.UserAuthentication(a.HandleProfilePage))).Methods("GET")
+	router.Handle("/submit",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmitPage)))).Methods("GET")
+	router.Handle("/submissions",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmissionsPage)))).Methods("GET")
+	router.Handle("/my-submissions",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleMySubmissionsPage)))).Methods("GET")
+	router.Handle("/submission/{id}",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleViewSubmissionPage)))).Methods("GET")
+	router.Handle("/submission/{id}/files",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleViewSubmissionFilesPage)))).Methods("GET")
 
 	// receivers
-	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
-	router.Handle("/submission-receiver/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
-	router.Handle("/submission/{id}/comment", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleCommentReceiver)))).Methods("POST")
-	router.Handle("/submission-batch/{ids}/comment", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleCommentReceiverBatch)))).Methods("POST")
+	router.Handle("/submission-receiver",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmissionReceiver)))).Methods("POST")
+	router.Handle("/submission-receiver/{id}",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmissionReceiver)))).Methods("POST")
+	router.Handle("/submission/{id}/comment",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleCommentReceiver)))).Methods("POST")
+	router.Handle("/submission-batch/{ids}/comment",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleCommentReceiverBatch)))).Methods("POST")
 
 	// providers
-	router.Handle("/submission-file/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionFile)))).Methods("GET")
-	router.Handle("/submission-file-batch/{ids}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionBatch)))).Methods("GET")
+	router.Handle("/submission-file/{id}",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleDownloadSubmissionFile)))).Methods("GET")
+	router.Handle("/submission-file-batch/{ids}",
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleDownloadSubmissionBatch)))).Methods("GET")
 
 	err := srv.ListenAndServe()
 	if err != nil {

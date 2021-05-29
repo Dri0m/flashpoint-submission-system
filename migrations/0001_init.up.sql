@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS session
 
 CREATE TABLE IF NOT EXISTS discord_user
 (
-    id            BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id            BIGINT PRIMARY KEY,
     username      VARCHAR(255) NOT NULL,
     avatar        VARCHAR(255) NOT NULL,
     discriminator VARCHAR(255) NOT NULL,
@@ -26,12 +26,20 @@ CREATE TABLE IF NOT EXISTS discord_user
 INSERT IGNORE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled)
 VALUES (810112564787675166, 'RedMinima', '156dd40e0c72ed8e84034b53aad32af4', '1337', 0, 0, 'en_US', 0);
 
-CREATE TABLE IF NOT EXISTS authorization
+CREATE TABLE IF NOT EXISTS discord_role
 (
-    id         BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id    BIGINT PRIMARY KEY,
+    name  VARCHAR(63) NOT NULL,
+    color VARCHAR(10) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS discord_user_role
+(
+    id    BIGINT PRIMARY KEY AUTO_INCREMENT,
     fk_uid     BIGINT NOT NULL,
-    authorized BIGINT NOT NULL,
-    CONSTRAINT authorization_fk_uid FOREIGN KEY (fk_uid) REFERENCES discord_user (id) ON DELETE CASCADE
+    fk_rid     BIGINT NOT NULL,
+    CONSTRAINT discord_user_role_fk_uid FOREIGN KEY (fk_uid) REFERENCES discord_user (id) ON DELETE CASCADE,
+    CONSTRAINT discord_user_role_fk_rid FOREIGN KEY (fk_rid) REFERENCES discord_role (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS submission
@@ -86,7 +94,7 @@ CREATE TABLE IF NOT EXISTS curation_meta
 
 CREATE TABLE IF NOT EXISTS action
 (
-    id   BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id   BIGINT PRIMARY KEY,
     name VARCHAR(63) UNIQUE
 );
 

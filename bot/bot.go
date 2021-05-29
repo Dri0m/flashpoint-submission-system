@@ -63,8 +63,8 @@ func formatDiscordgoRoles(roles []*discordgo.Role) ([]types.DiscordRole, error) 
 	return formattedRoles, nil
 }
 
-// IsUserAuthorized contacts discord api to check if user has sufficient roles to use this site
-func (b *Bot) IsUserAuthorized(uid int64) (bool, error) {
+// IsUserAuthorizedOld contacts discord api to check if user has sufficient roles to use this site
+func (b *Bot) IsUserAuthorizedOld(uid int64) (bool, error) {
 	userRoles := make([]types.DiscordRole, 0)
 
 	roles, err := b.GetFlashpointRoles()

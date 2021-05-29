@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/Masterminds/sprig"
 	"html/template"
@@ -15,7 +16,10 @@ import (
 func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}, filenames ...string) {
 	templates := []string{"templates/base.gohtml", "templates/navbar.gohtml"}
 	templates = append(templates, filenames...)
-	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{"boolString": BoolString}).ParseFiles(templates...)
+	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{
+		"boolString": BoolString,
+		"isStaff":    constants.IsStaff,
+	}).ParseFiles(templates...)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)

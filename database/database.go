@@ -119,30 +119,65 @@ func (db *DB) GetDiscordUser(ctx context.Context, tx *sql.Tx, uid int64) (*types
 	return discordUser, nil
 }
 
-// StoreDiscordUserAuthorization stores discord user auth state
-func (db *DB) StoreDiscordUserAuthorization(ctx context.Context, tx *sql.Tx, uid int64, isAuthorized bool) error {
-	a := 0
-	if isAuthorized {
-		a = 1
+// StoreDiscordServerRoles store discord user or replace with new data
+func (db *DB) StoreDiscordServerRoles(ctx context.Context, tx *sql.Tx, roles []types.DiscordRole) error {
+	if len(roles) == 0 {
+		return nil
+	}
+	data := make([]interface{}, 0, len(roles)*3)
+	for _, role := range roles {
+		data = append(data, role.ID, role.Name, role.Color)
 	}
 
-	_, err := tx.ExecContext(ctx, `REPLACE INTO authorization (fk_uid, authorized) VALUES (?, ?)`, uid, a)
+	const valuePlaceholder = `(?, ?, ?)`
+	_, err := tx.ExecContext(ctx,
+		`INSERT IGNORE INTO discord_role (id, name, color) VALUES `+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(roles)-1),
+		data...)
 	return err
 }
 
-// IsDiscordUserAuthorized returns discord user auth state
-func (db *DB) IsDiscordUserAuthorized(ctx context.Context, tx *sql.Tx, uid int64) (bool, error) {
-	row := tx.QueryRowContext(ctx, `SELECT authorized FROM authorization WHERE fk_uid=?`, uid)
-	var a int64
-	err := row.Scan(&a)
-	if err != nil {
-		return false, err
+// StoreDiscordUserRoles store discord user roles
+func (db *DB) StoreDiscordUserRoles(ctx context.Context, tx *sql.Tx, uid int64, roles []int64) error {
+	if len(roles) == 0 {
+		return nil
+	}
+	data := make([]interface{}, 0, len(roles)*3)
+	for _, role := range roles {
+		data = append(data, uid, role)
 	}
 
-	if a == 1 {
-		return true, nil
+	_, err := tx.ExecContext(ctx, `DELETE FROM discord_user_role WHERE fk_uid = ?`, uid)
+	if err != nil {
+		return err
 	}
-	return false, nil
+
+	const valuePlaceholder = `(?, ?)`
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO discord_user_role (fk_uid, fk_rid) VALUES `+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(roles)-1),
+		data...)
+	return err
+}
+
+// GetDiscordUserRoles returns all user roles
+func (db *DB) GetDiscordUserRoles(ctx context.Context, tx *sql.Tx, uid int64) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT (SELECT name FROM discord_role WHERE discord_role.id=discord_user_role.fk_rid) FROM discord_user_role WHERE fk_uid=?`, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]string, 0)
+
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		result = append(result, name)
+	}
+
+	return result, nil
 }
 
 // StoreSubmission stores plain submission

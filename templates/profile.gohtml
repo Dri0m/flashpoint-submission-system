@@ -8,8 +8,8 @@
             <br>
             <br>
 
-            {{if .IsAuthorizedToUseSystem}}
-                Congratulations, you have sufficient server roles to use this system!
+            {{if isStaff .UserRoles}}
+                Congratulations, you have sufficient staff roles to use this system!
             {{else}}
                 You <b>do not</b> have sufficient server roles to use this system, so you cannot do anything here.
                 That's tough.

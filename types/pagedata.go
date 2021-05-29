@@ -1,9 +1,9 @@
 package types
 
 type BasePageData struct {
-	Username                string
-	AvatarURL               string
-	IsAuthorizedToUseSystem bool
+	Username  string
+	AvatarURL string
+	UserRoles []string
 }
 
 type SubmissionsPageData struct {

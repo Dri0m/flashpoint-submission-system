@@ -18,6 +18,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -48,7 +49,7 @@ func (s *Service) GetBasePageData(ctx context.Context) (*types.BasePageData, err
 		return nil, fmt.Errorf("failed to get user data from database")
 	}
 
-	isAuthorized, err := s.DB.IsDiscordUserAuthorized(ctx, tx, uid)
+	userRoles, err := s.DB.GetDiscordUserRoles(ctx, tx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user authorization")
@@ -60,9 +61,9 @@ func (s *Service) GetBasePageData(ctx context.Context) (*types.BasePageData, err
 	}
 
 	bpd := &types.BasePageData{
-		Username:                discordUser.Username,
-		AvatarURL:               utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
-		IsAuthorizedToUseSystem: isAuthorized,
+		Username:  discordUser.Username,
+		AvatarURL: utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
+		UserRoles: userRoles,
 	}
 
 	return bpd, nil
@@ -451,15 +452,35 @@ func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types
 		return nil, fmt.Errorf("failed to store discord user")
 	}
 
-	// get and save discord user authorization
-	isAuthorized, err := s.Bot.IsUserAuthorized(discordUser.ID)
+	// get discord roles
+	serverRoles, err := s.Bot.GetFlashpointRoles() // TODO changes in roles need to be refreshed sometimes
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to obtain discord user's roles")
+		return nil, fmt.Errorf("failed to obtain discord server roles")
 	}
-	if err := s.DB.StoreDiscordUserAuthorization(ctx, tx, discordUser.ID, isAuthorized); err != nil {
+	userRoleIDs, err := s.Bot.GetFlashpointRoleIDsForUser(discordUser.ID)
+	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to store discord user's authorization")
+		return nil, fmt.Errorf("failed to obtain discord server roles")
+	}
+
+	userRolesIDsNumeric := make([]int64, 0, len(userRoleIDs))
+	for _, userRoleID := range userRoleIDs {
+		id, err := strconv.ParseInt(userRoleID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		userRolesIDsNumeric = append(userRolesIDsNumeric, id)
+	}
+
+	// save discord roles
+	if err := s.DB.StoreDiscordServerRoles(ctx, tx, serverRoles); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to store discord server roles")
+	}
+	if err := s.DB.StoreDiscordUserRoles(ctx, tx, discordUser.ID, userRolesIDsNumeric); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to store discord user roles")
 	}
 
 	// create cookie and save session
@@ -503,24 +524,24 @@ func (s *Service) ProcessLogout(ctx context.Context, secret string) error {
 	return nil
 }
 
-func (s *Service) GetUserAuthorization(ctx context.Context, uid int64) (bool, error) {
+func (s *Service) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return false, fmt.Errorf("failed to begin transaction")
+		return nil, fmt.Errorf("failed to begin transaction")
 	}
 	defer s.rollbackTx(ctx, tx)
 
-	isAuthorized, err := s.DB.IsDiscordUserAuthorized(ctx, tx, uid)
+	roles, err := s.DB.GetDiscordUserRoles(ctx, tx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return false, fmt.Errorf("failed to load user authorization")
+		return nil, fmt.Errorf("failed to load user roles")
 	}
 
 	if err := tx.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return false, fmt.Errorf("failed to commit transaction")
+		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
-	return isAuthorized, nil
+	return roles, nil
 }
