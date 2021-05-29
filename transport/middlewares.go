@@ -32,8 +32,8 @@ func (a *App) UserAuthentication(next func(http.ResponseWriter, *http.Request)) 
 	}
 }
 
-// UserAuthorizationMuxAny takes many authorization middlewares and accepts if any of them does not return error
-func (a *App) UserAuthorizationMuxAny(next func(http.ResponseWriter, *http.Request), authorizers ...func(r *http.Request, uid int64) (bool, error)) func(http.ResponseWriter, *http.Request) {
+// UserAuthorizationMux takes many authorization middlewares and accepts if any of them does not return error
+func (a *App) UserAuthorizationMux(next func(http.ResponseWriter, *http.Request), authorizers ...func(*http.Request, int64) (bool, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if len(authorizers) == 0 {
 			panic("no authorizer supplied")
@@ -125,33 +125,9 @@ func (a *App) UserHasAnyRole(r *http.Request, uid int64, roles []string) (bool, 
 	return true, nil
 }
 
-// UserWithAllRolesOwnsResource accepts user that has all of requiredRoles and owns given resource(s)
-func (a *App) UserWithAllRolesOwnsResource(r *http.Request, uid int64, requiredRoles []string, resourceKey string) (bool, error) {
+// UserOwnsResource accepts user that has all of requiredRoles and owns given resource(s)
+func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (bool, error) {
 	ctx := r.Context()
-	userRoles, err := a.Service.GetUserRoles(ctx, uid)
-	if err != nil {
-		return false, fmt.Errorf("failed to get user roles")
-	}
-
-	isAuthorized := true
-
-	for _, role := range userRoles {
-		foundRole := false
-		for _, requiredRole := range requiredRoles {
-			if role == requiredRole {
-				foundRole = true
-				break
-			}
-		}
-		if !foundRole {
-			isAuthorized = false
-			break
-		}
-	}
-
-	if !isAuthorized {
-		return false, nil
-	}
 
 	if resourceKey == constants.ResourceKeySubmissionID {
 		params := mux.Vars(r)
