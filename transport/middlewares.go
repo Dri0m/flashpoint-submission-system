@@ -23,7 +23,6 @@ func (a *App) UserAuthentication(next func(http.ResponseWriter, *http.Request)) 
 			return
 		}
 		if userID == 0 {
-			utils.LogCtx(r.Context()).Error(err)
 			http.Error(w, "please log in to continue", http.StatusUnauthorized)
 			return
 		}
