@@ -379,7 +379,8 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			SELECT  c.* 
 				   ,ROW_NUMBER() OVER (PARTITION BY fk_submission_id ORDER BY created_at DESC) AS rn
 			FROM comment AS c
-			WHERE c.fk_author_id != ?) 
+			WHERE c.fk_author_id != ?
+			AND c.fk_action_id != (SELECT id FROM action WHERE name="comment")) 
 			SELECT  ranked_comment.fk_submission_id AS submission_id 
 				   ,ranked_comment.created_at 
 				   ,(
