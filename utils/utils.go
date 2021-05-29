@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"fmt"
@@ -116,4 +117,50 @@ func UploadFile(ctx context.Context, url string, filePath string) ([]byte, error
 
 func FormatLike(s string) string {
 	return "%" + strings.Replace(strings.Replace(s, "%", `\%`, -1), "_", `\_`, -1) + "%"
+}
+
+func WriteTarball(w io.Writer, filePaths []string) error {
+	tarWriter := tar.NewWriter(w)
+	defer tarWriter.Close()
+
+	for _, filePath := range filePaths {
+		err := addFileToTarWriter(filePath, tarWriter)
+		if err != nil {
+			return fmt.Errorf("add file to tar: %w", err.Error())
+		}
+	}
+
+	return nil
+}
+
+func addFileToTarWriter(filePath string, tarWriter *tar.Writer) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	header := &tar.Header{
+		Name:    filePath,
+		Size:    stat.Size(),
+		Mode:    int64(stat.Mode()),
+		ModTime: stat.ModTime(),
+	}
+
+	err = tarWriter.WriteHeader(header)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(tarWriter, file)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

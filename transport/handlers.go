@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -107,6 +108,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	// providers
 	router.Handle("/submission-file/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionFile)))).Methods("GET")
+	router.Handle("/submission-batch/{ids}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionBatch)))).Methods("GET")
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -154,16 +156,16 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
-	submissionID := params["id"]
+	submissionFileID := params["id"]
 
-	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		http.Error(w, "invalid submission file id", http.StatusBadRequest)
 		return
 	}
 
-	sfs, err := a.Service.ProcessDownloadSubmissionFiles(ctx, []int64{sid})
+	sfs, err := a.Service.ProcessDownloadSubmissionFiles(ctx, []int64{sfid})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
@@ -184,6 +186,46 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", sf.CurrentFilename))
 	w.Header().Set("Content-Type", "application/octet-stream")
 	http.ServeContent(w, r, sf.CurrentFilename, sf.UploadedAt, f)
+}
+
+func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionFileIDs := strings.Split(params["ids"], ",")
+	sfids := make([]int64, 0, len(submissionFileIDs))
+
+	for _, submissionFileID := range submissionFileIDs {
+		sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			http.Error(w, "invalid submission file id", http.StatusBadRequest)
+			return
+		}
+		sfids = append(sfids, sfid)
+	}
+
+	sfs, err := a.Service.ProcessDownloadSubmissionFiles(ctx, sfids)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	filePaths := make([]string, 0, len(sfs))
+	const dir = "submissions"
+
+	for _, sf := range sfs {
+		filePaths = append(filePaths, fmt.Sprintf("%s/%s", dir, sf.CurrentFilename))
+	}
+
+	filename := fmt.Sprintf("fpfss-batch-%dfiles-%s.tar", len(sfs), utils.RandomString(16))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if err := utils.WriteTarball(w, filePaths); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to create tarball", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
