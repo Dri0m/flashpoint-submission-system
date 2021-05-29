@@ -230,7 +230,7 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 	return &destinationFilePath, nil
 }
 
-func (s *Service) ProcessReceivedComment(ctx context.Context, uid, sid int64, formAction, formMessage string) error {
+func (s *Service) ProcessReceivedComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -269,16 +269,19 @@ func (s *Service) ProcessReceivedComment(ctx context.Context, uid, sid int64, fo
 		return fmt.Errorf("cannot post comment action '%s' without a message", formAction)
 	}
 
-	c := &types.Comment{
-		AuthorID:     uid,
-		SubmissionID: sid,
-		Message:      message,
-		Action:       formAction,
-		CreatedAt:    time.Now(),
-	}
+	for _, sid := range sids {
+		c := &types.Comment{
+			AuthorID:     uid,
+			SubmissionID: sid,
+			Message:      message,
+			Action:       formAction,
+			CreatedAt:    time.Now(),
+		}
 
-	if err := s.DB.StoreComment(ctx, tx, c); err != nil {
-		return fmt.Errorf("failed to store comment")
+		// TODO optimize into batch insert
+		if err := s.DB.StoreComment(ctx, tx, c); err != nil {
+			return fmt.Errorf("failed to store comment")
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

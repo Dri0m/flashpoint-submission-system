@@ -105,10 +105,11 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle("/submission-receiver", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
 	router.Handle("/submission-receiver/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleSubmissionReceiver)))).Methods("POST")
 	router.Handle("/submission/{id}/comment", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleCommentReceiver)))).Methods("POST")
+	router.Handle("/submission-batch/{ids}/comment", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleCommentReceiverBatch)))).Methods("POST")
 
 	// providers
 	router.Handle("/submission-file/{id}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionFile)))).Methods("GET")
-	router.Handle("/submission-batch/{ids}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionBatch)))).Methods("GET")
+	router.Handle("/submission-file-batch/{ids}", http.HandlerFunc(a.UserAuthentication(a.UserAuthorization(a.HandleDownloadSubmissionBatch)))).Methods("GET")
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -145,12 +146,55 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Service.ProcessReceivedComment(ctx, uid, sid, formAction, formMessage); err != nil {
+	if err := a.Service.ProcessReceivedComments(ctx, uid, []int64{sid}, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/submission/%d", sid), http.StatusFound)
+}
+
+func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	uid := utils.UserIDFromContext(ctx)
+
+	params := mux.Vars(r)
+	submissionIDs := strings.Split(params["ids"], ",")
+	sids := make([]int64, 0, len(submissionIDs))
+
+	for _, submissionFileID := range submissionIDs {
+		sid, err := strconv.ParseInt(submissionFileID, 10, 64)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			http.Error(w, "invalid submission id", http.StatusBadRequest)
+			return
+		}
+		sids = append(sids, sid)
+	}
+
+	if err := r.ParseForm(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	formAction := r.FormValue("action")
+	formMessage := r.FormValue("message")
+
+	if len([]rune(formMessage)) > 20000 {
+		err := fmt.Errorf("message cannot be longer than 20000 characters")
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := a.Service.ProcessReceivedComments(ctx, uid, sids, formAction, formMessage); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("batch comment successful"))
 }
 
 func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Request) {
