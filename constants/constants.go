@@ -57,6 +57,19 @@ func IsStaff(roles []string) bool {
 	return false
 }
 
+// IsTrialCurator returns true if user is trial curator
+func IsTrialCurator(roles []string) bool {
+	trialCuratorRoles := TrialCuratorRoles()
+	for _, role := range roles {
+		for _, trialCuratorRole := range trialCuratorRoles {
+			if role == trialCuratorRole {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 const (
 	ResourceKeySubmissionID  = "submission-id"
 	ResourceKeySubmissionIDs = "submission-ids"

@@ -17,8 +17,9 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 	templates := []string{"templates/base.gohtml", "templates/navbar.gohtml"}
 	templates = append(templates, filenames...)
 	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{
-		"boolString": BoolString,
-		"isStaff":    constants.IsStaff,
+		"boolString":     BoolString,
+		"isStaff":        constants.IsStaff,
+		"isTrialCurator": constants.IsTrialCurator,
 	}).ParseFiles(templates...)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)

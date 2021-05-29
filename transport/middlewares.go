@@ -134,7 +134,7 @@ func (a *App) UserWithAllRolesOwnsResource(r *http.Request, uid int64, requiredR
 		return false, fmt.Errorf("failed to get user roles")
 	}
 
-	isAuthorized := false
+	isAuthorized := true
 
 	for _, role := range userRoles {
 		foundRole := false

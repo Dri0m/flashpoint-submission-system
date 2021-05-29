@@ -222,7 +222,8 @@ func (db *DB) GetSubmissionFiles(ctx context.Context, tx *sql.Tx, sfids []int64)
 	q := `
 		SELECT fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
 		FROM submission_file 
-		WHERE id IN(?` + strings.Repeat(",?", len(sfids)-1) + `)`
+		WHERE id IN(?` + strings.Repeat(",?", len(sfids)-1) + `)
+		ORDER BY uploaded_at DESC`
 
 	var rows *sql.Rows
 	var err error

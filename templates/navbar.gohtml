@@ -5,10 +5,12 @@
                 <div class="pure-menu pure-menu-horizontal">
                     <a href="/" class="pure-menu-heading pure-menu-link">FPFSS</a>
                     <ul class="pure-menu-list">
-                        {{if isStaff .UserRoles}}
+                        {{if or (isStaff .UserRoles) (isTrialCurator .UserRoles)}}
                             <li class="pure-menu-item">
                                 <a href="/submit" class="pure-menu-link">Submit</a>
                             </li>
+                        {{end}}
+                        {{if isStaff .UserRoles}}
                             <li class="pure-menu-item">
                                 <a href="/submissions" class="pure-menu-link">Browse Submissions</a>
                             </li>
@@ -20,7 +22,7 @@
                 <div class="pure-menu pure-menu-horizontal right">
                     {{if .Username}}
                         <ul class="pure-menu-list">
-                            {{if isStaff .UserRoles}}
+                            {{if or (isStaff .UserRoles) (isTrialCurator .UserRoles)}}
                                 <li class="pure-menu-item">
                                     <a href="/my-submissions" class="pure-menu-link">My Submissions</a>
                                 </li>
