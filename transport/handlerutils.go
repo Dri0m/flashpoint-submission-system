@@ -73,3 +73,20 @@ func (a *App) GetUserIDFromCookie(r *http.Request) (int64, error) {
 
 	return uid, nil
 }
+
+func (a *App) GetSecretFromCookie(r *http.Request) (string, error) {
+	cookieMap, err := a.CC.GetSecureCookie(r, utils.Cookies.Login)
+	if errors.Is(err, http.ErrNoCookie) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	token, err := utils.ParseAuthToken(cookieMap)
+	if err != nil {
+		return "", err
+	}
+
+	return token.Secret, nil
+}

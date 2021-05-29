@@ -147,55 +147,55 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		http.HandlerFunc(a.HandleRootPage)).Methods("GET")
 
 	router.Handle("/profile",
-		http.HandlerFunc(a.UserAuthentication(a.HandleProfilePage))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(a.HandleProfilePage))).Methods("GET")
 
 	router.Handle("/submit",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleSubmitPage, any(isStaff, isTrialCurator))))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleSubmitPage, any(isStaff, isTrialCurator)))).Methods("GET")
 
 	router.Handle("/submissions",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleSubmissionsPage, any(isStaff))))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleSubmissionsPage, any(isStaff)))).Methods("GET")
 
 	router.Handle("/my-submissions",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleMySubmissionsPage, any(isStaff, isTrialCurator))))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleMySubmissionsPage, any(isStaff, isTrialCurator)))).Methods("GET")
 
 	router.Handle(fmt.Sprintf("/submission/{%s}", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleViewSubmissionPage, any(isStaff, all(isTrialCurator, userOwnsSubmission)))))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleViewSubmissionPage, any(isStaff, all(isTrialCurator, userOwnsSubmission))))).Methods("GET")
 
 	router.Handle(fmt.Sprintf("/submission/{%s}/files", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleViewSubmissionFilesPage, any(isStaff, all(isTrialCurator, userOwnsSubmission)))))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleViewSubmissionFilesPage, any(isStaff, all(isTrialCurator, userOwnsSubmission))))).Methods("GET")
 
 	// receivers
 	router.Handle("/submission-receiver",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleSubmissionReceiver, any(isStaff, isTrialCurator))))).Methods("POST")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleSubmissionReceiver, any(isStaff, isTrialCurator)))).Methods("POST")
 
 	router.Handle(fmt.Sprintf("/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleSubmissionReceiver, any(isStaff, all(isTrialCurator, userOwnsSubmission)))))).Methods("POST")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleSubmissionReceiver, any(isStaff, all(isTrialCurator, userOwnsSubmission))))).Methods("POST")
 
 	router.Handle(fmt.Sprintf("/submission/{%s}/comment", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
+		http.HandlerFunc(a.UserAuthMux(
 			a.HandleCommentReceiver, any(
 				all(isStaff, a.UserCanCommentAction),
-				all(isTrialCurator, userOwnsSubmission, a.UserCanCommentAction)))))).Methods("POST")
+				all(isTrialCurator, userOwnsSubmission, a.UserCanCommentAction))))).Methods("POST")
 
 	router.Handle(fmt.Sprintf("/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs), // TODO trial curator should be able to use this
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleCommentReceiverBatch, all(isStaff, a.UserCanCommentAction))))).Methods("POST")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleCommentReceiverBatch, all(isStaff, a.UserCanCommentAction)))).Methods("POST")
 
 	// providers
 	router.Handle(fmt.Sprintf("/submission-file/{%s}", constants.ResourceKeyFileID),
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleDownloadSubmissionFile, any(isStaff, all(isTrialCurator, userOwnsFile)))))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleDownloadSubmissionFile, any(isStaff, all(isTrialCurator, userOwnsFile))))).Methods("GET")
 
 	router.Handle(fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs), // TODO trial curator should be able to use this
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMux(
-			a.HandleDownloadSubmissionBatch, any(isStaff))))).Methods("GET")
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleDownloadSubmissionBatch, any(isStaff)))).Methods("GET")
 
 	err := srv.ListenAndServe()
 	if err != nil {

@@ -81,18 +81,23 @@ func (db *DB) DeleteSession(ctx context.Context, tx *sql.Tx, secret string) erro
 }
 
 // GetUIDFromSession returns user ID and/or expiration state
-func (db *DB) GetUIDFromSession(ctx context.Context, tx *sql.Tx, key string) (string, bool, error) {
-	row := tx.QueryRowContext(ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
+func (db *DB) GetUIDFromSession(ctx context.Context, tx *sql.Tx, key string) (int64, bool, error) {
+	var row *sql.Row
+	if tx == nil {
+		row = db.Conn.QueryRowContext(ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
+	} else {
+		row = tx.QueryRowContext(ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
+	}
 
-	var uid string
+	var uid int64
 	var expiration int64
 	err := row.Scan(&uid, &expiration)
 	if err != nil {
-		return "", false, err
+		return 0, false, err
 	}
 
 	if expiration <= time.Now().Unix() {
-		return "", false, nil
+		return 0, false, nil
 	}
 
 	return uid, true, nil

@@ -11,43 +11,33 @@ import (
 	"strconv"
 )
 
-// TODO optimize database access in middlewares
+// TODO optimize database access in middleware
 
-// UserAuthentication accepts valid session cookie
-func (a *App) UserAuthentication(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+// UserAuthMux takes many authorization middlewares and accepts if any of them does not return error
+func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authorizers ...func(*http.Request, int64) (bool, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := a.GetUserIDFromCookie(r)
+		secret, err := a.GetSecretFromCookie(r)
+		if err != nil {
+			utils.LogCtx(r.Context()).Error(err)
+			http.Error(w, "failed to parse cookie, please clear your cookies and try again", http.StatusBadRequest)
+			return
+		}
+
+		uid, ok, err := a.Service.DB.GetUIDFromSession(r.Context(), nil, secret)
 		if err != nil {
 			utils.LogCtx(r.Context()).Error(err)
 			http.Error(w, "failed to load session, please clear your cookies and try again", http.StatusBadRequest)
 			return
 		}
-		if userID == 0 {
-			http.Error(w, "please log in to continue", http.StatusUnauthorized)
+		if !ok {
+			utils.LogCtx(r.Context()).Error(err)
+			http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, userID))
-		next(w, r)
-	}
-}
-
-// UserAuthorizationMux takes many authorization middlewares and accepts if any of them does not return error
-func (a *App) UserAuthorizationMux(next func(http.ResponseWriter, *http.Request), authorizers ...func(*http.Request, int64) (bool, error)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
 		if len(authorizers) == 0 {
-			panic("no authorizer supplied")
-		}
-
-		uid, err := a.GetUserIDFromCookie(r)
-		if err != nil {
-			utils.LogCtx(r.Context()).Error(err)
-			http.Error(w, "failed to load session, please clear your cookies and try again", http.StatusBadRequest)
-			return
-		}
-		if uid == 0 {
-			utils.LogCtx(r.Context()).Error(err)
-			http.Error(w, "please log in to continue", http.StatusUnauthorized)
+			r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
+			next(w, r)
 			return
 		}
 
