@@ -219,10 +219,18 @@ func (db *DB) GetSubmissionFiles(ctx context.Context, tx *sql.Tx, sfids []int64)
 		data[i] = d
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	q := `
 		SELECT fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
 		FROM submission_file 
-		WHERE id IN(?`+strings.Repeat(",?", len(sfids)-1)+`)`, data...)
+		WHERE id IN(?` + strings.Repeat(",?", len(sfids)-1) + `)`
+
+	var rows *sql.Rows
+	var err error
+	if tx == nil {
+		rows, err = db.Conn.QueryContext(ctx, q, data...)
+	} else {
+		rows, err = tx.QueryContext(ctx, q, data...)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +447,13 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 		ORDER BY newest.updated_at DESC
 		` + limit + ` ` + offset
 
-	rows, err := tx.QueryContext(ctx, finalQuery, data...)
+	var rows *sql.Rows
+	var err error
+	if tx == nil {
+		rows, err = db.Conn.QueryContext(ctx, finalQuery, data...)
+	} else {
+		rows, err = tx.QueryContext(ctx, finalQuery, data...)
+	}
 	if err != nil {
 		return nil, err
 	}

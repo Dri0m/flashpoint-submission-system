@@ -22,6 +22,7 @@ const (
 	RoleArchivist     = "Archivist"
 	RoleMechanic      = "Mechanic"
 	RoleHunter        = "Hunter"
+	TrialCurator      = "Trial Curator"
 )
 
 func StaffRoles() []string {
@@ -37,6 +38,12 @@ func StaffRoles() []string {
 	}
 }
 
+func TrialCuratorRoles() []string {
+	return []string{
+		TrialCurator,
+	}
+}
+
 // IsStaff returns true if user has any staff role
 func IsStaff(roles []string) bool {
 	staffRoles := StaffRoles()
@@ -49,3 +56,10 @@ func IsStaff(roles []string) bool {
 	}
 	return false
 }
+
+const (
+	ResourceKeySubmissionID  = "submission-id"
+	ResourceKeySubmissionIDs = "submission-ids"
+	ResourceKeyFileID        = "file-id"
+	ResourceKeyFileIDs       = "file-ids"
+)

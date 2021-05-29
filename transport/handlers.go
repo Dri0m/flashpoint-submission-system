@@ -93,39 +93,71 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	// file server
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
-	staffRoles := constants.StaffRoles()
+	isStaff := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserHasAnyRole(r, uid, constants.StaffRoles())
+	}
+	isTrialCurator := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserHasAnyRole(r, uid, constants.TrialCuratorRoles())
+	}
+	trialCuratorOwnsSubmission := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserWithAllRolesOwnsResource(r, uid, constants.TrialCuratorRoles(), constants.ResourceKeySubmissionID)
+	}
+	trialCuratorOwnsfile := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserWithAllRolesOwnsResource(r, uid, constants.TrialCuratorRoles(), constants.ResourceKeyFileID)
+	}
 
 	// pages
 	router.Handle("/",
 		http.HandlerFunc(a.HandleRootPage)).Methods("GET")
+
 	router.Handle("/profile",
 		http.HandlerFunc(a.UserAuthentication(a.HandleProfilePage))).Methods("GET")
+
 	router.Handle("/submit",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmitPage)))).Methods("GET")
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleSubmitPage, isStaff, isTrialCurator)))).Methods("GET")
+
 	router.Handle("/submissions",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmissionsPage)))).Methods("GET")
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleSubmissionsPage, isStaff)))).Methods("GET")
+
 	router.Handle("/my-submissions",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleMySubmissionsPage)))).Methods("GET")
-	router.Handle("/submission/{id}",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleViewSubmissionPage)))).Methods("GET")
-	router.Handle("/submission/{id}/files",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleViewSubmissionFilesPage)))).Methods("GET")
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleMySubmissionsPage, isStaff, isTrialCurator)))).Methods("GET")
+
+	router.Handle(fmt.Sprintf("/submission/{%s}", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleViewSubmissionPage, isStaff, trialCuratorOwnsSubmission)))).Methods("GET")
+
+	router.Handle(fmt.Sprintf("/submission/{%s}/files", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleViewSubmissionFilesPage, isStaff, trialCuratorOwnsSubmission)))).Methods("GET")
 
 	// receivers
 	router.Handle("/submission-receiver",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmissionReceiver)))).Methods("POST")
-	router.Handle("/submission-receiver/{id}",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleSubmissionReceiver)))).Methods("POST")
-	router.Handle("/submission/{id}/comment",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleCommentReceiver)))).Methods("POST")
-	router.Handle("/submission-batch/{ids}/comment",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleCommentReceiverBatch)))).Methods("POST")
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleSubmissionReceiver, isStaff, isTrialCurator)))).Methods("POST")
+
+	router.Handle(fmt.Sprintf("/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleSubmissionReceiver, isStaff, trialCuratorOwnsSubmission)))).Methods("POST")
+
+	router.Handle(fmt.Sprintf("/submission/{%s}/comment", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleCommentReceiver, isStaff, trialCuratorOwnsSubmission)))).Methods("POST")
+
+	router.Handle(fmt.Sprintf("/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs), // TODO trial curator should be able to use this
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleCommentReceiverBatch, isStaff)))).Methods("POST")
 
 	// providers
-	router.Handle("/submission-file/{id}",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleDownloadSubmissionFile)))).Methods("GET")
-	router.Handle("/submission-file-batch/{ids}",
-		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationAny(staffRoles, a.HandleDownloadSubmissionBatch)))).Methods("GET")
+	router.Handle(fmt.Sprintf("/submission-file/{%s}", constants.ResourceKeyFileID),
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleDownloadSubmissionFile, isStaff, trialCuratorOwnsfile)))).Methods("GET")
+
+	router.Handle(fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs), // TODO trial curator should be able to use this
+		http.HandlerFunc(a.UserAuthentication(a.UserAuthorizationMuxAny(
+			a.HandleDownloadSubmissionBatch, isStaff)))).Methods("GET")
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -138,7 +170,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	uid := utils.UserIDFromContext(ctx)
 
 	params := mux.Vars(r)
-	submissionID := params["id"]
+	submissionID := params[constants.ResourceKeySubmissionID]
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -175,7 +207,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 	uid := utils.UserIDFromContext(ctx)
 
 	params := mux.Vars(r)
-	submissionIDs := strings.Split(params["ids"], ",")
+	submissionIDs := strings.Split(params["submission-ids"], ",")
 	sids := make([]int64, 0, len(submissionIDs))
 
 	for _, submissionFileID := range submissionIDs {
@@ -216,7 +248,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
-	submissionFileID := params["id"]
+	submissionFileID := params[constants.ResourceKeyFileID]
 
 	sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 	if err != nil {
@@ -251,7 +283,7 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
-	submissionFileIDs := strings.Split(params["ids"], ",")
+	submissionFileIDs := strings.Split(params[constants.ResourceKeyFileIDs], ",")
 	sfids := make([]int64, 0, len(submissionFileIDs))
 
 	for _, submissionFileID := range submissionFileIDs {
@@ -291,7 +323,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
-	submissionID := params["id"]
+	submissionID := params[constants.ResourceKeySubmissionID]
 
 	var sid *int64
 
@@ -428,7 +460,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
-	submissionID := params["id"]
+	submissionID := params[constants.ResourceKeySubmissionID]
 
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
@@ -450,7 +482,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
-	submissionID := params["id"]
+	submissionID := params[constants.ResourceKeySubmissionID]
 
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
