@@ -580,3 +580,21 @@ func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, tx *sql.Tx,
 
 	return result, nil
 }
+
+// SoftDeleteSubmissionFiles stores submission file
+func (db *DB) SoftDeleteSubmissionFiles(ctx context.Context, tx *sql.Tx, sfids []int64) error {
+	if len(sfids) == 0 {
+		return nil
+	}
+
+	data := make([]interface{}, len(sfids))
+	for i, d := range sfids {
+		data[i] = d
+	}
+
+	_, err := tx.ExecContext(ctx, `
+		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP() 
+		WHERE id IN(?`+strings.Repeat(",?", len(sfids)-1)+`)`,
+		data...)
+	return err
+}

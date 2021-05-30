@@ -97,17 +97,7 @@ func (a *App) UserHasAnyRole(r *http.Request, uid int64, roles []string) (bool, 
 		return false, err
 	}
 
-	isAuthorized := false
-
-	for _, userRole := range userRoles {
-		for _, role := range roles {
-			if userRole == role {
-				isAuthorized = true
-				break
-			}
-		}
-	}
-
+	isAuthorized := constants.HasAnyRole(userRoles, roles)
 	if !isAuthorized {
 		return false, nil
 	}

@@ -83,6 +83,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 }
 
 func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Router) {
+	// TODO refactor these helpers away from here?
 	any := func(authorizers ...func(*http.Request, int64) (bool, error)) func(*http.Request, int64) (bool, error) {
 		return func(r *http.Request, uid int64) (bool, error) {
 			for _, authorizer := range authorizers {
@@ -124,6 +125,9 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	}
 	isTrialCurator := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.TrialCuratorRoles())
+	}
+	isDeletor := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserHasAnyRole(r, uid, constants.DeletorRoles())
 	}
 	userOwnsSubmission := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserOwnsResource(r, uid, constants.ResourceKeySubmissionID)
@@ -196,6 +200,11 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle(fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs), // TODO trial curator should be able to use this
 		http.HandlerFunc(a.UserAuthMux(
 			a.HandleDownloadSubmissionBatch, any(isStaff)))).Methods("GET")
+
+	// soft delete
+	router.Handle(fmt.Sprintf("/submission-file/{%s}", constants.ResourceKeyFileID),
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleSoftDeleteSubmissionFile, all(isDeletor)))).Methods("DELETE")
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -298,7 +307,7 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 	sfs, err := a.Service.ProcessDownloadSubmissionFiles(ctx, []int64{sfid})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 	sf := sfs[0]
@@ -316,6 +325,27 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", sf.CurrentFilename))
 	w.Header().Set("Content-Type", "application/octet-stream")
 	http.ServeContent(w, r, sf.CurrentFilename, sf.UploadedAt, f)
+}
+
+func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionFileID := params[constants.ResourceKeyFileID]
+
+	sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "invalid submission file id", http.StatusBadRequest)
+		return
+	}
+
+	if err := a.Service.ProcessSoftDeleteSubmissionFiles(ctx, []int64{sfid}); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, fmt.Sprintf("soft delete submission file processor: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Request) {
