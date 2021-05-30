@@ -230,6 +230,7 @@ func (db *DB) GetSubmissionFiles(ctx context.Context, tx *sql.Tx, sfids []int64)
 		SELECT fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
 		FROM submission_file 
 		WHERE id IN(?` + strings.Repeat(",?", len(sfids)-1) + `)
+		AND deleted_at IS NULL
 		ORDER BY uploaded_at DESC`
 
 	var rows *sql.Rows
@@ -270,6 +271,7 @@ func (db *DB) GetExtendedSubmissionFilesBySubmissionID(ctx context.Context, tx *
 		FROM submission_file 
 		LEFT JOIN discord_user ON fk_uploader_id=discord_user.id
 		WHERE fk_submission_id=?
+		AND submission_file.deleted_at IS NULL
 		ORDER BY uploaded_at DESC`, sid)
 	if err != nil {
 		return nil, err
@@ -349,9 +351,9 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 
 	data = append(data, currentLimit, currentOffset)
 
-	where := ""
+	and := ""
 	if len(filters) > 0 {
-		where = " WHERE "
+		and = " AND "
 	}
 
 	finalQuery := `
@@ -450,7 +452,7 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			GROUP BY  fk_submission_id 
 		) AS file_counter
 		ON file_counter.fk_submission_id = submission.id
-		` + where + strings.Join(filters, " AND ") + `
+		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		ORDER BY newest.updated_at DESC
 		` + limit + ` ` + offset
@@ -516,7 +518,7 @@ func (db *DB) GetCurationMetaBySubmissionFileID(ctx context.Context, tx *sql.Tx,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
-		WHERE fk_submission_file_id=?`, sfid)
+		WHERE fk_submission_file_id=? AND submission_file.deleted_at IS NULL`, sfid)
 
 	c := &types.CurationMeta{SubmissionFileID: sfid}
 	err := row.Scan(&c.SubmissionID, &c.ApplicationPath, &c.Developer, &c.Extreme, &c.GameNotes, &c.Languages,
@@ -549,6 +551,7 @@ func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, tx *sql.Tx,
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
 		WHERE fk_submission_id=? 
+		AND comment.deleted_at IS NULL
 		ORDER BY created_at;`, sid)
 	if err != nil {
 		return nil, err
