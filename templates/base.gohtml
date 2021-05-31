@@ -30,12 +30,23 @@
     </div>
 
     <script>
-        function sendDelete(url){
-            if (confirm(`Are you sure you want to delete ${url}?`)) {
-                let req = new XMLHttpRequest();
-                req.open("DELETE", url, false);
-                req.send();
-                location.reload();
+        function sendDelete(url) {
+            if (confirm(`Are you sure you want to (soft) delete '${url}'?`)) {
+                let request = new XMLHttpRequest();
+                request.open("DELETE", url, false);
+
+                try {
+                    request.send();
+                    request.onload = function () {
+                        if (request.status !== 204) {
+                            alert(`failed to delete '${url}' - status ${request.status}`)
+                        }
+                    };
+                    alert(`delete of '${url}' successful`)
+                    location.reload();
+                } catch (err) {
+                    alert(`failed to delete '${url}' - exception '${err.message}'`)
+                }
             }
         }
     </script>

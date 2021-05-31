@@ -449,6 +449,7 @@ func (db *DB) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.S
 			SELECT  fk_submission_id 
 				   ,COUNT(id) AS file_count
 			FROM submission_file
+			WHERE submission_file.deleted_at IS NULL
 			GROUP BY  fk_submission_id 
 		) AS file_counter
 		ON file_counter.fk_submission_id = submission.id
