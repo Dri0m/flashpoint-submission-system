@@ -29,6 +29,17 @@
         {{template "main" .}}
     </div>
 
+    <script>
+        function sendDelete(url){
+            if (confirm(`Are you sure you want to delete ${url}?`)) {
+                let req = new XMLHttpRequest();
+                req.open("DELETE", url, false);
+                req.send();
+                location.reload();
+            }
+        }
+    </script>
+
     </body>
     </html>
 {{end}}

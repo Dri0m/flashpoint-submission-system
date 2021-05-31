@@ -1,10 +1,14 @@
 {{define "submission-files-table"}}
+    {{$canDelete := isDeletor .UserRoles}}
     <div id="table-wrapper">
         <div id="table-scroll">
             <table class="pure-table pure-table-striped submissions-table">
                 <thead>
                 <tr>
                     <th class="center">Get</th>
+                    {{if $canDelete}}
+                        <th>Delete</th>
+                    {{end}}
                     <th>Original Filename</th>
                     <th>Size</th>
                     <th>Uploaded by</th>
@@ -15,15 +19,21 @@
                 </thead>
                 <tbody>
                 {{range .SubmissionFiles}}
-                    <tr>
-                        <td class="center"><a href="/submission-file/{{.FileID}}">Get</a></td>
-                        <td>{{.OriginalFilename}}</td>
-                        <td>{{.Size}}B</td>
-                        <td>{{.SubmitterUsername}}</td>
-                        <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
-                        <td>{{.MD5Sum}}</td>
-                        <td>{{.SHA256Sum}}</td>
-                {{end}}
+                <tr>
+                    <td class="center"><a href="/submission-file/{{.FileID}}">Get</a></td>
+                    {{if $canDelete}}
+                        <td class="center">
+                            <button onclick="sendDelete('/submission-file/{{.FileID}}')">Delete</button >
+                        </td>
+                    {{end}}
+                    <td>{{.OriginalFilename}}</td>
+                    <td>{{.Size}}B</td>
+
+                    <td>{{.SubmitterUsername}}</td>
+                    <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
+                    <td>{{.MD5Sum}}</td>
+                    <td>{{.SHA256Sum}}</td>
+                    {{end}}
                 </tbody>
             </table>
         </div>
