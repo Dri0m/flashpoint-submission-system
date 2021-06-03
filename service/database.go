@@ -1,4 +1,4 @@
-package database
+package service
 
 import (
 	"context"

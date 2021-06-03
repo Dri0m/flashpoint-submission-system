@@ -7,7 +7,6 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
-	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
@@ -56,7 +55,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 				FlashpointServerID: conf.FlashpointServerID,
 				L:                  l,
 			},
-			DB: database.DB{
+			DB: service.DB{
 				Conn: db,
 			},
 			ValidatorServerURL:       conf.ValidatorServerURL,

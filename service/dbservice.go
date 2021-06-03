@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
-	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/go-sql-driver/mysql"
@@ -24,7 +23,7 @@ import (
 
 type Service struct {
 	Bot                      bot.Bot
-	DB                       database.DB
+	DB                       DB
 	ValidatorServerURL       string
 	SessionExpirationSeconds int64
 }
