@@ -582,20 +582,26 @@ func (db *DB) GetExtendedCommentsBySubmissionID(ctx context.Context, tx *sql.Tx,
 	return result, nil
 }
 
-// SoftDeleteSubmissionFiles stores submission file
-func (db *DB) SoftDeleteSubmissionFiles(ctx context.Context, tx *sql.Tx, sfids []int64) error {
-	if len(sfids) == 0 {
-		return nil
-	}
+// SoftDeleteSubmissionFile stores submission file
+func (db *DB) SoftDeleteSubmissionFile(ctx context.Context, tx *sql.Tx, sfid int64) error {
+	row := tx.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM submission_file
+		WHERE fk_submission_id = (SELECT fk_submission_id FROM submission_file WHERE id = ?)
+        AND submission_file.deleted_at IS NULL
+		GROUP BY fk_submission_id`,
+		sfid)
 
-	data := make([]interface{}, len(sfids))
-	for i, d := range sfids {
-		data[i] = d
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return err
+	}
+	if count <= 1 {
+		return fmt.Errorf(constants.ErrorCannotDeleteLastSubmissionFile)
 	}
 
 	_, err := tx.ExecContext(ctx, `
 		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP() 
-		WHERE id IN(?`+strings.Repeat(",?", len(sfids)-1)+`)`,
-		data...)
+		WHERE id  = ?`,
+		sfid)
 	return err
 }

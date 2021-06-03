@@ -438,7 +438,7 @@ func (s *Service) ProcessDownloadSubmissionFiles(ctx context.Context, sfids []in
 	return sfs, nil
 }
 
-func (s *Service) ProcessSoftDeleteSubmissionFiles(ctx context.Context, sfids []int64) error {
+func (s *Service) ProcessSoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -446,7 +446,10 @@ func (s *Service) ProcessSoftDeleteSubmissionFiles(ctx context.Context, sfids []
 	}
 	defer s.rollbackTx(ctx, tx)
 
-	if err := s.DB.SoftDeleteSubmissionFiles(ctx, tx, sfids); err != nil {
+	if err := s.DB.SoftDeleteSubmissionFile(ctx, tx, sfid); err != nil {
+		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
+			return err
+		}
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("failed to soft delete submission file")
 	}

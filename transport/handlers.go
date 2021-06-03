@@ -339,7 +339,11 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := a.Service.ProcessSoftDeleteSubmissionFiles(ctx, []int64{sfid}); err != nil {
+	if err := a.Service.ProcessSoftDeleteSubmissionFile(ctx, sfid); err != nil {
+		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
+			http.Error(w, fmt.Sprintf("soft delete submission file processor: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("soft delete submission file processor: %s", err.Error()), http.StatusInternalServerError)
 		return

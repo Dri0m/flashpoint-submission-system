@@ -36,14 +36,15 @@
                 request.open("DELETE", url, false);
 
                 try {
-                    request.send();
                     request.onload = function () {
                         if (request.status !== 204) {
                             alert(`failed to delete '${url}' - status ${request.status}`)
+                        } else {
+                            alert(`delete of '${url}' successful`)
+                            location.reload();
                         }
                     };
-                    alert(`delete of '${url}' successful`)
-                    location.reload();
+                    request.send();
                 } catch (err) {
                     alert(`failed to delete '${url}' - exception '${err.message}'`)
                 }
