@@ -23,7 +23,7 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 			return
 		}
 
-		uid, ok, err := a.Service.DB.GetUIDFromSession(r.Context(), nil, secret)
+		uid, ok, err := a.Service.GetUIDFromSession(r.Context(), secret)
 		if err != nil {
 			utils.LogCtx(r.Context()).Error(err)
 			http.Error(w, "failed to load session, please clear your cookies and try again", http.StatusBadRequest)
@@ -117,7 +117,7 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 			return false, nil
 		}
 
-		submisisons, err := a.Service.DB.SearchSubmissions(ctx, nil, &types.SubmissionsFilter{SubmissionID: &sid})
+		submisisons, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionID: &sid})
 		if err != nil {
 			return false, err
 		}
@@ -134,7 +134,7 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 			return false, nil
 		}
 
-		submissionFiles, err := a.Service.DB.GetSubmissionFiles(ctx, nil, []int64{fid})
+		submissionFiles, err := a.Service.GetSubmissionFiles(ctx, []int64{fid})
 		if err != nil {
 			return false, err
 		}
@@ -182,8 +182,9 @@ func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
 		return false
 	}
 
-	return formAction == constants.ActionComment ||
-			canDo([]string{constants.ActionMarkAdded}, []string{constants.RoleAdministrator}) ||
-			canDo([]string{constants.ActionComment, constants.ActionApprove, constants.ActionReject, constants.ActionRequestChanges, constants.ActionAccept}, []string{constants.RoleCurator, constants.RoleTester}),
-		nil
+	canComment := formAction == constants.ActionComment
+	canMarkAdded := canDo([]string{constants.ActionMarkAdded}, []string{constants.RoleAdministrator})
+	canActions := canDo([]string{constants.ActionComment, constants.ActionApprove, constants.ActionReject, constants.ActionRequestChanges, constants.ActionAccept}, []string{constants.RoleCurator, constants.RoleTester})
+
+	return canComment || canMarkAdded || canActions, nil
 }

@@ -7,8 +7,8 @@ package main
 import (
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
+	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
-	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/transport"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -18,7 +18,7 @@ func main() {
 	l.Infoln("hi")
 
 	conf := config.GetConfig(l)
-	db := service.OpenDB(l, conf)
+	db := database.OpenDB(l, conf)
 	defer db.Close()
 	b := bot.ConnectBot(l, conf.BotToken)
 

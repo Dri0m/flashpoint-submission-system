@@ -136,7 +136,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		MFAEnabled:    discordUserResp.MFAEnabled,
 	}
 
-	authToken, err := a.Service.ProcessDiscordCallback(ctx, discordUser)
+	authToken, err := a.Service.SaveUser(ctx, discordUser)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to store user data", http.StatusInternalServerError)
@@ -169,7 +169,7 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Service.ProcessLogout(ctx, token.Secret); err != nil {
+	if err := a.Service.Logout(ctx, token.Secret); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return

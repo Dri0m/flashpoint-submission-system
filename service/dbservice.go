@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/go-sql-driver/mysql"
@@ -21,15 +22,15 @@ import (
 	"time"
 )
 
-type Service struct {
+type DBService struct {
 	Bot                      bot.Bot
-	DB                       DB
+	DB                       database.DB
 	ValidatorServerURL       string
 	SessionExpirationSeconds int64
 }
 
 // GetBasePageData loads base user data, does not return error if user is not logged in
-func (s *Service) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
+func (s *DBService) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -68,7 +69,7 @@ func (s *Service) GetBasePageData(ctx context.Context) (*types.BasePageData, err
 	return bpd, nil
 }
 
-func (s *Service) ProcessReceivedSubmissions(ctx context.Context, sid *int64, fileHeaders []*multipart.FileHeader) error {
+func (s *DBService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []*multipart.FileHeader) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -79,7 +80,7 @@ func (s *Service) ProcessReceivedSubmissions(ctx context.Context, sid *int64, fi
 	destinationFilenames := make([]string, 0)
 
 	for _, fileHeader := range fileHeaders {
-		destinationFilename, err := s.ProcessReceivedSubmission(ctx, tx, fileHeader, sid)
+		destinationFilename, err := s.processReceivedSubmission(ctx, tx, fileHeader, sid)
 
 		if destinationFilename != nil {
 			destinationFilenames = append(destinationFilenames, *destinationFilename)
@@ -106,7 +107,7 @@ func (s *Service) ProcessReceivedSubmissions(ctx context.Context, sid *int64, fi
 	return nil
 }
 
-func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
+func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
 		return nil, fmt.Errorf("no user associated with request")
@@ -230,7 +231,7 @@ func (s *Service) ProcessReceivedSubmission(ctx context.Context, tx *sql.Tx, fil
 	return &destinationFilePath, nil
 }
 
-func (s *Service) ProcessReceivedComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
+func (s *DBService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -292,7 +293,7 @@ func (s *Service) ProcessReceivedComments(ctx context.Context, uid int64, sids [
 	return nil
 }
 
-func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error) {
+func (s *DBService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -350,7 +351,7 @@ func (s *Service) ProcessViewSubmission(ctx context.Context, sid int64) (*types.
 	return pageData, nil
 }
 
-func (s *Service) ProcessViewSubmissionFiles(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
+func (s *DBService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -382,7 +383,7 @@ func (s *Service) ProcessViewSubmissionFiles(ctx context.Context, sid int64) (*t
 	return pageData, nil
 }
 
-func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
+func (s *DBService) GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -415,29 +416,29 @@ func (s *Service) ProcessSearchSubmissions(ctx context.Context, filter *types.Su
 	return pageData, nil
 }
 
-func (s *Service) ProcessDownloadSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
-	tx, err := s.beginTx()
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to begin transaction")
-	}
-	defer s.rollbackTx(ctx, tx)
+func (s *DBService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+	return s.DB.SearchSubmissions(ctx, nil, filter)
+}
 
-	sfs, err := s.DB.GetSubmissionFiles(ctx, tx, sfids)
+func (s *DBService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
+	sfs, err := s.DB.GetSubmissionFiles(ctx, nil, sfids)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission file")
 	}
-
-	if err := tx.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to commit transaction")
-	}
-
 	return sfs, nil
 }
 
-func (s *Service) ProcessSoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
+func (s *DBService) GetUIDFromSession(ctx context.Context, key string) (int64, bool, error) {
+	uid, ok, err := s.DB.GetUIDFromSession(ctx, nil, key)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, false, err
+	}
+	return uid, ok, nil
+}
+
+func (s *DBService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -461,7 +462,7 @@ func (s *Service) ProcessSoftDeleteSubmissionFile(ctx context.Context, sfid int6
 	return nil
 }
 
-func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
+func (s *DBService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -526,7 +527,7 @@ func (s *Service) ProcessDiscordCallback(ctx context.Context, discordUser *types
 	return authToken, nil
 }
 
-func (s *Service) ProcessLogout(ctx context.Context, secret string) error {
+func (s *DBService) Logout(ctx context.Context, secret string) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -547,7 +548,7 @@ func (s *Service) ProcessLogout(ctx context.Context, secret string) error {
 	return nil
 }
 
-func (s *Service) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
+func (s *DBService) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)

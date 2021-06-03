@@ -7,6 +7,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
@@ -49,13 +50,13 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
-		Service: service.Service{
+		Service: &service.DBService{
 			Bot: bot.Bot{
 				Session:            botSession,
 				FlashpointServerID: conf.FlashpointServerID,
 				L:                  l,
 			},
-			DB: service.DB{
+			DB: database.DB{
 				Conn: db,
 			},
 			ValidatorServerURL:       conf.ValidatorServerURL,
@@ -240,7 +241,7 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Service.ProcessReceivedComments(ctx, uid, []int64{sid}, formAction, formMessage); err != nil {
+	if err := a.Service.ReceiveComments(ctx, uid, []int64{sid}, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
 	}
@@ -282,7 +283,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := a.Service.ProcessReceivedComments(ctx, uid, sids, formAction, formMessage); err != nil {
+	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
 	}
@@ -303,7 +304,7 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	sfs, err := a.Service.ProcessDownloadSubmissionFiles(ctx, []int64{sfid})
+	sfs, err := a.Service.GetSubmissionFiles(ctx, []int64{sfid})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusInternalServerError)
@@ -338,7 +339,7 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := a.Service.ProcessSoftDeleteSubmissionFile(ctx, sfid); err != nil {
+	if err := a.Service.SoftDeleteSubmissionFile(ctx, sfid); err != nil {
 		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
 			http.Error(w, fmt.Sprintf("soft delete submission file processor: %s", err.Error()), http.StatusBadRequest)
 			return
@@ -367,7 +368,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 		sfids = append(sfids, sfid)
 	}
 
-	sfs, err := a.Service.ProcessDownloadSubmissionFiles(ctx, sfids)
+	sfs, err := a.Service.GetSubmissionFiles(ctx, sfids)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
@@ -424,7 +425,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Service.ProcessReceivedSubmissions(ctx, sid, fileHeaders); err != nil {
+	if err := a.Service.ReceiveSubmissions(ctx, sid, fileHeaders); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("submission processor: %s", err.Error()), http.StatusInternalServerError)
 		return
@@ -500,7 +501,7 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageData, err := a.Service.ProcessSearchSubmissions(ctx, filter)
+	pageData, err := a.Service.GetSubmissionsPageData(ctx, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -518,7 +519,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		SubmitterID: &uid,
 	}
 
-	pageData, err := a.Service.ProcessSearchSubmissions(ctx, filter)
+	pageData, err := a.Service.GetSubmissionsPageData(ctx, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -540,7 +541,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageData, err := a.Service.ProcessViewSubmission(ctx, sid)
+	pageData, err := a.Service.GetViewSubmissionPageData(ctx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid submission id", http.StatusBadRequest)
@@ -562,7 +563,7 @@ func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	pageData, err := a.Service.ProcessViewSubmissionFiles(ctx, sid)
+	pageData, err := a.Service.GetSubmissionsFilesPageData(ctx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "invalid submission id", http.StatusBadRequest)
