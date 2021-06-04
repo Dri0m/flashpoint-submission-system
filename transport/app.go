@@ -4,9 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
-	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
@@ -46,18 +44,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
-		Service: &service.SiteService{
-			Bot: bot.Bot{
-				Session:            botSession,
-				FlashpointServerID: conf.FlashpointServerID,
-				L:                  l,
-			},
-			DAL: &database.MysqlDAL{
-				Conn: db,
-			},
-			ValidatorServerURL:       conf.ValidatorServerURL,
-			SessionExpirationSeconds: conf.SessionExpirationSeconds,
-		},
+		Service: service.NewSiteService(l, db, botSession, conf.FlashpointServerID, conf.ValidatorServerURL, conf.SessionExpirationSeconds),
 		decoder: decoder,
 	}
 

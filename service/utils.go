@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-func (s *SiteService) beginTx() (*sql.Tx, error) {
-	return s.DAL.BeginTx()
+func (s *siteService) beginTx() (*sql.Tx, error) {
+	return s.dal.BeginTx()
 }
 
-func (s *SiteService) rollbackTx(ctx context.Context, tx *sql.Tx) {
+func (s *siteService) rollbackTx(ctx context.Context, tx *sql.Tx) {
 	err := tx.Rollback()
 	if err != nil && err.Error() != "sql: transaction has already been committed or rolled back" {
 		utils.LogIfErr(ctx, err)
