@@ -22,15 +22,15 @@ import (
 	"time"
 )
 
-type DBService struct {
+type SiteService struct {
 	Bot                      bot.Bot
-	DB                       database.DB
+	DAL                      database.DAL
 	ValidatorServerURL       string
 	SessionExpirationSeconds int64
 }
 
 // GetBasePageData loads base user data, does not return error if user is not logged in
-func (s *DBService) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
+func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -43,13 +43,13 @@ func (s *DBService) GetBasePageData(ctx context.Context) (*types.BasePageData, e
 		return &types.BasePageData{}, nil
 	}
 
-	discordUser, err := s.DB.GetDiscordUser(ctx, tx, uid)
+	discordUser, err := s.DAL.GetDiscordUser(ctx, tx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to get user data from database")
 	}
 
-	userRoles, err := s.DB.GetDiscordUserRoles(ctx, tx, uid)
+	userRoles, err := s.DAL.GetDiscordUserRoles(ctx, tx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user authorization")
@@ -69,7 +69,7 @@ func (s *DBService) GetBasePageData(ctx context.Context) (*types.BasePageData, e
 	return bpd, nil
 }
 
-func (s *DBService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []*multipart.FileHeader) error {
+func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []*multipart.FileHeader) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -107,7 +107,7 @@ func (s *DBService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHead
 	return nil
 }
 
-func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
 		return nil, fmt.Errorf("no user associated with request")
@@ -154,7 +154,7 @@ func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, f
 	var submissionID int64
 
 	if sid == nil {
-		submissionID, err = s.DB.StoreSubmission(ctx, tx)
+		submissionID, err = s.DAL.StoreSubmission(ctx, tx)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
 			return &destinationFilePath, fmt.Errorf("failed to store submission")
@@ -174,13 +174,13 @@ func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, f
 		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
 	}
 
-	fid, err := s.DB.StoreSubmissionFile(ctx, tx, sf)
+	fid, err := s.DAL.StoreSubmissionFile(ctx, tx, sf)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		me, ok := err.(*mysql.MySQLError)
 		if ok {
 			if me.Number == 1062 {
-				return &destinationFilePath, fmt.Errorf("file with checksums md5:%s sha256:%s already present in the DB", sf.MD5Sum, sf.SHA256Sum)
+				return &destinationFilePath, fmt.Errorf("file with checksums md5:%s sha256:%s already present in the DAL", sf.MD5Sum, sf.SHA256Sum)
 			}
 		}
 		return &destinationFilePath, fmt.Errorf("failed to store submission file")
@@ -194,7 +194,7 @@ func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, f
 		CreatedAt:    time.Now(),
 	}
 
-	if err := s.DB.StoreComment(ctx, tx, c); err != nil {
+	if err := s.DAL.StoreComment(ctx, tx, c); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store uploader comment")
 	}
@@ -215,7 +215,7 @@ func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, f
 	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
 
-	if err := s.DB.StoreCurationMeta(ctx, tx, &vr.Meta); err != nil {
+	if err := s.DAL.StoreCurationMeta(ctx, tx, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store curation meta")
 	}
@@ -223,7 +223,7 @@ func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, f
 	utils.LogCtx(ctx).Debug("processing bot event...")
 
 	bc := convertValidatorResponseToComment(&vr)
-	if err := s.DB.StoreComment(ctx, tx, bc); err != nil {
+	if err := s.DAL.StoreComment(ctx, tx, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store validator comment")
 	}
@@ -231,7 +231,7 @@ func (s *DBService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, f
 	return &destinationFilePath, nil
 }
 
-func (s *DBService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
+func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -280,7 +280,7 @@ func (s *DBService) ReceiveComments(ctx context.Context, uid int64, sids []int64
 		}
 
 		// TODO optimize into batch insert
-		if err := s.DB.StoreComment(ctx, tx, c); err != nil {
+		if err := s.DAL.StoreComment(ctx, tx, c); err != nil {
 			return fmt.Errorf("failed to store comment")
 		}
 	}
@@ -293,7 +293,7 @@ func (s *DBService) ReceiveComments(ctx context.Context, uid int64, sids []int64
 	return nil
 }
 
-func (s *DBService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error) {
+func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -310,7 +310,7 @@ func (s *DBService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*
 		SubmissionID: &sid,
 	}
 
-	submissions, err := s.DB.SearchSubmissions(ctx, tx, filter)
+	submissions, err := s.DAL.SearchSubmissions(ctx, tx, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission")
@@ -322,13 +322,13 @@ func (s *DBService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*
 
 	submission := submissions[0]
 
-	meta, err := s.DB.GetCurationMetaBySubmissionFileID(ctx, tx, submission.FileID)
+	meta, err := s.DAL.GetCurationMetaBySubmissionFileID(ctx, tx, submission.FileID)
 	if err != nil && err != sql.ErrNoRows {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load curation meta")
 	}
 
-	comments, err := s.DB.GetExtendedCommentsBySubmissionID(ctx, tx, sid)
+	comments, err := s.DAL.GetExtendedCommentsBySubmissionID(ctx, tx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load curation comments")
@@ -351,7 +351,7 @@ func (s *DBService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*
 	return pageData, nil
 }
 
-func (s *DBService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
+func (s *SiteService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -364,7 +364,7 @@ func (s *DBService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) 
 		return nil, err
 	}
 
-	sf, err := s.DB.GetExtendedSubmissionFilesBySubmissionID(ctx, tx, sid)
+	sf, err := s.DAL.GetExtendedSubmissionFilesBySubmissionID(ctx, tx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission")
@@ -383,7 +383,7 @@ func (s *DBService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) 
 	return pageData, nil
 }
 
-func (s *DBService) GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
+func (s *SiteService) GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -396,7 +396,7 @@ func (s *DBService) GetSubmissionsPageData(ctx context.Context, filter *types.Su
 		return nil, err
 	}
 
-	submissions, err := s.DB.SearchSubmissions(ctx, tx, filter)
+	submissions, err := s.DAL.SearchSubmissions(ctx, tx, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submissions")
@@ -416,12 +416,12 @@ func (s *DBService) GetSubmissionsPageData(ctx context.Context, filter *types.Su
 	return pageData, nil
 }
 
-func (s *DBService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
-	return s.DB.SearchSubmissions(ctx, nil, filter)
+func (s *SiteService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+	return s.DAL.SearchSubmissions(ctx, nil, filter)
 }
 
-func (s *DBService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
-	sfs, err := s.DB.GetSubmissionFiles(ctx, nil, sfids)
+func (s *SiteService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
+	sfs, err := s.DAL.GetSubmissionFiles(ctx, nil, sfids)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission file")
@@ -429,8 +429,8 @@ func (s *DBService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*t
 	return sfs, nil
 }
 
-func (s *DBService) GetUIDFromSession(ctx context.Context, key string) (int64, bool, error) {
-	uid, ok, err := s.DB.GetUIDFromSession(ctx, nil, key)
+func (s *SiteService) GetUIDFromSession(ctx context.Context, key string) (int64, bool, error) {
+	uid, ok, err := s.DAL.GetUIDFromSession(ctx, nil, key)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return 0, false, err
@@ -438,7 +438,7 @@ func (s *DBService) GetUIDFromSession(ctx context.Context, key string) (int64, b
 	return uid, ok, nil
 }
 
-func (s *DBService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
+func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -446,7 +446,7 @@ func (s *DBService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) er
 	}
 	defer s.rollbackTx(ctx, tx)
 
-	if err := s.DB.SoftDeleteSubmissionFile(ctx, tx, sfid); err != nil {
+	if err := s.DAL.SoftDeleteSubmissionFile(ctx, tx, sfid); err != nil {
 		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
 			return err
 		}
@@ -462,7 +462,7 @@ func (s *DBService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) er
 	return nil
 }
 
-func (s *DBService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
+func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -471,7 +471,7 @@ func (s *DBService) SaveUser(ctx context.Context, discordUser *types.DiscordUser
 	defer s.rollbackTx(ctx, tx)
 
 	// save discord user data
-	if err := s.DB.StoreDiscordUser(ctx, tx, discordUser); err != nil {
+	if err := s.DAL.StoreDiscordUser(ctx, tx, discordUser); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store discord user")
 	}
@@ -498,11 +498,11 @@ func (s *DBService) SaveUser(ctx context.Context, discordUser *types.DiscordUser
 	}
 
 	// save discord roles
-	if err := s.DB.StoreDiscordServerRoles(ctx, tx, serverRoles); err != nil {
+	if err := s.DAL.StoreDiscordServerRoles(ctx, tx, serverRoles); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store discord server roles")
 	}
-	if err := s.DB.StoreDiscordUserRoles(ctx, tx, discordUser.ID, userRolesIDsNumeric); err != nil {
+	if err := s.DAL.StoreDiscordUserRoles(ctx, tx, discordUser.ID, userRolesIDsNumeric); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store discord user roles")
 	}
@@ -514,7 +514,7 @@ func (s *DBService) SaveUser(ctx context.Context, discordUser *types.DiscordUser
 		return nil, fmt.Errorf("failed to generate auth token")
 	}
 
-	if err = s.DB.StoreSession(ctx, tx, authToken.Secret, discordUser.ID, s.SessionExpirationSeconds); err != nil {
+	if err = s.DAL.StoreSession(ctx, tx, authToken.Secret, discordUser.ID, s.SessionExpirationSeconds); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store session")
 	}
@@ -527,7 +527,7 @@ func (s *DBService) SaveUser(ctx context.Context, discordUser *types.DiscordUser
 	return authToken, nil
 }
 
-func (s *DBService) Logout(ctx context.Context, secret string) error {
+func (s *SiteService) Logout(ctx context.Context, secret string) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -535,7 +535,7 @@ func (s *DBService) Logout(ctx context.Context, secret string) error {
 	}
 	defer s.rollbackTx(ctx, tx)
 
-	if err := s.DB.DeleteSession(ctx, tx, secret); err != nil {
+	if err := s.DAL.DeleteSession(ctx, tx, secret); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("unable to delete session")
 	}
@@ -548,7 +548,7 @@ func (s *DBService) Logout(ctx context.Context, secret string) error {
 	return nil
 }
 
-func (s *DBService) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
+func (s *SiteService) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
 	tx, err := s.beginTx()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -556,7 +556,7 @@ func (s *DBService) GetUserRoles(ctx context.Context, uid int64) ([]string, erro
 	}
 	defer s.rollbackTx(ctx, tx)
 
-	roles, err := s.DB.GetDiscordUserRoles(ctx, tx, uid)
+	roles, err := s.DAL.GetDiscordUserRoles(ctx, tx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user roles")
