@@ -23,6 +23,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

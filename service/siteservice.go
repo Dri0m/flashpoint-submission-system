@@ -25,7 +25,7 @@ import (
 )
 
 type siteService struct {
-	bot                      bot.Bot
+	bot                      bot.DiscordRoleReader
 	dal                      database.DAL
 	validatorServerURL       string
 	sessionExpirationSeconds int64
@@ -33,11 +33,7 @@ type siteService struct {
 
 func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session, flashpointServerID, validatorServerURL string, sessionExpirationSeconds int64) *siteService {
 	return &siteService{
-		bot: bot.Bot{
-			Session:            botSession,
-			FlashpointServerID: flashpointServerID,
-			L:                  l,
-		},
+		bot:                      bot.NewBot(botSession, flashpointServerID, l),
 		dal:                      database.NewMysqlDAL(db),
 		validatorServerURL:       validatorServerURL,
 		sessionExpirationSeconds: sessionExpirationSeconds,
