@@ -1,25 +1,11 @@
 package service
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
-	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"time"
 )
-
-func (s *siteService) beginTx() (*sql.Tx, error) {
-	return s.dal.BeginTx()
-}
-
-func (s *siteService) rollbackTx(ctx context.Context, tx *sql.Tx) {
-	err := tx.Rollback()
-	if err != nil && err.Error() != "sql: transaction has already been committed or rolled back" {
-		utils.LogIfErr(ctx, err)
-	}
-}
 
 // convertValidatorResponseToComment produces appropriate comment based on validator response
 func convertValidatorResponseToComment(vr *types.ValidatorResponse) *types.Comment {

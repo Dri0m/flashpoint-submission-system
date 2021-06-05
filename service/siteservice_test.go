@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/stretchr/testify/assert"
@@ -16,97 +17,97 @@ type mockDAL struct {
 	mock.Mock
 }
 
-func (m *mockDAL) BeginTx() (*sql.Tx, error) {
+func (m *mockDAL) NewSession(ctx context.Context) (*database.DBSession, error) {
 	args := m.Called()
-	return args.Get(0).(*sql.Tx), args.Error(1)
+	return args.Get(0).(*database.DBSession), args.Error(1)
 }
 
-func (m *mockDAL) StoreSession(ctx context.Context, tx *sql.Tx, key string, uid int64, durationSeconds int64) error {
+func (m *mockDAL) StoreSession(dbs *database.DBSession, key string, uid int64, durationSeconds int64) error {
 	args := m.Called(key, uid, durationSeconds)
 	return args.Error(0)
 }
 
-func (m *mockDAL) DeleteSession(ctx context.Context, tx *sql.Tx, secret string) error {
+func (m *mockDAL) DeleteSession(dbs *database.DBSession, secret string) error {
 	args := m.Called(secret)
 	return args.Error(0)
 }
 
-func (m *mockDAL) GetUIDFromSession(ctx context.Context, tx *sql.Tx, key string) (int64, bool, error) {
+func (m *mockDAL) GetUIDFromSession(dbs *database.DBSession, key string) (int64, bool, error) {
 	args := m.Called(key)
 	return args.Get(0).(int64), args.Bool(1), args.Error(2)
 }
 
-func (m *mockDAL) StoreDiscordUser(ctx context.Context, tx *sql.Tx, discordUser *types.DiscordUser) error {
+func (m *mockDAL) StoreDiscordUser(dbs *database.DBSession, discordUser *types.DiscordUser) error {
 	args := m.Called(discordUser)
 	return args.Error(0)
 }
 
-func (m *mockDAL) GetDiscordUser(ctx context.Context, tx *sql.Tx, uid int64) (*types.DiscordUser, error) {
+func (m *mockDAL) GetDiscordUser(dbs *database.DBSession, uid int64) (*types.DiscordUser, error) {
 	args := m.Called(uid)
 	return args.Get(0).(*types.DiscordUser), args.Error(1)
 }
 
-func (m *mockDAL) StoreDiscordServerRoles(ctx context.Context, tx *sql.Tx, roles []types.DiscordRole) error {
+func (m *mockDAL) StoreDiscordServerRoles(dbs *database.DBSession, roles []types.DiscordRole) error {
 	args := m.Called(roles)
 	return args.Error(0)
 }
 
-func (m *mockDAL) StoreDiscordUserRoles(ctx context.Context, tx *sql.Tx, uid int64, roles []int64) error {
+func (m *mockDAL) StoreDiscordUserRoles(dbs *database.DBSession, uid int64, roles []int64) error {
 	args := m.Called(uid, roles)
 	return args.Error(0)
 }
 
-func (m *mockDAL) GetDiscordUserRoles(ctx context.Context, tx *sql.Tx, uid int64) ([]string, error) {
+func (m *mockDAL) GetDiscordUserRoles(dbs *database.DBSession, uid int64) ([]string, error) {
 	args := m.Called(uid)
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockDAL) StoreSubmission(ctx context.Context, tx *sql.Tx) (int64, error) {
+func (m *mockDAL) StoreSubmission(dbs *database.DBSession) (int64, error) {
 	args := m.Called()
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *mockDAL) StoreSubmissionFile(ctx context.Context, tx *sql.Tx, s *types.SubmissionFile) (int64, error) {
+func (m *mockDAL) StoreSubmissionFile(dbs *database.DBSession, s *types.SubmissionFile) (int64, error) {
 	args := m.Called(s)
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *mockDAL) GetSubmissionFiles(ctx context.Context, tx *sql.Tx, sfids []int64) ([]*types.SubmissionFile, error) {
+func (m *mockDAL) GetSubmissionFiles(dbs *database.DBSession, sfids []int64) ([]*types.SubmissionFile, error) {
 	args := m.Called(sfids)
 	return args.Get(0).([]*types.SubmissionFile), args.Error(1)
 }
 
-func (m *mockDAL) GetExtendedSubmissionFilesBySubmissionID(ctx context.Context, tx *sql.Tx, sid int64) ([]*types.ExtendedSubmissionFile, error) {
+func (m *mockDAL) GetExtendedSubmissionFilesBySubmissionID(dbs *database.DBSession, sid int64) ([]*types.ExtendedSubmissionFile, error) {
 	args := m.Called(sid)
 	return args.Get(0).([]*types.ExtendedSubmissionFile), args.Error(1)
 }
 
-func (m *mockDAL) SearchSubmissions(ctx context.Context, tx *sql.Tx, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+func (m *mockDAL) SearchSubmissions(dbs *database.DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	args := m.Called(filter)
 	return args.Get(0).([]*types.ExtendedSubmission), args.Error(1)
 }
 
-func (m *mockDAL) StoreCurationMeta(ctx context.Context, tx *sql.Tx, cm *types.CurationMeta) error {
+func (m *mockDAL) StoreCurationMeta(dbs *database.DBSession, cm *types.CurationMeta) error {
 	args := m.Called(cm)
 	return args.Error(0)
 }
 
-func (m *mockDAL) GetCurationMetaBySubmissionFileID(ctx context.Context, tx *sql.Tx, sfid int64) (*types.CurationMeta, error) {
+func (m *mockDAL) GetCurationMetaBySubmissionFileID(dbs *database.DBSession, sfid int64) (*types.CurationMeta, error) {
 	args := m.Called(sfid)
 	return args.Get(0).(*types.CurationMeta), args.Error(1)
 }
 
-func (m *mockDAL) StoreComment(ctx context.Context, tx *sql.Tx, c *types.Comment) error {
+func (m *mockDAL) StoreComment(dbs *database.DBSession, c *types.Comment) error {
 	args := m.Called(c)
 	return args.Error(0)
 }
 
-func (m *mockDAL) GetExtendedCommentsBySubmissionID(ctx context.Context, tx *sql.Tx, sid int64) ([]*types.ExtendedComment, error) {
+func (m *mockDAL) GetExtendedCommentsBySubmissionID(dbs *database.DBSession, sid int64) ([]*types.ExtendedComment, error) {
 	args := m.Called(sid)
 	return args.Get(0).([]*types.ExtendedComment), args.Error(1)
 }
 
-func (m *mockDAL) SoftDeleteSubmissionFile(ctx context.Context, tx *sql.Tx, sfid int64) error {
+func (m *mockDAL) SoftDeleteSubmissionFile(dbs *database.DBSession, sfid int64) error {
 	args := m.Called(sfid)
 	return args.Error(0)
 }

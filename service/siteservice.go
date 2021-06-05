@@ -42,31 +42,31 @@ func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session,
 
 // GetBasePageData loads base user data, does not return error if user is not logged in
 func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to begin transaction")
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
 	uid := utils.UserIDFromContext(ctx)
 	if uid == 0 {
 		return &types.BasePageData{}, nil
 	}
 
-	discordUser, err := s.dal.GetDiscordUser(ctx, tx, uid)
+	discordUser, err := s.dal.GetDiscordUser(dbs, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to get user data from database")
 	}
 
-	userRoles, err := s.dal.GetDiscordUserRoles(ctx, tx, uid)
+	userRoles, err := s.dal.GetDiscordUserRoles(dbs, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user authorization")
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to commit transaction")
 	}
@@ -81,17 +81,17 @@ func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 }
 
 func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []*multipart.FileHeader) error {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to begin transaction")
+		return fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
 	destinationFilenames := make([]string, 0)
 
 	for _, fileHeader := range fileHeaders {
-		destinationFilename, err := s.processReceivedSubmission(ctx, tx, fileHeader, sid)
+		destinationFilename, err := s.processReceivedSubmission(ctx, dbs, fileHeader, sid)
 
 		if destinationFilename != nil {
 			destinationFilenames = append(destinationFilenames, *destinationFilename)
@@ -106,7 +106,7 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHe
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := dbs.Commit(); err != nil {
 		for _, df := range destinationFilenames {
 			utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
 			utils.LogIfErr(ctx, os.Remove(df))
@@ -118,7 +118,7 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHe
 	return nil
 }
 
-func (s *siteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
+func (s *siteService) processReceivedSubmission(ctx context.Context, dbs *database.DBSession, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
 		return nil, fmt.Errorf("no user associated with request")
@@ -165,7 +165,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx,
 	var submissionID int64
 
 	if sid == nil {
-		submissionID, err = s.dal.StoreSubmission(ctx, tx)
+		submissionID, err = s.dal.StoreSubmission(dbs)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
 			return &destinationFilePath, fmt.Errorf("failed to store submission")
@@ -185,7 +185,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx,
 		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
 	}
 
-	fid, err := s.dal.StoreSubmissionFile(ctx, tx, sf)
+	fid, err := s.dal.StoreSubmissionFile(dbs, sf)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		me, ok := err.(*mysql.MySQLError)
@@ -205,7 +205,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx,
 		CreatedAt:    time.Now(),
 	}
 
-	if err := s.dal.StoreComment(ctx, tx, c); err != nil {
+	if err := s.dal.StoreComment(dbs, c); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store uploader comment")
 	}
@@ -226,7 +226,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx,
 	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
 
-	if err := s.dal.StoreCurationMeta(ctx, tx, &vr.Meta); err != nil {
+	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store curation meta")
 	}
@@ -234,7 +234,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx,
 	utils.LogCtx(ctx).Debug("processing bot event...")
 
 	bc := convertValidatorResponseToComment(&vr)
-	if err := s.dal.StoreComment(ctx, tx, bc); err != nil {
+	if err := s.dal.StoreComment(dbs, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store validator comment")
 	}
@@ -243,12 +243,12 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, tx *sql.Tx,
 }
 
 func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to begin transaction")
+		return fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
 	var message *string
 	if formMessage != "" {
@@ -291,12 +291,12 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		}
 
 		// TODO optimize into batch insert
-		if err := s.dal.StoreComment(ctx, tx, c); err != nil {
+		if err := s.dal.StoreComment(dbs, c); err != nil {
 			return fmt.Errorf("failed to store comment")
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("failed to commit transaction")
 	}
@@ -305,12 +305,12 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 }
 
 func (s *siteService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error) {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to begin transaction")
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
@@ -321,7 +321,7 @@ func (s *siteService) GetViewSubmissionPageData(ctx context.Context, sid int64) 
 		SubmissionID: &sid,
 	}
 
-	submissions, err := s.dal.SearchSubmissions(ctx, tx, filter)
+	submissions, err := s.dal.SearchSubmissions(dbs, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission")
@@ -333,21 +333,16 @@ func (s *siteService) GetViewSubmissionPageData(ctx context.Context, sid int64) 
 
 	submission := submissions[0]
 
-	meta, err := s.dal.GetCurationMetaBySubmissionFileID(ctx, tx, submission.FileID)
+	meta, err := s.dal.GetCurationMetaBySubmissionFileID(dbs, submission.FileID)
 	if err != nil && err != sql.ErrNoRows {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load curation meta")
 	}
 
-	comments, err := s.dal.GetExtendedCommentsBySubmissionID(ctx, tx, sid)
+	comments, err := s.dal.GetExtendedCommentsBySubmissionID(dbs, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load curation comments")
-	}
-
-	if err := tx.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
 	pageData := &types.ViewSubmissionPageData{
@@ -363,27 +358,22 @@ func (s *siteService) GetViewSubmissionPageData(ctx context.Context, sid int64) 
 }
 
 func (s *siteService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to begin transaction")
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	sf, err := s.dal.GetExtendedSubmissionFilesBySubmissionID(ctx, tx, sid)
+	sf, err := s.dal.GetExtendedSubmissionFilesBySubmissionID(dbs, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission")
-	}
-
-	if err := tx.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
 	pageData := &types.SubmissionsFilesPageData{
@@ -395,27 +385,22 @@ func (s *siteService) GetSubmissionsFilesPageData(ctx context.Context, sid int64
 }
 
 func (s *siteService) GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to begin transaction")
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	submissions, err := s.dal.SearchSubmissions(ctx, tx, filter)
+	submissions, err := s.dal.SearchSubmissions(dbs, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submissions")
-	}
-
-	if err := tx.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
 	pageData := &types.SubmissionsPageData{
@@ -428,11 +413,30 @@ func (s *siteService) GetSubmissionsPageData(ctx context.Context, filter *types.
 }
 
 func (s *siteService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
-	return s.dal.SearchSubmissions(ctx, nil, filter)
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	submissions, err := s.dal.SearchSubmissions(dbs, filter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to search submissions")
+	}
+	return submissions, nil
 }
 
 func (s *siteService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
-	sfs, err := s.dal.GetSubmissionFiles(ctx, nil, sfids)
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	sfs, err := s.dal.GetSubmissionFiles(dbs, sfids)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load submission file")
@@ -441,7 +445,13 @@ func (s *siteService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]
 }
 
 func (s *siteService) GetUIDFromSession(ctx context.Context, key string) (int64, bool, error) {
-	uid, ok, err := s.dal.GetUIDFromSession(ctx, nil, key)
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, false, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+	uid, ok, err := s.dal.GetUIDFromSession(dbs, key)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return 0, false, err
@@ -450,14 +460,14 @@ func (s *siteService) GetUIDFromSession(ctx context.Context, key string) (int64,
 }
 
 func (s *siteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to begin transaction")
+		return fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
-	if err := s.dal.SoftDeleteSubmissionFile(ctx, tx, sfid); err != nil {
+	if err := s.dal.SoftDeleteSubmissionFile(dbs, sfid); err != nil {
 		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
 			return err
 		}
@@ -465,7 +475,7 @@ func (s *siteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) 
 		return fmt.Errorf("failed to soft delete submission file")
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("failed to commit transaction")
 	}
@@ -474,15 +484,15 @@ func (s *siteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) 
 }
 
 func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to begin transaction")
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
 	// save discord user data
-	if err := s.dal.StoreDiscordUser(ctx, tx, discordUser); err != nil {
+	if err := s.dal.StoreDiscordUser(dbs, discordUser); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store discord user")
 	}
@@ -509,11 +519,11 @@ func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 
 	// save discord roles
-	if err := s.dal.StoreDiscordServerRoles(ctx, tx, serverRoles); err != nil {
+	if err := s.dal.StoreDiscordServerRoles(dbs, serverRoles); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store discord server roles")
 	}
-	if err := s.dal.StoreDiscordUserRoles(ctx, tx, discordUser.ID, userRolesIDsNumeric); err != nil {
+	if err := s.dal.StoreDiscordUserRoles(dbs, discordUser.ID, userRolesIDsNumeric); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store discord user roles")
 	}
@@ -525,12 +535,12 @@ func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 		return nil, fmt.Errorf("failed to generate auth token")
 	}
 
-	if err = s.dal.StoreSession(ctx, tx, authToken.Secret, discordUser.ID, s.sessionExpirationSeconds); err != nil {
+	if err = s.dal.StoreSession(dbs, authToken.Secret, discordUser.ID, s.sessionExpirationSeconds); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store session")
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to commit transaction")
 	}
@@ -539,19 +549,19 @@ func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 }
 
 func (s *siteService) Logout(ctx context.Context, secret string) error {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return fmt.Errorf("failed to begin transaction")
+		return fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
-	if err := s.dal.DeleteSession(ctx, tx, secret); err != nil {
+	if err := s.dal.DeleteSession(dbs, secret); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("unable to delete session")
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("failed to commit transaction")
 	}
@@ -560,22 +570,17 @@ func (s *siteService) Logout(ctx context.Context, secret string) error {
 }
 
 func (s *siteService) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
-	tx, err := s.beginTx()
+	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to begin transaction")
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
 	}
-	defer s.rollbackTx(ctx, tx)
+	defer dbs.Rollback()
 
-	roles, err := s.dal.GetDiscordUserRoles(ctx, tx, uid)
+	roles, err := s.dal.GetDiscordUserRoles(dbs, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to load user roles")
-	}
-
-	if err := tx.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to commit transaction")
 	}
 
 	return roles, nil
