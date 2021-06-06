@@ -92,7 +92,7 @@ func (d *mysqlDAL) NewSession(ctx context.Context) (DBSession, error) {
 }
 
 func (dbs *MysqlSession) Commit() error {
-	return dbs.Commit()
+	return dbs.transaction.Commit()
 }
 
 func (dbs *MysqlSession) Rollback() error {
