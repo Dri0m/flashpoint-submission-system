@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -46,7 +48,7 @@ type mockDAL struct {
 
 func (m *mockDAL) NewSession(_ context.Context) (database.DBSession, error) {
 	args := m.Called()
-	return args.Get(0).(database.DBSession), args.Error(1)
+	return args.Get(0).(*mockDBSession), args.Error(1)
 }
 
 func (m *mockDAL) StoreSession(_ database.DBSession, key string, uid int64, durationSeconds int64) error {
@@ -172,11 +174,9 @@ func Test_siteService_GetBasePageData_OK(t *testing.T) {
 	bot := &mockBot{}
 	dal := &mockDAL{}
 	dbs := &mockDBSession{}
-
 	s := NewTestSiteService(bot, dal)
 
 	var uid int64 = 1
-
 	username := "username"
 	avatar := "avatar"
 	avatarURL := fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", uid, avatar)
@@ -191,8 +191,8 @@ func Test_siteService_GetBasePageData_OK(t *testing.T) {
 		AvatarURL: avatarURL,
 		UserRoles: userRoles,
 	}
-
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.UserID, uid)
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	dal.On("NewSession").Return(dbs, nil)
 	dal.On("GetDiscordUser", uid).Return(discordUser, nil)
@@ -208,3 +208,84 @@ func Test_siteService_GetBasePageData_OK(t *testing.T) {
 	dal.AssertExpectations(t)
 	dbs.AssertExpectations(t)
 }
+
+func Test_siteService_GetBasePageData_Fail_GetDiscordUserRoles(t *testing.T) {
+	bot := &mockBot{}
+	dal := &mockDAL{}
+	dbs := &mockDBSession{}
+	s := NewTestSiteService(bot, dal)
+
+	var uid int64 = 1
+	username := "username"
+	avatar := "avatar"
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: username,
+		Avatar:   avatar,
+	}
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	dal.On("NewSession").Return(dbs, nil)
+	dal.On("GetDiscordUser", uid).Return(discordUser, nil)
+	dal.On("GetDiscordUserRoles", uid).Return(([]string)(nil), errors.New(""))
+	dbs.On("Rollback").Return(nil)
+
+	actual, err := s.GetBasePageData(ctx)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	bot.AssertExpectations(t)
+	dal.AssertExpectations(t)
+	dbs.AssertExpectations(t)
+}
+
+func Test_siteService_GetBasePageData_Fail_GetDiscordUser(t *testing.T) {
+	bot := &mockBot{}
+	dal := &mockDAL{}
+	dbs := &mockDBSession{}
+	s := NewTestSiteService(bot, dal)
+
+	var uid int64 = 1
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	dal.On("NewSession").Return(dbs, nil)
+	dal.On("GetDiscordUser", uid).Return((*types.DiscordUser)(nil), errors.New(""))
+	dbs.On("Rollback").Return(nil)
+
+	actual, err := s.GetBasePageData(ctx)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	bot.AssertExpectations(t)
+	dal.AssertExpectations(t)
+	dbs.AssertExpectations(t)
+}
+
+func Test_siteService_GetBasePageData_Fail_NewSession(t *testing.T) {
+	bot := &mockBot{}
+	dal := &mockDAL{}
+	dbs := &mockDBSession{}
+	s := NewTestSiteService(bot, dal)
+
+	var uid int64 = 1
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := s.GetBasePageData(ctx)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	bot.AssertExpectations(t)
+	dal.AssertExpectations(t)
+	dbs.AssertExpectations(t)
+}
+
+////////////////////////////////////////////////
