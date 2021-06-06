@@ -22,3 +22,7 @@ type Service interface {
 	Logout(ctx context.Context, secret string) error
 	GetUserRoles(ctx context.Context, uid int64) ([]string, error)
 }
+
+type Validator interface {
+	Validate(ctx context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error)
+}

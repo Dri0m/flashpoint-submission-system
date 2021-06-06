@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/bot"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
@@ -27,7 +26,7 @@ import (
 type siteService struct {
 	bot                      bot.DiscordRoleReader
 	dal                      database.DAL
-	validatorServerURL       string
+	validator                Validator
 	sessionExpirationSeconds int64
 	submissionsDir           string
 }
@@ -36,7 +35,7 @@ func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session,
 	return &siteService{
 		bot:                      bot.NewBot(botSession, flashpointServerID, l),
 		dal:                      database.NewMysqlDAL(db),
-		validatorServerURL:       validatorServerURL,
+		validator:                NewValidator(validatorServerURL),
 		sessionExpirationSeconds: sessionExpirationSeconds,
 		submissionsDir:           submissionsDir,
 	}
@@ -207,19 +206,10 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	utils.LogCtx(ctx).Debug("processing curation meta...")
 
-	resp, err := utils.UploadFile(ctx, s.validatorServerURL, destinationFilePath)
+	vr, err := s.validator.Validate(ctx, destinationFilePath, submissionID, fid)
 	if err != nil {
 		return &destinationFilePath, fmt.Errorf("validator: %w", err)
 	}
-
-	var vr types.ValidatorResponse
-	err = json.Unmarshal(resp, &vr)
-	if err != nil {
-		return &destinationFilePath, fmt.Errorf("failed to decode validator response")
-	}
-
-	vr.Meta.SubmissionID = submissionID
-	vr.Meta.SubmissionFileID = fid
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -228,7 +218,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	utils.LogCtx(ctx).Debug("processing bot event...")
 
-	bc := convertValidatorResponseToComment(&vr)
+	bc := convertValidatorResponseToComment(vr)
 	if err := s.dal.StoreComment(dbs, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store validator comment")

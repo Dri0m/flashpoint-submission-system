@@ -159,22 +159,56 @@ func (m *mockBot) GetFlashpointRoles() ([]types.DiscordRole, error) {
 
 ////////////////////////////////////////////////
 
-func NewTestSiteService(bot *mockBot, dal *mockDAL) *siteService {
-	return &siteService{
-		bot:                      bot,
-		dal:                      dal,
-		validatorServerURL:       "",
-		sessionExpirationSeconds: 0,
+type mockValidator struct {
+	mock.Mock
+}
+
+func (m *mockValidator) Validate(ctx context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error) {
+	args := m.Called(filePath, sid, fid)
+	return args.Get(0).(*types.ValidatorResponse), args.Error(1)
+}
+
+////////////////////////////////////////////////
+
+type testService struct {
+	s         *siteService
+	bot       *mockBot
+	dal       *mockDAL
+	dbs       *mockDBSession
+	validator *mockValidator
+}
+
+func NewTestSiteService() *testService {
+	bot := &mockBot{}
+	dal := &mockDAL{}
+	dbs := &mockDBSession{}
+	validator := &mockValidator{}
+
+	return &testService{
+		s: &siteService{
+			bot:                      bot,
+			dal:                      dal,
+			validator:                validator,
+			sessionExpirationSeconds: 0,
+		},
+		bot:       bot,
+		dal:       dal,
+		dbs:       dbs,
+		validator: validator,
 	}
+}
+
+func (ts *testService) assertExpectations(t *testing.T) {
+	ts.bot.AssertExpectations(t)
+	ts.dal.AssertExpectations(t)
+	ts.dbs.AssertExpectations(t)
+	ts.validator.AssertExpectations(t)
 }
 
 ////////////////////////////////////////////////
 
 func Test_siteService_GetBasePageData_OK(t *testing.T) {
-	bot := &mockBot{}
-	dal := &mockDAL{}
-	dbs := &mockDBSession{}
-	s := NewTestSiteService(bot, dal)
+	ts := NewTestSiteService()
 
 	var uid int64 = 1
 	username := "username"
@@ -194,26 +228,21 @@ func Test_siteService_GetBasePageData_OK(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
-	dal.On("NewSession").Return(dbs, nil)
-	dal.On("GetDiscordUser", uid).Return(discordUser, nil)
-	dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
-	dbs.On("Rollback").Return(nil)
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
+	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
+	ts.dbs.On("Rollback").Return(nil)
 
-	actual, err := s.GetBasePageData(ctx)
+	actual, err := ts.s.GetBasePageData(ctx)
 
 	assert.Equal(t, expected, actual)
 	assert.NoError(t, err)
 
-	bot.AssertExpectations(t)
-	dal.AssertExpectations(t)
-	dbs.AssertExpectations(t)
+	ts.assertExpectations(t)
 }
 
 func Test_siteService_GetBasePageData_Fail_GetDiscordUserRoles(t *testing.T) {
-	bot := &mockBot{}
-	dal := &mockDAL{}
-	dbs := &mockDBSession{}
-	s := NewTestSiteService(bot, dal)
+	ts := NewTestSiteService()
 
 	var uid int64 = 1
 	username := "username"
@@ -226,66 +255,54 @@ func Test_siteService_GetBasePageData_Fail_GetDiscordUserRoles(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
-	dal.On("NewSession").Return(dbs, nil)
-	dal.On("GetDiscordUser", uid).Return(discordUser, nil)
-	dal.On("GetDiscordUserRoles", uid).Return(([]string)(nil), errors.New(""))
-	dbs.On("Rollback").Return(nil)
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
+	ts.dal.On("GetDiscordUserRoles", uid).Return(([]string)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
 
-	actual, err := s.GetBasePageData(ctx)
+	actual, err := ts.s.GetBasePageData(ctx)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
 
-	bot.AssertExpectations(t)
-	dal.AssertExpectations(t)
-	dbs.AssertExpectations(t)
+	ts.assertExpectations(t)
 }
 
 func Test_siteService_GetBasePageData_Fail_GetDiscordUser(t *testing.T) {
-	bot := &mockBot{}
-	dal := &mockDAL{}
-	dbs := &mockDBSession{}
-	s := NewTestSiteService(bot, dal)
+	ts := NewTestSiteService()
 
 	var uid int64 = 1
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
-	dal.On("NewSession").Return(dbs, nil)
-	dal.On("GetDiscordUser", uid).Return((*types.DiscordUser)(nil), errors.New(""))
-	dbs.On("Rollback").Return(nil)
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetDiscordUser", uid).Return((*types.DiscordUser)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
 
-	actual, err := s.GetBasePageData(ctx)
+	actual, err := ts.s.GetBasePageData(ctx)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
 
-	bot.AssertExpectations(t)
-	dal.AssertExpectations(t)
-	dbs.AssertExpectations(t)
+	ts.assertExpectations(t)
 }
 
 func Test_siteService_GetBasePageData_Fail_NewSession(t *testing.T) {
-	bot := &mockBot{}
-	dal := &mockDAL{}
-	dbs := &mockDBSession{}
-	s := NewTestSiteService(bot, dal)
+	ts := NewTestSiteService()
 
 	var uid int64 = 1
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
-	dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
-	actual, err := s.GetBasePageData(ctx)
+	actual, err := ts.s.GetBasePageData(ctx)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
 
-	bot.AssertExpectations(t)
-	dal.AssertExpectations(t)
-	dbs.AssertExpectations(t)
+	ts.assertExpectations(t)
 }
 
 ////////////////////////////////////////////////
