@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/gorilla/mux"
@@ -181,7 +182,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 		filePaths = append(filePaths, fmt.Sprintf("%s/%s", constants.SubmissionsDir, sf.CurrentFilename))
 	}
 
-	filename := fmt.Sprintf("fpfss-batch-%dfiles-%s.tar", len(sfs), utils.RandomString(16))
+	filename := fmt.Sprintf("fpfss-batch-%dfiles-%s.tar", len(sfs), utils.NewRealRandomStringProvider().RandomString(16))
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	w.Header().Set("Content-Type", "application/octet-stream")
 	if err := utils.WriteTarball(w, filePaths); err != nil {
@@ -224,7 +225,12 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Service.ReceiveSubmissions(ctx, sid, fileHeaders); err != nil {
+	fileWrappers := make([]service.MultipartFileProvider, 0, len(fileHeaders))
+	for _, fileHeader := range fileHeaders {
+		fileWrappers = append(fileWrappers, service.NewMutlipartFileWrapper(fileHeader))
+	}
+
+	if err := a.Service.ReceiveSubmissions(ctx, sid, fileWrappers); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("submission processor: %s", err.Error()), http.StatusInternalServerError)
 		return

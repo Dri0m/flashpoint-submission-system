@@ -58,7 +58,7 @@ type HTTPReqInfo struct {
 func LogRequestHandler(l *logrus.Logger, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.Log, l))
-		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.RequestID, utils.RandomString(16)))
+		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.RequestID, utils.NewRealRandomStringProvider().RandomString(16)))
 		ri := &HTTPReqInfo{
 			method:    r.Method,
 			uri:       r.URL.String(),

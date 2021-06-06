@@ -23,10 +23,45 @@ import (
 	"time"
 )
 
+type MultipartFileWrapper struct {
+	fileHeader *multipart.FileHeader
+}
+
+func NewMutlipartFileWrapper(fileHeader *multipart.FileHeader) *MultipartFileWrapper {
+	return &MultipartFileWrapper{
+		fileHeader: fileHeader,
+	}
+}
+
+func (m *MultipartFileWrapper) Filename() string {
+	return m.fileHeader.Filename
+}
+
+func (m *MultipartFileWrapper) Size() int64 {
+	return m.fileHeader.Size
+}
+
+func (m *MultipartFileWrapper) Open() (multipart.File, error) {
+	return m.fileHeader.Open()
+}
+
+type RealClock struct {
+}
+
+func (r *RealClock) Now() time.Time {
+	return time.Now()
+}
+
+func (r *RealClock) Unix(sec int64, nsec int64) time.Time {
+	return time.Unix(sec, nsec)
+}
+
 type siteService struct {
 	bot                      bot.DiscordRoleReader
 	dal                      database.DAL
 	validator                Validator
+	clock                    Clock
+	randomStringProvider     utils.RandomStringer
 	sessionExpirationSeconds int64
 	submissionsDir           string
 }
@@ -36,6 +71,8 @@ func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session,
 		bot:                      bot.NewBot(botSession, flashpointServerID, l),
 		dal:                      database.NewMysqlDAL(db),
 		validator:                NewValidator(validatorServerURL),
+		clock:                    &RealClock{},
+		randomStringProvider:     utils.NewRealRandomStringProvider(),
 		sessionExpirationSeconds: sessionExpirationSeconds,
 		submissionsDir:           submissionsDir,
 	}
@@ -76,7 +113,7 @@ func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	return bpd, nil
 }
 
-func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []*multipart.FileHeader) error {
+func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileProviders []MultipartFileProvider) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -86,8 +123,8 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHe
 
 	destinationFilenames := make([]string, 0)
 
-	for _, fileHeader := range fileHeaders {
-		destinationFilename, err := s.processReceivedSubmission(ctx, dbs, fileHeader, sid)
+	for _, fileProvider := range fileProviders {
+		destinationFilename, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid)
 
 		if destinationFilename != nil {
 			destinationFilenames = append(destinationFilenames, *destinationFilename)
@@ -98,7 +135,7 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHe
 				utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
 				utils.LogIfErr(ctx, os.Remove(df))
 			}
-			return fmt.Errorf("file '%s': %s", fileHeader.Filename, err.Error())
+			return fmt.Errorf("file '%s': %s", fileProvider.Filename(), err.Error())
 		}
 	}
 
@@ -114,7 +151,7 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHe
 	return nil
 }
 
-func (s *siteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
+func (s *siteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
 		return nil, fmt.Errorf("no user associated with request")
@@ -125,13 +162,13 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 	}
 	defer file.Close()
 
-	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes, MIME header: %+v", fileHeader.Filename, fileHeader.Size, fileHeader.Header)
+	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", fileHeader.Filename(), fileHeader.Size())
 
 	if err := os.MkdirAll(s.submissionsDir, os.ModeDir); err != nil {
 		return nil, fmt.Errorf("failed to make directory structure")
 	}
 
-	destinationFilename := utils.RandomString(64) + filepath.Ext(fileHeader.Filename)
+	destinationFilename := s.randomStringProvider.RandomString(64) + filepath.Ext(fileHeader.Filename())
 	destinationFilePath := fmt.Sprintf("%s/%s", s.submissionsDir, destinationFilename)
 
 	destination, err := os.Create(destinationFilePath)
@@ -150,7 +187,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 	if err != nil {
 		return &destinationFilePath, fmt.Errorf("failed to copy file to destination")
 	}
-	if nBytes != fileHeader.Size {
+	if nBytes != fileHeader.Size() {
 		return &destinationFilePath, fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
@@ -171,10 +208,10 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 	sf := &types.SubmissionFile{
 		SubmissionID:     submissionID,
 		SubmitterID:      utils.UserIDFromContext(ctx),
-		OriginalFilename: fileHeader.Filename,
+		OriginalFilename: fileHeader.Filename(),
 		CurrentFilename:  destinationFilename,
-		Size:             fileHeader.Size,
-		UploadedAt:       time.Now(),
+		Size:             fileHeader.Size(),
+		UploadedAt:       s.clock.Now(),
 		MD5Sum:           hex.EncodeToString(md5sum.Sum(nil)),
 		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
 	}
@@ -196,7 +233,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 		SubmissionID: submissionID,
 		Message:      nil,
 		Action:       constants.ActionUpload,
-		CreatedAt:    time.Now(),
+		CreatedAt:    s.clock.Now(),
 	}
 
 	if err := s.dal.StoreComment(dbs, c); err != nil {
@@ -218,13 +255,49 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	utils.LogCtx(ctx).Debug("processing bot event...")
 
-	bc := convertValidatorResponseToComment(vr)
+	bc := s.convertValidatorResponseToComment(vr)
 	if err := s.dal.StoreComment(dbs, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, fmt.Errorf("failed to store validator comment")
 	}
 
 	return &destinationFilePath, nil
+}
+
+// convertValidatorResponseToComment produces appropriate comment based on validator response
+func (s *siteService) convertValidatorResponseToComment(vr *types.ValidatorResponse) *types.Comment {
+	c := &types.Comment{
+		AuthorID:     constants.ValidatorID,
+		SubmissionID: vr.Meta.SubmissionID,
+		CreatedAt:    s.clock.Now(),
+	}
+
+	approvalMessage := "LGTM 🤖"
+	message := ""
+
+	if len(vr.CurationErrors) > 0 {
+		message += "Your curation is invalid:\n"
+	}
+	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) > 0 {
+		message += "Your curation might have some problems:\n"
+	}
+
+	for _, e := range vr.CurationErrors {
+		message += fmt.Sprintf("🚫 %s\n", e)
+	}
+	for _, w := range vr.CurationWarnings {
+		message += fmt.Sprintf("🚫 %s\n", w)
+	}
+
+	c.Message = &message
+
+	c.Action = constants.ActionRequestChanges
+	if len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0 {
+		c.Action = constants.ActionApprove
+		c.Message = &approvalMessage
+	}
+
+	return c
 }
 
 func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
@@ -272,7 +345,7 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 			SubmissionID: sid,
 			Message:      message,
 			Action:       formAction,
-			CreatedAt:    time.Now(),
+			CreatedAt:    s.clock.Now(),
 		}
 
 		// TODO optimize into batch insert

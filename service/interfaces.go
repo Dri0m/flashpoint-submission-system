@@ -5,11 +5,12 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"mime/multipart"
+	"time"
 )
 
 type Service interface {
 	GetBasePageData(ctx context.Context) (*types.BasePageData, error)
-	ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []*multipart.FileHeader) error
+	ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []MultipartFileProvider) error
 	ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error
 	GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error)
 	GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error)
@@ -25,4 +26,15 @@ type Service interface {
 
 type Validator interface {
 	Validate(ctx context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error)
+}
+
+type MultipartFileProvider interface {
+	Filename() string
+	Size() int64
+	Open() (multipart.File, error)
+}
+
+type Clock interface {
+	Now() time.Time
+	Unix(sec int64, nsec int64) time.Time
 }

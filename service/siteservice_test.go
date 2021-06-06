@@ -5,13 +5,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"io/ioutil"
+	"mime/multipart"
 	"testing"
+	"time"
 )
 
 ////////////////////////////////////////////////
@@ -170,6 +174,53 @@ func (m *mockValidator) Validate(ctx context.Context, filePath string, sid, fid 
 
 ////////////////////////////////////////////////
 
+type mockMultipartFileWrapper struct {
+	mock.Mock
+}
+
+func (m *mockMultipartFileWrapper) Filename() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *mockMultipartFileWrapper) Size() int64 {
+	args := m.Called()
+	return args.Get(0).(int64)
+}
+
+func (m *mockMultipartFileWrapper) Open() (multipart.File, error) {
+	args := m.Called()
+	return args.Get(0).(multipart.File), args.Error(1)
+}
+
+////////////////////////////////////////////////
+
+type fakeClock struct {
+}
+
+func (f fakeClock) Now() time.Time {
+	return time.Time{}
+}
+
+func (f fakeClock) Unix(sec int64, nsec int64) time.Time {
+	return time.Unix(sec, nsec)
+}
+
+////////////////////////////////////////////////
+
+type fakeRandomStringProvider struct {
+}
+
+func (f fakeRandomStringProvider) RandomString(n int) string {
+	result := ""
+	for i := 0; i < n; i++ {
+		result += "a"
+	}
+	return result
+}
+
+////////////////////////////////////////////////
+
 type testService struct {
 	s         *siteService
 	bot       *mockBot
@@ -189,6 +240,8 @@ func NewTestSiteService() *testService {
 			bot:                      bot,
 			dal:                      dal,
 			validator:                validator,
+			clock:                    &fakeClock{},
+			randomStringProvider:     &fakeRandomStringProvider{},
 			sessionExpirationSeconds: 0,
 		},
 		bot:       bot,
@@ -301,6 +354,100 @@ func Test_siteService_GetBasePageData_Fail_NewSession(t *testing.T) {
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	mockFileWrapper := &mockMultipartFileWrapper{}
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      nil,
+		Action:       constants.ActionUpload,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
+
+	approvalMessage := "LGTM 🤖"
+	bc := &types.Comment{
+		AuthorID:     constants.ValidatorID,
+		SubmissionID: sid,
+		Message:      &approvalMessage,
+		Action:       constants.ActionApprove,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	mockFileWrapper.On("Open").Return(tmpFile, nil)
+	mockFileWrapper.On("Filename").Return(filename)
+	mockFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
+
+	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
+	ts.dal.On("StoreComment", bc).Return(nil)
+
+	ts.dbs.On("Commit").Return(nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{mockFileWrapper})
+
+	assert.NoError(t, err)
 
 	ts.assertExpectations(t)
 }
