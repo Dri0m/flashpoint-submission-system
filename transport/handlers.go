@@ -113,8 +113,7 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 	}
 	sf := sfs[0]
 
-	const dir = "submissions"
-	f, err := os.Open(fmt.Sprintf("%s/%s", dir, sf.CurrentFilename))
+	f, err := os.Open(fmt.Sprintf("%s/%s", constants.SubmissionsDir, sf.CurrentFilename))
 
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -177,10 +176,9 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 	}
 
 	filePaths := make([]string, 0, len(sfs))
-	const dir = "submissions"
 
 	for _, sf := range sfs {
-		filePaths = append(filePaths, fmt.Sprintf("%s/%s", dir, sf.CurrentFilename))
+		filePaths = append(filePaths, fmt.Sprintf("%s/%s", constants.SubmissionsDir, sf.CurrentFilename))
 	}
 
 	filename := fmt.Sprintf("fpfss-batch-%dfiles-%s.tar", len(sfs), utils.RandomString(16))

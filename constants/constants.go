@@ -1,6 +1,7 @@
 package constants
 
 const ValidatorID = 810112564787675166
+const SubmissionsDir = "submissions"
 
 const (
 	ActionComment        = "comment"

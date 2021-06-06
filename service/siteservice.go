@@ -29,14 +29,16 @@ type siteService struct {
 	dal                      database.DAL
 	validatorServerURL       string
 	sessionExpirationSeconds int64
+	submissionsDir           string
 }
 
-func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session, flashpointServerID, validatorServerURL string, sessionExpirationSeconds int64) *siteService {
+func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session, flashpointServerID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *siteService {
 	return &siteService{
 		bot:                      bot.NewBot(botSession, flashpointServerID, l),
 		dal:                      database.NewMysqlDAL(db),
 		validatorServerURL:       validatorServerURL,
 		sessionExpirationSeconds: sessionExpirationSeconds,
+		submissionsDir:           submissionsDir,
 	}
 }
 
@@ -126,14 +128,12 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes, MIME header: %+v", fileHeader.Filename, fileHeader.Size, fileHeader.Header)
 
-	const dir = "submissions"
-
-	if err := os.MkdirAll(dir, os.ModeDir); err != nil {
+	if err := os.MkdirAll(s.submissionsDir, os.ModeDir); err != nil {
 		return nil, fmt.Errorf("failed to make directory structure")
 	}
 
 	destinationFilename := utils.RandomString(64) + filepath.Ext(fileHeader.Filename)
-	destinationFilePath := fmt.Sprintf("%s/%s", dir, destinationFilename)
+	destinationFilePath := fmt.Sprintf("%s/%s", s.submissionsDir, destinationFilename)
 
 	destination, err := os.Create(destinationFilePath)
 	if err != nil {
