@@ -362,12 +362,12 @@ func Test_siteService_GetBasePageData_Fail_NewSession(t *testing.T) {
 
 func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts := NewTestSiteService()
+	mockFileWrapper := &mockMultipartFileWrapper{}
 
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
 
-	mockFileWrapper := &mockMultipartFileWrapper{}
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
 	assert.NoError(t, err)
 
