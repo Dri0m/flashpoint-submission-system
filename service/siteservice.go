@@ -66,11 +66,6 @@ func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 		return nil, fmt.Errorf("failed to load user authorization")
 	}
 
-	if err := dbs.Commit(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, fmt.Errorf("failed to commit transaction")
-	}
-
 	bpd := &types.BasePageData{
 		Username:  discordUser.Username,
 		AvatarURL: utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
@@ -118,7 +113,7 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileHe
 	return nil
 }
 
-func (s *siteService) processReceivedSubmission(ctx context.Context, dbs *database.DBSession, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
+func (s *siteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader *multipart.FileHeader, sid *int64) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
 		return nil, fmt.Errorf("no user associated with request")

@@ -73,56 +73,64 @@ func OpenDB(l *logrus.Logger, conf *config.Config) *sql.DB {
 	return db
 }
 
-type DBSession struct {
-	ctx context.Context
-	tx  *sql.Tx
+type MysqlSession struct {
+	context     context.Context
+	transaction *sql.Tx
 }
 
-// NewSession begins a DAL transaction
-func (d *mysqlDAL) NewSession(ctx context.Context) (*DBSession, error) {
+// NewSession begins a transaction
+func (d *mysqlDAL) NewSession(ctx context.Context) (DBSession, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 
-	return &DBSession{
-		ctx: ctx,
-		tx:  tx,
+	return &MysqlSession{
+		context:     ctx,
+		transaction: tx,
 	}, nil
 }
 
-func (dbs *DBSession) Commit() error {
+func (dbs *MysqlSession) Commit() error {
 	return dbs.Commit()
 }
 
-func (dbs *DBSession) Rollback() error {
-	err := dbs.tx.Rollback()
+func (dbs *MysqlSession) Rollback() error {
+	err := dbs.Tx().Rollback()
 	if err != nil && err.Error() == "sql: transaction has already been committed or rolled back" {
 		err = nil
 	}
 	if err != nil {
-		utils.LogIfErr(dbs.ctx, err)
+		utils.LogIfErr(dbs.Ctx(), err)
 	}
 	return err
 }
 
+func (dbs *MysqlSession) Tx() *sql.Tx {
+	return dbs.transaction
+}
+
+func (dbs *MysqlSession) Ctx() context.Context {
+	return dbs.context
+}
+
 // StoreSession store session into the DAL with set expiration date
-func (d *mysqlDAL) StoreSession(dbs *DBSession, key string, uid int64, durationSeconds int64) error {
+func (d *mysqlDAL) StoreSession(dbs DBSession, key string, uid int64, durationSeconds int64) error {
 	expiration := time.Now().Add(time.Second * time.Duration(durationSeconds)).Unix()
-	_, err := dbs.tx.ExecContext(dbs.ctx, `INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO session (secret, uid, expires_at) VALUES (?, ?, ?)`, key, uid, expiration)
 	return err
 }
 
 // DeleteSession deletes specific session
-func (d *mysqlDAL) DeleteSession(dbs *DBSession, secret string) error {
-	_, err := dbs.tx.ExecContext(dbs.ctx, `DELETE FROM session WHERE secret=?`, secret)
+func (d *mysqlDAL) DeleteSession(dbs DBSession, secret string) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `DELETE FROM session WHERE secret=?`, secret)
 	return err
 }
 
 // GetUIDFromSession returns user ID and/or expiration state
-func (d *mysqlDAL) GetUIDFromSession(dbs *DBSession, key string) (int64, bool, error) {
+func (d *mysqlDAL) GetUIDFromSession(dbs DBSession, key string) (int64, bool, error) {
 	var row *sql.Row
-	row = dbs.tx.QueryRowContext(dbs.ctx, `SELECT uid, expires_at FROM session WHERE secret=?`, key)
+	row = dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT uid, expires_at FROM session WHERE secret=?`, key)
 
 	var uid int64
 	var expiration int64
@@ -139,8 +147,8 @@ func (d *mysqlDAL) GetUIDFromSession(dbs *DBSession, key string) (int64, bool, e
 }
 
 // StoreDiscordUser store discord user or replace with new data
-func (d *mysqlDAL) StoreDiscordUser(dbs *DBSession, discordUser *types.DiscordUser) error {
-	_, err := dbs.tx.ExecContext(dbs.ctx,
+func (d *mysqlDAL) StoreDiscordUser(dbs DBSession, discordUser *types.DiscordUser) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(),
 		`INSERT INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			   ON DUPLICATE KEY UPDATE username=?, avatar=?, discriminator=?, public_flags=?, flags=?, locale=?, mfa_enabled=?`,
 		discordUser.ID, discordUser.Username, discordUser.Avatar, discordUser.Discriminator, discordUser.PublicFlags, discordUser.Flags, discordUser.Locale, discordUser.MFAEnabled,
@@ -149,8 +157,8 @@ func (d *mysqlDAL) StoreDiscordUser(dbs *DBSession, discordUser *types.DiscordUs
 }
 
 // GetDiscordUser returns DiscordUserResponse
-func (d *mysqlDAL) GetDiscordUser(dbs *DBSession, uid int64) (*types.DiscordUser, error) {
-	row := dbs.tx.QueryRowContext(dbs.ctx, `SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
+func (d *mysqlDAL) GetDiscordUser(dbs DBSession, uid int64) (*types.DiscordUser, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT username, avatar, discriminator, public_flags, flags, locale, mfa_enabled FROM discord_user WHERE id=?`, uid)
 
 	discordUser := &types.DiscordUser{ID: uid}
 	err := row.Scan(&discordUser.Username, &discordUser.Avatar, &discordUser.Discriminator, &discordUser.PublicFlags, &discordUser.Flags, &discordUser.Locale, &discordUser.MFAEnabled)
@@ -162,7 +170,7 @@ func (d *mysqlDAL) GetDiscordUser(dbs *DBSession, uid int64) (*types.DiscordUser
 }
 
 // StoreDiscordServerRoles store discord user or replace with new data
-func (d *mysqlDAL) StoreDiscordServerRoles(dbs *DBSession, roles []types.DiscordRole) error {
+func (d *mysqlDAL) StoreDiscordServerRoles(dbs DBSession, roles []types.DiscordRole) error {
 	if len(roles) == 0 {
 		return nil
 	}
@@ -172,14 +180,14 @@ func (d *mysqlDAL) StoreDiscordServerRoles(dbs *DBSession, roles []types.Discord
 	}
 
 	const valuePlaceholder = `(?, ?, ?)`
-	_, err := dbs.tx.ExecContext(dbs.ctx,
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(),
 		`INSERT IGNORE INTO discord_role (id, name, color) VALUES `+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(roles)-1),
 		data...)
 	return err
 }
 
 // StoreDiscordUserRoles store discord user roles
-func (d *mysqlDAL) StoreDiscordUserRoles(dbs *DBSession, uid int64, roles []int64) error {
+func (d *mysqlDAL) StoreDiscordUserRoles(dbs DBSession, uid int64, roles []int64) error {
 	if len(roles) == 0 {
 		return nil
 	}
@@ -188,21 +196,21 @@ func (d *mysqlDAL) StoreDiscordUserRoles(dbs *DBSession, uid int64, roles []int6
 		data = append(data, uid, role)
 	}
 
-	_, err := dbs.tx.ExecContext(dbs.ctx, `DELETE FROM discord_user_role WHERE fk_uid = ?`, uid)
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `DELETE FROM discord_user_role WHERE fk_uid = ?`, uid)
 	if err != nil {
 		return err
 	}
 
 	const valuePlaceholder = `(?, ?)`
-	_, err = dbs.tx.ExecContext(dbs.ctx,
+	_, err = dbs.Tx().ExecContext(dbs.Ctx(),
 		`INSERT INTO discord_user_role (fk_uid, fk_rid) VALUES `+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(roles)-1),
 		data...)
 	return err
 }
 
 // GetDiscordUserRoles returns all user roles
-func (d *mysqlDAL) GetDiscordUserRoles(dbs *DBSession, uid int64) ([]string, error) {
-	rows, err := dbs.tx.QueryContext(dbs.ctx, `
+func (d *mysqlDAL) GetDiscordUserRoles(dbs DBSession, uid int64) ([]string, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
 		SELECT (SELECT name FROM discord_role WHERE discord_role.id=discord_user_role.fk_rid) FROM discord_user_role WHERE fk_uid=?`, uid)
 	if err != nil {
 		return nil, err
@@ -223,8 +231,8 @@ func (d *mysqlDAL) GetDiscordUserRoles(dbs *DBSession, uid int64) ([]string, err
 }
 
 // StoreSubmission stores plain submission
-func (d *mysqlDAL) StoreSubmission(dbs *DBSession) (int64, error) {
-	res, err := dbs.tx.ExecContext(dbs.ctx, `INSERT INTO submission (id) VALUES (DEFAULT)`)
+func (d *mysqlDAL) StoreSubmission(dbs DBSession) (int64, error) {
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO submission (id) VALUES (DEFAULT)`)
 	if err != nil {
 		return 0, err
 	}
@@ -236,8 +244,8 @@ func (d *mysqlDAL) StoreSubmission(dbs *DBSession) (int64, error) {
 }
 
 // StoreSubmissionFile stores submission file
-func (d *mysqlDAL) StoreSubmissionFile(dbs *DBSession, s *types.SubmissionFile) (int64, error) {
-	res, err := dbs.tx.ExecContext(dbs.ctx, `INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum) 
+func (d *mysqlDAL) StoreSubmissionFile(dbs DBSession, s *types.SubmissionFile) (int64, error) {
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum) 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		s.SubmitterID, s.SubmissionID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix(), s.MD5Sum, s.SHA256Sum)
 	if err != nil {
@@ -251,7 +259,7 @@ func (d *mysqlDAL) StoreSubmissionFile(dbs *DBSession, s *types.SubmissionFile) 
 }
 
 // GetSubmissionFiles gets submission files, returns error if input len != output len
-func (d *mysqlDAL) GetSubmissionFiles(dbs *DBSession, sfids []int64) ([]*types.SubmissionFile, error) {
+func (d *mysqlDAL) GetSubmissionFiles(dbs DBSession, sfids []int64) ([]*types.SubmissionFile, error) {
 	if len(sfids) == 0 {
 		return nil, nil
 	}
@@ -270,7 +278,7 @@ func (d *mysqlDAL) GetSubmissionFiles(dbs *DBSession, sfids []int64) ([]*types.S
 
 	var rows *sql.Rows
 	var err error
-	rows, err = dbs.tx.QueryContext(dbs.ctx, q, data...)
+	rows, err = dbs.Tx().QueryContext(dbs.Ctx(), q, data...)
 	if err != nil {
 		return nil, err
 	}
@@ -295,8 +303,8 @@ func (d *mysqlDAL) GetSubmissionFiles(dbs *DBSession, sfids []int64) ([]*types.S
 }
 
 // GetExtendedSubmissionFilesBySubmissionID returns all extended submission files for a given submission
-func (d *mysqlDAL) GetExtendedSubmissionFilesBySubmissionID(dbs *DBSession, sid int64) ([]*types.ExtendedSubmissionFile, error) {
-	rows, err := dbs.tx.QueryContext(dbs.ctx, `
+func (d *mysqlDAL) GetExtendedSubmissionFilesBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedSubmissionFile, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
 		SELECT submission_file.id, fk_uploader_id, username, avatar, 
 		       original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
 		FROM submission_file 
@@ -325,7 +333,7 @@ func (d *mysqlDAL) GetExtendedSubmissionFilesBySubmissionID(dbs *DBSession, sid 
 }
 
 // SearchSubmissions returns extended submissions based on given filter
-func (d *mysqlDAL) SearchSubmissions(dbs *DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
@@ -491,7 +499,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs *DBSession, filter *types.SubmissionsFi
 
 	var rows *sql.Rows
 	var err error
-	rows, err = dbs.tx.QueryContext(dbs.ctx, finalQuery, data...)
+	rows, err = dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, data...)
 	if err != nil {
 		return nil, err
 	}
@@ -529,8 +537,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs *DBSession, filter *types.SubmissionsFi
 }
 
 // StoreCurationMeta stores curation meta
-func (d *mysqlDAL) StoreCurationMeta(dbs *DBSession, cm *types.CurationMeta) error {
-	_, err := dbs.tx.ExecContext(dbs.ctx, `INSERT INTO curation_meta (fk_submission_file_id, application_path, developer, extreme, game_notes, languages,
+func (d *mysqlDAL) StoreCurationMeta(dbs DBSession, cm *types.CurationMeta) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO curation_meta (fk_submission_file_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters) 
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -541,8 +549,8 @@ func (d *mysqlDAL) StoreCurationMeta(dbs *DBSession, cm *types.CurationMeta) err
 }
 
 // GetCurationMetaBySubmissionFileID returns curation meta for given submission file
-func (d *mysqlDAL) GetCurationMetaBySubmissionFileID(dbs *DBSession, sfid int64) (*types.CurationMeta, error) {
-	row := dbs.tx.QueryRowContext(dbs.ctx, `SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
+func (d *mysqlDAL) GetCurationMetaBySubmissionFileID(dbs DBSession, sfid int64) (*types.CurationMeta, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
                            tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters 
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
@@ -560,21 +568,21 @@ func (d *mysqlDAL) GetCurationMetaBySubmissionFileID(dbs *DBSession, sfid int64)
 }
 
 // StoreComment stores curation meta
-func (d *mysqlDAL) StoreComment(dbs *DBSession, c *types.Comment) error {
+func (d *mysqlDAL) StoreComment(dbs DBSession, c *types.Comment) error {
 	var msg *string
 	if c.Message != nil {
 		s := strings.TrimSpace(*c.Message)
 		msg = &s
 	}
-	_, err := dbs.tx.ExecContext(dbs.ctx, `INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
                            VALUES (?, ?, ?, (SELECT id FROM action WHERE name=?), ?)`,
 		c.AuthorID, c.SubmissionID, msg, c.Action, c.CreatedAt.Unix())
 	return err
 }
 
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
-func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs *DBSession, sid int64) ([]*types.ExtendedComment, error) {
-	rows, err := dbs.tx.QueryContext(dbs.ctx, `
+func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedComment, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
 		SELECT discord_user.id, username, avatar, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
@@ -610,8 +618,8 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs *DBSession, sid int64) 
 }
 
 // SoftDeleteSubmissionFile stores submission file
-func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs *DBSession, sfid int64) error {
-	row := dbs.tx.QueryRowContext(dbs.ctx, `
+func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
 		SELECT COUNT(*) FROM submission_file
 		WHERE fk_submission_id = (SELECT fk_submission_id FROM submission_file WHERE id = ?)
         AND submission_file.deleted_at IS NULL
@@ -626,7 +634,7 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs *DBSession, sfid int64) error {
 		return fmt.Errorf(constants.ErrorCannotDeleteLastSubmissionFile)
 	}
 
-	_, err := dbs.tx.ExecContext(dbs.ctx, `
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
 		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP() 
 		WHERE id  = ?`,
 		sfid)
