@@ -2236,3 +2236,91 @@ func Test_siteService_SaveUser_Fail_NewSession(t *testing.T) {
 }
 
 ////////////////////////////////////////////////
+
+func Test_siteService_Logout_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	secret := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("DeleteSession", secret).Return(nil)
+
+	ts.dbs.On("Commit").Return(nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.Logout(ctx, secret)
+
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_Logout_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	secret := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	err := ts.s.Logout(ctx, secret)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_Logout_Fail_DeleteSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	secret := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("DeleteSession", secret).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.Logout(ctx, secret)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_Logout_Fail_Commit(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	secret := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("DeleteSession", secret).Return(nil)
+
+	ts.dbs.On("Commit").Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.Logout(ctx, secret)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
