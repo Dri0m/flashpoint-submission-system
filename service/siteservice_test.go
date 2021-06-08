@@ -264,6 +264,30 @@ func (ts *testService) assertExpectations(t *testing.T) {
 
 ////////////////////////////////////////////////
 
+func createAssertBPD(ts *testService, uid int64) *types.BasePageData {
+	username := "username"
+	avatar := "avatar"
+	avatarURL := fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", uid, avatar)
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: username,
+		Avatar:   avatar,
+	}
+	userRoles := []string{"a"}
+	bpd := &types.BasePageData{
+		Username:  username,
+		AvatarURL: avatarURL,
+		UserRoles: userRoles,
+	}
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
+	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
+
+	return bpd
+}
+
+////////////////////////////////////////////////
+
 func Test_siteService_GetBasePageData_OK(t *testing.T) {
 	ts := NewTestSiteService()
 
@@ -1096,6 +1120,177 @@ func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 
 	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
 
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	bpd := createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	cm := &types.CurationMeta{}
+	comments := []*types.ExtendedComment{{}}
+
+	expected := &types.ViewSubmissionPageData{
+		SubmissionsPageData: types.SubmissionsPageData{
+			BasePageData: *bpd,
+			Submissions:  submissions,
+		},
+		CurationMeta: cm,
+		Comments:     comments,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
+	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+
+	assert.Equal(t, expected, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_SearchSubmissions(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(([]*types.ExtendedSubmission)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationMetaBySubmissionFileID(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return((*types.CurationMeta)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_GetExtendedCommentsBySubmissionID(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	cm := &types.CurationMeta{}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
+	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(([]*types.ExtendedComment)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+
+	assert.Nil(t, actual)
 	assert.Error(t, err)
 
 	ts.assertExpectations(t)
