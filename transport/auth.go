@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/gofrs/uuid"
@@ -143,7 +144,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.CC.SetSecureCookie(w, utils.Cookies.Login, utils.MapAuthToken(authToken)); err != nil {
+	if err := a.CC.SetSecureCookie(w, utils.Cookies.Login, service.MapAuthToken(authToken)); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
 		return
@@ -162,7 +163,7 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := utils.ParseAuthToken(cookieMap)
+	token, err := service.ParseAuthToken(cookieMap) // TODO move this into the Logout method
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, msg, http.StatusInternalServerError)

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"github.com/Dri0m/flashpoint-submission-system/types"
-	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"mime/multipart"
 	"time"
 )
@@ -19,7 +18,7 @@ type Service interface {
 	GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error)
 	GetUIDFromSession(ctx context.Context, key string) (int64, bool, error)
 	SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error
-	SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error)
+	SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error)
 	Logout(ctx context.Context, secret string) error
 	GetUserRoles(ctx context.Context, uid int64) ([]string, error)
 }

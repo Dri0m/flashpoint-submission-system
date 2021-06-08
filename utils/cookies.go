@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"fmt"
-	"github.com/gofrs/uuid"
 	"github.com/gorilla/securecookie"
 	"net/http"
 )
@@ -20,43 +18,6 @@ type cookies struct {
 // Cookies is cookie name enum
 var Cookies = cookies{
 	Login: "login",
-}
-
-// AuthToken is AuthToken
-type AuthToken struct {
-	Secret string
-	UserID string
-}
-
-func CreateAuthToken(userID int64) (*AuthToken, error) {
-	s, err := uuid.NewV4()
-	if err != nil {
-		return nil, err
-	}
-	return &AuthToken{
-		Secret: s.String(),
-		UserID: fmt.Sprint(userID),
-	}, nil
-}
-
-// ParseAuthToken parses map into token
-func ParseAuthToken(value map[string]string) (*AuthToken, error) {
-	secret, ok := value["secret"]
-	if !ok {
-		return nil, fmt.Errorf("missing secret")
-	}
-	userID, ok := value["userID"]
-	if !ok {
-		return nil, fmt.Errorf("missing userid")
-	}
-	return &AuthToken{
-		Secret: secret,
-		UserID: userID,
-	}, nil
-}
-
-func MapAuthToken(token *AuthToken) map[string]string {
-	return map[string]string{"secret": token.Secret, "userID": token.UserID}
 }
 
 // SetSecureCookie sets cookie

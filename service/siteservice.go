@@ -14,6 +14,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-sql-driver/mysql"
+	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"io"
 	"mime/multipart"
@@ -56,12 +57,61 @@ func (r *RealClock) Unix(sec int64, nsec int64) time.Time {
 	return time.Unix(sec, nsec)
 }
 
+// authToken is authToken
+type authToken struct {
+	Secret string
+	UserID string
+}
+
+type authTokenProvider struct {
+}
+
+func NewAuthTokenProvider() *authTokenProvider {
+	return &authTokenProvider{}
+}
+
+type AuthTokenizer interface {
+	CreateAuthToken(userID int64) (*authToken, error)
+}
+
+func (a *authTokenProvider) CreateAuthToken(userID int64) (*authToken, error) {
+	s, err := uuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
+	return &authToken{
+		Secret: s.String(),
+		UserID: fmt.Sprint(userID),
+	}, nil
+}
+
+// ParseAuthToken parses map into token
+func ParseAuthToken(value map[string]string) (*authToken, error) {
+	secret, ok := value["Secret"]
+	if !ok {
+		return nil, fmt.Errorf("missing Secret")
+	}
+	userID, ok := value["userID"]
+	if !ok {
+		return nil, fmt.Errorf("missing userid")
+	}
+	return &authToken{
+		Secret: secret,
+		UserID: userID,
+	}, nil
+}
+
+func MapAuthToken(token *authToken) map[string]string {
+	return map[string]string{"Secret": token.Secret, "userID": token.UserID}
+}
+
 type siteService struct {
 	bot                      bot.DiscordRoleReader
 	dal                      database.DAL
 	validator                Validator
 	clock                    Clock
 	randomStringProvider     utils.RandomStringer
+	authTokenProvider        AuthTokenizer
 	sessionExpirationSeconds int64
 	submissionsDir           string
 }
@@ -73,6 +123,7 @@ func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session,
 		validator:                NewValidator(validatorServerURL),
 		clock:                    &RealClock{},
 		randomStringProvider:     utils.NewRealRandomStringProvider(),
+		authTokenProvider:        NewAuthTokenProvider(),
 		sessionExpirationSeconds: sessionExpirationSeconds,
 		submissionsDir:           submissionsDir,
 	}
@@ -542,7 +593,7 @@ func (s *siteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) 
 	return nil
 }
 
-func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*utils.AuthToken, error) {
+func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -588,7 +639,7 @@ func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 
 	// create cookie and save session
-	authToken, err := utils.CreateAuthToken(discordUser.ID)
+	authToken, err := s.authTokenProvider.CreateAuthToken(discordUser.ID)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to generate auth token")
