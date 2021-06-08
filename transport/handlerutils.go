@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/Masterminds/sprig"
 	"html/template"
@@ -62,7 +63,7 @@ func (a *App) GetUserIDFromCookie(r *http.Request) (int64, error) {
 		return 0, err
 	}
 
-	token, err := utils.ParseAuthToken(cookieMap)
+	token, err := service.ParseAuthToken(cookieMap)
 	if err != nil {
 		return 0, err
 	}
@@ -84,7 +85,7 @@ func (a *App) GetSecretFromCookie(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	token, err := utils.ParseAuthToken(cookieMap)
+	token, err := service.ParseAuthToken(cookieMap)
 	if err != nil {
 		return "", err
 	}
