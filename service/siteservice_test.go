@@ -472,7 +472,7 @@ func Test_siteService_ReceiveSubmissions_Fail_NewSession(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
-	ts.dal.On("NewSession").Return(ts.dbs, errors.New(""))
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
 	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
@@ -969,6 +969,134 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_ReceiveComments_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var sids = []int64{sid}
+
+	formAction := constants.ActionComment
+	formMessage := "foo"
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      &formMessage,
+		Action:       constants.ActionComment,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.dbs.On("Commit").Return(nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveComments_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var sids = []int64{sid}
+
+	formAction := constants.ActionComment
+	formMessage := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveComments_Fail_StoreComment(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var sids = []int64{sid}
+
+	formAction := constants.ActionComment
+	formMessage := "foo"
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      &formMessage,
+		Action:       constants.ActionComment,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("StoreComment", c).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var sids = []int64{sid}
+
+	formAction := constants.ActionComment
+	formMessage := "foo"
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      &formMessage,
+		Action:       constants.ActionComment,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.dbs.On("Commit").Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+
+	assert.Error(t, err)
 
 	ts.assertExpectations(t)
 }
