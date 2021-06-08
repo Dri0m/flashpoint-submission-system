@@ -1468,3 +1468,87 @@ func Test_siteService_GetSubmissionsPageData_Fail_SearchSubmissions(t *testing.T
 }
 
 ////////////////////////////////////////////////
+
+func Test_siteService_SearchSubmissions_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SearchSubmissions(ctx, filter)
+
+	assert.Equal(t, submissions, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SearchSubmissions_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.SearchSubmissions(ctx, filter)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SearchSubmissions_Fail_SearchSubmissions(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(([]*types.ExtendedSubmission)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SearchSubmissions(ctx, filter)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
