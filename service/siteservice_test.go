@@ -1629,3 +1629,68 @@ func Test_siteService_GetSubmissionFiles_Fail_NewSession(t *testing.T) {
 }
 
 ////////////////////////////////////////////////
+
+func Test_siteService_GetUIDFromSession_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	key := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetUIDFromSession", key).Return(uid, true, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, ok, err := ts.s.GetUIDFromSession(ctx, key)
+
+	assert.Equal(t, uid, actual)
+	assert.True(t, ok)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetUIDFromSession_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	key := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+	actual, ok, err := ts.s.GetUIDFromSession(ctx, key)
+
+	assert.Zero(t, actual)
+	assert.False(t, ok)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetUIDFromSession_Fail_GetUIDFromSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	key := "foo"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetUIDFromSession", key).Return((int64)(0), false, errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, ok, err := ts.s.GetUIDFromSession(ctx, key)
+
+	assert.Zero(t, actual)
+	assert.False(t, ok)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
