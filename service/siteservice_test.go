@@ -2324,3 +2324,67 @@ func Test_siteService_Logout_Fail_Commit(t *testing.T) {
 }
 
 ////////////////////////////////////////////////
+
+func Test_siteService_GetUserRoles_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	roles := []string{
+		"foo",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetDiscordUserRoles", uid).Return(roles, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetUserRoles(ctx, uid)
+
+	assert.Equal(t, roles, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetUserRoles_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetUserRoles(ctx, uid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetUserRoles_Fail_GetDiscordUserRoles(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetDiscordUserRoles", uid).Return(([]string)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetUserRoles(ctx, uid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
