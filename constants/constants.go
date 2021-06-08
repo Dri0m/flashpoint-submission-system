@@ -13,6 +13,26 @@ const (
 	ActionUpload         = "upload-file"
 )
 
+func GetActions() []string {
+	return []string{
+		ActionComment,
+		ActionApprove,
+		ActionRequestChanges,
+		ActionAccept,
+		ActionMarkAdded,
+		ActionReject,
+		ActionUpload,
+	}
+}
+
+func GetActionsWithMandatoryMessage() []string {
+	return []string{
+		ActionComment,
+		ActionRequestChanges,
+		ActionReject,
+	}
+}
+
 const (
 	ResourceKeySubmissionID  = "submission-id"
 	ResourceKeySubmissionIDs = "submission-ids"

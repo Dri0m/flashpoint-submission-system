@@ -313,7 +313,8 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		message = &formMessage
 	}
 
-	actions := []string{constants.ActionComment, constants.ActionApprove, constants.ActionRequestChanges, constants.ActionAccept, constants.ActionMarkAdded, constants.ActionReject, constants.ActionUpload}
+	// TODO refactor these validators into a function and cover with tests
+	actions := constants.GetActions()
 	isActionValid := false
 	for _, a := range actions {
 		if formAction == a {
@@ -326,7 +327,7 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		return fmt.Errorf("invalid comment action")
 	}
 
-	actionsWithMandatoryMessage := []string{constants.ActionComment, constants.ActionRequestChanges, constants.ActionReject}
+	actionsWithMandatoryMessage := constants.GetActionsWithMandatoryMessage()
 	isActionWithMandatoryMessage := false
 	for _, a := range actionsWithMandatoryMessage {
 		if formAction == a {
