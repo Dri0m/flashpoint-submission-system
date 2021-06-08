@@ -222,11 +222,12 @@ func (f fakeRandomStringProvider) RandomString(n int) string {
 ////////////////////////////////////////////////
 
 type testService struct {
-	s         *siteService
-	bot       *mockBot
-	dal       *mockDAL
-	dbs       *mockDBSession
-	validator *mockValidator
+	s                    *siteService
+	bot                  *mockBot
+	dal                  *mockDAL
+	dbs                  *mockDBSession
+	validator            *mockValidator
+	multipartFileWrapper *mockMultipartFileWrapper
 }
 
 func NewTestSiteService() *testService {
@@ -234,6 +235,7 @@ func NewTestSiteService() *testService {
 	dal := &mockDAL{}
 	dbs := &mockDBSession{}
 	validator := &mockValidator{}
+	multipartFileWrapper := &mockMultipartFileWrapper{}
 
 	return &testService{
 		s: &siteService{
@@ -244,10 +246,11 @@ func NewTestSiteService() *testService {
 			randomStringProvider:     &fakeRandomStringProvider{},
 			sessionExpirationSeconds: 0,
 		},
-		bot:       bot,
-		dal:       dal,
-		dbs:       dbs,
-		validator: validator,
+		bot:                  bot,
+		dal:                  dal,
+		dbs:                  dbs,
+		validator:            validator,
+		multipartFileWrapper: multipartFileWrapper,
 	}
 }
 
@@ -256,6 +259,7 @@ func (ts *testService) assertExpectations(t *testing.T) {
 	ts.dal.AssertExpectations(t)
 	ts.dbs.AssertExpectations(t)
 	ts.validator.AssertExpectations(t)
+	ts.multipartFileWrapper.AssertExpectations(t)
 }
 
 ////////////////////////////////////////////////
@@ -362,7 +366,6 @@ func Test_siteService_GetBasePageData_Fail_NewSession(t *testing.T) {
 
 func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts := NewTestSiteService()
-	mockFileWrapper := &mockMultipartFileWrapper{}
 
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
@@ -429,9 +432,9 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 
-	mockFileWrapper.On("Open").Return(tmpFile, nil)
-	mockFileWrapper.On("Filename").Return(filename)
-	mockFileWrapper.On("Size").Return(size)
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission").Return(sid, nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
@@ -445,9 +448,527 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{mockFileWrapper})
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
 	assert.NoError(t, err)
+
+	assert.FileExists(t, destinationFilePath) // submission file was copied successfully
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, errors.New(""))
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      nil,
+		Action:       constants.ActionUpload,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
+	ts.dal.On("StoreComment", c).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      nil,
+		Action:       constants.ActionUpload,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.validator.On("Validate", destinationFilePath, sid, fid).Return((*types.ValidatorResponse)(nil), errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      nil,
+		Action:       constants.ActionUpload,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
+
+	ts.dal.On("StoreCurationMeta", &meta).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      nil,
+		Action:       constants.ActionUpload,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
+
+	approvalMessage := "LGTM 🤖"
+	bc := &types.Comment{
+		AuthorID:     constants.ValidatorID,
+		SubmissionID: sid,
+		Message:      &approvalMessage,
+		Action:       constants.ActionApprove,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
+
+	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
+	ts.dal.On("StoreComment", bc).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64)
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      nil,
+		Action:       constants.ActionUpload,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
+
+	approvalMessage := "LGTM 🤖"
+	bc := &types.Comment{
+		AuthorID:     constants.ValidatorID,
+		SubmissionID: sid,
+		Message:      &approvalMessage,
+		Action:       constants.ActionApprove,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission").Return(sid, nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
+
+	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
+	ts.dal.On("StoreComment", bc).Return(nil)
+
+	ts.dbs.On("Commit").Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
 
 	ts.assertExpectations(t)
 }
