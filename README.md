@@ -2,6 +2,8 @@
 
 it's a thing, and it's pretty WIP
 
+it will be a submission management system for https://bluemaxima.org/flashpoint/ or something
+
 ![logo](static/opal.png)
 
 it looks something like this
