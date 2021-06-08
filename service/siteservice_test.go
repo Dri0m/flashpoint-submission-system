@@ -1552,3 +1552,80 @@ func Test_siteService_SearchSubmissions_Fail_SearchSubmissions(t *testing.T) {
 }
 
 ////////////////////////////////////////////////
+
+func Test_siteService_GetSubmissionFiles_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	sfids := []int64{fid}
+
+	sf := []*types.SubmissionFile{
+		{
+			SubmitterID:  uid,
+			SubmissionID: sid,
+		},
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetSubmissionFiles", sfids).Return(sf, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetSubmissionFiles(ctx, sfids)
+
+	assert.Equal(t, sf, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetSubmissionFiles_Fail_GetSubmissionFiles(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var fid int64 = 3
+
+	sfids := []int64{fid}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetSubmissionFiles", sfids).Return(([]*types.SubmissionFile)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetSubmissionFiles(ctx, sfids)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetSubmissionFiles_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var fid int64 = 3
+
+	sfids := []int64{fid}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetSubmissionFiles(ctx, sfids)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
