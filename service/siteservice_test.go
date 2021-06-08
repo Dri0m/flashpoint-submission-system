@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"mime/multipart"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -221,6 +222,17 @@ func (f fakeRandomStringProvider) RandomString(n int) string {
 
 ////////////////////////////////////////////////
 
+type mockAuthTokenProvider struct {
+	mock.Mock
+}
+
+func (m *mockAuthTokenProvider) CreateAuthToken(userID int64) (*authToken, error) {
+	args := m.Called(userID)
+	return args.Get(0).(*authToken), args.Error(1)
+}
+
+////////////////////////////////////////////////
+
 type testService struct {
 	s                    *siteService
 	bot                  *mockBot
@@ -228,6 +240,7 @@ type testService struct {
 	dbs                  *mockDBSession
 	validator            *mockValidator
 	multipartFileWrapper *mockMultipartFileWrapper
+	authTokenProvider    *mockAuthTokenProvider
 }
 
 func NewTestSiteService() *testService {
@@ -236,6 +249,7 @@ func NewTestSiteService() *testService {
 	dbs := &mockDBSession{}
 	validator := &mockValidator{}
 	multipartFileWrapper := &mockMultipartFileWrapper{}
+	authTokenProvider := &mockAuthTokenProvider{}
 
 	return &testService{
 		s: &siteService{
@@ -244,6 +258,7 @@ func NewTestSiteService() *testService {
 			validator:                validator,
 			clock:                    &fakeClock{},
 			randomStringProvider:     &fakeRandomStringProvider{},
+			authTokenProvider:        authTokenProvider,
 			sessionExpirationSeconds: 0,
 		},
 		bot:                  bot,
@@ -251,6 +266,7 @@ func NewTestSiteService() *testService {
 		dbs:                  dbs,
 		validator:            validator,
 		multipartFileWrapper: multipartFileWrapper,
+		authTokenProvider:    authTokenProvider,
 	}
 }
 
@@ -1770,6 +1786,450 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_Commit(t *testing.T) {
 
 	err := ts.s.SoftDeleteSubmissionFile(ctx, fid)
 
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_SaveUser_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var rid int64 = 2
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
+	userRolesIDsNumeric := []int64{
+		rid,
+	}
+
+	a := &authToken{
+		Secret: "xyzzy",
+		UserID: strconv.FormatInt(uid, 10),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+
+	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
+	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
+
+	ts.authTokenProvider.On("CreateAuthToken", uid).Return(a, nil)
+
+	ts.dal.On("StoreSession", a.Secret, uid, ts.s.sessionExpirationSeconds).Return(nil)
+	ts.dbs.On("Commit").Return(nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Equal(t, a, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_Commit(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var rid int64 = 2
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
+	userRolesIDsNumeric := []int64{
+		rid,
+	}
+
+	a := &authToken{
+		Secret: "xyzzy",
+		UserID: strconv.FormatInt(uid, 10),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+
+	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
+	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
+
+	ts.authTokenProvider.On("CreateAuthToken", uid).Return(a, nil)
+
+	ts.dal.On("StoreSession", a.Secret, uid, ts.s.sessionExpirationSeconds).Return(nil)
+	ts.dbs.On("Commit").Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_StoreSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var rid int64 = 2
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
+	userRolesIDsNumeric := []int64{
+		rid,
+	}
+
+	a := &authToken{
+		Secret: "xyzzy",
+		UserID: strconv.FormatInt(uid, 10),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+
+	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
+	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
+
+	ts.authTokenProvider.On("CreateAuthToken", uid).Return(a, nil)
+
+	ts.dal.On("StoreSession", a.Secret, uid, ts.s.sessionExpirationSeconds).Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_CreateAuthToken(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var rid int64 = 2
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
+	userRolesIDsNumeric := []int64{
+		rid,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+
+	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
+	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
+
+	ts.authTokenProvider.On("CreateAuthToken", uid).Return((*authToken)(nil), errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_StoreDiscordUserRoles(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var rid int64 = 2
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
+	userRolesIDsNumeric := []int64{
+		rid,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+
+	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
+	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_StoreDiscordServerRoles(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var rid int64 = 2
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+
+	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_GetFlashpointRoleIDsForUser(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var rid int64 = 2
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(([]string)(nil), errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_GetFlashpointRoles(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
+
+	ts.bot.On("GetFlashpointRoles").Return(([]types.DiscordRole)(nil), errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_StoreDiscordUser(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreDiscordUser", discordUser).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
 	assert.Error(t, err)
 
 	ts.assertExpectations(t)
