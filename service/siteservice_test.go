@@ -167,7 +167,7 @@ type mockValidator struct {
 	mock.Mock
 }
 
-func (m *mockValidator) Validate(ctx context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error) {
+func (m *mockValidator) Validate(_ context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error) {
 	args := m.Called(filePath, sid, fid)
 	return args.Get(0).(*types.ValidatorResponse), args.Error(1)
 }
@@ -1289,6 +1289,85 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetExtendedCommentsBySubmis
 	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_GetSubmissionsFilesPageData_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	bpd := createAssertBPD(ts, uid)
+
+	sf := []*types.ExtendedSubmissionFile{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	expected := &types.SubmissionsFilesPageData{
+		BasePageData:    *bpd,
+		SubmissionFiles: sf,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetExtendedSubmissionFilesBySubmissionID", sid).Return(sf, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetSubmissionsFilesPageData(ctx, sid)
+
+	assert.Equal(t, expected, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetSubmissionsFilesPageData_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetSubmissionsFilesPageData(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetSubmissionsFilesPageData_Fail_GetExtendedSubmissionFilesBySubmissionID(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	createAssertBPD(ts, uid)
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetExtendedSubmissionFilesBySubmissionID", sid).Return(([]*types.ExtendedSubmissionFile)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetSubmissionsFilesPageData(ctx, sid)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
