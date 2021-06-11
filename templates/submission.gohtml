@@ -1,4 +1,5 @@
 {{define "main"}}
+    {{$canDelete := isDeletor .UserRoles}}
     <div class="main" xmlns="http://www.w3.org/1999/html">
         <div class="content">
             <h1>View Submission</h1>
@@ -12,6 +13,14 @@
                 <input type="file" name="files" multiple="multiple">
                 <input class="pure-button pure-button button-upload-file" type="submit" value="Upload">
             </form>
+
+            {{if $canDelete}}
+                <h3>Delete submission and all its related data</h3>
+                <button class="pure-button pure-button button-delete"
+                        onclick="sendDelete('/submission/{{(index .Submissions 0).SubmissionID}}')">Delete
+                </button>
+            {{end}}
+
             <h3>Curation meta</h3>
             {{if .CurationMeta}}
                 <table class="pure-table pure-table-bordered meta-table">

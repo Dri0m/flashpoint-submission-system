@@ -617,7 +617,7 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) (
 	return result, nil
 }
 
-// SoftDeleteSubmissionFile stores submission file
+// SoftDeleteSubmissionFile marks submission file as deleted
 func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
 		SELECT COUNT(*) FROM submission_file
@@ -638,5 +638,22 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error {
 		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP() 
 		WHERE id  = ?`,
 		sfid)
+	return err
+}
+
+// SoftDeleteSubmission marks submission and its files as deleted
+func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP() 
+		WHERE fk_submission_id = ?`,
+		sid)
+	if err != nil {
+		return err
+	}
+
+	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE submission SET deleted_at = UNIX_TIMESTAMP() 
+		WHERE id = ?`,
+		sid)
 	return err
 }

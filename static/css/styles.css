@@ -108,7 +108,8 @@ textarea {
 .button-accept,
 .button-mark-added,
 .button-reject,
-.button-upload-file {
+.button-upload-file,
+.button-delete {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
@@ -153,6 +154,10 @@ textarea {
 .dot-upload-file,
 .button-upload-file {
     background: rgb(14, 175, 175) !important;
+}
+
+.button-delete {
+    background: rgb(255, 0, 0) !important;
 }
 
 

@@ -153,6 +153,27 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionID := params[constants.ResourceKeySubmissionID]
+
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "invalid submission file id", http.StatusBadRequest)
+		return
+	}
+
+	if err := a.Service.SoftDeleteSubmission(ctx, sid); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, fmt.Sprintf("soft delete submission processor: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)

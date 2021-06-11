@@ -131,6 +131,9 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.Handle(fmt.Sprintf("/submission-file/{%s}", constants.ResourceKeyFileID),
 		http.HandlerFunc(a.UserAuthMux(
 			a.HandleSoftDeleteSubmissionFile, all(isDeletor)))).Methods("DELETE")
+	router.Handle(fmt.Sprintf("/submission/{%s}", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleSoftDeleteSubmission, all(isDeletor)))).Methods("DELETE")
 
 	err := srv.ListenAndServe()
 	if err != nil {
