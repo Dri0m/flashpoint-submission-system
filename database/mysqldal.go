@@ -652,6 +652,14 @@ func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64) error {
 	}
 
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE comment SET deleted_at = UNIX_TIMESTAMP() 
+		WHERE fk_submission_id = ?`,
+		sid)
+	if err != nil {
+		return err
+	}
+
+	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
 		UPDATE submission SET deleted_at = UNIX_TIMESTAMP() 
 		WHERE id = ?`,
 		sid)
