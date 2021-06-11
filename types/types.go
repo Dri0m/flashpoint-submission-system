@@ -151,6 +151,7 @@ func (sf *SubmissionsFilter) Validate() error {
 }
 
 type ExtendedComment struct {
+	CommentID    int64
 	AuthorID     int64
 	Username     string
 	AvatarURL    string

@@ -583,7 +583,7 @@ func (d *mysqlDAL) StoreComment(dbs DBSession, c *types.Comment) error {
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
 func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedComment, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
-		SELECT discord_user.id, username, avatar, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
+		SELECT comment.id, discord_user.id, username, avatar, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
 		JOIN discord_user ON discord_user.id = fk_author_id
 		WHERE fk_submission_id=? 
@@ -603,7 +603,7 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) (
 	for rows.Next() {
 
 		ec := &types.ExtendedComment{SubmissionID: sid}
-		if err := rows.Scan(&ec.AuthorID, &ec.Username, &avatar, &message, &ec.Action, &createdAt); err != nil {
+		if err := rows.Scan(&ec.CommentID, &ec.AuthorID, &ec.Username, &avatar, &message, &ec.Action, &createdAt); err != nil {
 			return nil, err
 		}
 		ec.CreatedAt = time.Unix(createdAt, 0)
@@ -663,5 +663,14 @@ func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64) error {
 		UPDATE submission SET deleted_at = UNIX_TIMESTAMP() 
 		WHERE id = ?`,
 		sid)
+	return err
+}
+
+// SoftDeleteComment marks comment as deleted
+func (d *mysqlDAL) SoftDeleteComment(dbs DBSession, cid int64) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE comment SET deleted_at = UNIX_TIMESTAMP() 
+		WHERE id = ?`,
+		cid)
 	return err
 }

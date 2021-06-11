@@ -617,6 +617,30 @@ func (s *siteService) SoftDeleteSubmission(ctx context.Context, sid int64) error
 	return nil
 }
 
+func (s *siteService) SoftDeleteComment(ctx context.Context, cid int64) error {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	if err := s.dal.SoftDeleteComment(dbs, cid); err != nil {
+		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
+			return err
+		}
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to soft delete comment")
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to commit transaction")
+	}
+
+	return nil
+}
+
 func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {

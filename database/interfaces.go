@@ -26,7 +26,8 @@ type DAL interface {
 	StoreComment(dbs DBSession, c *types.Comment) error
 	GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedComment, error)
 	SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error
-	SoftDeleteSubmission(dbs DBSession, sfid int64) error
+	SoftDeleteSubmission(dbs DBSession, sid int64) error
+	SoftDeleteComment(dbs DBSession, cid int64) error
 }
 
 type DBSession interface {

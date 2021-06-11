@@ -234,3 +234,8 @@ textarea {
     display: initial;
     padding-right: 1em;
 }
+
+.micro-button {
+    font-size: 50% !important;
+    border-radius: 0;
+}

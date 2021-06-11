@@ -37,6 +37,19 @@ func DeletorRoles() []string {
 	}
 }
 
+func DeciderRoles() []string {
+	return []string{
+		RoleCurator,
+		RoleTester,
+	}
+}
+
+func AdderRoles() []string {
+	return []string{
+		RoleAdministrator,
+	}
+}
+
 func HasAnyRole(has, needs []string) bool {
 	for _, role := range has {
 		for _, neededRole := range needs {
@@ -48,17 +61,27 @@ func HasAnyRole(has, needs []string) bool {
 	return false
 }
 
-// IsStaff returns true if user has any staff role
+// IsStaff allows users to access and interact with all submissions, to a degree
 func IsStaff(roles []string) bool {
 	return HasAnyRole(roles, StaffRoles())
 }
 
-// IsTrialCurator returns true if user is trial curator
+// IsTrialCurator allows user to submit submissions and see only his own submissions
 func IsTrialCurator(roles []string) bool {
 	return HasAnyRole(roles, TrialCuratorRoles())
 }
 
-// IsDeletor returns true if user is trial curator
+// IsDeletor allows users to soft delete things
 func IsDeletor(roles []string) bool {
 	return HasAnyRole(roles, DeletorRoles())
+}
+
+// IsDecider allows user to decide the state of submissions (approve, request changes, accept, reject)
+func IsDecider(roles []string) bool {
+	return HasAnyRole(roles, DeciderRoles())
+}
+
+// IsAdder allows user to mark submission as added to flashpoint
+func IsAdder(roles []string) bool {
+	return HasAnyRole(roles, AdderRoles())
 }

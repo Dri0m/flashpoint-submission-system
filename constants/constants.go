@@ -38,4 +38,5 @@ const (
 	ResourceKeySubmissionIDs = "submission-ids"
 	ResourceKeyFileID        = "file-id"
 	ResourceKeyFileIDs       = "file-ids"
+	ResourceKeyCommentID     = "comment-id"
 )

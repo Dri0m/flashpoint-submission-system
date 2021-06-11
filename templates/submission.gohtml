@@ -1,5 +1,6 @@
 {{define "main"}}
     {{$canDelete := isDeletor .UserRoles}}
+    {{$submissionID := (index .Submissions 0).SubmissionID}}
     <div class="main" xmlns="http://www.w3.org/1999/html">
         <div class="content">
             <h1>View Submission</h1>
@@ -8,16 +9,16 @@
             {{template "submission-table" .}}
 
             <h3>Upload a fixed version</h3>
-            <form action="/submission-receiver/{{(index .Submissions 0).SubmissionID}}" method="post"
+            <form action="/submission-receiver/{{$submissionID}}" method="post"
                   enctype="multipart/form-data">
                 <input type="file" name="files" multiple="multiple">
-                <input class="pure-button pure-button button-upload-file" type="submit" value="Upload">
+                <input class="pure-button button-upload-file" type="submit" value="Upload">
             </form>
 
             {{if $canDelete}}
                 <h3>Delete submission and all its related data</h3>
-                <button class="pure-button pure-button button-delete"
-                        onclick="sendDelete('/submission/{{(index .Submissions 0).SubmissionID}}')">Delete
+                <button class="pure-button button-delete"
+                        onclick="sendDelete('/submission/{{$submissionID}}')">Delete
                 </button>
             {{end}}
 
@@ -130,6 +131,12 @@
                         <div class="comment-header">
                             <img src="{{.AvatarURL}}" class="comment-avatar" alt="avatar"><br>
                             <b>{{.Username}}</b><br>
+                            {{if $canDelete}}
+                                <button class="micro-button"
+                                        onclick="sendDelete('/submission/{{$submissionID}}/comment/{{.CommentID}}')">D
+                                </button>
+                                <br>
+                            {{end}}
                             <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
                         </div>
                     </div>
@@ -154,7 +161,7 @@
             {{end}}
 
             <br>
-            <form class="pure-form" action="/submission/{{(index .Submissions 0).SubmissionID}}/comment" method="POST">
+            <form class="pure-form" action="/submission/{{$submissionID}}/comment" method="POST">
                 <fieldset class="pure-group">
                     <textarea class="pure-input-1 comment-textarea" name="message"
                               placeholder="Add a comment"></textarea>
@@ -163,7 +170,7 @@
                     <button type="submit" class="pure-button pure-button button-comment" name="action" value="comment">
                         Comment
                     </button>
-                    {{if or (has "Curator" .UserRoles) (has "Tester" .UserRoles)}}
+                    {{if isDecider .UserRoles}}
                         <button type="submit" class="pure-button pure-button button-approve" name="action"
                                 value="approve">
                             Approve
@@ -181,7 +188,7 @@
                             Reject
                         </button>
                     {{end}}
-                    {{if has "Administrator" .UserRoles}}
+                    {{if isAdder .UserRoles}}
                         <button type="submit" class="pure-button pure-button button-mark-added" name="action"
                                 value="mark-added">
                             Mark as Added
