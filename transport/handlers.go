@@ -349,7 +349,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	pageData, err := a.Service.GetViewSubmissionPageData(ctx, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		http.Error(w, "submission not found", http.StatusNotFound)
 		return
 	}
 
