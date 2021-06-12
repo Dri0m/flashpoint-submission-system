@@ -339,7 +339,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 
 	data = append(data, constants.ValidatorID, constants.ValidatorID)
 
-	const defaultLimit int64 = 1000
+	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
 
 	currentLimit := defaultLimit
