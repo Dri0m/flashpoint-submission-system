@@ -5,8 +5,8 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.5.0.0/16
-          gateway: 10.5.0.1
+        - subnet: 10.50.0.0/16
+          gateway: 10.50.0.1
 
 services:
   database:
@@ -24,7 +24,7 @@ services:
       - fpfssdb_data:/var/lib/mysql
     networks:
       marketnetwork:
-        ipv4_address: 10.5.0.2
+        ipv4_address: 10.50.0.2
 
 volumes:
   fpfssdb_data:
