@@ -10,8 +10,9 @@
         <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css"
               integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5"
               crossorigin="anonymous">
-        <link rel="stylesheet" href="/static/css/styles.css">
+        <link rel="stylesheet" href="/static/styles.css">
         <link rel="icon" href="/static/favicon.ico"/>
+        <script src="/static/js.js"></script>
     </head>
     <body>
 
@@ -28,29 +29,6 @@
         </div>
         {{template "main" .}}
     </div>
-
-    <script>
-        function sendDelete(url) {
-            if (confirm(`Are you sure you want to (soft) delete '${url}'?`)) {
-                let request = new XMLHttpRequest();
-                request.open("DELETE", url, false);
-
-                try {
-                    request.onload = function () {
-                        if (request.status !== 204) {
-                            alert(`failed to delete '${url}' - status ${request.status}`)
-                        } else {
-                            alert(`delete of '${url}' successful`)
-                            location.reload();
-                        }
-                    };
-                    request.send();
-                } catch (err) {
-                    alert(`failed to delete '${url}' - exception '${err.message}'`)
-                }
-            }
-        }
-    </script>
 
     </body>
     </html>
