@@ -132,11 +132,14 @@
                             <img src="{{.AvatarURL}}" class="comment-avatar" alt="avatar"><br>
                             <b>{{.Username}}</b><br>
                             {{if $canDelete}}
-                                <button class="micro-button"
+                                <button class="micro-button" title="delete comment"
                                         onclick="sendDelete('/submission/{{$submissionID}}/comment/{{.CommentID}}')">D
                                 </button>
-                                <br>
                             {{end}}
+                            <button class="micro-button" title="show user's submissions"
+                                    onclick="location.href='/submissions?submitter-id={{.AuthorID}}'">S
+                            </button>
+                            <br>
                             <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
                         </div>
                     </div>
