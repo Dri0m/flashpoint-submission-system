@@ -219,7 +219,13 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return nil, fmt.Errorf("failed to make directory structure")
 	}
 
-	destinationFilename := s.randomStringProvider.RandomString(64) + filepath.Ext(fileHeader.Filename())
+	ext := filepath.Ext(fileHeader.Filename())
+
+	if ext != ".7z" && ext != ".zip" {
+		return nil, fmt.Errorf("unsupported file extension")
+	}
+
+	destinationFilename := s.randomStringProvider.RandomString(64) + ext
 	destinationFilePath := fmt.Sprintf("%s/%s", s.submissionsDir, destinationFilename)
 
 	destination, err := os.Create(destinationFilePath)
