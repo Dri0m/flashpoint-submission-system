@@ -8,9 +8,40 @@
                         <fieldset>
                             <legend>Form Column A</legend>
                             <label for="submission-id">Submission ID</label>
-                            <input type="number" name="submission-id" min="1" value="{{default "" .Filter.SubmissionID}}">
+                            <input type="number" name="submission-id" min="1"
+                                   value="{{default "" .Filter.SubmissionID}}">
                             <label for="submitter-id">Submitter ID</label>
                             <input type="number" name="submitter-id" min="1" value="{{default "" .Filter.SubmitterID}}">
+                        </fieldset>
+                    </div>
+                    <div class="form-column form-column-checkboxes">
+                        <fieldset>
+                            <legend>Filter By Comments After Mine (union)</legend>
+                            <label for="bot-action">Any
+                                <input type="checkbox" name="post-last-action" value="any"
+                                       {{if has "any" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                            <br>
+                            <label for="bot-action">Comment
+                                <input type="checkbox" name="post-last-action" value="comment"
+                                       {{if has "comment" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                            <label for="bot-action">Approve
+                                <input type="checkbox" name="post-last-action" value="approve"
+                                       {{if has "approve" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                            <label for="bot-action">Accept
+                                <input type="checkbox" name="post-last-action" value="accept"
+                                       {{if has "accept" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                            <label for="bot-action">Request Changes
+                                <input type="checkbox" name="post-last-action" value="request-changes"
+                                       {{if has "request-changes" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                            <label for="bot-action">Mark as Added
+                                <input type="checkbox" name="post-last-action" value="mark-added"
+                                       {{if has "mark-added" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                            <label for="bot-action">Reject
+                                <input type="checkbox" name="post-last-action" value="reject"
+                                       {{if has "reject" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                            <label for="bot-action">Uploaded File
+                                <input type="checkbox" name="post-last-action" value="upload-file"
+                                       {{if has "upload-file" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
                         </fieldset>
                     </div>
                 </div>
@@ -21,7 +52,8 @@
                             <label for="title-partial">Title (partial)</label>
                             <input type="text" name="title-partial" value="{{default "" .Filter.TitlePartial}}">
                             <label for="submitter-username-partial">Submitter username (partial)</label>
-                            <input type="text" name="submitter-username-partial" value="{{default "" .Filter.SubmitterUsernamePartial}}">
+                            <input type="text" name="submitter-username-partial"
+                                   value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             <label for="platform-partial">Platform (partial)</label>
                             <input type="text" name="platform-partial" value="{{default "" .Filter.PlatformPartial}}">
                         </fieldset>
@@ -32,7 +64,8 @@
                         <fieldset>
                             <legend>Form Column C</legend>
                             <label for="results-per-page">Results Per Page (default 100)</label>
-                            <input type="number" name="results-per-page" min="1" value="{{default "" .Filter.ResultsPerPage}}">
+                            <input type="number" name="results-per-page" min="1"
+                                   value="{{default "" .Filter.ResultsPerPage}}">
                             <label for="page">Page</label>
                             <input type="number" name="page" min="1" value="{{default "" .Filter.Page}}">
                         </fieldset>
@@ -41,9 +74,11 @@
                         <fieldset>
                             <legend>Filter By Bot Actions</legend>
                             <label for="bot-action">Bot Happy :D
-                            <input type="checkbox" name="bot-action" value="approve" {{if has "approve" .Filter.BotActions}}checked{{end}}></label>
+                                <input type="checkbox" name="bot-action" value="approve"
+                                       {{if has "approve" .Filter.BotActions}}checked{{end}}></label>
                             <label for="bot-action">Bot Sad :C
-                            <input type="checkbox" name="bot-action" value="request-changes" {{if has "request-changes" .Filter.BotActions}}checked{{end}}></label>
+                                <input type="checkbox" name="bot-action" value="request-changes"
+                                       {{if has "request-changes" .Filter.BotActions}}checked{{end}}></label>
                         </fieldset>
                     </div>
                 </div>
