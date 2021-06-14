@@ -10,14 +10,14 @@
                     <th class="center">View</th>
                     <th>Title</th>
                     <th>Platform</th>
-                    <th>Original Filename</th>
-                    <th>Size</th>
                     <th>Uploaded by</th>
                     <th>Updated by</th>
+                    <th>Size</th>
                     <th>Bot</th>
                     <th>Latest Action</th>
                     <th>Uploaded at</th>
                     <th>Updated at</th>
+                    <th>Original Filename</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -34,10 +34,9 @@
                         <td class="center"><a href="/submission/{{.SubmissionID}}">View</a></td>
                         <td>{{.CurationTitle}}</td>
                         <td>{{.CurationPlatform}}</td>
-                        <td>{{.OriginalFilename}}</td>
-                        <td>{{.Size}}B</td>
                         <td>{{.SubmitterUsername}}</td>
                         <td>{{.UpdaterUsername}}</td>
+                        <td>{{.Size}}B</td>
                         <td>
                             <div class="dot-{{.BotAction}} hover-label" data-title="{{.BotAction}}"></div>
                         </td>
@@ -46,6 +45,7 @@
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
+                        <td>{{.OriginalFilename}}</td>
                     </tr>
                 {{end}}
                 </tbody>
