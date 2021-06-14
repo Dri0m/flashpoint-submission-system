@@ -98,8 +98,8 @@ textarea {
 .dot-reject,
 .dot-upload-file {
     border-radius: 50%;
-    width: 1em;
-    height: 1em;
+    width: 1.5em;
+    height: 1.5em;
 }
 
 .button-approve,
@@ -238,4 +238,24 @@ textarea {
 .micro-button {
     font-size: 50% !important;
     border-radius: 0;
+}
+
+.hover-label:after {
+    padding: 2px;
+    display: none;
+    position: relative;
+    top: calc(100% + 10px);
+    right: -50%;
+    width: 150px;
+    text-align: center;
+    background-color: #ffffff;
+    border: 1px solid #000000;
+}
+
+.hover-label:hover:after {
+    display: block;
+}
+
+.hover-label:after {
+    content: attr(data-title);
 }

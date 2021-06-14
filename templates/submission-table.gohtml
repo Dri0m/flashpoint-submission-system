@@ -39,10 +39,10 @@
                         <td>{{.SubmitterUsername}}</td>
                         <td>{{.UpdaterUsername}}</td>
                         <td>
-                            <div class="dot-{{.BotAction}}"></div>
+                            <div class="dot-{{.BotAction}} hover-label" data-title="{{.BotAction}}"></div>
                         </td>
                         <td>
-                            <div class="dot-{{.LatestAction}}"></div>
+                            <div class="dot-{{.LatestAction}} hover-label" data-title="{{.LatestAction}}"></div>
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
