@@ -370,6 +370,14 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			filters = append(filters, "meta.platform LIKE ?")
 			data = append(data, utils.FormatLike(*filter.PlatformPartial))
 		}
+		if filter.OriginalFilenamePartialAny != nil {
+			filters = append(filters, "filenames.original_filename_sequence LIKE ?")
+			data = append(data, utils.FormatLike(*filter.OriginalFilenamePartialAny))
+		}
+		if filter.CurrentFilenamePartialAny != nil {
+			filters = append(filters, "filenames.current_filename_sequence LIKE ?")
+			data = append(data, utils.FormatLike(*filter.CurrentFilenamePartialAny))
+		}
 		if len(filter.BotActions) != 0 {
 			filters = append(filters, `bot_comment.action IN(?`+strings.Repeat(",?", len(filter.BotActions)-1)+`)`)
 			for _, ba := range filter.BotActions {
@@ -576,6 +584,15 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 						CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
 					)
 			) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
+			LEFT JOIN (
+				SELECT fk_submission_id, 
+					GROUP_CONCAT(original_filename) AS original_filename_sequence,
+					GROUP_CONCAT(current_filename) AS current_filename_sequence
+					FROM submission_file 
+					WHERE deleted_at IS NULL
+					GROUP BY fk_submission_id
+			) AS filenames
+			ON filenames.fk_submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		ORDER BY newest.updated_at DESC

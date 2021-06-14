@@ -51,11 +51,15 @@
                             <legend>Form Column B</legend>
                             <label for="title-partial">Title (partial)</label>
                             <input type="text" name="title-partial" value="{{default "" .Filter.TitlePartial}}">
-                            <label for="submitter-username-partial">Submitter username (partial)</label>
+                            <label for="submitter-username-partial">Submitter Username (partial)</label>
                             <input type="text" name="submitter-username-partial"
                                    value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             <label for="platform-partial">Platform (partial)</label>
                             <input type="text" name="platform-partial" value="{{default "" .Filter.PlatformPartial}}">
+                            <label for="original-filename-partial">Original Filename (partial) (any)</label>
+                            <input type="text" name="original-filename-partial-any" value="{{default "" .Filter.OriginalFilenamePartialAny}}">
+                            <label for="current-filename-partial">Current Filename (partial) (any)</label>
+                            <input type="text" name="current-filename-partial-any" value="{{default "" .Filter.CurrentFilenamePartialAny}}">
                         </fieldset>
                     </div>
                 </div>
