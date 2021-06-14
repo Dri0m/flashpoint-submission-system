@@ -331,10 +331,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	filter := &types.SubmissionsFilter{
-		SubmissionID: nil,
-		SubmitterID:  nil,
-	}
+	filter := &types.SubmissionsFilter{}
 
 	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -362,9 +359,21 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid := utils.UserIDFromContext(ctx)
 
-	filter := &types.SubmissionsFilter{
-		SubmitterID: &uid,
+	filter := &types.SubmissionsFilter{}
+
+	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		return
 	}
+
+	if err := filter.Validate(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	filter.SubmitterID = &uid
 
 	pageData, err := a.Service.GetSubmissionsPageData(ctx, filter)
 	if err != nil {
