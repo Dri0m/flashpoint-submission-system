@@ -98,6 +98,8 @@ type SubmissionsFilter struct {
 	PlatformPartial            *string  `schema:"platform-partial"`
 	OriginalFilenamePartialAny *string  `schema:"original-filename-partial-any"`
 	CurrentFilenamePartialAny  *string  `schema:"current-filename-partial-any"`
+	MD5SumPartialAny           *string  `schema:"md5sum-partial-any"`
+	SHA256SumPartialAny        *string  `schema:"sha256sum-partial-any"`
 	BotActions                 []string `schema:"bot-action"`
 	ActionsAfterMyLastComment  []string `schema:"post-last-action"`
 	ResultsPerPage             *int64   `schema:"results-per-page"`

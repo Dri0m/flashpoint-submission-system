@@ -378,6 +378,14 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			filters = append(filters, "filenames.current_filename_sequence LIKE ?")
 			data = append(data, utils.FormatLike(*filter.CurrentFilenamePartialAny))
 		}
+		if filter.MD5SumPartialAny != nil {
+			filters = append(filters, "filenames.md5sum_sequence LIKE ?")
+			data = append(data, utils.FormatLike(*filter.MD5SumPartialAny))
+		}
+		if filter.SHA256SumPartialAny != nil {
+			filters = append(filters, "filenames.sha256sum_sequence LIKE ?")
+			data = append(data, utils.FormatLike(*filter.SHA256SumPartialAny))
+		}
 		if len(filter.BotActions) != 0 {
 			filters = append(filters, `bot_comment.action IN(?`+strings.Repeat(",?", len(filter.BotActions)-1)+`)`)
 			for _, ba := range filter.BotActions {
@@ -586,11 +594,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
 			LEFT JOIN (
 				SELECT fk_submission_id, 
-					GROUP_CONCAT(original_filename) AS original_filename_sequence,
-					GROUP_CONCAT(current_filename) AS current_filename_sequence
-					FROM submission_file 
-					WHERE deleted_at IS NULL
-					GROUP BY fk_submission_id
+				GROUP_CONCAT(original_filename) AS original_filename_sequence,
+				GROUP_CONCAT(current_filename) AS current_filename_sequence,
+				GROUP_CONCAT(md5sum) AS md5sum_sequence,
+				GROUP_CONCAT(sha256sum) AS sha256sum_sequence
+				FROM submission_file 
+				WHERE deleted_at IS NULL
+				GROUP BY fk_submission_id
 			) AS filenames
 			ON filenames.fk_submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
