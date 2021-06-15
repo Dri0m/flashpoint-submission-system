@@ -88,6 +88,9 @@ type ExtendedSubmission struct {
 	BotAction               string
 	LatestAction            string
 	FileCount               uint64
+	AssignedUserIDs         []int64
+	RequestedChangesUserIDs []int64
+	ApprovedUserIDs         []int64
 }
 
 type SubmissionsFilter struct {

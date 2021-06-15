@@ -371,7 +371,7 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 	}
 
 	// TODO refactor these validators into a function and cover with tests
-	actions := constants.GetActions()
+	actions := constants.GetAllowedActions()
 	isActionValid := false
 	for _, a := range actions {
 		if formAction == a {

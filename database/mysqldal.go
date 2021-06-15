@@ -13,6 +13,7 @@ import (
 	"github.com/golang-migrate/migrate/database/mysql"
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/sirupsen/logrus"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -338,7 +339,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	data := make([]interface{}, 0)
 
 	uid := utils.UserIDFromContext(dbs.Ctx()) // TODO this should be passed as param
-	data = append(data, constants.ValidatorID, constants.ValidatorID, uid, uid, constants.ValidatorID, uid)
+	data = append(data, constants.ValidatorID, constants.ValidatorID, uid, uid, constants.ValidatorID, uid,
+		constants.ValidatorID, constants.ValidatorID, constants.ValidatorID, constants.ValidatorID)
 
 	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
@@ -448,7 +450,10 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			meta.launch_command,
 			bot_comment.action AS bot_action,
 			latest_action.action AS latest_action,
-			file_counter.file_count
+			file_counter.file_count,
+			active_assigned.user_ids_with_enabled_action AS assigned_user_ids,
+			active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
+			active_approved.user_ids_with_enabled_action AS approved_user_ids
 		FROM submission
 			LEFT JOIN (
 				WITH ranked_file AS (
@@ -579,11 +584,21 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 										FROM comment
 										WHERE fk_author_id != ?
 											AND deleted_at IS NULL
+											AND fk_action_id != (
+												SELECT id
+												FROM action
+												WHERE name = "assign"
+											)
+											AND fk_action_id != (
+												SELECT id
+												FROM action
+												WHERE name = "unassign"
+											)
 										GROUP BY fk_submission_id
 										ORDER BY created_at DESC
-									) as t1
-							) as t2
-					) as t3
+									) as a
+							) as b
+					) as c
 				WHERE REGEXP_LIKE(
 						SUBSTRING(
 							comment_sequence
@@ -593,16 +608,229 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					)
 			) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
 			LEFT JOIN (
-				SELECT fk_submission_id, 
-				GROUP_CONCAT(original_filename) AS original_filename_sequence,
-				GROUP_CONCAT(current_filename) AS current_filename_sequence,
-				GROUP_CONCAT(md5sum) AS md5sum_sequence,
-				GROUP_CONCAT(sha256sum) AS sha256sum_sequence
-				FROM submission_file 
+				SELECT fk_submission_id,
+					GROUP_CONCAT(original_filename) AS original_filename_sequence,
+					GROUP_CONCAT(current_filename) AS current_filename_sequence,
+					GROUP_CONCAT(md5sum) AS md5sum_sequence,
+					GROUP_CONCAT(sha256sum) AS sha256sum_sequence
+				FROM submission_file
 				WHERE deleted_at IS NULL
 				GROUP BY fk_submission_id
-			) AS filenames
-			ON filenames.fk_submission_id = submission.id
+			) AS filenames ON filenames.fk_submission_id = submission.id
+			LEFT JOIN (
+				SELECT submission.id AS submission,
+					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
+					GROUP_CONCAT(
+						(
+							SELECT username
+							FROM discord_user
+							WHERE id = latest_enabler.author_id
+						)
+					) AS usernames_with_enabled_action
+				FROM submission
+					LEFT JOIN (
+						WITH ranked_comment AS (
+							SELECT c.*,
+								ROW_NUMBER() OVER (
+									PARTITION BY c.fk_submission_id,
+									c.fk_author_id
+									ORDER BY created_at DESC
+								) AS rn
+							FROM comment AS c
+							WHERE c.fk_action_id = (
+									SELECT id
+									FROM action
+									WHERE name = "assign"
+								)
+								AND c.deleted_at IS NULL
+							ORDER BY created_at ASC
+						)
+						SELECT ranked_comment.fk_submission_id AS submission_id,
+							ranked_comment.fk_author_id AS author_id,
+							ranked_comment.created_at
+						FROM ranked_comment
+						WHERE rn = 1
+					) AS latest_enabler ON latest_enabler.submission_id = submission.id
+					LEFT JOIN (
+						WITH ranked_comment AS (
+							SELECT c.*,
+								ROW_NUMBER() OVER (
+									PARTITION BY c.fk_submission_id,
+									c.fk_author_id
+									ORDER BY created_at DESC
+								) AS rn
+							FROM comment AS c
+							WHERE c.fk_action_id = (
+									SELECT id
+									FROM action
+									WHERE name = "unassign"
+								)
+								AND c.deleted_at IS NULL
+						)
+						SELECT ranked_comment.fk_submission_id AS submission_id,
+							ranked_comment.fk_author_id AS author_id,
+							ranked_comment.created_at
+						FROM ranked_comment
+						WHERE rn = 1
+					) AS latest_disabler ON latest_disabler.submission_id = submission.id
+					AND latest_disabler.author_id = latest_enabler.author_id
+				WHERE (
+						(
+							latest_enabler.created_at IS NOT NULL
+							AND latest_disabler.created_at IS NOT NULL
+							AND latest_enabler.created_at > latest_disabler.created_at
+						)
+						OR (
+							latest_disabler.created_at IS NULL
+							AND latest_enabler.created_at IS NOT NULL
+						)
+					)
+				GROUP BY submission.id
+			) AS active_assigned ON active_assigned.submission = submission.id
+			LEFT JOIN (
+				SELECT submission.id AS submission,
+					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
+					GROUP_CONCAT(
+						(
+							SELECT username
+							FROM discord_user
+							WHERE id = latest_enabler.author_id
+						)
+					) AS usernames_with_enabled_action
+				FROM submission
+					LEFT JOIN (
+						WITH ranked_comment AS (
+							SELECT c.*,
+								ROW_NUMBER() OVER (
+									PARTITION BY c.fk_submission_id,
+									c.fk_author_id
+									ORDER BY created_at DESC
+								) AS rn
+							FROM comment AS c
+							WHERE c.fk_author_id != ?
+								AND c.fk_action_id = (
+									SELECT id
+									FROM action
+									WHERE name = "request-changes"
+								)
+								AND c.deleted_at IS NULL
+							ORDER BY created_at ASC
+						)
+						SELECT ranked_comment.fk_submission_id AS submission_id,
+							ranked_comment.fk_author_id AS author_id,
+							ranked_comment.created_at
+						FROM ranked_comment
+						WHERE rn = 1
+					) AS latest_enabler ON latest_enabler.submission_id = submission.id
+					LEFT JOIN (
+						WITH ranked_comment AS (
+							SELECT c.*,
+								ROW_NUMBER() OVER (
+									PARTITION BY c.fk_submission_id,
+									c.fk_author_id
+									ORDER BY created_at DESC
+								) AS rn
+							FROM comment AS c
+							WHERE c.fk_author_id != ?
+								AND c.fk_action_id = (
+									SELECT id
+									FROM action
+									WHERE name = "approve"
+								)
+								AND c.deleted_at IS NULL
+						)
+						SELECT ranked_comment.fk_submission_id AS submission_id,
+							ranked_comment.fk_author_id AS author_id,
+							ranked_comment.created_at
+						FROM ranked_comment
+						WHERE rn = 1
+					) AS latest_disabler ON latest_disabler.submission_id = submission.id
+					AND latest_disabler.author_id = latest_enabler.author_id
+				WHERE (
+						(
+							latest_enabler.created_at IS NOT NULL
+							AND latest_disabler.created_at IS NOT NULL
+							AND latest_enabler.created_at > latest_disabler.created_at
+						)
+						OR (
+							latest_disabler.created_at IS NULL
+							AND latest_enabler.created_at IS NOT NULL
+						)
+					)
+				GROUP BY submission.id
+			) AS active_requested_changes ON active_requested_changes.submission = submission.id
+			LEFT JOIN (
+				SELECT submission.id AS submission,
+					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
+					GROUP_CONCAT(
+						(
+							SELECT username
+							FROM discord_user
+							WHERE id = latest_enabler.author_id
+						)
+					) AS usernames_with_enabled_action
+				FROM submission
+					LEFT JOIN (
+						WITH ranked_comment AS (
+							SELECT c.*,
+								ROW_NUMBER() OVER (
+									PARTITION BY c.fk_submission_id,
+									c.fk_author_id
+									ORDER BY created_at DESC
+								) AS rn
+							FROM comment AS c
+							WHERE c.fk_author_id != ?
+								AND c.fk_action_id = (
+									SELECT id
+									FROM action
+									WHERE name = "approve"
+								)
+								AND c.deleted_at IS NULL
+							ORDER BY created_at ASC
+						)
+						SELECT ranked_comment.fk_submission_id AS submission_id,
+							ranked_comment.fk_author_id AS author_id,
+							ranked_comment.created_at
+						FROM ranked_comment
+						WHERE rn = 1
+					) AS latest_enabler ON latest_enabler.submission_id = submission.id
+					LEFT JOIN (
+						WITH ranked_comment AS (
+							SELECT c.*,
+								ROW_NUMBER() OVER (
+									PARTITION BY c.fk_submission_id,
+									c.fk_author_id
+									ORDER BY created_at DESC
+								) AS rn
+							FROM comment AS c
+							WHERE c.fk_author_id != ?
+								AND c.fk_action_id = (
+									SELECT id
+									FROM action
+									WHERE name = "request-changes"
+								)
+								AND c.deleted_at IS NULL
+						)
+						SELECT ranked_comment.fk_submission_id AS submission_id,
+							ranked_comment.fk_author_id AS author_id,
+							ranked_comment.created_at
+						FROM ranked_comment
+						WHERE rn = 1
+					) AS latest_disabler ON latest_disabler.submission_id = submission.id
+					AND latest_disabler.author_id = latest_enabler.author_id
+				WHERE (
+						(
+							latest_enabler.created_at IS NOT NULL
+							AND latest_disabler.created_at IS NOT NULL
+							AND latest_enabler.created_at > latest_disabler.created_at
+						)
+						OR (
+							latest_disabler.created_at IS NULL
+							AND latest_enabler.created_at IS NOT NULL
+						)
+					)
+				GROUP BY submission.id
+			) AS active_approved ON active_approved.submission = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		ORDER BY newest.updated_at DESC
@@ -624,6 +852,9 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	var updatedAt int64
 	var submitterAvatar string
 	var updaterAvatar string
+	var assignedUserIDs *string
+	var requestedChangesUserIDs *string
+	var approvedUserIDs *string
 
 	for rows.Next() {
 		s := &types.ExtendedSubmission{}
@@ -636,13 +867,51 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationPlatform, &s.CurationLaunchCommand,
 			&s.BotAction,
 			&s.LatestAction,
-			&s.FileCount); err != nil {
+			&s.FileCount,
+			&assignedUserIDs, &requestedChangesUserIDs, &approvedUserIDs); err != nil {
 			return nil, err
 		}
 		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)
 		s.UpdaterAvatarURL = utils.FormatAvatarURL(s.UpdaterID, updaterAvatar)
 		s.UploadedAt = time.Unix(uploadedAt, 0)
 		s.UpdatedAt = time.Unix(updatedAt, 0)
+
+		s.AssignedUserIDs = []int64{}
+		if assignedUserIDs != nil && len(*assignedUserIDs) > 0 {
+			userIDs := strings.Split(*assignedUserIDs, ",")
+			for _, userID := range userIDs {
+				uid, err := strconv.ParseInt(userID, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				s.AssignedUserIDs = append(s.AssignedUserIDs, uid)
+			}
+		}
+
+		s.RequestedChangesUserIDs = []int64{}
+		if requestedChangesUserIDs != nil && len(*requestedChangesUserIDs) > 0 {
+			userIDs := strings.Split(*requestedChangesUserIDs, ",")
+			for _, userID := range userIDs {
+				uid, err := strconv.ParseInt(userID, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				s.RequestedChangesUserIDs = append(s.RequestedChangesUserIDs, uid)
+			}
+		}
+
+		s.ApprovedUserIDs = []int64{}
+		if approvedUserIDs != nil && len(*approvedUserIDs) > 0 {
+			userIDs := strings.Split(*approvedUserIDs, ",")
+			for _, userID := range userIDs {
+				uid, err := strconv.ParseInt(userID, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				s.ApprovedUserIDs = append(s.ApprovedUserIDs, uid)
+			}
+		}
+
 		result = append(result, s)
 	}
 

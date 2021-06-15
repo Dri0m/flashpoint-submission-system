@@ -4,8 +4,12 @@
             <h1>My Submissions</h1>
 
             {{template "submission-filter" .}}
-            
+
+            {{template "submission-pagenav" .}}
+
             {{template "submission-table" .}}
+
+            {{template "submission-pagenav" .}}
 
         </div>
     </div>

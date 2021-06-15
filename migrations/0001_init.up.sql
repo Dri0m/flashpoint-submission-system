@@ -107,7 +107,9 @@ VALUES (1, 'comment'),
        (4, 'accept'),
        (5, 'mark-added'),
        (6, 'reject'),
-       (7, 'upload-file');
+       (7, 'upload-file'),
+       (8, 'assign'),
+       (9, 'unassign');
 
 CREATE TABLE IF NOT EXISTS comment
 (

@@ -31,6 +31,16 @@
                                 value="comment"
                                 onclick="batchComment('submission-checkbox', 'sid')">Comment
                         </button>
+                        {{if or (isDecider .UserRoles) (isAdder .UserRoles)}}
+                            <button type="submit" class="pure-button pure-button button-assign" name="action"
+                                    value="assign"
+                                    onclick="batchComment('submission-checkbox', 'sid')">Assign
+                            </button>
+                            <button type="submit" class="pure-button pure-button button-unassign" name="action"
+                                    value="unassign"
+                                    onclick="batchComment('submission-checkbox', 'sid')">Unassign
+                            </button>
+                        {{end}}
                         {{if isDecider .UserRoles}}
                             <button type="submit" class="pure-button pure-button button-approve" name="action"
                                     value="approve"
@@ -39,14 +49,6 @@
                             <button type="submit" class="pure-button pure-button button-request-changes" name="action"
                                     value="request-changes" onclick="batchComment('submission-checkbox', 'sid')">Request
                                 Changes
-                            </button>
-                            <button type="submit" class="pure-button pure-button button-accept" name="action"
-                                    value="accept"
-                                    onclick="batchComment('submission-checkbox', 'sid')">Accept
-                            </button>
-                            <button type="submit" class="pure-button pure-button button-reject" name="action"
-                                    value="reject"
-                                    onclick="batchComment('submission-checkbox', 'sid')">Reject
                             </button>
                         {{end}}
                         {{if isAdder .UserRoles}}

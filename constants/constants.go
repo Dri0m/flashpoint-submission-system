@@ -11,9 +11,11 @@ const (
 	ActionMarkAdded      = "mark-added"
 	ActionReject         = "reject"
 	ActionUpload         = "upload-file"
+	ActionAssign         = "assign"
+	ActionUnassign       = "unassign"
 )
 
-func GetActions() []string {
+func GetAllowedActions() []string {
 	return []string{
 		ActionComment,
 		ActionApprove,
@@ -22,6 +24,8 @@ func GetActions() []string {
 		ActionMarkAdded,
 		ActionReject,
 		ActionUpload,
+		ActionAssign,
+		ActionUnassign,
 	}
 }
 

@@ -86,7 +86,9 @@ textarea {
 .bgr-accept,
 .bgr-mark-added,
 .bgr-reject,
-.bgr-upload-file {
+.bgr-upload-file,
+.bgr-assign,
+.bgr-unassign {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
@@ -96,20 +98,23 @@ textarea {
 .dot-accept,
 .dot-mark-added,
 .dot-reject,
-.dot-upload-file {
+.dot-upload-file,
+.dot-assign,
+.dot-unassign {
     border-radius: 50%;
     width: 1.5em;
     height: 1.5em;
 }
 
 .button-approve,
-.button-approve,
 .button-request-changes,
 .button-accept,
 .button-mark-added,
 .button-reject,
 .button-upload-file,
-.button-delete {
+.button-delete,
+.button-assign,
+.button-unassign {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
@@ -135,6 +140,18 @@ textarea {
 .bgr-accept,
 .dot-accept,
 .button-accept {
+    background: rgb(24, 83, 175) !important;
+}
+
+.bgr-assign,
+.dot-assign,
+.button-assign {
+    background: rgb(24, 83, 175) !important;
+}
+
+.bgr-unassign,
+.dot-unassign,
+.button-unassign {
     background: rgb(24, 83, 175) !important;
 }
 

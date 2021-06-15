@@ -14,7 +14,9 @@
                     <th>Updated by</th>
                     <th>Size</th>
                     <th>Bot</th>
-                    <th>Latest Action</th>
+                    <th>Assigned</th>
+                    <th>Requested Changes</th>
+                    <th>Approved</th>
                     <th>Uploaded at</th>
                     <th>Updated at</th>
                     <th>Original Filename</th>
@@ -40,9 +42,9 @@
                         <td>
                             <div class="dot-{{.BotAction}} hover-label" data-title="{{.BotAction}}"></div>
                         </td>
-                        <td>
-                            <div class="dot-{{.LatestAction}} hover-label" data-title="{{.LatestAction}}"></div>
-                        </td>
+                        <td>{{len .AssignedUserIDs}}</td>
+                        <td>{{len .RequestedChangesUserIDs}}</td>
+                        <td>{{len .ApprovedUserIDs}}</td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.OriginalFilename}}</td>
