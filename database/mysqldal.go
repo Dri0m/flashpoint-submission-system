@@ -421,6 +421,27 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		} else {
 			currentOffset = defaultOffset
 		}
+		if filter.AssignedStatus != nil {
+			if *filter.AssignedStatus == "unassigned" {
+				filters = append(filters, "(active_assigned.user_count_with_enabled_action = 0 OR active_assigned.user_count_with_enabled_action IS NULL)")
+			} else if *filter.AssignedStatus == "assigned" {
+				filters = append(filters, "active_assigned.user_count_with_enabled_action > 0")
+			}
+		}
+		if filter.RequestedChangedStatus != nil {
+			if *filter.RequestedChangedStatus == "none" {
+				filters = append(filters, "(active_requested_changes.user_count_with_enabled_action = 0 OR active_requested_changes.user_count_with_enabled_action IS NULL)")
+			} else if *filter.RequestedChangedStatus == "ongoing" {
+				filters = append(filters, "active_requested_changes.user_count_with_enabled_action > 0")
+			}
+		}
+		if filter.ApprovalsStatus != nil {
+			if *filter.ApprovalsStatus == "no" {
+				filters = append(filters, "(active_approved.user_count_with_enabled_action = 0 OR active_approved.user_count_with_enabled_action IS NULL)")
+			} else if *filter.ApprovalsStatus == "yes" {
+				filters = append(filters, "active_approved.user_count_with_enabled_action > 0")
+			}
+		}
 	}
 
 	data = append(data, currentLimit, currentOffset)
@@ -619,6 +640,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			) AS filenames ON filenames.fk_submission_id = submission.id
 			LEFT JOIN (
 				SELECT submission.id AS submission,
+					COUNT(latest_enabler.author_id) AS user_count_with_enabled_action,
 					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
 					GROUP_CONCAT(
 						(
@@ -689,6 +711,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			) AS active_assigned ON active_assigned.submission = submission.id
 			LEFT JOIN (
 				SELECT submission.id AS submission,
+					COUNT(latest_enabler.author_id) AS user_count_with_enabled_action,
 					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
 					GROUP_CONCAT(
 						(
@@ -761,6 +784,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			) AS active_requested_changes ON active_requested_changes.submission = submission.id
 			LEFT JOIN (
 				SELECT submission.id AS submission,
+					COUNT(latest_enabler.author_id) AS user_count_with_enabled_action,
 					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
 					GROUP_CONCAT(
 						(

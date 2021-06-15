@@ -107,6 +107,9 @@ type SubmissionsFilter struct {
 	ActionsAfterMyLastComment  []string `schema:"post-last-action"`
 	ResultsPerPage             *int64   `schema:"results-per-page"`
 	Page                       *int64   `schema:"page"`
+	AssignedStatus             *string  `schema:"assigned-status"`
+	RequestedChangedStatus     *string  `schema:"requested-changes-status"`
+	ApprovalsStatus            *string  `schema:"approvals-status"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
@@ -154,6 +157,16 @@ func (sf *SubmissionsFilter) Validate() error {
 		} else {
 			return fmt.Errorf("page must be >= 1")
 		}
+	}
+
+	if sf.AssignedStatus != nil && *sf.AssignedStatus != "unassigned" && *sf.AssignedStatus != "assigned" {
+		return fmt.Errorf("invalid assigned-status")
+	}
+	if sf.RequestedChangedStatus != nil && *sf.RequestedChangedStatus != "none" && *sf.RequestedChangedStatus != "ongoing" {
+		return fmt.Errorf("invalid requested-changes-status")
+	}
+	if sf.ApprovalsStatus != nil && *sf.ApprovalsStatus != "no" && *sf.ApprovalsStatus != "yes" {
+		return fmt.Errorf("invalid approvals-status")
 	}
 	return nil
 }

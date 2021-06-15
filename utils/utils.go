@@ -171,3 +171,11 @@ func addFileToTarWriter(filePath string, tarWriter *tar.Writer) error {
 
 	return nil
 }
+
+// Unpointify is for template
+func Unpointify(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}

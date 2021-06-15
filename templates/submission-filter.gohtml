@@ -21,27 +21,53 @@
                                 <input type="checkbox" name="post-last-action" value="any"
                                        {{if has "any" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
                             <br>
-                            <label for="bot-action">Comment
+                            <label>Comment
                                 <input type="checkbox" name="post-last-action" value="comment"
                                        {{if has "comment" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label for="bot-action">Approve
+                            <label>Approve
                                 <input type="checkbox" name="post-last-action" value="approve"
                                        {{if has "approve" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label for="bot-action">Accept
+                            <label>Accept
                                 <input type="checkbox" name="post-last-action" value="accept"
                                        {{if has "accept" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label for="bot-action">Request Changes
+                            <label>Request Changes
                                 <input type="checkbox" name="post-last-action" value="request-changes"
                                        {{if has "request-changes" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label for="bot-action">Mark as Added
+                            <label>Mark as Added
                                 <input type="checkbox" name="post-last-action" value="mark-added"
                                        {{if has "mark-added" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label for="bot-action">Reject
+                            <label>Reject
                                 <input type="checkbox" name="post-last-action" value="reject"
                                        {{if has "reject" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label for="bot-action">Uploaded File
+                            <label>Uploaded File
                                 <input type="checkbox" name="post-last-action" value="upload-file"
                                        {{if has "upload-file" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                        </fieldset>
+                    </div>
+                    <div class="form-column form-column-checkboxes">
+                        <fieldset>
+                            <legend>Filter By State (ctrl+click to uncheck)</legend>
+                            <label>Unassigned
+                                <input type="radio" name="assigned-status" value="unassigned"
+                                       {{if eq "unassigned" (unpointify .Filter.AssignedStatus)}}checked{{end}}></label>
+                            <label>Assigned
+                                <input type="radio" name="assigned-status" value="assigned"
+                                       {{if eq "assigned" (unpointify .Filter.AssignedStatus)}}checked{{end}}></label>
+                            <br>
+                            <label>No RC
+                                <input type="radio" name="requested-changes-status" value="none"
+                                       {{if eq "none" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}></label>
+                            <label>Ongoing RC
+                                <input type="radio" name="requested-changes-status" value="ongoing"
+                                       {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}></label>
+                            <br>
+                            <label>No Approvals
+                                <input type="radio" name="approvals-status" value="no"
+                                       {{if eq "no" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
+                            <label>Approved
+                                <input type="radio" name="approvals-status" value="yes"
+                                       {{if eq "yes" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
+                            <br>
                         </fieldset>
                     </div>
                 </div>
@@ -56,14 +82,18 @@
                                    value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             <label for="platform-partial">Platform (partial)</label>
                             <input type="text" name="platform-partial" value="{{default "" .Filter.PlatformPartial}}">
-                            <label for="original-filename-partial">Original Filename (partial) (any)</label>
-                            <input type="text" name="original-filename-partial-any" value="{{default "" .Filter.OriginalFilenamePartialAny}}">
-                            <label for="current-filename-partial">Current Filename (partial) (any)</label>
-                            <input type="text" name="current-filename-partial-any" value="{{default "" .Filter.CurrentFilenamePartialAny}}">
-                            <label for="md5sum-partial-any">File MD5 Checksum (partial) (any)</label>
-                            <input type="text" name="md5sum-partial-any" value="{{default "" .Filter.MD5SumPartialAny}}">
-                            <label for="sha256sum-partial-any">File SHA256 Checksum (partial) (any)</label>
-                            <input type="text" name="sha256sum-partial-any" value="{{default "" .Filter.SHA256SumPartialAny}}">
+                            <label for="original-filename-partial">Original Filename (partial) (any file)</label>
+                            <input type="text" name="original-filename-partial-any"
+                                   value="{{default "" .Filter.OriginalFilenamePartialAny}}">
+                            <label for="current-filename-partial">Current Filename (partial) (any file)</label>
+                            <input type="text" name="current-filename-partial-any"
+                                   value="{{default "" .Filter.CurrentFilenamePartialAny}}">
+                            <label for="md5sum-partial-any">File MD5 Checksum (partial) (any file)</label>
+                            <input type="text" name="md5sum-partial-any"
+                                   value="{{default "" .Filter.MD5SumPartialAny}}">
+                            <label for="sha256sum-partial-any">File SHA256 Checksum (partial) (any file)</label>
+                            <input type="text" name="sha256sum-partial-any"
+                                   value="{{default "" .Filter.SHA256SumPartialAny}}">
                         </fieldset>
                     </div>
                 </div>
@@ -96,4 +126,15 @@
             </div>
         </form>
     </div>
+
+    <script>
+        let radios = document.getElementsByTagName('input');
+        for (i = 0; i < radios.length; i++) {
+            radios[i].onclick = function (e) {
+                if (e.ctrlKey || e.metaKey) {
+                    this.checked = false;
+                }
+            }
+        }
+    </script>
 {{end}}
