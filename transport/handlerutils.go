@@ -13,6 +13,8 @@ import (
 	"strconv"
 )
 
+// TODO cache templates
+
 // RenderTemplates is a helper for rendering templates
 func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}, filenames ...string) {
 	templates := []string{"templates/base.gohtml", "templates/navbar.gohtml"}

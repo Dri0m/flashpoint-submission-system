@@ -259,3 +259,9 @@ textarea {
 .hover-label:after {
     content: attr(data-title);
 }
+
+.submission-pagenav {
+    margin: 1em 0;
+    width: 100%;
+    text-align: center;
+}

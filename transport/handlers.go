@@ -352,7 +352,11 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/submissions.gohtml", "templates/submission-filter.gohtml", "templates/submission-table.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/submissions.gohtml",
+		"templates/submission-filter.gohtml",
+		"templates/submission-table.gohtml",
+		"templates/submission-pagenav.gohtml")
 }
 
 func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
@@ -382,7 +386,11 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/my-submissions.gohtml", "templates/submission-filter.gohtml", "templates/submission-table.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/my-submissions.gohtml",
+		"templates/submission-filter.gohtml",
+		"templates/submission-table.gohtml",
+		"templates/submission-pagenav.gohtml")
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {

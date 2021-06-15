@@ -65,3 +65,19 @@ function batchComment(checkboxClassName, attribute) {
     form.method="POST"
     form.submit()
 }
+
+function changePage(number) {
+    let url = new URL(window.location.href)
+
+    let currentPage = url.searchParams.get("page")
+    let newPage = 1 + number
+    if (currentPage !== null) {
+        let parsed = parseInt(currentPage, 10)
+        if (!isNaN(parsed)) {
+            newPage = parsed + number
+        }
+    }
+
+    url.searchParams.set("page", newPage.toString(10))
+    window.location.href = url
+}

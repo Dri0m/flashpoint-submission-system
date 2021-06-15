@@ -9,7 +9,11 @@
                 <p>No submissions found.</p>
             {{else}}
 
+                {{template "submission-pagenav" .}}
+
                 {{template "submission-table" .}}
+
+                {{template "submission-pagenav" .}}
 
                 <h2>Batch download submission files</h2>
                 <button class="pure-button pure-button-primary"
