@@ -10,11 +10,11 @@
             {{template "submission-table" .}}
 
             <h3>Upload a fixed version</h3>
-            <form action="/submission-receiver/{{$submissionID}}" method="post"
-                  enctype="multipart/form-data">
-                <input type="file" name="files">
-                <input class="pure-button button-upload-file" type="submit" value="Upload">
-            </form>
+            <input type="file" name="files" id="file-input">
+            <input class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
+            <progress id="files-progress" max="100" value="0" hidden></progress>
+            <span id="progress-text" hidden>Hi, I'm your ultra-smart upload assistant.</span>
+            <script>bindFancyUpload("/submission-receiver/{{$submissionID}}")</script>
 
             {{if $canDelete}}
                 <h3>Delete submission and all its related data</h3>

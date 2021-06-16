@@ -4,97 +4,16 @@
             <h1>Submit curation(s)</h1>
 
             {{if isInAudit .UserRoles}}
-                This is currently just a basic HTML file upload. Some browsers show the upload progress in the bottom corner.
-                <br>
-                Only .zip and .7z files are supported. Max filesize is 200MB.
-                <br>
-                <br>
+                <p>Max filesize is 200MB. You are not able to submit more than one submission.</p>
                 <input type="file" name="files" id="file-input">
             {{else}}
-                This is currently just a basic HTML multifile upload. Some browsers show the upload progress in the bottom corner.
-                <br>
-                Only .zip and .7z files are supported.
-                <br>
-                <br>
                 <input type="file" name="files" id="file-input" multiple="multiple">
             {{end}}
 
             <input class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
-            <progress id="files-progress" max="100" value="0"></progress>
-            <span id="progress-text">Hi, I'm your ultra-smart upload assistant.</span>
-
-            <script>
-                let uploadButton = document.querySelector("#upload-button")
-                let fileInput = document.querySelector("#file-input")
-                let progressBar = document.querySelector("#files-progress")
-                let progressText = document.querySelector("#progress-text")
-
-                uploadButton.addEventListener("click", function () {
-                    uploadButton.disabled = true
-
-                    if (fileInput.files.length === 0) {
-                        alert("Error : No file selected")
-                        uploadButton.disabled = false
-                        return
-                    }
-
-                    // if(file.size > allowed_size_mb*1024*1024) {
-                    //     alert('Error : Exceeded size');
-                    //     return;
-                    // }
-                    let formData = new FormData()
-
-                    let files = fileInput.files
-                    for(let i=0; i<files.length; i++) {
-                        if (!(files[i].name.endsWith(".7z") || files[i].name.endsWith(".zip"))) {
-                            alert('Error : Incorrect file type')
-                            uploadButton.disabled = false
-                            return
-                        }
-                        formData.append("files", files[i])
-                    }
-
-                    let request = new XMLHttpRequest();
-                    request.open("POST", "/submission-receiver")
-
-                    let t1 = 1
-                    let t2 = 2
-                    let p1 = 0
-                    let p2 = 0
-
-                    // upload progress event
-                    request.upload.addEventListener("progress", function (e) {
-                        t2 = performance.now()
-                        p2 = e.loaded
-                        let percent_complete = (e.loaded / e.total) * 100
-                        progressBar.value = percent_complete
-
-                        let uploadSpeed = ((((p2 - p1) / (t2 - t1)) * 1000) / 1000).toFixed(1)
-
-                        progressText.innerHTML = `Progress: ${percent_complete.toFixed(3)}% Upload speed: ${uploadSpeed}kB`
-                        t1 = t2
-                        p1 = p2
-                    });
-
-                    // AJAX request finished event
-                    request.addEventListener("load", function (e) {
-                        if (request.status !== 200) {
-                            let msg = `something went wrong: status ${request.status} - ${request.response}`
-                            progressText.innerHTML = msg
-                            alert(msg)
-                        } else {
-                            let msg = "Upload successful."
-                            progressText.innerHTML = msg
-                            alert(msg)
-                        }
-                        uploadButton.disabled = false
-                    });
-
-                    // send POST request to server side script
-                    request.send(formData)
-                });
-            </script>
-
+            <progress id="files-progress" max="100" value="0" hidden></progress>
+            <span id="progress-text" hidden>Hi, I'm your ultra-smart upload assistant.</span>
         </div>
     </div>
+    <script>bindFancyUpload("/submission-receiver")</script>
 {{end}}
