@@ -8,13 +8,22 @@
             <br>
             <br>
 
+            <h3>Permissions</h3>
+            You have permissions to assign submissions to yourself.<br>
             {{if isStaff .UserRoles}}
-                Congratulations, you have sufficient staff roles to use this system!
-            {{else if has "Trial Curator" .UserRoles}}
-                Welcome to the club, Trial Curator! Your access to this system is limited only to your submissions.
-            {{else}}
-                You <b>do not</b> have sufficient server roles to use this system, so you cannot do anything here.
-                That's tough.
+                You are a staff member. You can see and interact with any submission.<br>
+            {{end}}
+            {{if isTrialCurator .UserRoles}}
+                You are a Trial Curator. You can interact only with your own submissions.<br>
+            {{end}}
+            {{if isDeletor .UserRoles}}
+                You have permissions to delete submissions, files and comments.<br>
+            {{end}}
+            {{if isDecider .UserRoles}}
+                You have permissions to request changes or approve submissions.<br>
+            {{end}}
+            {{if isAdder .UserRoles}}
+                You have permissions to mark submissions as added to Flashpoint.<br>
             {{end}}
 
         </div>
