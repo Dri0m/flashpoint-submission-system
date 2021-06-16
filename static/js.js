@@ -156,12 +156,7 @@ function bindFancyUpload(url) {
             uploadButton.disabled = false
         }
 
-        // AJAX request finished event
-        request.addEventListener("load", handleEnd);
-        request.addEventListener("error", handleEnd);
-        request.addEventListener("timeout", handleEnd);
-
-        // send POST request to server side script
+        request.addEventListener("loadend", handleEnd);
         request.send(formData)
     });
 }
