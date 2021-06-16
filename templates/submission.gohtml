@@ -1,5 +1,6 @@
 {{define "main"}}
     {{$canDelete := isDeletor .UserRoles}}
+    {{$canViewSubmissionsOfOthers := not (or (isInAudit .UserRoles) (isTrialCurator .UserRoles))}}
     {{$submissionID := (index .Submissions 0).SubmissionID}}
     <div class="main" xmlns="http://www.w3.org/1999/html">
         <div class="content">
@@ -136,9 +137,11 @@
                                         onclick="sendDelete('/submission/{{$submissionID}}/comment/{{.CommentID}}')">D
                                 </button>
                             {{end}}
-                            <button class="micro-button" title="show user's submissions"
-                                    onclick="location.href='/submissions?submitter-id={{.AuthorID}}'">S
-                            </button>
+                            {{if $canViewSubmissionsOfOthers}}
+                                <button class="micro-button" title="show user's submissions"
+                                        onclick="location.href='/submissions?submitter-id={{.AuthorID}}'">S
+                                </button>
+                            {{end}}
                             <br>
                             <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
                         </div>
