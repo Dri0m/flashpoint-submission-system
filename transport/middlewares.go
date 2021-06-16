@@ -41,6 +41,8 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 			return
 		}
 
+		allOk := true
+
 		for _, authorizer := range authorizers {
 			ok, err := authorizer(r, uid)
 			if err != nil {
@@ -48,12 +50,18 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 				http.Error(w, "failed to verify authority", http.StatusInternalServerError)
 				return
 			}
-			if ok {
-				r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
-				next(w, r)
-				return
+			if !ok {
+				allOk = false
+				break
 			}
 		}
+
+		if allOk {
+			r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
+			next(w, r)
+			return
+		}
+
 		utils.LogCtx(r.Context()).Info("unauthorized attempt")
 		http.Error(w, "you do not have the proper authorization to access this page", http.StatusUnauthorized)
 		return
