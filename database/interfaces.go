@@ -16,7 +16,7 @@ type DAL interface {
 	StoreDiscordServerRoles(dbs DBSession, roles []types.DiscordRole) error
 	StoreDiscordUserRoles(dbs DBSession, uid int64, roles []int64) error
 	GetDiscordUserRoles(dbs DBSession, uid int64) ([]string, error)
-	StoreSubmission(dbs DBSession) (int64, error)
+	StoreSubmission(dbs DBSession, submissionLevel string) (int64, error)
 	StoreSubmissionFile(dbs DBSession, s *types.SubmissionFile) (int64, error)
 	GetSubmissionFiles(dbs DBSession, sfids []int64) ([]*types.SubmissionFile, error)
 	GetExtendedSubmissionFilesBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedSubmissionFile, error)

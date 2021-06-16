@@ -10,6 +10,9 @@
 
             <h3>Permissions</h3>
             You have permissions to assign submissions to yourself.<br>
+            {{if isInAudit .UserRoles}}
+                You have permissions to submit and interact with only one submission.<br>
+            {{end}}
             {{if isStaff .UserRoles}}
                 You are a staff member. You can see and interact with any submission.<br>
             {{end}}

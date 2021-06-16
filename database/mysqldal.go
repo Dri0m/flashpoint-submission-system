@@ -232,8 +232,10 @@ func (d *mysqlDAL) GetDiscordUserRoles(dbs DBSession, uid int64) ([]string, erro
 }
 
 // StoreSubmission stores plain submission
-func (d *mysqlDAL) StoreSubmission(dbs DBSession) (int64, error) {
-	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO submission (id) VALUES (DEFAULT)`)
+func (d *mysqlDAL) StoreSubmission(dbs DBSession, submissionLevel string) (int64, error) {
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO submission (fk_submission_level_id) 
+				VALUES ((SELECT id FROM submission_level WHERE name = ?))`,
+		submissionLevel)
 	if err != nil {
 		return 0, err
 	}
@@ -394,6 +396,12 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				data = append(data, ba)
 			}
 		}
+		if len(filter.SubmissionLevels) != 0 {
+			filters = append(filters, `(SELECT name FROM submission_level WHERE id = submission.fk_submission_level_id) IN(?`+strings.Repeat(",?", len(filter.SubmissionLevels)-1)+`)`)
+			for _, ba := range filter.SubmissionLevels {
+				data = append(data, ba)
+			}
+		}
 		if len(filter.ActionsAfterMyLastComment) != 0 {
 			foundAny := false
 			for _, aamlc := range filter.ActionsAfterMyLastComment {
@@ -453,6 +461,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 
 	finalQuery := `
 		SELECT submission.id AS submission_id,
+			(SELECT name FROM submission_level WHERE id = submission.fk_submission_level_id) AS submission_level,
 			uploader.id AS uploader_id,
 			uploader.username AS uploader_username,
 			uploader.avatar AS uploader_avatar,
@@ -884,6 +893,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		s := &types.ExtendedSubmission{}
 		if err := rows.Scan(
 			&s.SubmissionID,
+			&s.SubmissionLevel,
 			&s.SubmitterID, &s.SubmitterUsername, &submitterAvatar,
 			&s.UpdaterID, &s.UpdaterUsername, &updaterAvatar,
 			&s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size,

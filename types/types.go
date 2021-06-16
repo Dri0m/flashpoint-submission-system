@@ -69,6 +69,7 @@ type ExtendedSubmissionFile struct {
 
 type ExtendedSubmission struct {
 	SubmissionID            int64
+	SubmissionLevel         string
 	SubmitterID             int64     // oldest file
 	SubmitterUsername       string    // oldest file
 	SubmitterAvatarURL      string    // oldest file
@@ -110,6 +111,7 @@ type SubmissionsFilter struct {
 	AssignedStatus             *string  `schema:"assigned-status"`
 	RequestedChangedStatus     *string  `schema:"requested-changes-status"`
 	ApprovalsStatus            *string  `schema:"approvals-status"`
+	SubmissionLevels           []string `schema:"sumbission-level"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {

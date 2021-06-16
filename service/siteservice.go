@@ -165,6 +165,11 @@ func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 }
 
 func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileProviders []MultipartFileProvider) error {
+	uid := utils.UserIDFromContext(ctx)
+	if uid == 0 {
+		return fmt.Errorf("no user associated with request")
+	}
+
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -172,10 +177,26 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 	}
 	defer dbs.Rollback()
 
+	userRoles, err := s.dal.GetDiscordUserRoles(dbs, uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to get discord user roles")
+	}
+
+	var submissionLevel string
+
+	if constants.IsInAudit(userRoles) {
+		submissionLevel = constants.SubmissionLevelAudition
+	} else if constants.IsTrialCurator(userRoles) {
+		submissionLevel = constants.SubmissionLevelTrial
+	} else if constants.IsStaff(userRoles) {
+		submissionLevel = constants.SubmissionLevelStaff
+	}
+
 	destinationFilenames := make([]string, 0)
 
 	for _, fileProvider := range fileProviders {
-		destinationFilename, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid)
+		destinationFilename, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid, submissionLevel)
 
 		if destinationFilename != nil {
 			destinationFilenames = append(destinationFilenames, *destinationFilename)
@@ -202,7 +223,7 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 	return nil
 }
 
-func (s *siteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64) (*string, error) {
+func (s *siteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
 		return nil, fmt.Errorf("no user associated with request")
@@ -253,7 +274,7 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 	var submissionID int64
 
 	if sid == nil {
-		submissionID, err = s.dal.StoreSubmission(dbs)
+		submissionID, err = s.dal.StoreSubmission(dbs, submissionLevel)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
 			return &destinationFilePath, fmt.Errorf("failed to store submission")

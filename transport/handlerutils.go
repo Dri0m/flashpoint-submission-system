@@ -21,12 +21,13 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 	templates = append(templates, filenames...)
 	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{
 		"boolString":     BoolString,
+		"unpointify":     utils.Unpointify,
 		"isStaff":        constants.IsStaff,
 		"isTrialCurator": constants.IsTrialCurator,
 		"isDeletor":      constants.IsDeletor,
 		"isDecider":      constants.IsDecider,
 		"isAdder":        constants.IsAdder,
-		"unpointify":     utils.Unpointify,
+		"isInAudit":      constants.IsInAudit,
 	}).ParseFiles(templates...)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)

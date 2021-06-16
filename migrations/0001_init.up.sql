@@ -42,10 +42,23 @@ CREATE TABLE IF NOT EXISTS discord_user_role
     CONSTRAINT discord_user_role_fk_rid FOREIGN KEY (fk_rid) REFERENCES discord_role (id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS submission_level
+(
+    id   BIGINT PRIMARY KEY,
+    name VARCHAR(63) UNIQUE
+);
+
+INSERT IGNORE INTO submission_level (id, name)
+VALUES (1, 'audition'),
+       (2, 'trial'),
+       (3, 'staff');
+
 CREATE TABLE IF NOT EXISTS submission
 (
-    id         BIGINT PRIMARY KEY AUTO_INCREMENT,
-    deleted_at BIGINT DEFAULT NULL
+    id                     BIGINT PRIMARY KEY AUTO_INCREMENT,
+    deleted_at             BIGINT DEFAULT NULL,
+    fk_submission_level_id BIGINT NOT NULL,
+    FOREIGN KEY (fk_submission_level_id) REFERENCES submission_level (id)
 );
 
 CREATE TABLE IF NOT EXISTS submission_file
@@ -59,7 +72,7 @@ CREATE TABLE IF NOT EXISTS submission_file
     uploaded_at       BIGINT              NOT NULL,
     md5sum            CHAR(32) UNIQUE     NOT NULL,
     sha256sum         CHAR(64) UNIQUE     NOT NULL,
-    deleted_at BIGINT DEFAULT NULL,
+    deleted_at        BIGINT DEFAULT NULL,
     FOREIGN KEY (fk_uploader_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
 );
@@ -119,7 +132,7 @@ CREATE TABLE IF NOT EXISTS comment
     message          TEXT,
     fk_action_id     BIGINT,
     created_at       BIGINT NOT NULL,
-    deleted_at BIGINT DEFAULT NULL,
+    deleted_at       BIGINT DEFAULT NULL,
     FOREIGN KEY (fk_author_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
     FOREIGN KEY (fk_action_id) REFERENCES action (id)

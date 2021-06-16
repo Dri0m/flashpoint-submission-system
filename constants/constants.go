@@ -15,6 +15,12 @@ const (
 	ActionUnassign       = "unassign"
 )
 
+const (
+	SubmissionLevelAudition = "audition"
+	SubmissionLevelTrial    = "trial"
+	SubmissionLevelStaff    = "staff"
+)
+
 func GetAllowedActions() []string {
 	return []string{
 		ActionComment,

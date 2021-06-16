@@ -61,6 +61,11 @@ func HasAnyRole(has, needs []string) bool {
 	return false
 }
 
+// IsInAudit allows users to access to submit one curation and interact only with it
+func IsInAudit(roles []string) bool {
+	return !(IsStaff(roles) || IsTrialCurator(roles))
+}
+
 // IsStaff allows users to access and interact with all submissions, to a degree
 func IsStaff(roles []string) bool {
 	return HasAnyRole(roles, StaffRoles())
