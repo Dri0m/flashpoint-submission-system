@@ -278,7 +278,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/my-submissions", http.StatusFound)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
