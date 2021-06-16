@@ -11,9 +11,8 @@
             {{end}}
 
             <input class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
-            <progress id="files-progress" max="100" value="0" hidden></progress>
-            <span id="progress-text" hidden>Hi, I'm your ultra-smart upload assistant.</span>
+            <div id="progress-bars-container"></div>
         </div>
     </div>
-    <script>bindFancyUpload("/submission-receiver")</script>
+    <script>bindFancierUpload("/submission-receiver")</script>
 {{end}}

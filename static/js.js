@@ -61,8 +61,8 @@ function batchComment(checkboxClassName, attribute) {
     url += "/comment"
 
     let form = document.getElementById("batch-comment")
-    form.action=url
-    form.method="POST"
+    form.action = url
+    form.method = "POST"
     form.submit()
 }
 
@@ -82,16 +82,72 @@ function changePage(number) {
     window.location.href = url
 }
 
-function bindFancyUpload(url) {
+function uploadHandler(url, files, i) {
+    if (i >= files.length) {
+        document.querySelector("#upload-button").disabled = false
+        return
+    }
+    let progressBarsContainer = document.querySelector("#progress-bars-container")
+
+    let file = files[i]
+
+    let formData = new FormData()
+    formData.append("files", file)
+
+    let progressBar = document.createElement("progress");
+    progressBar.max = 100
+    progressBar.value = 0
+    let progressText = document.createElement("span");
+    progressBarsContainer.appendChild(progressText)
+    progressBarsContainer.appendChild(progressBar)
+
+    let request = new XMLHttpRequest();
+    request.open("POST", url)
+
+    let t1 = 1
+    let t2 = 2
+    let p1 = 0
+    let p2 = 0
+
+    // upload progress event
+    request.upload.addEventListener("progress", function (e) {
+        t2 = performance.now()
+        p2 = e.loaded
+        let percent_complete = (e.loaded / e.total) * 100
+        progressBar.value = percent_complete
+
+        let uploadSpeed = ((((p2 - p1) / (t2 - t1)) * 1000) / 1000).toFixed(1)
+
+        if (e.loaded === e.total) {
+            progressText.innerHTML = `${file.name}<br>Processing and validating file, please wait...`
+        } else {
+            progressText.innerHTML = `${file.name}<br>Progress: ${percent_complete.toFixed(3)}% Upload speed: ${uploadSpeed}kB/s`
+        }
+
+        t1 = t2
+        p1 = p2
+    });
+
+    let handleEnd = function (e) {
+        if (request.status !== 200) {
+            progressText.innerHTML = `${file.name}<br>something went wrong: status ${request.status} - ${request.response}`
+            progressText.style.color = "red"
+        } else {
+            progressText.innerHTML = `${file.name}<br>Upload successful.`
+        }
+        uploadHandler(url, files, i+1)
+    }
+
+    request.addEventListener("loadend", handleEnd);
+    request.send(formData)
+}
+
+function bindFancierUpload(url) {
     let uploadButton = document.querySelector("#upload-button")
     let fileInput = document.querySelector("#file-input")
-    let progressBar = document.querySelector("#files-progress")
-    let progressText = document.querySelector("#progress-text")
 
     uploadButton.addEventListener("click", function () {
         uploadButton.disabled = true
-        progressBar.hidden = false
-        progressText.hidden = false
 
         if (fileInput.files.length === 0) {
             alert("Error : No file selected")
@@ -99,64 +155,15 @@ function bindFancyUpload(url) {
             return
         }
 
-        // if(file.size > allowed_size_mb*1024*1024) {
-        //     alert('Error : Exceeded size');
-        //     return;
-        // }
-
-        let formData = new FormData()
-
         let files = fileInput.files
-        for(let i=0; i<files.length; i++) {
+        for (let i = 0; i < files.length; i++) {
             if (!(files[i].name.endsWith(".7z") || files[i].name.endsWith(".zip"))) {
                 alert('Error : Incorrect file type')
                 uploadButton.disabled = false
                 return
             }
-            formData.append("files", files[i])
         }
 
-        let request = new XMLHttpRequest();
-        request.open("POST", url)
-
-        let t1 = 1
-        let t2 = 2
-        let p1 = 0
-        let p2 = 0
-
-        // upload progress event
-        request.upload.addEventListener("progress", function (e) {
-            t2 = performance.now()
-            p2 = e.loaded
-            let percent_complete = (e.loaded / e.total) * 100
-            progressBar.value = percent_complete
-
-            let uploadSpeed = ((((p2 - p1) / (t2 - t1)) * 1000) / 1000).toFixed(1)
-
-            if (e.loaded === e.total) {
-                progressText.innerHTML = "Processing and validating your submissions, please wait..."
-            } else {
-                progressText.innerHTML = `Progress: ${percent_complete.toFixed(3)}% Upload speed: ${uploadSpeed}kB/s`
-            }
-
-            t1 = t2
-            p1 = p2
-        });
-
-        let handleEnd = function (e) {
-            if (request.status !== 200) {
-                let msg = `something went wrong: status ${request.status} - ${request.response}`
-                progressText.innerHTML = msg
-                alert(msg)
-            } else {
-                let msg = "Upload successful."
-                progressText.innerHTML = msg
-                alert(msg)
-            }
-            uploadButton.disabled = false
-        }
-
-        request.addEventListener("loadend", handleEnd);
-        request.send(formData)
+        uploadHandler(url, files, 0)
     });
 }

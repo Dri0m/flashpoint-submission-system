@@ -12,9 +12,8 @@
             <h3>Upload a fixed version</h3>
             <input type="file" name="files" id="file-input">
             <input class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
-            <progress id="files-progress" max="100" value="0" hidden></progress>
-            <span id="progress-text" hidden>Hi, I'm your ultra-smart upload assistant.</span>
-            <script>bindFancyUpload("/submission-receiver/{{$submissionID}}")</script>
+            <div id="progress-bars-container"></div>
+            <script>bindFancierUpload("/submission-receiver/{{$submissionID}}")</script>
 
             {{if $canDelete}}
                 <h3>Delete submission and all its related data</h3>
