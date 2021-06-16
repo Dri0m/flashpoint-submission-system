@@ -9,7 +9,9 @@
             <br>
 
             <h3>Permissions</h3>
-            You have permissions to assign submissions to yourself.<br>
+            {{if or (isTrialCurator .UserRoles) (or (isDecider .UserRoles) (isAdder .UserRoles))}}
+                You have permissions to assign submissions to yourself.<br>
+            {{end}}
             {{if isInAudit .UserRoles}}
                 You have permissions to submit and interact with only one submission.<br>
             {{end}}

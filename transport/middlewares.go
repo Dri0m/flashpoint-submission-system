@@ -105,7 +105,7 @@ func (a *App) UserHasAnyRole(r *http.Request, uid int64, roles []string) (bool, 
 	return true, nil
 }
 
-// UserOwnsResource accepts user that has all of requiredRoles and owns given resource(s)
+// UserOwnsResource accepts user that owns given resource(s)
 func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (bool, error) {
 	ctx := r.Context()
 
@@ -117,12 +117,12 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 			return false, nil
 		}
 
-		submisisons, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionID: &sid})
+		submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionID: &sid})
 		if err != nil {
 			return false, err
 		}
 
-		s := submisisons[0]
+		s := submissions[0]
 		if s.SubmitterID != uid {
 			return false, nil
 		}
@@ -143,6 +143,28 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 		if sf.SubmitterID != uid {
 			return false, nil
 		}
+	} else {
+		return false, fmt.Errorf("invalid resource")
+	}
+
+	return true, nil
+}
+
+// IsUserWithinResourceLimit accepts if user has no more than given amount of given resource(s)
+func (a *App) IsUserWithinResourceLimit(r *http.Request, uid int64, resourceKey string, resourceAmount int) (bool, error) {
+	ctx := r.Context()
+
+	if resourceKey == constants.ResourceKeySubmissionID {
+		submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmitterID: &uid})
+		if err != nil {
+			return false, err
+		}
+
+		if len(submissions) >= resourceAmount {
+			return false, nil
+		}
+	} else {
+		return false, fmt.Errorf("invalid resource")
 	}
 
 	return true, nil
@@ -184,7 +206,10 @@ func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
 
 	canComment := formAction == constants.ActionComment
 	isAdder := canDo([]string{constants.ActionMarkAdded}, constants.AdderRoles())
-	isDecider := canDo([]string{constants.ActionApprove, constants.ActionReject, constants.ActionRequestChanges, constants.ActionAccept, constants.ActionAssign, constants.ActionUnassign}, constants.DeciderRoles())
+	isDecider := canDo([]string{constants.ActionApprove, constants.ActionReject, constants.ActionRequestChanges, constants.ActionAccept}, constants.DeciderRoles())
+	canAssign := canDo([]string{constants.ActionAssign, constants.ActionUnassign}, constants.DeciderRoles()) ||
+		canDo([]string{constants.ActionAssign, constants.ActionUnassign}, constants.AdderRoles()) ||
+		canDo([]string{constants.ActionAssign, constants.ActionUnassign}, constants.TrialCuratorRoles())
 
-	return canComment || isAdder || isDecider, nil
+	return canComment || isAdder || isDecider || canAssign, nil
 }

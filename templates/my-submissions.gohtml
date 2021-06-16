@@ -5,11 +5,18 @@
 
             {{template "submission-filter" .}}
 
-            {{template "submission-pagenav" .}}
+            {{if  eq (len .Submissions) 0}}
+                <p>No submissions found.</p>
+            {{else}}
 
-            {{template "submission-table" .}}
 
-            {{template "submission-pagenav" .}}
+                {{template "submission-pagenav" .}}
+
+                {{template "submission-table" .}}
+
+                {{template "submission-pagenav" .}}
+
+            {{end}}
 
         </div>
     </div>

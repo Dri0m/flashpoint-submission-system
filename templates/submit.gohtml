@@ -3,14 +3,27 @@
         <div class="content">
             <h1>Submit curation(s)</h1>
 
-            This is currently just a basic HTML multifile upload. Some browsers show the upload progress in the bottom corner.<br>
-            Only .zip and .7z files are supported.
-            <br>
-            <br>
-            <form class="pure-form" action="/submission-receiver" method="POST" enctype="multipart/form-data">
-                <input type="file" name="files" multiple="multiple">
-                <input class="pure-button pure-button button-upload-file" type="submit" value="Upload">
-            </form>
+            {{if isInAudit .UserRoles}}
+                This is currently just a basic HTML file upload. Some browsers show the upload progress in the bottom corner.
+                <br>
+                Only .zip and .7z files are supported. Max filesize is 200MB.
+                <br>
+                <br>
+                <form class="pure-form" action="/submission-receiver" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="files">
+                    <input class="pure-button pure-button button-upload-file" type="submit" value="Upload">
+                </form>
+            {{else}}
+                This is currently just a basic HTML multifile upload. Some browsers show the upload progress in the bottom corner.
+                <br>
+                Only .zip and .7z files are supported.
+                <br>
+                <br>
+                <form class="pure-form" action="/submission-receiver" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="files" multiple="multiple">
+                    <input class="pure-button pure-button button-upload-file" type="submit" value="Upload">
+                </form>
+            {{end}}
 
         </div>
     </div>

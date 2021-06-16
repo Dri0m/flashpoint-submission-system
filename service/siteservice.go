@@ -183,6 +183,14 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 		return fmt.Errorf("failed to get discord user roles")
 	}
 
+	if constants.IsInAudit(userRoles) && len(fileProviders) > 1 {
+		return fmt.Errorf("cannot upload more than one submission at once when user is in audit")
+	}
+
+	if constants.IsInAudit(userRoles) && fileProviders[0].Size() > constants.UserInAuditSumbissionMaxFilesize {
+		return fmt.Errorf("submission filesize limited to 200MB for users in audit")
+	}
+
 	var submissionLevel string
 
 	if constants.IsInAudit(userRoles) {
