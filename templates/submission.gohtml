@@ -28,91 +28,91 @@
                     <tbody>
                     <tr>
                         <td class="meta-property">Title</td>
-                        <td>{{if not .CurationMeta.Title}}<i>No Title</i>{{else}}{{.CurationMeta.Title}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Title}}<i>No Title</i>{{else}}{{range splitMultilineText .CurationMeta.Title}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Alternate Titles</td>
-                        <td>{{if not .CurationMeta.AlternateTitles}}<i>No Alternate Titles</i>{{else}}{{.CurationMeta.AlternateTitles}}{{end}}</td>
+                        <td>{{if not .CurationMeta.AlternateTitles}}<i>No Alternate Titles</i>{{else}}{{range splitMultilineText .CurationMeta.AlternateTitles}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Library</td>
-                        <td>{{if not .CurationMeta.Library}}<i>No Library</i>{{else}}{{.CurationMeta.Library}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Library}}<i>No Library</i>{{else}}{{range splitMultilineText .CurationMeta.Library}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Series</td>
-                        <td>{{if not .CurationMeta.Series}}<i>No Series</i>{{else}}{{.CurationMeta.Series}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Series}}<i>No Series</i>{{else}}{{range splitMultilineText .CurationMeta.Series}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Developer</td>
-                        <td>{{if not .CurationMeta.Developer}}<i>No Developer</i>{{else}}{{.CurationMeta.Developer}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Developer}}<i>No Developer</i>{{else}}{{range splitMultilineText .CurationMeta.Developer}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Publisher</td>
-                        <td>{{if not .CurationMeta.Publisher}}<i>No Publisher</i>{{else}}{{.CurationMeta.Publisher}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Publisher}}<i>No Publisher</i>{{else}}{{range splitMultilineText .CurationMeta.Publisher}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Tags</td>
-                        <td>{{if not .CurationMeta.Tags}}<i>No Tags</i>{{else}}{{.CurationMeta.Tags}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Tags}}<i>No Tags</i>{{else}}{{range splitMultilineText .CurationMeta.Tags}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Tag Categories</td>
-                        <td>{{if not .CurationMeta.TagCategories}}<i>No Tag Categories</i>{{else}}{{.CurationMeta.TagCategories}}{{end}}</td>
+                        <td>{{if not .CurationMeta.TagCategories}}<i>No Tag Categories</i>{{else}}{{range splitMultilineText .CurationMeta.TagCategories}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Play Mode</td>
-                        <td>{{if not .CurationMeta.PlayMode}}<i>No Play Mode</i>{{else}}{{.CurationMeta.PlayMode}}{{end}}</td>
+                        <td>{{if not .CurationMeta.PlayMode}}<i>No Play Mode</i>{{else}}{{range splitMultilineText .CurationMeta.PlayMode}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Status</td>
-                        <td>{{if not .CurationMeta.Status}}<i>No Status</i>{{else}}{{.CurationMeta.Status}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Status}}<i>No Status</i>{{else}}{{range splitMultilineText .CurationMeta.Status}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Version</td>
-                        <td>{{if not .CurationMeta.Version}}<i>No Version</i>{{else}}{{.CurationMeta.Version}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Version}}<i>No Version</i>{{else}}{{range splitMultilineText .CurationMeta.Version}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Release Date</td>
-                        <td>{{if not .CurationMeta.ReleaseDate}}<i>No Release Date</i>{{else}}{{.CurationMeta.ReleaseDate}}{{end}}</td>
+                        <td>{{if not .CurationMeta.ReleaseDate}}<i>No Release Date</i>{{else}}{{range splitMultilineText .CurationMeta.ReleaseDate}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Language</td>
-                        <td>{{if not .CurationMeta.Languages}}<i>No Language</i>{{else}}{{.CurationMeta.Languages}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Languages}}<i>No Language</i>{{else}}{{range splitMultilineText .CurationMeta.Languages}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Source</td>
-                        <td>{{if not .CurationMeta.Source}}<i>No Source</i>{{else}}{{.CurationMeta.Source}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Source}}<i>No Source</i>{{else}}{{range splitMultilineText .CurationMeta.Source}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Platform</td>
-                        <td>{{if not .CurationMeta.Platform}}<i>No Platform</i>{{else}}{{.CurationMeta.Platform}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Platform}}<i>No Platform</i>{{else}}{{range splitMultilineText .CurationMeta.Platform}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Application Path</td>
-                        <td>{{if not .CurationMeta.ApplicationPath}}<i>No Application Path</i>{{else}}{{.CurationMeta.ApplicationPath}}{{end}}</td>
+                        <td>{{if not .CurationMeta.ApplicationPath}}<i>No Application Path</i>{{else}}{{range splitMultilineText .CurationMeta.ApplicationPath}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Launch Command</td>
-                        <td>{{if not .CurationMeta.LaunchCommand}}<i>No Launch Command</i>{{else}}{{.CurationMeta.LaunchCommand}}{{end}}</td>
+                        <td>{{if not .CurationMeta.LaunchCommand}}<i>No Launch Command</i>{{else}}{{range splitMultilineText .CurationMeta.LaunchCommand}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Mount Parameters</td>
-                        <td>{{if not .CurationMeta.MountParameters}}<i>No Mount Parameters</i>{{else}}{{.CurationMeta.MountParameters}}{{end}}</td>
+                        <td>{{if not .CurationMeta.MountParameters}}<i>No Mount Parameters</i>{{else}}{{range splitMultilineText .CurationMeta.MountParameters}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Notes</td>
-                        <td>{{if not .CurationMeta.GameNotes}}<i>No Notes</i>{{else}}{{.CurationMeta.GameNotes}}{{end}}</td>
+                        <td>{{if not .CurationMeta.GameNotes}}<i>No Notes</i>{{else}}{{range splitMultilineText .CurationMeta.GameNotes}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Original Description</td>
-                        <td>{{if not .CurationMeta.OriginalDescription}}<i>No Original Description</i>{{else}}{{.CurationMeta.OriginalDescription}}{{end}}</td>
+                        <td>{{if not .CurationMeta.OriginalDescription}}<i>No Original Description</i>{{else}}{{range splitMultilineText .CurationMeta.OriginalDescription}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Curation Notes</td>
-                        <td>{{if not .CurationMeta.CurationNotes}}<i>No Curation Notes</i>{{else}}{{.CurationMeta.CurationNotes}}{{end}}</td>
+                        <td>{{if not .CurationMeta.CurationNotes}}<i>No Curation Notes</i>{{else}}{{range splitMultilineText .CurationMeta.CurationNotes}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Extreme</td>
-                        <td>{{if not .CurationMeta.Extreme}}<i>No Extreme</i>{{else}}{{.CurationMeta.Extreme}}{{end}}</td>
+                        <td>{{if not .CurationMeta.Extreme}}<i>No Extreme</i>{{else}}{{range splitMultilineText .CurationMeta.Extreme}}{{.}}<br>{{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Additional Applications</td>
@@ -150,7 +150,7 @@
                     <div class="pure-u-5-6">
                         <div class="comment-body">
                             {{if .Message}}
-                                {{range .Message}}{{.}}<br>{{end}}
+                                {{range splitMultilineText .Message}}{{.}}<br>{{end}}
                             {{else}}
                                 {{if eq .Action "approve"}}
                                     <i class="default-comment">Approved the submission.</i>

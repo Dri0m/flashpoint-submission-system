@@ -1019,19 +1019,15 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) (
 
 	var createdAt int64
 	var avatar string
-	var message *string
 
 	for rows.Next() {
 
 		ec := &types.ExtendedComment{SubmissionID: sid}
-		if err := rows.Scan(&ec.CommentID, &ec.AuthorID, &ec.Username, &avatar, &message, &ec.Action, &createdAt); err != nil {
+		if err := rows.Scan(&ec.CommentID, &ec.AuthorID, &ec.Username, &avatar, &ec.Message, &ec.Action, &createdAt); err != nil {
 			return nil, err
 		}
 		ec.CreatedAt = time.Unix(createdAt, 0)
 		ec.AvatarURL = utils.FormatAvatarURL(ec.AuthorID, avatar)
-		if message != nil {
-			ec.Message = strings.Split(*message, "\n")
-		}
 		result = append(result, ec)
 	}
 

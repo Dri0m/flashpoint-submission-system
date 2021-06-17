@@ -20,15 +20,16 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 	templates := []string{"templates/base.gohtml", "templates/navbar.gohtml"}
 	templates = append(templates, filenames...)
 	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{
-		"boolString":     BoolString,
-		"unpointify":     utils.Unpointify,
-		"isStaff":        constants.IsStaff,
-		"isTrialCurator": constants.IsTrialCurator,
-		"isDeletor":      constants.IsDeletor,
-		"isDecider":      constants.IsDecider,
-		"isAdder":        constants.IsAdder,
-		"isInAudit":      constants.IsInAudit,
-		"megabytify":     utils.Megabytify,
+		"boolString":         BoolString,
+		"unpointify":         utils.Unpointify,
+		"isStaff":            constants.IsStaff,
+		"isTrialCurator":     constants.IsTrialCurator,
+		"isDeletor":          constants.IsDeletor,
+		"isDecider":          constants.IsDecider,
+		"isAdder":            constants.IsAdder,
+		"isInAudit":          constants.IsInAudit,
+		"megabytify":         utils.Megabytify,
+		"splitMultilineText": utils.SplitMultilineText,
 	}).ParseFiles(templates...)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)

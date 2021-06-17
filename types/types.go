@@ -182,6 +182,6 @@ type ExtendedComment struct {
 	AvatarURL    string
 	SubmissionID int64
 	Action       string
-	Message      []string
+	Message      *string
 	CreatedAt    time.Time
 }

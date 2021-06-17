@@ -190,3 +190,10 @@ func Megabytify(size int64) string {
 
 	return fmt.Sprintf("%d.%01d", mb, b)
 }
+
+func SplitMultilineText(s *string) []string {
+	if s == nil {
+		return nil
+	}
+	return strings.Split(*s, "\n")
+}
