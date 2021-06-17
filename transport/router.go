@@ -69,9 +69,6 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	userOwnsSubmission := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserOwnsResource(r, uid, constants.ResourceKeySubmissionID)
 	}
-	userOwnsFile := func(r *http.Request, uid int64) (bool, error) {
-		return a.UserOwnsResource(r, uid, constants.ResourceKeyFileID)
-	}
 	userHasNoSubmissions := func(r *http.Request, uid int64) (bool, error) {
 		return a.IsUserWithinResourceLimit(r, uid, constants.ResourceKeySubmissionID, 1)
 	}
@@ -146,19 +143,19 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 			a.HandleCommentReceiverBatch, all(isStaff, a.UserCanCommentAction)))).Methods("POST")
 
 	// providers
-	router.Handle(fmt.Sprintf("/submission-file/{%s}", constants.ResourceKeyFileID),
+	router.Handle(fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.UserAuthMux(
 			a.HandleDownloadSubmissionFile,
 			any(isStaff,
-				all(isTrialCurator, userOwnsFile), // FIXME this is wrong, should be driven by submission ownership
-				all(isInAudit, userOwnsFile))))).Methods("GET")
+				all(isTrialCurator, userOwnsSubmission),
+				all(isInAudit, userOwnsSubmission))))).Methods("GET")
 
 	router.Handle(fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs), // TODO trial curator should be able to use this
 		http.HandlerFunc(a.UserAuthMux(
 			a.HandleDownloadSubmissionBatch, any(isStaff)))).Methods("GET")
 
 	// soft delete
-	router.Handle(fmt.Sprintf("/submission-file/{%s}", constants.ResourceKeyFileID),
+	router.Handle(fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.UserAuthMux(
 			a.HandleSoftDeleteSubmissionFile, all(isDeletor)))).Methods("DELETE")
 

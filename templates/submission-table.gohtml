@@ -32,7 +32,7 @@
                                    data-sid="{{.SubmissionID}}"/>
                         </td>
                         <td class="center">
-                            <a href="/submission-file/{{.FileID}}">Get</a>
+                            <a href="/submission/{{.SubmissionID}}/file/{{.FileID}}">Get</a>
                             {{if gt .FileCount 1}}<br><a href="/submission/{{.SubmissionID}}/files">Browse</a>{{end}}
                         </td>
                         <td class="center"><a href="/submission/{{.SubmissionID}}">View</a></td>
