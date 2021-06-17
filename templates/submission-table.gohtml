@@ -43,7 +43,7 @@
                         <td>{{.SubmissionLevel}}</td>
                         <td>{{.SubmitterUsername}}</td>
                         <td>{{.UpdaterUsername}}</td>
-                        <td>{{megabytify .Size}}MB</td>
+                        <td title="{{.Size}}B">{{megabytify .Size}}MB</td>
                         <td>
                             <div class="dot-{{.BotAction}} hover-label" data-title="{{.BotAction}}"></div>
                         </td>
