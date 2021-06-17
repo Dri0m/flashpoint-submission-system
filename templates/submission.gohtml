@@ -27,95 +27,95 @@
                 <table class="pure-table pure-table-bordered meta-table">
                     <tbody>
                     <tr>
-                        <td>Application Path</td>
-                        <td>{{.CurationMeta.ApplicationPath}}</td>
+                        <td class="meta-property">Title</td>
+                        <td>{{if not .CurationMeta.Title}}<i>No Title</i>{{else}}{{.CurationMeta.Title}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Developer</td>
-                        <td>{{.CurationMeta.Developer}}</td>
+                        <td class="meta-property">Alternate Titles</td>
+                        <td>{{if not .CurationMeta.AlternateTitles}}<i>No Alternate Titles</i>{{else}}{{.CurationMeta.AlternateTitles}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Extreme</td>
-                        <td>{{.CurationMeta.Extreme}}</td>
+                        <td class="meta-property">Library</td>
+                        <td>{{if not .CurationMeta.Library}}<i>No Library</i>{{else}}{{.CurationMeta.Library}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Game Notes</td>
-                        <td>{{.CurationMeta.GameNotes}}</td>
+                        <td class="meta-property">Series</td>
+                        <td>{{if not .CurationMeta.Series}}<i>No Series</i>{{else}}{{.CurationMeta.Series}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Languages</td>
-                        <td>{{.CurationMeta.Languages}}</td>
+                        <td class="meta-property">Developer</td>
+                        <td>{{if not .CurationMeta.Developer}}<i>No Developer</i>{{else}}{{.CurationMeta.Developer}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Launch Command</td>
-                        <td>{{.CurationMeta.LaunchCommand}}</td>
+                        <td class="meta-property">Publisher</td>
+                        <td>{{if not .CurationMeta.Publisher}}<i>No Publisher</i>{{else}}{{.CurationMeta.Publisher}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Original Description</td>
-                        <td>{{.CurationMeta.OriginalDescription}}</td>
+                        <td class="meta-property">Tags</td>
+                        <td>{{if not .CurationMeta.Tags}}<i>No Tags</i>{{else}}{{.CurationMeta.Tags}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Play Mode</td>
-                        <td>{{.CurationMeta.PlayMode}}</td>
+                        <td class="meta-property">Tag Categories</td>
+                        <td>{{if not .CurationMeta.TagCategories}}<i>No Tag Categories</i>{{else}}{{.CurationMeta.TagCategories}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Platform</td>
-                        <td>{{.CurationMeta.Platform}}</td>
+                        <td class="meta-property">Play Mode</td>
+                        <td>{{if not .CurationMeta.PlayMode}}<i>No Play Mode</i>{{else}}{{.CurationMeta.PlayMode}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Publisher</td>
-                        <td>{{.CurationMeta.Publisher}}</td>
+                        <td class="meta-property">Status</td>
+                        <td>{{if not .CurationMeta.Status}}<i>No Status</i>{{else}}{{.CurationMeta.Status}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>ReleaseDate</td>
-                        <td>{{.CurationMeta.ReleaseDate}}</td>
+                        <td class="meta-property">Version</td>
+                        <td>{{if not .CurationMeta.Version}}<i>No Version</i>{{else}}{{.CurationMeta.Version}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Series</td>
-                        <td>{{.CurationMeta.Series}}</td>
+                        <td class="meta-property">Release Date</td>
+                        <td>{{if not .CurationMeta.ReleaseDate}}<i>No Release Date</i>{{else}}{{.CurationMeta.ReleaseDate}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Source</td>
-                        <td>{{.CurationMeta.Source}}</td>
+                        <td class="meta-property">Language</td>
+                        <td>{{if not .CurationMeta.Languages}}<i>No Language</i>{{else}}{{.CurationMeta.Languages}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Status</td>
-                        <td>{{.CurationMeta.Status}}</td>
+                        <td class="meta-property">Source</td>
+                        <td>{{if not .CurationMeta.Source}}<i>No Source</i>{{else}}{{.CurationMeta.Source}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Tags</td>
-                        <td>{{.CurationMeta.Tags}}</td>
+                        <td class="meta-property">Platform</td>
+                        <td>{{if not .CurationMeta.Platform}}<i>No Platform</i>{{else}}{{.CurationMeta.Platform}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Tag Categories</td>
-                        <td>{{.CurationMeta.TagCategories}}</td>
+                        <td class="meta-property">Application Path</td>
+                        <td>{{if not .CurationMeta.ApplicationPath}}<i>No Application Path</i>{{else}}{{.CurationMeta.ApplicationPath}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Title</td>
-                        <td>{{.CurationMeta.Title}}</td>
+                        <td class="meta-property">Launch Command</td>
+                        <td>{{if not .CurationMeta.LaunchCommand}}<i>No Launch Command</i>{{else}}{{.CurationMeta.LaunchCommand}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Alternate Titles</td>
-                        <td>{{.CurationMeta.AlternateTitles}}</td>
+                        <td class="meta-property">Mount Parameters</td>
+                        <td>{{if not .CurationMeta.MountParameters}}<i>No Mount Parameters</i>{{else}}{{.CurationMeta.MountParameters}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Library</td>
-                        <td>{{.CurationMeta.Library}}</td>
+                        <td class="meta-property">Notes</td>
+                        <td>{{if not .CurationMeta.GameNotes}}<i>No Notes</i>{{else}}{{.CurationMeta.GameNotes}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Version</td>
-                        <td>{{.CurationMeta.Version}}</td>
+                        <td class="meta-property">Original Description</td>
+                        <td>{{if not .CurationMeta.OriginalDescription}}<i>No Original Description</i>{{else}}{{.CurationMeta.OriginalDescription}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Curation Notes</td>
-                        <td>{{.CurationMeta.CurationNotes}}</td>
+                        <td class="meta-property">Curation Notes</td>
+                        <td>{{if not .CurationMeta.CurationNotes}}<i>No Curation Notes</i>{{else}}{{.CurationMeta.CurationNotes}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>MountParameters</td>
-                        <td>{{.CurationMeta.MountParameters}}</td>
+                        <td class="meta-property">Extreme</td>
+                        <td>{{if not .CurationMeta.Extreme}}<i>No Extreme</i>{{else}}{{.CurationMeta.Extreme}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td>Additional Applications</td>
+                        <td class="meta-property">Additional Applications</td>
                         <td>--Not Implemented--</td>
                     </tr>
                     </tbody>
