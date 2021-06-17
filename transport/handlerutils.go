@@ -28,6 +28,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"isDecider":      constants.IsDecider,
 		"isAdder":        constants.IsAdder,
 		"isInAudit":      constants.IsInAudit,
+		"megabytify":     utils.Megabytify,
 	}).ParseFiles(templates...)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)

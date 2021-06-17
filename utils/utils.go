@@ -179,3 +179,11 @@ func Unpointify(s *string) string {
 	}
 	return *s
 }
+
+// Megabytify convert size in bytes (123456789B) to a string with a separator at the megabyte position (123.456789MB)
+func Megabytify(size int64) string {
+	mb := size / 1000000
+	b := size % 1000000
+
+	return fmt.Sprintf("%d.%06d", mb, b)
+}

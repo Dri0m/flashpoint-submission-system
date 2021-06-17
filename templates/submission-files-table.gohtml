@@ -28,7 +28,7 @@
                             <button onclick="sendDelete('/submission-file/{{.FileID}}')">Delete</button >
                         </td>
                     {{end}}
-                    <td>{{.Size}}B</td>
+                    <td>{{megabytify .Size}}MB</td>
                     <td>{{.SubmitterUsername}}</td>
                     <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                     <td>{{.OriginalFilename}}</td>
