@@ -302,6 +302,7 @@ func createAssertBPD(ts *testService, uid int64) *types.BasePageData {
 	userRoles := []string{"a"}
 	bpd := &types.BasePageData{
 		Username:  username,
+		UserID:    uid,
 		AvatarURL: avatarURL,
 		UserRoles: userRoles,
 	}
@@ -329,6 +330,7 @@ func Test_siteService_GetBasePageData_OK(t *testing.T) {
 	userRoles := []string{"a"}
 	expected := &types.BasePageData{
 		Username:  username,
+		UserID:    uid,
 		AvatarURL: avatarURL,
 		UserRoles: userRoles,
 	}

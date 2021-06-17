@@ -157,6 +157,7 @@ func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 
 	bpd := &types.BasePageData{
 		Username:  discordUser.Username,
+		UserID:    discordUser.ID,
 		AvatarURL: utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
 		UserRoles: userRoles,
 	}

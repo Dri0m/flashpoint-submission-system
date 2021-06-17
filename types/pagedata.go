@@ -2,6 +2,7 @@ package types
 
 type BasePageData struct {
 	Username  string
+	UserID    int64
 	AvatarURL string
 	UserRoles []string
 }

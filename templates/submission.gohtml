@@ -129,7 +129,9 @@
                 <div class="pure-g comment">
                     <div class="pure-u-1-6 bgr-{{.Action}}">
                         <div class="comment-header">
-                            <img src="{{default "/static/feelsreallyweirdman.png" .AvatarURL}}" class="comment-avatar" alt="avatar" title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}"><br>
+                            <img src="{{default "/static/feelsreallyweirdman.png" .AvatarURL}}" class="comment-avatar"
+                                 alt="avatar"
+                                 title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}"><br>
                             <b>{{.Username}}</b><br>
                             {{if $canDelete}}
                                 <button class="micro-button" title="delete comment"
@@ -180,24 +182,31 @@
                         Comment
                     </button>
                     {{if or (isDecider .UserRoles) (isAdder .UserRoles)}}
-                        <button type="submit" class="pure-button pure-button button-assign" name="action"
-                                value="assign">
-                            Assign
-                        </button>
-                        <button type="submit" class="pure-button pure-button button-unassign" name="action"
-                                value="unassign">
-                            Unassign
-                        </button>
+                        {{if not (has .UserID (index .Submissions 0).AssignedUserIDs)}}
+                            <button type="submit" class="pure-button pure-button button-assign" name="action"
+                                    value="assign">
+                                Assign
+                            </button>
+                        {{else}}
+                            <button type="submit" class="pure-button pure-button button-unassign" name="action"
+                                    value="unassign">
+                                Unassign
+                            </button>
+                        {{end}}
                     {{end}}
                     {{if isDecider .UserRoles}}
-                        <button type="submit" class="pure-button pure-button button-approve" name="action"
-                                value="approve">
-                            Approve
-                        </button>
-                        <button type="submit" class="pure-button pure-button button-request-changes" name="action"
-                                value="request-changes">
-                            Request Changes
-                        </button>
+                        {{if not (has .UserID (index .Submissions 0).ApprovedUserIDs)}}
+                            <button type="submit" class="pure-button pure-button button-approve" name="action"
+                                    value="approve">
+                                Approve
+                            </button>
+                        {{end}}
+                        {{if not (has .UserID (index .Submissions 0).RequestedChangesUserIDs)}}
+                            <button type="submit" class="pure-button pure-button button-request-changes" name="action"
+                                    value="request-changes">
+                                Request Changes
+                            </button>
+                        {{end}}
                     {{end}}
                     {{if isAdder .UserRoles}}
                         <button type="submit" class="pure-button pure-button button-mark-added" name="action"
