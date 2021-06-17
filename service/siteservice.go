@@ -427,6 +427,7 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		return fmt.Errorf("cannot post comment action '%s' without a message", formAction)
 	}
 
+	// TODO optimize batch operation
 	for _, sid := range sids {
 		c := &types.Comment{
 			AuthorID:     uid,
@@ -436,7 +437,48 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 			CreatedAt:    s.clock.Now(),
 		}
 
-		// TODO optimize into batch insert
+		utils.LogCtx(ctx).Debugf("searching submission %d for comment batch", sid)
+		submissions, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionID: &sid})
+		if err != nil {
+			return fmt.Errorf("failed to load submission with id %d", sid)
+		}
+
+		if len(submissions) == 0 {
+			return fmt.Errorf("submission with id %d not found", sid)
+		}
+
+		submission := submissions[0]
+
+		if formAction == constants.ActionAssign {
+			for _, assignedUserID := range submission.AssignedUserIDs {
+				if uid == assignedUserID {
+					return fmt.Errorf("you are already assigned to submission %d", sid)
+				}
+			}
+		} else if formAction == constants.ActionUnassign {
+			found := false
+			for _, assignedUserID := range submission.AssignedUserIDs {
+				if uid == assignedUserID {
+					found = true
+				}
+			}
+			if !found {
+				return fmt.Errorf("you are not assigned to submission %d", sid)
+			}
+		} else if formAction == constants.ActionApprove {
+			for _, assignedUserID := range submission.ApprovedUserIDs {
+				if uid == assignedUserID {
+					return fmt.Errorf("you have already approved submission %d", sid)
+				}
+			}
+		} else if formAction == constants.ActionRequestChanges {
+			for _, assignedUserID := range submission.RequestedChangesUserIDs {
+				if uid == assignedUserID {
+					return fmt.Errorf("you have already requested changes on submission %d", sid)
+				}
+			}
+		}
+
 		if err := s.dal.StoreComment(dbs, c); err != nil {
 			return fmt.Errorf("failed to store comment")
 		}
