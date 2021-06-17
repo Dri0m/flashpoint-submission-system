@@ -23,37 +23,33 @@
                 <h2>Batch comment on submissions</h2>
                 <form class="pure-form" id="batch-comment">
                     <fieldset class="pure-group">
-                    <textarea class="pure-input-1 comment-textarea" name="message"
+                    <textarea class="pure-input-1 comment-textarea" id="batch-comment-message"
                               placeholder="Add a comment"></textarea>
                     </fieldset>
                     <div class="right">
-                        <button type="submit" class="pure-button pure-button button-comment" name="action"
-                                value="comment"
-                                onclick="batchComment('submission-checkbox', 'sid')">Comment
+                        <button type="button" class="pure-button pure-button button-comment"
+                                onclick="batchComment('submission-checkbox', 'sid', 'comment')">Comment
                         </button>
                         {{if or (isDecider .UserRoles) (isAdder .UserRoles)}}
-                            <button type="submit" class="pure-button pure-button button-assign" name="action"
-                                    value="assign"
-                                    onclick="batchComment('submission-checkbox', 'sid')">Assign
+                            <button type="button" class="pure-button pure-button button-assign"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'assign')">Assign
                             </button>
-                            <button type="submit" class="pure-button pure-button button-unassign" name="action"
-                                    value="unassign"
-                                    onclick="batchComment('submission-checkbox', 'sid')">Unassign
+                            <button type="button" class="pure-button pure-button button-unassign"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'unassign')">Unassign
                             </button>
                         {{end}}
                         {{if isDecider .UserRoles}}
-                            <button type="submit" class="pure-button pure-button button-approve" name="action"
-                                    value="approve"
-                                    onclick="batchComment('submission-checkbox', 'sid')">Approve
+                            <button type="button" class="pure-button pure-button button-approve"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'approve')">Approve
                             </button>
-                            <button type="submit" class="pure-button pure-button button-request-changes" name="action"
-                                    value="request-changes" onclick="batchComment('submission-checkbox', 'sid')">Request
+                            <button type="button" class="pure-button pure-button button-request-changes"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">Request
                                 Changes
                             </button>
                         {{end}}
                         {{if isAdder .UserRoles}}
-                            <button type="submit" class="pure-button pure-button button-mark-added" name="action"
-                                    value="mark-added" onclick="batchComment('submission-checkbox', 'sid')">Mark as
+                            <button type="button" class="pure-button pure-button button-mark-added"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">Mark as
                                 Added
                             </button>
                         {{end}}

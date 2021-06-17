@@ -1,25 +1,44 @@
 function sendDelete(url) {
     if (confirm(`Are you sure you want to (soft) delete '${url}'?`)) {
-        sendRequest(url, "DELETE")
+        let request = new XMLHttpRequest()
+        request.open("DELETE", url)
+
+        request.addEventListener("loadend", function () {
+            if (request.status !== 204) {
+                alert(`failed to delete '${url}' - status ${request.status} - ${request.response}`)
+            } else {
+                alert(`delete of '${url}' successful`)
+                location.reload()
+            }
+        })
+
+        try {
+            request.send()
+        } catch (err) {
+            alert(`failed to delete '${url}' - exception '${err.message}'`)
+        }
     }
 }
 
-function sendRequest(url, method) {
+function sendPost(url, method, data, reload) {
     let request = new XMLHttpRequest()
     request.open(method, url, false)
 
-    try {
-        request.onload = function () {
-            if (request.status !== 204) {
-                alert(`failed to ${method} '${url}' - status ${request.status}`)
-            } else {
-                alert(`${method} of '${url}' successful`)
+    request.addEventListener("loadend", function () {
+        if (request.status !== 200) {
+            alert(`failed to post '${url}' - status ${request.status} - ${request.response}`)
+        } else {
+            alert(`post of '${url}' successful`)
+            if (reload === true) {
                 location.reload()
             }
-        };
-        request.send()
+        }
+    })
+
+    try {
+        request.send(data)
     } catch (err) {
-        alert(`failed to ${method} '${url}' - exception '${err.message}'`)
+        alert(`failed to post '${url}' - exception '${err.message}'`)
     }
 }
 
@@ -36,34 +55,49 @@ function batchDownloadFiles(checkboxClassName, attribute) {
 
     let url = "/submission-file-batch/"
 
+    let checkedCounter = 0
+
     for (let i = 0; i < checkboxes.length; i++) {
         if (checkboxes[i].checked) {
+            checkedCounter += 1
             url += checkboxes[i].dataset[attribute] + ","
         }
+    }
+
+    if (checkedCounter === 0) {
+        alert("no submissions selected")
+        return
     }
 
     url = url.slice(0, -1)
     window.location.href = url
 }
 
-function batchComment(checkboxClassName, attribute) {
+function batchComment(checkboxClassName, attribute, action) {
     let checkboxes = document.getElementsByClassName(checkboxClassName);
 
     let url = "/submission-batch/"
 
+    let checkedCounter = 0
+
     for (let i = 0; i < checkboxes.length; i++) {
         if (checkboxes[i].checked) {
+            checkedCounter += 1
             url += checkboxes[i].dataset[attribute] + ","
         }
     }
 
-    url = url.slice(0, -1)
-    url += "/comment"
+    if (checkedCounter === 0) {
+        alert("no submissions selected")
+        return
+    }
 
-    let form = document.getElementById("batch-comment")
-    form.action = url
-    form.method = "POST"
-    form.submit()
+    url = url.slice(0, -1)
+
+    let textArea = document.querySelector("#batch-comment-message")
+    url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}`
+
+    sendPost(url, "POST", null, false)
 }
 
 function changePage(number) {
@@ -78,7 +112,7 @@ function changePage(number) {
         }
     }
 
-    url.searchParams.set("page", newPage.toString(10))
+    url.searchParams.set("page", newPage.toString())
     window.location.href = url
 }
 

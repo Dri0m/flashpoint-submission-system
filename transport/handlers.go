@@ -46,9 +46,11 @@ func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
 	if err := a.Service.ReceiveComments(ctx, uid, []int64{sid}, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
+		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/submission/%d", sid), http.StatusFound)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("comment successful"))
 }
 
 func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +90,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
