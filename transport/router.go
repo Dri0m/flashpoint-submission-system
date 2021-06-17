@@ -69,6 +69,9 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	userOwnsSubmission := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserOwnsResource(r, uid, constants.ResourceKeySubmissionID)
 	}
+	userOwnsAllSubmissions := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserOwnsResource(r, uid, constants.ResourceKeySubmissionIDs)
+	}
 	userHasNoSubmissions := func(r *http.Request, uid int64) (bool, error) {
 		return a.IsUserWithinResourceLimit(r, uid, constants.ResourceKeySubmissionID, 1)
 	}
@@ -131,16 +134,12 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 				all(isTrialCurator, userOwnsSubmission),
 				all(isInAudit, userOwnsSubmission))))).Methods("POST")
 
-	router.Handle(fmt.Sprintf("/submission/{%s}/comment", constants.ResourceKeySubmissionID),
+	router.Handle(fmt.Sprintf("/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs),
 		http.HandlerFunc(a.UserAuthMux(
-			a.HandleCommentReceiver, any(
+			a.HandleCommentReceiverBatch, any(
 				all(isStaff, a.UserCanCommentAction),
-				all(isTrialCurator, userOwnsSubmission, a.UserCanCommentAction),
-				all(isInAudit, userOwnsSubmission, a.UserCanCommentAction))))).Methods("POST")
-
-	router.Handle(fmt.Sprintf("/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs), // TODO trial curator should be able to use this
-		http.HandlerFunc(a.UserAuthMux(
-			a.HandleCommentReceiverBatch, all(isStaff, a.UserCanCommentAction)))).Methods("POST")
+				all(isTrialCurator, userOwnsAllSubmissions),
+				all(isInAudit, userOwnsAllSubmissions))))).Methods("POST")
 
 	// providers
 	router.Handle(fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),

@@ -80,24 +80,34 @@ function batchComment(checkboxClassName, attribute, action) {
 
     let checkedCounter = 0
 
-    for (let i = 0; i < checkboxes.length; i++) {
-        if (checkboxes[i].checked) {
-            checkedCounter += 1
-            url += checkboxes[i].dataset[attribute] + ","
+    let magic = function(reload) {
+        url = url.slice(0, -1)
+
+        let textArea = document.querySelector("#batch-comment-message")
+        url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}`
+
+        sendPost(url, "POST", null, reload)
+    }
+
+    let u = new URL(window.location.href)
+
+    // ugly black magic
+    if (!u.href.endsWith("/submissions") && !u.href.endsWith("/my-submissions")) {
+        url += checkboxes[0].dataset[attribute] + ","
+        magic(true)
+    } else {
+        for (let i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].checked) {
+                checkedCounter += 1
+                url += checkboxes[i].dataset[attribute] + ","
+            }
         }
+        if (checkedCounter === 0) {
+            alert("no submissions selected")
+            return
+        }
+        magic(false)
     }
-
-    if (checkedCounter === 0) {
-        alert("no submissions selected")
-        return
-    }
-
-    url = url.slice(0, -1)
-
-    let textArea = document.querySelector("#batch-comment-message")
-    url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}`
-
-    sendPost(url, "POST", null, false)
 }
 
 function changePage(number) {

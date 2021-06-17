@@ -172,51 +172,8 @@
             {{end}}
 
             <br>
-            <form class="pure-form" action="/submission/{{$submissionID}}/comment" method="POST">
-                <fieldset class="pure-group">
-                    <textarea class="pure-input-1 comment-textarea" name="message"
-                              placeholder="Add a comment"></textarea>
-                </fieldset>
-                <div class="right">
-                    <button type="submit" class="pure-button pure-button button-comment" name="action" value="comment">
-                        Comment
-                    </button>
-                    {{if or (isDecider .UserRoles) (isAdder .UserRoles)}}
-                        {{if not (has .UserID (index .Submissions 0).AssignedUserIDs)}}
-                            <button type="submit" class="pure-button pure-button button-assign" name="action"
-                                    value="assign">
-                                Assign
-                            </button>
-                        {{else}}
-                            <button type="submit" class="pure-button pure-button button-unassign" name="action"
-                                    value="unassign">
-                                Unassign
-                            </button>
-                        {{end}}
-                    {{end}}
-                    {{if isDecider .UserRoles}}
-                        {{if not (has .UserID (index .Submissions 0).ApprovedUserIDs)}}
-                            <button type="submit" class="pure-button pure-button button-approve" name="action"
-                                    value="approve">
-                                Approve
-                            </button>
-                        {{end}}
-                        {{if not (has .UserID (index .Submissions 0).RequestedChangesUserIDs)}}
-                            <button type="submit" class="pure-button pure-button button-request-changes" name="action"
-                                    value="request-changes">
-                                Request Changes
-                            </button>
-                        {{end}}
-                    {{end}}
-                    {{if isAdder .UserRoles}}
-                        <button type="submit" class="pure-button pure-button button-mark-added" name="action"
-                                value="mark-added">
-                            Mark as Added
-                        </button>
-                    {{end}}
-                </div>
-            </form>
 
+            {{template "comment-form" .}}
 
         </div>
     </div>

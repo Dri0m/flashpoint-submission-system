@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // TODO optimize database access in middleware
@@ -122,7 +123,7 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 		submissionID := params[constants.ResourceKeySubmissionID]
 		sid, err := strconv.ParseInt(submissionID, 10, 64)
 		if err != nil {
-			return false, nil
+			return false, fmt.Errorf("invalid submission id")
 		}
 
 		submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionID: &sid})
@@ -130,10 +131,45 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 			return false, err
 		}
 
+		if len(submissions) == 0 {
+			return false, fmt.Errorf("submission with id %d not found", sid)
+		}
+
 		s := submissions[0]
 		if s.SubmitterID != uid {
 			return false, nil
 		}
+	} else if resourceKey == constants.ResourceKeySubmissionIDs {
+		params := mux.Vars(r)
+		submissionIDs := strings.Split(params["submission-ids"], ",")
+		sids := make([]int64, 0, len(submissionIDs))
+
+		for _, submissionID := range submissionIDs {
+			sid, err := strconv.ParseInt(submissionID, 10, 64)
+			if err != nil {
+				return false, fmt.Errorf("invalid submission id")
+			}
+			sids = append(sids, sid)
+		}
+
+		for _, sid := range sids {
+			// TODO optimize search query
+			submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionID: &sid})
+			if err != nil {
+				return false, fmt.Errorf("failed to load submission with id %d", sid)
+			}
+
+			if len(submissions) == 0 {
+				return false, fmt.Errorf("submission with id %d not found", sid)
+			}
+
+			submission := submissions[0]
+
+			if submission.SubmitterID != uid {
+				return false, nil
+			}
+		}
+
 	} else if resourceKey == constants.ResourceKeyFileID {
 		params := mux.Vars(r)
 		submissionID := params[constants.ResourceKeyFileID]

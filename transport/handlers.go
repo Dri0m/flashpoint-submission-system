@@ -14,45 +14,6 @@ import (
 	"strings"
 )
 
-func (a *App) HandleCommentReceiver(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	uid := utils.UserIDFromContext(ctx)
-
-	params := mux.Vars(r)
-	submissionID := params[constants.ResourceKeySubmissionID]
-	sid, err := strconv.ParseInt(submissionID, 10, 64)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse form", http.StatusBadRequest)
-		return
-	}
-
-	formAction := r.FormValue("action")
-	formMessage := r.FormValue("message")
-
-	if len([]rune(formMessage)) > 20000 {
-		err = fmt.Errorf("message cannot be longer than 20000 characters")
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := a.Service.ReceiveComments(ctx, uid, []int64{sid}, formAction, formMessage); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("comment successful"))
-}
-
 func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid := utils.UserIDFromContext(ctx)
@@ -94,7 +55,6 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("batch comment successful"))
 }
 
 func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Request) {
@@ -359,7 +319,8 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		"templates/submissions.gohtml",
 		"templates/submission-filter.gohtml",
 		"templates/submission-table.gohtml",
-		"templates/submission-pagenav.gohtml")
+		"templates/submission-pagenav.gohtml",
+		"templates/comment-form.gohtml")
 }
 
 func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
@@ -393,7 +354,8 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		"templates/my-submissions.gohtml",
 		"templates/submission-filter.gohtml",
 		"templates/submission-table.gohtml",
-		"templates/submission-pagenav.gohtml")
+		"templates/submission-pagenav.gohtml",
+		"templates/comment-form.gohtml")
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
@@ -415,7 +377,10 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/submission.gohtml", "templates/submission-table.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/submission.gohtml",
+		"templates/submission-table.gohtml",
+		"templates/comment-form.gohtml")
 }
 
 func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Request) {

@@ -21,41 +21,8 @@
                     Download selected
                 </button>
                 <h2>Batch comment on submissions</h2>
-                <form class="pure-form" id="batch-comment">
-                    <fieldset class="pure-group">
-                    <textarea class="pure-input-1 comment-textarea" id="batch-comment-message"
-                              placeholder="Add a comment"></textarea>
-                    </fieldset>
-                    <div class="right">
-                        <button type="button" class="pure-button pure-button button-comment"
-                                onclick="batchComment('submission-checkbox', 'sid', 'comment')">Comment
-                        </button>
-                        {{if or (isDecider .UserRoles) (isAdder .UserRoles)}}
-                            <button type="button" class="pure-button pure-button button-assign"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'assign')">Assign
-                            </button>
-                            <button type="button" class="pure-button pure-button button-unassign"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'unassign')">Unassign
-                            </button>
-                        {{end}}
-                        {{if isDecider .UserRoles}}
-                            <button type="button" class="pure-button pure-button button-approve"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'approve')">Approve
-                            </button>
-                            <button type="button" class="pure-button pure-button button-request-changes"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">Request
-                                Changes
-                            </button>
-                        {{end}}
-                        {{if isAdder .UserRoles}}
-                            <button type="button" class="pure-button pure-button button-mark-added"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">Mark as
-                                Added
-                            </button>
-                        {{end}}
 
-                    </div>
-                </form>
+                {{template "comment-form" .}}
 
             {{end}}
 
