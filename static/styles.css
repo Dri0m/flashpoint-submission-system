@@ -9,7 +9,7 @@ body {
 }
 
 .navbar {
-    max-width: 1200px;
+    max-width: 1300px;
     margin: 0 auto 10px;
     border: 1px solid #444;
     vertical-align: middle;
@@ -29,7 +29,7 @@ body {
 }
 
 .main {
-    max-width: 1200px;
+    max-width: 1300px;
     margin: 0 auto 50px;
     border: 1px solid #444;
 }
@@ -179,7 +179,7 @@ textarea {
 
 
 .meta-table {
-    font-size: 80%;
+    font-size: 90%;
 }
 
 .meta-table td {
