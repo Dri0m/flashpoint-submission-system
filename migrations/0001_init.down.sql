@@ -5,4 +5,7 @@ DROP TABLE IF EXISTS 'action';
 DROP TABLE IF EXISTS 'curation_meta';
 DROP TABLE IF EXISTS 'submission_file';
 DROP TABLE IF EXISTS 'submission';
+DROP TABLE IF EXISTS 'discord_user_role';
+DROP TABLE IF EXISTS 'discord_role';
 DROP TABLE IF EXISTS 'discord_user';
+DROP TABLE IF EXISTS 'submission_level';
