@@ -374,6 +374,10 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			filters = append(filters, "meta.platform LIKE ?")
 			data = append(data, utils.FormatLike(*filter.PlatformPartial))
 		}
+		if filter.LibraryPartial != nil {
+			filters = append(filters, "meta.library LIKE ?")
+			data = append(data, utils.FormatLike(*filter.LibraryPartial))
+		}
 		if filter.OriginalFilenamePartialAny != nil {
 			filters = append(filters, "filenames.original_filename_sequence LIKE ?")
 			data = append(data, utils.FormatLike(*filter.OriginalFilenamePartialAny))

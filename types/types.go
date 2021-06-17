@@ -101,6 +101,7 @@ type SubmissionsFilter struct {
 	TitlePartial               *string  `schema:"title-partial"`
 	SubmitterUsernamePartial   *string  `schema:"submitter-username-partial"`
 	PlatformPartial            *string  `schema:"platform-partial"`
+	LibraryPartial             *string  `schema:"library-partial"`
 	OriginalFilenamePartialAny *string  `schema:"original-filename-partial-any"`
 	CurrentFilenamePartialAny  *string  `schema:"current-filename-partial-any"`
 	MD5SumPartialAny           *string  `schema:"md5sum-partial-any"`
