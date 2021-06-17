@@ -129,7 +129,7 @@
                 <div class="pure-g comment">
                     <div class="pure-u-1-6 bgr-{{.Action}}">
                         <div class="comment-header">
-                            <img src="{{.AvatarURL}}" class="comment-avatar" alt="avatar"><br>
+                            <img src="{{default "/static/feelsreallyweirdman.png" .AvatarURL}}" class="comment-avatar" alt="avatar" title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}"><br>
                             <b>{{.Username}}</b><br>
                             {{if $canDelete}}
                                 <button class="micro-button" title="delete comment"

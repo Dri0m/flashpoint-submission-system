@@ -4,7 +4,7 @@
             <h1>Profile</h1>
 
             Hi, {{.Username}}!<br>
-            <img src="{{.AvatarURL}}" alt="profile picture">
+            <img src="{{default "/static/feelsreallyweirdman.png" .AvatarURL}}" alt="avatar" title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
             <br>
             <br>
 

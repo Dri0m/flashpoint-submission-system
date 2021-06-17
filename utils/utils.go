@@ -53,6 +53,9 @@ func (r *RealRandomString) RandomString(n int) string {
 }
 
 func FormatAvatarURL(uid int64, avatar string) string {
+	if len(avatar) == 0 {
+		return ""
+	}
 	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", uid, avatar)
 }
 
