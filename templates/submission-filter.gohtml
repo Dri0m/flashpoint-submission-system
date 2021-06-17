@@ -97,7 +97,7 @@
                 <div class="pure-u-1-3">
                     <div class="form-column form-column-text">
                         <fieldset>
-                            <legend>Other Filters</legend>
+                            <legend>Personal Filters</legend>
                             <label for="results-per-page">Results Per Page (default 100)</label>
                             <input type="number" name="results-per-page" min="1"
                                    value="{{default "" .Filter.ResultsPerPage}}">
@@ -133,6 +133,32 @@
                             <label>Uploaded File
                                 <input type="checkbox" name="post-last-action" value="upload-file"
                                        {{if has "upload-file" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
+                        </fieldset>
+                    </div>
+                    <div class="form-column form-column-checkboxes">
+                        <fieldset>
+                            <legend>Filter by My State (ctrl+click to uncheck)</legend>
+                            <label>Not assigned to me
+                                <input type="radio" name="assigned-status-me" value="unassigned"
+                                       {{if eq "unassigned" (unpointify .Filter.AssignedStatusMe)}}checked{{end}}></label>
+                            <label>Assigned to me
+                                <input type="radio" name="assigned-status-me" value="assigned"
+                                       {{if eq "assigned" (unpointify .Filter.AssignedStatusMe)}}checked{{end}}></label>
+                            <br>
+                            <label>I have not RC
+                                <input type="radio" name="requested-changes-status-me" value="none"
+                                       {{if eq "none" (unpointify .Filter.RequestedChangedStatusMe)}}checked{{end}}></label>
+                            <label>I have RC
+                                <input type="radio" name="requested-changes-status-me" value="ongoing"
+                                       {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatusMe)}}checked{{end}}></label>
+                            <br>
+                            <label>I have not approved
+                                <input type="radio" name="approvals-status-me" value="no"
+                                       {{if eq "no" (unpointify .Filter.ApprovalsStatusMe)}}checked{{end}}></label>
+                            <label>I have approved
+                                <input type="radio" name="approvals-status-me" value="yes"
+                                       {{if eq "yes" (unpointify .Filter.ApprovalsStatusMe)}}checked{{end}}></label>
+                            <br>
                         </fieldset>
                     </div>
                 </div>

@@ -114,6 +114,9 @@ type SubmissionsFilter struct {
 	RequestedChangedStatus     *string  `schema:"requested-changes-status"`
 	ApprovalsStatus            *string  `schema:"approvals-status"`
 	SubmissionLevels           []string `schema:"sumbission-level"`
+	AssignedStatusMe           *string  `schema:"assigned-status-me"`
+	RequestedChangedStatusMe   *string  `schema:"requested-changes-status-me"`
+	ApprovalsStatusMe          *string  `schema:"approvals-status-me"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
@@ -171,6 +174,16 @@ func (sf *SubmissionsFilter) Validate() error {
 	}
 	if sf.ApprovalsStatus != nil && *sf.ApprovalsStatus != "no" && *sf.ApprovalsStatus != "yes" {
 		return fmt.Errorf("invalid approvals-status")
+	}
+
+	if sf.AssignedStatusMe != nil && *sf.AssignedStatusMe != "unassigned" && *sf.AssignedStatusMe != "assigned" {
+		return fmt.Errorf("invalid assigned-status-me")
+	}
+	if sf.RequestedChangedStatusMe != nil && *sf.RequestedChangedStatusMe != "none" && *sf.RequestedChangedStatusMe != "ongoing" {
+		return fmt.Errorf("invalid requested-changes-status-me")
+	}
+	if sf.ApprovalsStatusMe != nil && *sf.ApprovalsStatusMe != "no" && *sf.ApprovalsStatusMe != "yes" {
+		return fmt.Errorf("invalid approvals-status-me")
 	}
 	return nil
 }

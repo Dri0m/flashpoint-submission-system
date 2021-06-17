@@ -454,6 +454,30 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				filters = append(filters, "active_approved.user_count_with_enabled_action > 0")
 			}
 		}
+		if filter.AssignedStatusMe != nil {
+			if *filter.AssignedStatusMe == "unassigned" {
+				filters = append(filters, "active_assigned.user_ids_with_enabled_action NOT LIKE ? OR active_assigned.user_ids_with_enabled_action IS NULL")
+			} else if *filter.AssignedStatusMe == "assigned" {
+				filters = append(filters, "active_assigned.user_ids_with_enabled_action LIKE ?")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
+		}
+		if filter.RequestedChangedStatusMe != nil {
+			if *filter.RequestedChangedStatusMe == "none" {
+				filters = append(filters, "active_requested_changes.user_ids_with_enabled_action NOT LIKE ? OR active_requested_changes.user_ids_with_enabled_action IS NULL")
+			} else if *filter.RequestedChangedStatusMe == "ongoing" {
+				filters = append(filters, "active_requested_changes.user_ids_with_enabled_action LIKE ?")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
+		}
+		if filter.ApprovalsStatusMe != nil {
+			if *filter.ApprovalsStatusMe == "no" {
+				filters = append(filters, "active_approved.user_ids_with_enabled_action NOT LIKE ? OR active_approved.user_ids_with_enabled_action IS NULL")
+			} else if *filter.ApprovalsStatusMe == "yes" {
+				filters = append(filters, "active_approved.user_ids_with_enabled_action LIKE ?")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
+		}
 	}
 
 	data = append(data, currentLimit, currentOffset)
