@@ -11,14 +11,15 @@
                     <th class="center">View</th>
                     <th>Title</th>
                     <th>Platform</th>
+                    <th>Library</th>
                     <th>Level</th>
                     <th>Uploaded by</th>
                     <th>Updated by</th>
                     <th>Size</th>
                     <th>Bot</th>
-                    <th>Assigned</th>
-                    <th>Requested Changes</th>
-                    <th>Approved</th>
+                    <th title="Assigned">AS</th>
+                    <th title="Requested Changes">RC</th>
+                    <th title="Approved">AP</th>
                     <th>Uploaded at</th>
                     <th>Updated at</th>
                     <th>Original Filename</th>
@@ -38,6 +39,7 @@
                         <td class="center"><a href="/submission/{{.SubmissionID}}">View</a></td>
                         <td>{{.CurationTitle}}</td>
                         <td>{{.CurationPlatform}}</td>
+                        <td>{{.CurationLibrary}}</td>
                         <td>{{.SubmissionLevel}}</td>
                         <td>{{.SubmitterUsername}}</td>
                         <td>{{.UpdaterUsername}}</td>

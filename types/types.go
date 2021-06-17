@@ -83,9 +83,10 @@ type ExtendedSubmission struct {
 	UploadedAt              time.Time // oldest file
 	UpdatedAt               time.Time // newest file
 	CurationTitle           *string   // newest file
-	CurationAlternateTitles *string   //newest file
-	CurationPlatform        *string   //newest file
+	CurationAlternateTitles *string   // newest file
+	CurationPlatform        *string   // newest file
 	CurationLaunchCommand   *string   // newest file
+	CurationLibrary         *string   // newest file
 	BotAction               string
 	LatestAction            string
 	FileCount               uint64
