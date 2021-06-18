@@ -28,7 +28,7 @@ type App struct {
 	decoder *schema.Decoder
 }
 
-func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *discordgo.Session) {
+func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
@@ -45,7 +45,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
-		Service: service.NewSiteService(l, db, botSession, conf.FlashpointServerID, conf.ValidatorServerURL, conf.SessionExpirationSeconds, constants.SubmissionsDir),
+		Service: service.NewSiteService(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID, conf.NotificationChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds, constants.SubmissionsDir),
 		decoder: decoder,
 	}
 
@@ -57,6 +57,12 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, botSession *disc
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-term
+
+	l.Infoln("closing the auth bot session...")
+	authBotSession.Close()
+
+	l.Infoln("closing the notification bot session...")
+	notificationBotSession.Close()
 
 	l.Infoln("shutting down the server...")
 	if err := srv.Shutdown(context.Background()); err != nil {

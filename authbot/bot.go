@@ -11,10 +11,10 @@ import (
 type bot struct {
 	session            *discordgo.Session
 	flashpointServerID string
-	l                  *logrus.Logger
+	l                  *logrus.Entry
 }
 
-func NewBot(botSession *discordgo.Session, flashpointServerID string, l *logrus.Logger) *bot {
+func NewBot(botSession *discordgo.Session, flashpointServerID string, l *logrus.Entry) *bot {
 	return &bot{
 		session:            botSession,
 		flashpointServerID: flashpointServerID,
@@ -24,7 +24,7 @@ func NewBot(botSession *discordgo.Session, flashpointServerID string, l *logrus.
 
 // ConnectBot connects bot or panics
 func ConnectBot(l *logrus.Logger, token string) *discordgo.Session {
-	l.Infoln("connecting discord bot...")
+	l.Infoln("connecting the discord auth bot...")
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		l.Fatal(err)

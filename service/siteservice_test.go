@@ -174,6 +174,17 @@ func (m *mockAuthBot) GetFlashpointRoles() ([]types.DiscordRole, error) {
 
 ////////////////////////////////////////////////
 
+type mockNotificationBot struct {
+	mock.Mock
+}
+
+func (m *mockNotificationBot) SendMessage(msg string) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
+////////////////////////////////////////////////
+
 type mockValidator struct {
 	mock.Mock
 }
@@ -246,6 +257,7 @@ func (m *mockAuthTokenProvider) CreateAuthToken(userID int64) (*authToken, error
 type testService struct {
 	s                    *siteService
 	authBot              *mockAuthBot
+	notificationBot      *mockNotificationBot
 	dal                  *mockDAL
 	dbs                  *mockDBSession
 	validator            *mockValidator
@@ -255,6 +267,7 @@ type testService struct {
 
 func NewTestSiteService() *testService {
 	authBot := &mockAuthBot{}
+	notificationBot := &mockNotificationBot{}
 	dal := &mockDAL{}
 	dbs := &mockDBSession{}
 	validator := &mockValidator{}
@@ -264,6 +277,7 @@ func NewTestSiteService() *testService {
 	return &testService{
 		s: &siteService{
 			authBot:                  authBot,
+			notificationBot:          notificationBot,
 			dal:                      dal,
 			validator:                validator,
 			clock:                    &fakeClock{},
@@ -272,6 +286,7 @@ func NewTestSiteService() *testService {
 			sessionExpirationSeconds: 0,
 		},
 		authBot:              authBot,
+		notificationBot:      notificationBot,
 		dal:                  dal,
 		dbs:                  dbs,
 		validator:            validator,
@@ -282,10 +297,12 @@ func NewTestSiteService() *testService {
 
 func (ts *testService) assertExpectations(t *testing.T) {
 	ts.authBot.AssertExpectations(t)
+	ts.notificationBot.AssertExpectations(t)
 	ts.dal.AssertExpectations(t)
 	ts.dbs.AssertExpectations(t)
 	ts.validator.AssertExpectations(t)
 	ts.multipartFileWrapper.AssertExpectations(t)
+	ts.authTokenProvider.AssertExpectations(t)
 }
 
 ////////////////////////////////////////////////

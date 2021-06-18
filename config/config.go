@@ -12,7 +12,7 @@ import (
 type Config struct {
 	Port                         int64
 	OauthConf                    *oauth2.Config
-	BotToken                     string
+	AuthBotToken                 string
 	FlashpointServerID           string
 	SecurecookieHashKeyPrevious  string
 	SecurecookieBlockKeyPrevious string
@@ -27,6 +27,8 @@ type Config struct {
 	DBIP                         string
 	DBPort                       int64
 	DBName                       string
+	NotificationBotToken         string
+	NotificationChannelID        string
 }
 
 func EnvString(name string) string {
@@ -71,7 +73,7 @@ func GetConfig(l *logrus.Logger) *Config {
 				AuthStyle: oauth2.AuthStyleInParams,
 			},
 		},
-		BotToken:                     EnvString("BOT_TOKEN"),
+		AuthBotToken:                 EnvString("AUTH_BOT_TOKEN"),
 		FlashpointServerID:           EnvString("FLASHPOINT_SERVER_ID"),
 		SecurecookieHashKeyPrevious:  EnvString("SECURECOOKIE_HASH_KEY_PREVIOUS"),
 		SecurecookieBlockKeyPrevious: EnvString("SECURECOOKIE_BLOCK_KEY_PREVIOUS"),
@@ -79,12 +81,12 @@ func GetConfig(l *logrus.Logger) *Config {
 		SecurecookieBlockKeyCurrent:  EnvString("SECURECOOKIE_BLOCK_KEY_CURRENT"),
 		SessionExpirationSeconds:     EnvInt("SESSION_EXPIRATION_SECONDS"),
 		ValidatorServerURL:           EnvString("VALIDATOR_SERVER_URL"),
-		DBRootUser:                   EnvString("DB_ROOT_USER"),
-		DBRootPassword:               EnvString("DB_ROOT_PASSWORD"),
 		DBUser:                       EnvString("DB_USER"),
 		DBPassword:                   EnvString("DB_PASSWORD"),
 		DBIP:                         EnvString("DB_IP"),
 		DBPort:                       EnvInt("DB_PORT"),
 		DBName:                       EnvString("DB_NAME"),
+		NotificationBotToken:         EnvString("NOTIFICATION_BOT_TOKEN"),
+		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
 	}
 }

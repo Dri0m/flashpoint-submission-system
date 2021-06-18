@@ -10,6 +10,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
+	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/bwmarrin/discordgo"
@@ -107,6 +108,7 @@ func MapAuthToken(token *authToken) map[string]string {
 
 type siteService struct {
 	authBot                  authbot.DiscordRoleReader
+	notificationBot          notificationbot.DiscordNotificationSender
 	dal                      database.DAL
 	validator                Validator
 	clock                    Clock
@@ -116,9 +118,10 @@ type siteService struct {
 	submissionsDir           string
 }
 
-func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session, flashpointServerID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *siteService {
+func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *siteService {
 	return &siteService{
-		authBot:                  authbot.NewBot(botSession, flashpointServerID, l),
+		authBot:                  authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
+		notificationBot:          notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, l.WithField("botName", "notificationBot")),
 		dal:                      database.NewMysqlDAL(db),
 		validator:                NewValidator(validatorServerURL),
 		clock:                    &RealClock{},
