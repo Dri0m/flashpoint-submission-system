@@ -31,18 +31,18 @@ func NewMysqlDAL(conn *sql.DB) *mysqlDAL {
 // OpenDB opens DAL or panics
 func OpenDB(l *logrus.Logger, conf *config.Config) *sql.DB {
 
-	rootUser := conf.DBRootUser
-	rootPass := conf.DBRootPassword
+	user := conf.DBUser
+	pass := conf.DBPassword
 	ip := conf.DBIP
 	port := conf.DBPort
 	dbName := conf.DBName
 
-	rootDB, err := sql.Open("mysql",
-		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", rootUser, rootPass, ip, port, dbName))
+	db, err := sql.Open("mysql",
+		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", user, pass, ip, port, dbName))
 	if err != nil {
 		l.Fatal(err)
 	}
-	driver, err := mysql.WithInstance(rootDB, &mysql.Config{})
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -56,18 +56,6 @@ func OpenDB(l *logrus.Logger, conf *config.Config) *sql.DB {
 	}
 	err = m.Up()
 	if err != nil && err.Error() != "no change" {
-		l.Fatal(err)
-	}
-	m.Close()
-	driver.Close()
-	rootDB.Close()
-
-	user := conf.DBUser
-	pass := conf.DBPassword
-
-	db, err := sql.Open("mysql",
-		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", user, pass, ip, port, dbName))
-	if err != nil {
 		l.Fatal(err)
 	}
 

@@ -25,6 +25,7 @@ services:
     networks:
       marketnetwork:
         ipv4_address: 10.50.0.2
+    command: mysqld --sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
 
 volumes:
   fpfssdb_data:
