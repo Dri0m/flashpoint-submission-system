@@ -1,4 +1,4 @@
-package bot
+package authbot
 
 import (
 	"fmt"

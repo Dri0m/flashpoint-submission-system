@@ -7,7 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"github.com/Dri0m/flashpoint-submission-system/bot"
+	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
@@ -106,7 +106,7 @@ func MapAuthToken(token *authToken) map[string]string {
 }
 
 type siteService struct {
-	bot                      bot.DiscordRoleReader
+	authBot                  authbot.DiscordRoleReader
 	dal                      database.DAL
 	validator                Validator
 	clock                    Clock
@@ -118,7 +118,7 @@ type siteService struct {
 
 func NewSiteService(l *logrus.Logger, db *sql.DB, botSession *discordgo.Session, flashpointServerID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *siteService {
 	return &siteService{
-		bot:                      bot.NewBot(botSession, flashpointServerID, l),
+		authBot:                  authbot.NewBot(botSession, flashpointServerID, l),
 		dal:                      database.NewMysqlDAL(db),
 		validator:                NewValidator(validatorServerURL),
 		clock:                    &RealClock{},
@@ -734,12 +734,12 @@ func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 
 	// get discord roles
-	serverRoles, err := s.bot.GetFlashpointRoles() // TODO changes in roles need to be refreshed sometimes
+	serverRoles, err := s.authBot.GetFlashpointRoles() // TODO changes in roles need to be refreshed sometimes
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to obtain discord server roles")
 	}
-	userRoleIDs, err := s.bot.GetFlashpointRoleIDsForUser(discordUser.ID)
+	userRoleIDs, err := s.authBot.GetFlashpointRoleIDsForUser(discordUser.ID)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to obtain discord server roles")

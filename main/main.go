@@ -5,7 +5,7 @@
 package main
 
 import (
-	"github.com/Dri0m/flashpoint-submission-system/bot"
+	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
@@ -20,7 +20,7 @@ func main() {
 	conf := config.GetConfig(l)
 	db := database.OpenDB(l, conf)
 	defer db.Close()
-	b := bot.ConnectBot(l, conf.BotToken)
+	b := authbot.ConnectBot(l, conf.BotToken)
 
 	transport.InitApp(l, conf, db, b)
 }

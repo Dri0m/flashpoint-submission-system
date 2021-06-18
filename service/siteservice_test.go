@@ -158,16 +158,16 @@ func (m *mockDAL) SoftDeleteComment(_ database.DBSession, cid int64) error {
 
 ////////////////////////////////////////////////
 
-type mockBot struct {
+type mockAuthBot struct {
 	mock.Mock
 }
 
-func (m *mockBot) GetFlashpointRoleIDsForUser(uid int64) ([]string, error) {
+func (m *mockAuthBot) GetFlashpointRoleIDsForUser(uid int64) ([]string, error) {
 	args := m.Called(uid)
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockBot) GetFlashpointRoles() ([]types.DiscordRole, error) {
+func (m *mockAuthBot) GetFlashpointRoles() ([]types.DiscordRole, error) {
 	args := m.Called()
 	return args.Get(0).([]types.DiscordRole), args.Error(1)
 }
@@ -245,7 +245,7 @@ func (m *mockAuthTokenProvider) CreateAuthToken(userID int64) (*authToken, error
 
 type testService struct {
 	s                    *siteService
-	bot                  *mockBot
+	authBot              *mockAuthBot
 	dal                  *mockDAL
 	dbs                  *mockDBSession
 	validator            *mockValidator
@@ -254,7 +254,7 @@ type testService struct {
 }
 
 func NewTestSiteService() *testService {
-	bot := &mockBot{}
+	authBot := &mockAuthBot{}
 	dal := &mockDAL{}
 	dbs := &mockDBSession{}
 	validator := &mockValidator{}
@@ -263,7 +263,7 @@ func NewTestSiteService() *testService {
 
 	return &testService{
 		s: &siteService{
-			bot:                      bot,
+			authBot:                  authBot,
 			dal:                      dal,
 			validator:                validator,
 			clock:                    &fakeClock{},
@@ -271,7 +271,7 @@ func NewTestSiteService() *testService {
 			authTokenProvider:        authTokenProvider,
 			sessionExpirationSeconds: 0,
 		},
-		bot:                  bot,
+		authBot:              authBot,
 		dal:                  dal,
 		dbs:                  dbs,
 		validator:            validator,
@@ -281,7 +281,7 @@ func NewTestSiteService() *testService {
 }
 
 func (ts *testService) assertExpectations(t *testing.T) {
-	ts.bot.AssertExpectations(t)
+	ts.authBot.AssertExpectations(t)
 	ts.dal.AssertExpectations(t)
 	ts.dbs.AssertExpectations(t)
 	ts.validator.AssertExpectations(t)
@@ -2137,8 +2137,8 @@ func Test_siteService_SaveUser_OK(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
 	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
@@ -2196,8 +2196,8 @@ func Test_siteService_SaveUser_Fail_Commit(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
 	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
@@ -2255,8 +2255,8 @@ func Test_siteService_SaveUser_Fail_StoreSession(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
 	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
@@ -2308,8 +2308,8 @@ func Test_siteService_SaveUser_Fail_CreateAuthToken(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
 	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(nil)
@@ -2360,8 +2360,8 @@ func Test_siteService_SaveUser_Fail_StoreDiscordUserRoles(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(nil)
 	ts.dal.On("StoreDiscordUserRoles", uid, userRolesIDsNumeric).Return(errors.New(""))
@@ -2406,8 +2406,8 @@ func Test_siteService_SaveUser_Fail_StoreDiscordServerRoles(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(errors.New(""))
 
@@ -2447,8 +2447,8 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoleIDsForUser(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.bot.On("GetFlashpointRoleIDsForUser", uid).Return(([]string)(nil), errors.New(""))
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(([]string)(nil), errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -2477,7 +2477,7 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoles(t *testing.T) {
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
-	ts.bot.On("GetFlashpointRoles").Return(([]types.DiscordRole)(nil), errors.New(""))
+	ts.authBot.On("GetFlashpointRoles").Return(([]types.DiscordRole)(nil), errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
 

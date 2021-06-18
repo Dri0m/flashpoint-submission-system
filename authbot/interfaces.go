@@ -1,4 +1,4 @@
-package bot
+package authbot
 
 import "github.com/Dri0m/flashpoint-submission-system/types"
 
