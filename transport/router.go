@@ -141,6 +141,10 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 				all(isTrialCurator, userOwnsAllSubmissions),
 				all(isInAudit, userOwnsAllSubmissions))))).Methods("POST")
 
+	router.Handle("/api/notification-settings",
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleUpdateNotificationSettings, any(isStaff, isTrialCurator, isInAudit)))).Methods("POST")
+
 	// providers
 	router.Handle(fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.UserAuthMux(

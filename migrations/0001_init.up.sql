@@ -133,3 +133,24 @@ CREATE TABLE IF NOT EXISTS comment
     FOREIGN KEY (fk_action_id) REFERENCES action (id)
 );
 CREATE INDEX idx_comment_created_at ON comment (created_at);
+
+CREATE TABLE IF NOT EXISTS submission_notification_subscription
+(
+    id               BIGINT PRIMARY KEY AUTO_INCREMENT,
+    fk_user_id       BIGINT NOT NULL,
+    fk_submission_id BIGINT NOT NULL,
+    created_at       BIGINT NOT NULL,
+    deleted_at       BIGINT DEFAULT NULL,
+    FOREIGN KEY (fk_user_id) REFERENCES discord_user (id),
+    FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
+);
+CREATE INDEX idx_submission_notification_subscription_created_at ON submission_notification_subscription (created_at);
+
+CREATE TABLE IF NOT EXISTS notification_settings
+(
+    id           BIGINT PRIMARY KEY AUTO_INCREMENT,
+    fk_user_id   BIGINT NOT NULL,
+    fk_action_id BIGINT NOT NULL,
+    FOREIGN KEY (fk_user_id) REFERENCES discord_user (id),
+    FOREIGN KEY (fk_action_id) REFERENCES action (id)
+);

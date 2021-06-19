@@ -842,3 +842,51 @@ func (s *siteService) GetUserRoles(ctx context.Context, uid int64) ([]string, er
 
 	return roles, nil
 }
+
+func (s *siteService) GetProfilePageData(ctx context.Context, uid int64) (*types.ProfilePageData, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	notificationActions, err := s.dal.GetNotificationSettingsByUserID(dbs, uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load curation comments")
+	}
+
+	pageData := &types.ProfilePageData{
+		BasePageData:        *bpd,
+		NotificationActions: notificationActions,
+	}
+
+	return pageData, nil
+}
+
+func (s *siteService) UpdateNotificationSettings(ctx context.Context, uid int64, notificationActions []string) error {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	if err := s.dal.StoreNotificationSettings(dbs, uid, notificationActions); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf("unable to store notification settings")
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to commit transaction")
+	}
+
+	return nil
+}

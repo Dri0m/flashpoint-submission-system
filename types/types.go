@@ -198,3 +198,7 @@ type ExtendedComment struct {
 	Message      *string
 	CreatedAt    time.Time
 }
+
+type UpdateNotificationSettings struct {
+	NotificationActions []string `schema:"notification-action"`
+}

@@ -7,6 +7,11 @@ type BasePageData struct {
 	UserRoles []string
 }
 
+type ProfilePageData struct {
+	BasePageData
+	NotificationActions []string
+}
+
 type SubmissionsPageData struct {
 	BasePageData
 	Submissions []*ExtendedSubmission

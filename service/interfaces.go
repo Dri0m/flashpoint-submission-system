@@ -23,6 +23,8 @@ type Service interface {
 	SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error)
 	Logout(ctx context.Context, secret string) error
 	GetUserRoles(ctx context.Context, uid int64) ([]string, error)
+	UpdateNotificationSettings(ctx context.Context, uid int64, notificationActions []string) error
+	GetProfilePageData(ctx context.Context, uid int64) (*types.ProfilePageData, error)
 }
 
 type Validator interface {

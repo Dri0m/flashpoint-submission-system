@@ -269,8 +269,9 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	uid := utils.UserIDFromContext(ctx)
 
-	pageData, err := a.Service.GetBasePageData(ctx)
+	pageData, err := a.Service.GetProfilePageData(ctx, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -405,4 +406,32 @@ func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Reque
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submission-files.gohtml", "templates/submission-files-table.gohtml")
+}
+
+func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	uid := utils.UserIDFromContext(ctx)
+
+	if err := r.ParseForm(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	notificationSettings := &types.UpdateNotificationSettings{}
+
+	if err := a.decoder.Decode(notificationSettings, r.PostForm); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		return
+	}
+
+	err := a.Service.UpdateNotificationSettings(ctx, uid, notificationSettings.NotificationActions)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

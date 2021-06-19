@@ -28,6 +28,8 @@ type DAL interface {
 	SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error
 	SoftDeleteSubmission(dbs DBSession, sid int64) error
 	SoftDeleteComment(dbs DBSession, cid int64) error
+	StoreNotificationSettings(dbs DBSession, uid int64, actions []string) error
+	GetNotificationSettingsByUserID(dbs DBSession, uid int64) ([]string, error)
 }
 
 type DBSession interface {

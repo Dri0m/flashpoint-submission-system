@@ -156,6 +156,16 @@ func (m *mockDAL) SoftDeleteComment(_ database.DBSession, cid int64) error {
 	return args.Error(0)
 }
 
+func (m *mockDAL) StoreNotificationSettings(_ database.DBSession, uid int64, actions []string) error {
+	args := m.Called(uid, actions)
+	return args.Error(0)
+}
+
+func (m *mockDAL) GetNotificationSettingsByUserID(_ database.DBSession, uid int64) ([]string, error) {
+	args := m.Called(uid)
+	return args.Get(0).([]string), args.Error(1)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {
@@ -2709,6 +2719,173 @@ func Test_siteService_GetUserRoles_Fail_GetDiscordUserRoles(t *testing.T) {
 	actual, err := ts.s.GetUserRoles(ctx, uid)
 
 	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_GetProfilePageData_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	bpd := createAssertBPD(ts, uid)
+
+	actions := []string{
+		"foo",
+	}
+
+	expected := &types.ProfilePageData{
+		BasePageData:        *bpd,
+		NotificationActions: actions,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetNotificationSettingsByUserID", uid).Return(actions, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetProfilePageData(ctx, uid)
+
+	assert.Equal(t, expected, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetProfilePageData_Fail_GetNotificationSettingsByUserID(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	createAssertBPD(ts, uid)
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetNotificationSettingsByUserID", uid).Return(([]string)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetProfilePageData(ctx, uid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetProfilePageData_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetProfilePageData(ctx, uid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_UpdateNotificationSettings_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	actions := []string{
+		"foo",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreNotificationSettings", uid, actions).Return(nil)
+	ts.dbs.On("Commit").Return(nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateNotificationSettings(ctx, uid, actions)
+
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateNotificationSettings_Fail_Commit(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	actions := []string{
+		"foo",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreNotificationSettings", uid, actions).Return(nil)
+	ts.dbs.On("Commit").Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateNotificationSettings(ctx, uid, actions)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateNotificationSettings_Fail_StoreNotificationSettings(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	actions := []string{
+		"foo",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("StoreNotificationSettings", uid, actions).Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateNotificationSettings(ctx, uid, actions)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateNotificationSettings_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	actions := []string{
+		"foo",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	err := ts.s.UpdateNotificationSettings(ctx, uid, actions)
+
 	assert.Error(t, err)
 
 	ts.assertExpectations(t)

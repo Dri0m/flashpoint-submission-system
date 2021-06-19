@@ -1103,3 +1103,52 @@ func (d *mysqlDAL) SoftDeleteComment(dbs DBSession, cid int64) error {
 		cid)
 	return err
 }
+
+// StoreNotificationSettings clears and stores new notification settings for user
+func (d *mysqlDAL) StoreNotificationSettings(dbs DBSession, uid int64, actions []string) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		DELETE FROM notification_settings WHERE fk_user_id = ?`,
+		uid)
+	if err != nil {
+		return err
+	}
+
+	if len(actions) == 0 {
+		return nil
+	}
+	data := make([]interface{}, 0, len(actions)*2)
+	for _, role := range actions {
+		data = append(data, uid, role)
+	}
+
+	const valuePlaceholder = `(?, (SELECT id FROM action WHERE name = ?))`
+	_, err = dbs.Tx().ExecContext(dbs.Ctx(),
+		`INSERT INTO notification_settings (fk_user_id, fk_action_id) VALUES `+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(actions)-1),
+		data...)
+	return err
+}
+
+// GetNotificationSettingsByUserID returns actions on which user is notified on submissions he's subscribed to
+func (d *mysqlDAL) GetNotificationSettingsByUserID(dbs DBSession, uid int64) ([]string, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
+		SELECT (SELECT name FROM action WHERE action.id = notification_settings.fk_action_id) AS action_name
+		FROM notification_settings 
+		WHERE fk_user_id = ?`,
+		uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]string, 0)
+	var action string
+
+	for rows.Next() {
+		if err := rows.Scan(&action); err != nil {
+			return nil, err
+		}
+		result = append(result, action)
+	}
+
+	return result, nil
+}
