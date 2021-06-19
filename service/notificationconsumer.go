@@ -32,6 +32,9 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 			case <-bucket:
 			}
 
+			// TODO yea, like this is fetching notifications one by one, which is lovely and simple,
+			// but also has some room for optimizing database access
+
 			dbs, err := s.dal.NewSession(ctx)
 			if err != nil {
 				l.Error(err)
