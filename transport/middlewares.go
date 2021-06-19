@@ -20,19 +20,28 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 		secret, err := a.GetSecretFromCookie(r)
 		if err != nil {
 			utils.LogCtx(r.Context()).Error(err)
-			http.Error(w, "failed to parse cookie, please clear your cookies and try again", http.StatusBadRequest)
+			utils.UnsetCookie(w, utils.Cookies.Login)
+			http.Redirect(w, r, "/", http.StatusFound)
+			// TODO add user facing error message here
+			//http.Error(w, "failed to parse cookie, please clear your cookies and try again", http.StatusBadRequest)
 			return
 		}
 
 		uid, ok, err := a.Service.GetUIDFromSession(r.Context(), secret)
 		if err != nil {
 			utils.LogCtx(r.Context()).Error(err)
-			http.Error(w, "failed to load session, please clear your cookies and try again", http.StatusBadRequest)
+			utils.UnsetCookie(w, utils.Cookies.Login)
+			http.Redirect(w, r, "/", http.StatusFound)
+			// TODO add user facing error message here
+			//http.Error(w, "failed to load session, please clear your cookies and try again", http.StatusBadRequest)
 			return
 		}
 		if !ok {
 			utils.LogCtx(r.Context()).Error(err)
-			http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
+			utils.UnsetCookie(w, utils.Cookies.Login)
+			http.Redirect(w, r, "/", http.StatusFound)
+			// TODO add user facing error message here
+			//http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
 			return
 		}
 
