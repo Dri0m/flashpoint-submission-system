@@ -197,3 +197,18 @@ func SplitMultilineText(s *string) []string {
 	}
 	return strings.Split(*s, "\n")
 }
+
+// NewBucketLimiter creates a ticker channel that fills a bucket with one token every d and has a given capacity for burst usage
+func NewBucketLimiter(d time.Duration, capacity int) (chan bool, *time.Ticker) {
+	bucket := make(chan bool, capacity)
+	ticker := time.NewTicker(d)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				bucket <- true
+			}
+		}
+	}()
+	return bucket, ticker
+}
