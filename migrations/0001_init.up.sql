@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS submission
     deleted_at             BIGINT DEFAULT NULL,
     FOREIGN KEY (fk_submission_level_id) REFERENCES submission_level (id)
 );
-CREATE INDEX idx_submission_file_uploaded_at ON submission_file (deleted_at);
+CREATE INDEX idx_submission_deleted_at ON submission (deleted_at);
 
 CREATE TABLE IF NOT EXISTS submission_file
 (
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS submission_file
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
 );
 CREATE INDEX idx_submission_file_uploaded_at ON submission_file (uploaded_at);
-CREATE INDEX idx_submission_file_uploaded_at ON submission_file (deleted_at);
+CREATE INDEX idx_submission_file_deleted_at ON submission_file (deleted_at);
 
 CREATE TABLE IF NOT EXISTS curation_meta
 (
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS comment
     FOREIGN KEY (fk_action_id) REFERENCES action (id)
 );
 CREATE INDEX idx_comment_created_at ON comment (created_at);
-CREATE INDEX idx_comment_created_at ON comment (deleted_at);
+CREATE INDEX idx_comment_deleted_at ON comment (deleted_at);
 
 CREATE TABLE IF NOT EXISTS notification_settings
 (
@@ -157,3 +157,13 @@ CREATE TABLE IF NOT EXISTS submission_notification_subscription
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
 );
 CREATE INDEX idx_submission_notification_subscription_created_at ON submission_notification_subscription (created_at);
+
+CREATE TABLE IF NOT EXISTS submission_notification
+(
+    id         BIGINT PRIMARY KEY AUTO_INCREMENT,
+    message    TEXT   NOT NULL,
+    created_at BIGINT NOT NULL,
+    sent_at    BIGINT DEFAULT NULL
+);
+CREATE INDEX idx_submission_notification_created_at ON submission_notification (created_at);
+CREATE INDEX idx_submission_notification_sent_at ON submission_notification (sent_at);

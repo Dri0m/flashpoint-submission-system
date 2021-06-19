@@ -33,6 +33,7 @@ type DAL interface {
 	SubscribeUserToSubmission(dbs DBSession, uid, sid int64) error
 	UnsubscribeUserFromSubmission(dbs DBSession, uid, sid int64) error
 	IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (bool, error)
+	StoreNotification(dbs DBSession, msg string) error
 }
 
 type DBSession interface {

@@ -181,6 +181,11 @@ func (m *mockDAL) IsUserSubscribedToSubmission(_ database.DBSession, uid, sid in
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *mockDAL) StoreNotification(_ database.DBSession, msg string) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {

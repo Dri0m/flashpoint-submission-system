@@ -1187,3 +1187,40 @@ func (d *mysqlDAL) IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (
 
 	return count == 1, nil
 }
+
+// StoreNotification stores a notification message in the database which acts as a queue for the notification service
+func (d *mysqlDAL) StoreNotification(dbs DBSession, msg string) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		INSERT INTO submission_notification (message, created_at)
+		VALUES(?, UNIX_TIMESTAMP())`,
+		msg)
+
+	return err
+}
+
+// GetUsersForNotification returns a list of users who should be notified by an event
+func (d *mysqlDAL) GetUsersForNotification(dbs DBSession, sid int64, action string) ([]int64, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
+		SELECT notification_settings.fk_user_id
+		FROM notification_settings
+		LEFT JOIN submission_notification_subscription ON submission_notification_subscription.fk_user_id = notification_settings.fk_user_id
+		WHERE submission_notification_subscription.fk_submission_id = ?
+		AND notification_settings.fk_action_id = (SELECT id FROM action where name = ?)`,
+		sid, action)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]int64, 0)
+	var uid int64
+
+	for rows.Next() {
+		if err := rows.Scan(&uid); err != nil {
+			return nil, err
+		}
+		result = append(result, uid)
+	}
+
+	return result, nil
+}
