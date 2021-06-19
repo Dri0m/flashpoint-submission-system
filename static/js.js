@@ -20,7 +20,7 @@ function sendDelete(url) {
     }
 }
 
-function sendPost(url, data, reload) {
+function sendPost(url, data, reload, alertSuccess) {
     let request = new XMLHttpRequest()
     request.open("POST", url)
 
@@ -28,7 +28,9 @@ function sendPost(url, data, reload) {
         if (request.status !== 200) {
             alert(`failed to post '${url}' - status ${request.status} - ${request.response}`)
         } else {
-            alert(`post of '${url}' successful`)
+            if(alertSuccess) {
+                alert(`post of '${url}' successful`)
+            }
             if (reload === true) {
                 location.reload()
             }
@@ -101,14 +103,14 @@ function batchComment(checkboxClassName, attribute, action) {
 
     let checkedCounter = 0
 
-    let magic = function(reload) {
+    let magic = function(reload, alertSuccess) {
         url = url.slice(0, -1)
 
         let textArea = document.querySelector("#batch-comment-message")
         let ignoreDupesCheckbox = document.querySelector("#ignore-duplicate-actions")
         url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${ignoreDupesCheckbox.checked}`
 
-        sendPost(url, null, reload)
+        sendPost(url, null, reload, alertSuccess)
     }
 
     let u = new URL(window.location.href)
@@ -116,7 +118,7 @@ function batchComment(checkboxClassName, attribute, action) {
     // ugly black magic
     if (!u.href.endsWith("/submissions") && !u.href.endsWith("/my-submissions")) {
         url += checkboxes[0].dataset[attribute] + ","
-        magic(true)
+        magic(true, false)
     } else {
         for (let i = 0; i < checkboxes.length; i++) {
             if (checkboxes[i].checked) {
@@ -128,7 +130,7 @@ function batchComment(checkboxClassName, attribute, action) {
             alert("no submissions selected")
             return
         }
-        magic(false)
+        magic(false, true)
     }
 }
 
