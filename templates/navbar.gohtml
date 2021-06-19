@@ -1,48 +1,51 @@
 {{define "navbar"}}
     <div class="navbar">
         <div class="pure-g">
-            <div class="pure-u-1-2">
-                <div class="pure-menu pure-menu-horizontal">
-                    <a href="/" class="pure-menu-heading pure-menu-link">FPFSS</a>
-                    <ul class="pure-menu-list">
-                        {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
-                            <li class="pure-menu-item">
-                                <a href="/submit" class="pure-menu-link">Submit</a>
-                            </li>
-                        {{end}}
-                        {{if isStaff .UserRoles}}
-                            <li class="pure-menu-item">
-                                <a href="/submissions" class="pure-menu-link">Browse Submissions</a>
-                            </li>
-                        {{end}}
-                    </ul>
-                </div>
-            </div>
-            <div class="pure-u-1-2">
-                <div class="pure-menu pure-menu-horizontal right">
-                    {{if .Username}}
-                        <ul class="pure-menu-list">
-                            {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
-                                <li class="pure-menu-item">
-                                    <a href="/my-submissions" class="pure-menu-link">My Submissions</a>
-                                </li>
-                            {{end}}
-                            <li class="pure-menu-item">
-                                <a href="/profile" class="pure-menu-link">Profile</a>
-                            </li>
-                            <li class="pure-menu-item">
-                                <a href="/logout" class="pure-menu-link">Log out</a>
-                            </li>
-                        </ul>
-                    {{else}}
-                        <ul class="pure-menu-list">
-                            <li class="pure-menu-item">
-                                <a href="/auth" class="pure-menu-link">Log in</a>
-                            </li>
-                        </ul>
+    <div class="pure-u-1-2">
+        <div class="pure-menu pure-menu-horizontal">
+            <a href="/" class="pure-menu-heading pure-menu-link">FPFSS</a>
+            <ul class="pure-menu-list">
+                {{if .Username}}
+                    {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
+                        <li class="pure-menu-item">
+                            <a href="/submit" class="pure-menu-link">Submit</a>
+                        </li>
                     {{end}}
-                </div>
-            </div>
+                {{end}}
+                {{if isStaff .UserRoles}}
+                    <li class="pure-menu-item">
+                        <a href="/submissions" class="pure-menu-link">Browse Submissions</a>
+                    </li>
+                {{end}}
+            </ul>
         </div>
     </div>
+        <div class="pure-u-1-2">
+        <div class="pure-menu pure-menu-horizontal right">
+    {{if .Username}}
+        <ul class="pure-menu-list">
+            {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
+                <li class="pure-menu-item">
+                    <a href="/my-submissions" class="pure-menu-link">My Submissions</a>
+                </li>
+            {{end}}
+            <li class="pure-menu-item">
+                <a href="/profile" class="pure-menu-link">Profile</a>
+            </li>
+            <li class="pure-menu-item">
+                <a href="/logout" class="pure-menu-link">Log out</a>
+            </li>
+        </ul>
+    {{else}}
+        <ul class="pure-menu-list">
+            <li class="pure-menu-item">
+                <a href="/auth" class="pure-menu-link">Log in</a>
+            </li>
+        </ul>
+
+        </div>
+        </div>
+        </div>
+        </div>
+    {{end}}
 {{end}}
