@@ -30,6 +30,9 @@ type DAL interface {
 	SoftDeleteComment(dbs DBSession, cid int64) error
 	StoreNotificationSettings(dbs DBSession, uid int64, actions []string) error
 	GetNotificationSettingsByUserID(dbs DBSession, uid int64) ([]string, error)
+	SubscribeUserToSubmission(dbs DBSession, uid, sid int64) error
+	UnsubscribeUserFromSubmission(dbs DBSession, uid, sid int64) error
+	IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (bool, error)
 }
 
 type DBSession interface {

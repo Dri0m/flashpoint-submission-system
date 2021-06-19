@@ -363,6 +363,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	uid := utils.UserIDFromContext(ctx)
 	params := mux.Vars(r)
 	submissionID := params[constants.ResourceKeySubmissionID]
 
@@ -373,7 +374,7 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageData, err := a.Service.GetViewSubmissionPageData(ctx, sid)
+	pageData, err := a.Service.GetViewSubmissionPageData(ctx, uid, sid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "submission not found", http.StatusNotFound)
@@ -421,6 +422,37 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 	}
 
 	err := a.Service.UpdateNotificationSettings(ctx, uid, notificationSettings.NotificationActions)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	uid := utils.UserIDFromContext(ctx)
+	params := mux.Vars(r)
+	submissionID := params[constants.ResourceKeySubmissionID]
+
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		return
+	}
+
+	subscriptionSettings := &types.UpdateSubscriptionSettings{}
+
+	if err := a.decoder.Decode(subscriptionSettings, r.URL.Query()); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		return
+	}
+
+	err = a.Service.UpdateSubscriptionSettings(ctx, uid, sid, subscriptionSettings.Subscribe)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

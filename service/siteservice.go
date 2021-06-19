@@ -513,7 +513,7 @@ SubmissionLoop:
 	return nil
 }
 
-func (s *siteService) GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error) {
+func (s *siteService) GetViewSubmissionPageData(ctx context.Context, uid, sid int64) (*types.ViewSubmissionPageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -554,13 +554,20 @@ func (s *siteService) GetViewSubmissionPageData(ctx context.Context, sid int64) 
 		return nil, fmt.Errorf("failed to load curation comments")
 	}
 
+	isUserSubscribed, err := s.dal.IsUserSubscribedToSubmission(dbs, uid, sid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load curation comments")
+	}
+
 	pageData := &types.ViewSubmissionPageData{
 		SubmissionsPageData: types.SubmissionsPageData{
 			BasePageData: *bpd,
 			Submissions:  submissions,
 		},
-		CurationMeta: meta,
-		Comments:     comments,
+		CurationMeta:     meta,
+		Comments:         comments,
+		IsUserSubscribed: isUserSubscribed,
 	}
 
 	return pageData, nil
@@ -881,6 +888,34 @@ func (s *siteService) UpdateNotificationSettings(ctx context.Context, uid int64,
 	if err := s.dal.StoreNotificationSettings(dbs, uid, notificationActions); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("unable to store notification settings")
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf("failed to commit transaction")
+	}
+
+	return nil
+}
+
+func (s *siteService) UpdateSubscriptionSettings(ctx context.Context, uid, sid int64, subscribe bool) error {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	if subscribe {
+		if err := s.dal.SubscribeUserToSubmission(dbs, uid, sid); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return fmt.Errorf("unable to subscribe user to submission")
+		}
+	} else {
+		if err := s.dal.UnsubscribeUserFromSubmission(dbs, uid, sid); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return fmt.Errorf("unable to unsubscribe user from submission")
+		}
 	}
 
 	if err := dbs.Commit(); err != nil {

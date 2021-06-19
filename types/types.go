@@ -202,3 +202,7 @@ type ExtendedComment struct {
 type UpdateNotificationSettings struct {
 	NotificationActions []string `schema:"notification-action"`
 }
+
+type UpdateSubscriptionSettings struct {
+	Subscribe bool `schema:"subscribe"`
+}

@@ -11,7 +11,7 @@ type Service interface {
 	GetBasePageData(ctx context.Context) (*types.BasePageData, error)
 	ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []MultipartFileProvider) error
 	ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage, formIgnoreDupeActions string) error
-	GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error)
+	GetViewSubmissionPageData(ctx context.Context, uid, sid int64) (*types.ViewSubmissionPageData, error)
 	GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error)
 	GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error)
 	SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error)
@@ -25,6 +25,7 @@ type Service interface {
 	GetUserRoles(ctx context.Context, uid int64) ([]string, error)
 	UpdateNotificationSettings(ctx context.Context, uid int64, notificationActions []string) error
 	GetProfilePageData(ctx context.Context, uid int64) (*types.ProfilePageData, error)
+	UpdateSubscriptionSettings(ctx context.Context, uid, sid int64, subscribe bool) error
 }
 
 type Validator interface {

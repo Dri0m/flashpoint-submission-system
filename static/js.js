@@ -50,7 +50,6 @@ function sendPut(url, data, reload) {
         if (request.status !== 200) {
             alert(`failed to update '${url}' - status ${request.status} - ${request.response}`)
         } else {
-            alert(`update of '${url}' successful`)
             if (reload === true) {
                 location.reload()
             }
@@ -249,4 +248,8 @@ function updateNotificationSettings() {
     url = url.slice(0, -1)
 
     sendPut(url, null, true)
+}
+
+function updateSubscriptionSettings(sid, newValue) {
+    sendPut(`/submission/${sid}/subscription-settings?subscribe=${newValue}`, null, true)
 }

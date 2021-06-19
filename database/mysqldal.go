@@ -1152,3 +1152,38 @@ func (d *mysqlDAL) GetNotificationSettingsByUserID(dbs DBSession, uid int64) ([]
 
 	return result, nil
 }
+
+// SubscribeUserToSubmission stores subscription to a submission
+func (d *mysqlDAL) SubscribeUserToSubmission(dbs DBSession, uid, sid int64) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		INSERT INTO submission_notification_subscription (fk_user_id, fk_submission_id, created_at)
+		VALUES (?, ?, UNIX_TIMESTAMP())`,
+		uid, sid)
+	return err
+}
+
+// UnsubscribeUserFromSubmission deletes subscription to a submission
+func (d *mysqlDAL) UnsubscribeUserFromSubmission(dbs DBSession, uid, sid int64) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		DELETE FROM submission_notification_subscription
+		WHERE fk_user_id = ? AND fk_submission_id = ?`,
+		uid, sid)
+	return err
+}
+
+// IsUserSubscribedToSubmission returns true if the user is subscribed to a submission
+func (d *mysqlDAL) IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (bool, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT COUNT(*) FROM submission_notification_subscription
+		WHERE fk_user_id = ? AND fk_submission_id = ?`,
+		uid, sid)
+
+	var count uint64
+
+	err := row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count == 1, nil
+}

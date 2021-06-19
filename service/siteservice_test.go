@@ -166,6 +166,21 @@ func (m *mockDAL) GetNotificationSettingsByUserID(_ database.DBSession, uid int6
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (m *mockDAL) SubscribeUserToSubmission(_ database.DBSession, uid, sid int64) error {
+	args := m.Called(uid, sid)
+	return args.Error(0)
+}
+
+func (m *mockDAL) UnsubscribeUserFromSubmission(_ database.DBSession, uid, sid int64) error {
+	args := m.Called(uid, sid)
+	return args.Error(0)
+}
+
+func (m *mockDAL) IsUserSubscribedToSubmission(_ database.DBSession, uid, sid int64) (bool, error) {
+	args := m.Called(uid, sid)
+	return args.Bool(0), args.Error(1)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {
@@ -1353,9 +1368,10 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
 	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
 	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
+	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
 
 	assert.Equal(t, expected, actual)
 	assert.NoError(t, err)
@@ -1374,7 +1390,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_NewSession(t *testing.T) {
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
-	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
@@ -1400,7 +1416,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_SearchSubmissions(t *testin
 	ts.dal.On("SearchSubmissions", filter).Return(([]*types.ExtendedSubmission)(nil), errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
@@ -1436,7 +1452,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationMetaBySubmission
 	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return((*types.CurationMeta)(nil), errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
@@ -1475,7 +1491,48 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetExtendedCommentsBySubmis
 	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(([]*types.ExtendedComment)(nil), errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	actual, err := ts.s.GetViewSubmissionPageData(ctx, sid)
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_IsUserSubscribedToSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	cm := &types.CurationMeta{}
+	comments := []*types.ExtendedComment{{}}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
+	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
+	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)
@@ -2885,6 +2942,129 @@ func Test_siteService_UpdateNotificationSettings_Fail_NewSession(t *testing.T) {
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
 	err := ts.s.UpdateNotificationSettings(ctx, uid, actions)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_UpdateSubscriptionSettings_OK_Subscribe(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
+	ts.dbs.On("Commit").Return(nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateSubscriptionSettings(ctx, uid, sid, true)
+
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateSubscriptionSettings_OK_Unsubscribe(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("UnsubscribeUserFromSubmission", uid, sid).Return(nil)
+	ts.dbs.On("Commit").Return(nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateSubscriptionSettings(ctx, uid, sid, false)
+
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateSubscriptionSettings_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	err := ts.s.UpdateSubscriptionSettings(ctx, uid, sid, true)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateSubscriptionSettings_Fail_UnsubscribeUserFromSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("UnsubscribeUserFromSubmission", uid, sid).Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateSubscriptionSettings(ctx, uid, sid, false)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateSubscriptionSettings_Fail_SubscribeUserToSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateSubscriptionSettings(ctx, uid, sid, true)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_UpdateSubscriptionSettings_Fail_Commit(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
+	ts.dbs.On("Commit").Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.UpdateSubscriptionSettings(ctx, uid, sid, true)
 
 	assert.Error(t, err)
 

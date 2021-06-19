@@ -20,8 +20,9 @@ type SubmissionsPageData struct {
 
 type ViewSubmissionPageData struct {
 	SubmissionsPageData
-	CurationMeta *CurationMeta
-	Comments     []*ExtendedComment
+	CurationMeta     *CurationMeta
+	Comments         []*ExtendedComment
+	IsUserSubscribed bool
 }
 
 type SubmissionsFilesPageData struct {
