@@ -305,6 +305,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		}
 	}
 
+	if err := s.dal.SubscribeUserToSubmission(dbs, userID, submissionID); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, fmt.Errorf("failed to subscribe user to submission")
+	}
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     submissionID,
 		SubmitterID:      userID,
