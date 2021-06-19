@@ -412,15 +412,9 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 	ctx := r.Context()
 	uid := utils.UserIDFromContext(ctx)
 
-	if err := r.ParseForm(); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse form", http.StatusBadRequest)
-		return
-	}
-
 	notificationSettings := &types.UpdateNotificationSettings{}
 
-	if err := a.decoder.Decode(notificationSettings, r.PostForm); err != nil {
+	if err := a.decoder.Decode(notificationSettings, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
 		return

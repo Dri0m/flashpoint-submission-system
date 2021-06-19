@@ -20,9 +20,9 @@ function sendDelete(url) {
     }
 }
 
-function sendPost(url, method, data, reload) {
+function sendPost(url, data, reload) {
     let request = new XMLHttpRequest()
-    request.open(method, url, false)
+    request.open("POST", url)
 
     request.addEventListener("loadend", function () {
         if (request.status !== 200) {
@@ -42,8 +42,30 @@ function sendPost(url, method, data, reload) {
     }
 }
 
+function sendPut(url, data, reload) {
+    let request = new XMLHttpRequest()
+    request.open("PUT", url, false)
+
+    request.addEventListener("loadend", function () {
+        if (request.status !== 200) {
+            alert(`failed to update '${url}' - status ${request.status} - ${request.response}`)
+        } else {
+            alert(`update of '${url}' successful`)
+            if (reload === true) {
+                location.reload()
+            }
+        }
+    })
+
+    try {
+        request.send(data)
+    } catch (err) {
+        alert(`failed to update '${url}' - exception '${err.message}'`)
+    }
+}
+
 function controlAllCheckboxes(cb, className) {
-    let checkboxes = document.getElementsByClassName(className);
+    let checkboxes = document.getElementsByClassName(className)
 
     for (let i = 0; i < checkboxes.length; i++) {
         checkboxes[i].checked = cb.checked
@@ -51,7 +73,7 @@ function controlAllCheckboxes(cb, className) {
 }
 
 function batchDownloadFiles(checkboxClassName, attribute) {
-    let checkboxes = document.getElementsByClassName(checkboxClassName);
+    let checkboxes = document.getElementsByClassName(checkboxClassName)
 
     let url = "/submission-file-batch/"
 
@@ -87,7 +109,7 @@ function batchComment(checkboxClassName, attribute, action) {
         let ignoreDupesCheckbox = document.querySelector("#ignore-duplicate-actions")
         url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${ignoreDupesCheckbox.checked}`
 
-        sendPost(url, "POST", null, reload)
+        sendPost(url, null, reload)
     }
 
     let u = new URL(window.location.href)
@@ -211,4 +233,20 @@ function bindFancierUpload(url) {
 
         uploadHandler(url, files, 0)
     });
+}
+
+function updateNotificationSettings() {
+    let checkboxes = document.getElementsByClassName("notification-action")
+
+    let url = "/api/notification-settings?"
+
+    for (let i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) {
+            url += `notification-action=${encodeURIComponent(checkboxes[i].value)}` + "&"
+        }
+    }
+
+    url = url.slice(0, -1)
+
+    sendPut(url, null, true)
 }

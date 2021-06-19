@@ -4,30 +4,33 @@
             <h1>Profile</h1>
 
             Hi, {{.Username}}!<br>
-            <img src="{{default "/static/zuma.png" .AvatarURL}}" alt="avatar" title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
+            <img src="{{default "/static/zuma.png" .AvatarURL}}" alt="avatar"
+                 title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
             <br>
             <br>
 
             <h3>Notification preferences</h3>
             <p>Receive a discord notification when an event (comment) occurs on submissions which you are watching.</p>
 
-            <form class="pure-form pure-form-stacked" method="POST" action="/api/notification-settings">
+            <form class="pure-form pure-form-stacked" id="notification-form">
                 <label for="notification-action">Comment
-                    <input type="checkbox" name="notification-action" value="comment"
+                    <input type="checkbox" class="notification-action" value="comment"
                            {{if has "comment" .NotificationActions}}checked{{end}}></label>
                 <label for="notification-action">Approve
-                    <input type="checkbox" name="notification-action" value="approve"
+                    <input type="checkbox" class="notification-action" value="approve"
                            {{if has "approve" .NotificationActions}}checked{{end}}></label>
                 <label for="notification-action">Request Changes
-                    <input type="checkbox" name="notification-action" value="request-changes"
+                    <input type="checkbox" class="notification-action" value="request-changes"
                            {{if has "request-changes" .NotificationActions}}checked{{end}}></label>
                 <label for="notification-action">Mark as Added
-                    <input type="checkbox" name="notification-action" value="mark-added"
+                    <input type="checkbox" class="notification-action" value="mark-added"
                            {{if has "mark-added" .NotificationActions}}checked{{end}}></label>
                 <label for="notification-action">File upload
-                    <input type="checkbox" name="notification-action" value="upload-file"
+                    <input type="checkbox" class="notification-action" value="upload-file"
                            {{if has "upload-file" .NotificationActions}}checked{{end}}></label>
-                <button type="submit" class="pure-button pure-button-primary">Update</button>
+                <button type="button" onclick="updateNotificationSettings()" class="pure-button pure-button-primary">
+                    Update
+                </button>
             </form>
 
             <h3>Permissions</h3>
