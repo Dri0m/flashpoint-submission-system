@@ -816,10 +816,29 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 	defer dbs.Rollback()
 
+	userExists := true
+	_, err = s.dal.GetDiscordUser(dbs, discordUser.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			userExists = false
+		} else {
+			utils.LogCtx(ctx).Error(err)
+			return nil, fmt.Errorf("failed to get user")
+		}
+	}
+
 	// save discord user data
 	if err := s.dal.StoreDiscordUser(dbs, discordUser); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, fmt.Errorf("failed to store discord user")
+	}
+
+	// enable all notifications for a new user
+	if !userExists {
+		if err := s.dal.StoreNotificationSettings(dbs, discordUser.ID, constants.GetActionsWithNotification()); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, fmt.Errorf("failed to store notification settings")
+		}
 	}
 
 	// get discord roles

@@ -556,6 +556,7 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
 
@@ -678,6 +679,53 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 	ts.assertExpectations(t)
 }
 
+func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64) + ".7z"
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	userRoles := []string{}
+	submissionLevel := constants.SubmissionLevelAudition
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
 func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) {
 	ts := NewTestSiteService()
 
@@ -724,6 +772,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
@@ -791,6 +840,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(errors.New(""))
 
@@ -859,6 +909,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
 
@@ -944,6 +995,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
 
@@ -1040,6 +1092,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
 
@@ -1137,6 +1190,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
 
@@ -2296,6 +2350,8 @@ func Test_siteService_SaveUser_OK(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
@@ -2355,6 +2411,8 @@ func Test_siteService_SaveUser_Fail_Commit(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
@@ -2414,6 +2472,8 @@ func Test_siteService_SaveUser_Fail_StoreSession(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
@@ -2467,6 +2527,8 @@ func Test_siteService_SaveUser_Fail_CreateAuthToken(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
@@ -2519,6 +2581,8 @@ func Test_siteService_SaveUser_Fail_StoreDiscordUserRoles(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
@@ -2565,6 +2629,8 @@ func Test_siteService_SaveUser_Fail_StoreDiscordServerRoles(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
@@ -2606,6 +2672,8 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoleIDsForUser(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
@@ -2636,6 +2704,8 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoles(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
 
 	ts.authBot.On("GetFlashpointRoles").Return(([]types.DiscordRole)(nil), errors.New(""))
@@ -2665,7 +2735,37 @@ func Test_siteService_SaveUser_Fail_StoreDiscordUser(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.SaveUser(ctx, discordUser)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SaveUser_Fail_GetDiscordUser(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+
+	discordUser := &types.DiscordUser{
+		ID:       uid,
+		Username: "foo",
+		Avatar:   "bar",
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUser", uid).Return((*types.DiscordUser)(nil), errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
 
