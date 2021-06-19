@@ -149,9 +149,11 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 				all(isTrialCurator, userOwnsSubmission),
 				all(isInAudit, userOwnsSubmission))))).Methods("GET")
 
-	router.Handle(fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs), // TODO trial curator should be able to use this
+	router.Handle(fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs),
 		http.HandlerFunc(a.UserAuthMux(
-			a.HandleDownloadSubmissionBatch, any(isStaff)))).Methods("GET")
+			a.HandleDownloadSubmissionBatch, any(
+				isStaff,
+				all(isTrialCurator, userOwnsAllSubmissions))))).Methods("GET")
 
 	// soft delete
 	router.Handle(fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
