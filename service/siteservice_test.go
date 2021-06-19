@@ -1123,6 +1123,7 @@ func Test_siteService_ReceiveComments_OK(t *testing.T) {
 
 	formAction := constants.ActionComment
 	formMessage := "foo"
+	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
 		SubmissionID: &sid,
@@ -1151,7 +1152,7 @@ func Test_siteService_ReceiveComments_OK(t *testing.T) {
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions)
 
 	assert.NoError(t, err)
 
@@ -1167,13 +1168,14 @@ func Test_siteService_ReceiveComments_Fail_NewSession(t *testing.T) {
 
 	formAction := constants.ActionComment
 	formMessage := "foo"
+	formIgnoreDupeActions := "false"
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
-	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions)
 
 	assert.Error(t, err)
 
@@ -1189,6 +1191,7 @@ func Test_siteService_ReceiveComments_Fail_SearchSubmissions(t *testing.T) {
 
 	formAction := constants.ActionComment
 	formMessage := "foo"
+	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
 		SubmissionID: &sid,
@@ -1203,7 +1206,7 @@ func Test_siteService_ReceiveComments_Fail_SearchSubmissions(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions)
 
 	assert.Error(t, err)
 
@@ -1219,6 +1222,7 @@ func Test_siteService_ReceiveComments_Fail_StoreComment(t *testing.T) {
 
 	formAction := constants.ActionComment
 	formMessage := "foo"
+	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
 		SubmissionID: &sid,
@@ -1246,7 +1250,7 @@ func Test_siteService_ReceiveComments_Fail_StoreComment(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions)
 
 	assert.Error(t, err)
 
@@ -1262,6 +1266,7 @@ func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 
 	formAction := constants.ActionComment
 	formMessage := "foo"
+	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
 		SubmissionID: &sid,
@@ -1290,7 +1295,7 @@ func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage)
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions)
 
 	assert.Error(t, err)
 

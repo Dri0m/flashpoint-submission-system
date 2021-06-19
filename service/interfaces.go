@@ -10,7 +10,7 @@ import (
 type Service interface {
 	GetBasePageData(ctx context.Context) (*types.BasePageData, error)
 	ReceiveSubmissions(ctx context.Context, sid *int64, fileHeaders []MultipartFileProvider) error
-	ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error
+	ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage, formIgnoreDupeActions string) error
 	GetViewSubmissionPageData(ctx context.Context, sid int64) (*types.ViewSubmissionPageData, error)
 	GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error)
 	GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error)

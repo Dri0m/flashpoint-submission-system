@@ -84,7 +84,8 @@ function batchComment(checkboxClassName, attribute, action) {
         url = url.slice(0, -1)
 
         let textArea = document.querySelector("#batch-comment-message")
-        url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}`
+        let ignoreDupesCheckbox = document.querySelector("#ignore-duplicate-actions")
+        url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${ignoreDupesCheckbox.checked}`
 
         sendPost(url, "POST", null, reload)
     }

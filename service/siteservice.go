@@ -390,7 +390,7 @@ func (s *siteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 	return c
 }
 
-func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage string) error {
+func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage, formIgnoreDupeActions string) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -430,7 +430,13 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		return fmt.Errorf("cannot post comment action '%s' without a message", formAction)
 	}
 
+	ignoreDupeActions := false
+	if formIgnoreDupeActions == "true" {
+		ignoreDupeActions = true
+	}
+
 	// TODO optimize batch operation
+SubmissionLoop:
 	for _, sid := range sids {
 		c := &types.Comment{
 			AuthorID:     uid,
@@ -455,6 +461,9 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		if formAction == constants.ActionAssign {
 			for _, assignedUserID := range submission.AssignedUserIDs {
 				if uid == assignedUserID {
+					if ignoreDupeActions {
+						continue SubmissionLoop
+					}
 					return fmt.Errorf("you are already assigned to submission %d", sid)
 				}
 			}
@@ -466,17 +475,26 @@ func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 				}
 			}
 			if !found {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
 				return fmt.Errorf("you are not assigned to submission %d", sid)
 			}
 		} else if formAction == constants.ActionApprove {
 			for _, assignedUserID := range submission.ApprovedUserIDs {
 				if uid == assignedUserID {
+					if ignoreDupeActions {
+						continue SubmissionLoop
+					}
 					return fmt.Errorf("you have already approved submission %d", sid)
 				}
 			}
 		} else if formAction == constants.ActionRequestChanges {
 			for _, assignedUserID := range submission.RequestedChangesUserIDs {
 				if uid == assignedUserID {
+					if ignoreDupeActions {
+						continue SubmissionLoop
+					}
 					return fmt.Errorf("you have already requested changes on submission %d", sid)
 				}
 			}

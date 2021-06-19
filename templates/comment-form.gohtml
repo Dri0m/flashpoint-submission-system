@@ -5,6 +5,8 @@
                               placeholder="Add a comment"></textarea>
         </fieldset>
         <div class="right">
+            <label>Ignore duplicate actions
+                <input type="checkbox" id="ignore-duplicate-actions" title="The system does not let you apply the same operation multiple times on a submission (like assigning it twice). Check this checkbox to simply skip them and apply the operation only on the submissions where it makes sense."></label>
             <button type="button" class="pure-button pure-button button-comment"
                     onclick="batchComment('submission-checkbox', 'sid', 'comment')">Comment
             </button>

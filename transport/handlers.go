@@ -38,8 +38,10 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// TODO use gorilla/schema
 	formAction := r.FormValue("action")
 	formMessage := r.FormValue("message")
+	formIgnoreDupeActions := r.FormValue("ignore-duplicate-actions")
 
 	if len([]rune(formMessage)) > 20000 {
 		err := fmt.Errorf("message cannot be longer than 20000 characters")
@@ -48,7 +50,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage); err != nil {
+	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
 		return
