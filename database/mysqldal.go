@@ -1199,14 +1199,15 @@ func (d *mysqlDAL) StoreNotification(dbs DBSession, msg string) error {
 }
 
 // GetUsersForNotification returns a list of users who should be notified by an event
-func (d *mysqlDAL) GetUsersForNotification(dbs DBSession, sid int64, action string) ([]int64, error) {
+func (d *mysqlDAL) GetUsersForNotification(dbs DBSession, authorID, sid int64, action string) ([]int64, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
 		SELECT notification_settings.fk_user_id
 		FROM notification_settings
 		LEFT JOIN submission_notification_subscription ON submission_notification_subscription.fk_user_id = notification_settings.fk_user_id
 		WHERE submission_notification_subscription.fk_submission_id = ?
-		AND notification_settings.fk_action_id = (SELECT id FROM action where name = ?)`,
-		sid, action)
+		AND notification_settings.fk_action_id = (SELECT id FROM action where name = ?)
+		AND notification_settings.fk_user_id != ?`,
+		sid, action, authorID)
 	if err != nil {
 		return nil, err
 	}
@@ -1223,4 +1224,37 @@ func (d *mysqlDAL) GetUsersForNotification(dbs DBSession, sid int64, action stri
 	}
 
 	return result, nil
+}
+
+// GetOldestUnsentNotification returns oldest unsent notification
+func (d *mysqlDAL) GetOldestUnsentNotification(dbs DBSession) (*types.Notification, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT id, message, created_at, sent_at FROM submission_notification
+		WHERE sent_at IS NULL
+		ORDER BY created_at LIMIT 1`)
+
+	notification := &types.Notification{}
+	var createdAt int64
+	var sentAt *int64
+
+	err := row.Scan(&notification.ID, &notification.Message, &createdAt, &sentAt)
+	if err != nil {
+		return nil, err
+	}
+
+	notification.CreatedAt = time.Unix(createdAt, 0)
+	if sentAt != nil {
+		notification.SentAt = time.Unix(*sentAt, 0)
+	}
+
+	return notification, nil
+}
+
+// MarkNotificationAsSent returns oldest unsent notification
+func (d *mysqlDAL) MarkNotificationAsSent(dbs DBSession, nid int64) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE submission_notification SET sent_at = UNIX_TIMESTAMP() 
+		WHERE id = ?`, nid)
+
+	return err
 }

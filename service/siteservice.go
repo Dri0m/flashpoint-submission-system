@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -106,34 +107,36 @@ func MapAuthToken(token *authToken) map[string]string {
 	return map[string]string{"Secret": token.Secret, "userID": token.UserID}
 }
 
-type siteService struct {
-	authBot                  authbot.DiscordRoleReader
-	notificationBot          notificationbot.DiscordNotificationSender
-	dal                      database.DAL
-	validator                Validator
-	clock                    Clock
-	randomStringProvider     utils.RandomStringer
-	authTokenProvider        AuthTokenizer
-	sessionExpirationSeconds int64
-	submissionsDir           string
+type SiteService struct {
+	authBot                    authbot.DiscordRoleReader
+	notificationBot            notificationbot.DiscordNotificationSender
+	dal                        database.DAL
+	validator                  Validator
+	clock                      Clock
+	randomStringProvider       utils.RandomStringer
+	authTokenProvider          AuthTokenizer
+	sessionExpirationSeconds   int64
+	submissionsDir             string
+	notificationBufferNotEmpty chan bool
 }
 
-func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *siteService {
-	return &siteService{
-		authBot:                  authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
-		notificationBot:          notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, l.WithField("botName", "notificationBot")),
-		dal:                      database.NewMysqlDAL(db),
-		validator:                NewValidator(validatorServerURL),
-		clock:                    &RealClock{},
-		randomStringProvider:     utils.NewRealRandomStringProvider(),
-		authTokenProvider:        NewAuthTokenProvider(),
-		sessionExpirationSeconds: sessionExpirationSeconds,
-		submissionsDir:           submissionsDir,
+func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *SiteService {
+	return &SiteService{
+		authBot:                    authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
+		notificationBot:            notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, l.WithField("botName", "notificationBot")),
+		dal:                        database.NewMysqlDAL(db),
+		validator:                  NewValidator(validatorServerURL),
+		clock:                      &RealClock{},
+		randomStringProvider:       utils.NewRealRandomStringProvider(),
+		authTokenProvider:          NewAuthTokenProvider(),
+		sessionExpirationSeconds:   sessionExpirationSeconds,
+		submissionsDir:             submissionsDir,
+		notificationBufferNotEmpty: make(chan bool, 1),
 	}
 }
 
 // GetBasePageData loads base user data, does not return error if user is not logged in
-func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
+func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -168,7 +171,7 @@ func (s *siteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	return bpd, nil
 }
 
-func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileProviders []MultipartFileProvider) error {
+func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileProviders []MultipartFileProvider) error {
 	uid := utils.UserIDFromContext(ctx)
 	if uid == 0 {
 		return fmt.Errorf("no user associated with request")
@@ -232,10 +235,12 @@ func (s *siteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 		return fmt.Errorf("failed to commit transaction")
 	}
 
+	s.announceNotification()
+
 	return nil
 }
 
-func (s *siteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
 		return nil, fmt.Errorf("no user associated with request")
@@ -293,11 +298,16 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 		}
 	} else {
 		submissionID = *sid
+
+		if err := s.createNotification(dbs, userID, submissionID, constants.ActionUpload); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return &destinationFilePath, fmt.Errorf("failed to create notification")
+		}
 	}
 
 	sf := &types.SubmissionFile{
 		SubmissionID:     submissionID,
-		SubmitterID:      utils.UserIDFromContext(ctx),
+		SubmitterID:      userID,
 		OriginalFilename: fileHeader.Filename(),
 		CurrentFilename:  destinationFilename,
 		Size:             fileHeader.Size(),
@@ -317,6 +327,8 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 		}
 		return &destinationFilePath, fmt.Errorf("failed to store submission file")
 	}
+
+	utils.LogCtx(ctx).Debug("storing submission comment...")
 
 	c := &types.Comment{
 		AuthorID:     userID,
@@ -354,8 +366,39 @@ func (s *siteService) processReceivedSubmission(ctx context.Context, dbs databas
 	return &destinationFilePath, nil
 }
 
+// createNotification formats and stores notification
+func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid int64, action string) error {
+	userIDs, err := s.dal.GetUsersForNotification(dbs, authorID, sid, action)
+	if err != nil {
+		return err
+	}
+
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	var b strings.Builder
+
+	b.WriteString("notification test\n")
+	b.WriteString(fmt.Sprintf("subscription ID: %d\n", sid))
+	b.WriteString(fmt.Sprintf("action: %s\n", action))
+	b.WriteString("users that should be notified:")
+	for _, userID := range userIDs {
+		b.WriteString(fmt.Sprintf(" <@%d>", userID))
+	}
+	b.WriteString("\n")
+
+	msg := b.String()
+
+	if err := s.dal.StoreNotification(dbs, msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // convertValidatorResponseToComment produces appropriate comment based on validator response
-func (s *siteService) convertValidatorResponseToComment(vr *types.ValidatorResponse) *types.Comment {
+func (s *SiteService) convertValidatorResponseToComment(vr *types.ValidatorResponse) *types.Comment {
 	c := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: vr.Meta.SubmissionID,
@@ -390,7 +433,7 @@ func (s *siteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 	return c
 }
 
-func (s *siteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage, formIgnoreDupeActions string) error {
+func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage, formIgnoreDupeActions string) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -503,6 +546,17 @@ SubmissionLoop:
 		if err := s.dal.StoreComment(dbs, c); err != nil {
 			return fmt.Errorf("failed to store comment")
 		}
+
+		for _, a := range constants.GetActionsWithNotification() {
+			if formAction == a {
+				if err := s.createNotification(dbs, uid, sid, formAction); err != nil {
+					utils.LogCtx(ctx).Error(err)
+					return fmt.Errorf("failed to create notification")
+				}
+				break
+			}
+		}
+
 	}
 
 	if err := dbs.Commit(); err != nil {
@@ -510,10 +564,12 @@ SubmissionLoop:
 		return fmt.Errorf("failed to commit transaction")
 	}
 
+	s.announceNotification()
+
 	return nil
 }
 
-func (s *siteService) GetViewSubmissionPageData(ctx context.Context, uid, sid int64) (*types.ViewSubmissionPageData, error) {
+func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid int64) (*types.ViewSubmissionPageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -573,7 +629,7 @@ func (s *siteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 	return pageData, nil
 }
 
-func (s *siteService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
+func (s *SiteService) GetSubmissionsFilesPageData(ctx context.Context, sid int64) (*types.SubmissionsFilesPageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -600,7 +656,7 @@ func (s *siteService) GetSubmissionsFilesPageData(ctx context.Context, sid int64
 	return pageData, nil
 }
 
-func (s *siteService) GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
+func (s *SiteService) GetSubmissionsPageData(ctx context.Context, filter *types.SubmissionsFilter) (*types.SubmissionsPageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -628,7 +684,7 @@ func (s *siteService) GetSubmissionsPageData(ctx context.Context, filter *types.
 	return pageData, nil
 }
 
-func (s *siteService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+func (s *SiteService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -644,7 +700,7 @@ func (s *siteService) SearchSubmissions(ctx context.Context, filter *types.Submi
 	return submissions, nil
 }
 
-func (s *siteService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
+func (s *SiteService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -660,7 +716,7 @@ func (s *siteService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]
 	return sfs, nil
 }
 
-func (s *siteService) GetUIDFromSession(ctx context.Context, key string) (int64, bool, error) {
+func (s *SiteService) GetUIDFromSession(ctx context.Context, key string) (int64, bool, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -675,7 +731,7 @@ func (s *siteService) GetUIDFromSession(ctx context.Context, key string) (int64,
 	return uid, ok, nil
 }
 
-func (s *siteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
+func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -699,7 +755,7 @@ func (s *siteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) 
 	return nil
 }
 
-func (s *siteService) SoftDeleteSubmission(ctx context.Context, sid int64) error {
+func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -723,7 +779,7 @@ func (s *siteService) SoftDeleteSubmission(ctx context.Context, sid int64) error
 	return nil
 }
 
-func (s *siteService) SoftDeleteComment(ctx context.Context, cid int64) error {
+func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -747,7 +803,7 @@ func (s *siteService) SoftDeleteComment(ctx context.Context, cid int64) error {
 	return nil
 }
 
-func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
+func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -812,7 +868,7 @@ func (s *siteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	return authToken, nil
 }
 
-func (s *siteService) Logout(ctx context.Context, secret string) error {
+func (s *SiteService) Logout(ctx context.Context, secret string) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -833,7 +889,7 @@ func (s *siteService) Logout(ctx context.Context, secret string) error {
 	return nil
 }
 
-func (s *siteService) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
+func (s *SiteService) GetUserRoles(ctx context.Context, uid int64) ([]string, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -850,7 +906,7 @@ func (s *siteService) GetUserRoles(ctx context.Context, uid int64) ([]string, er
 	return roles, nil
 }
 
-func (s *siteService) GetProfilePageData(ctx context.Context, uid int64) (*types.ProfilePageData, error) {
+func (s *SiteService) GetProfilePageData(ctx context.Context, uid int64) (*types.ProfilePageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -877,7 +933,7 @@ func (s *siteService) GetProfilePageData(ctx context.Context, uid int64) (*types
 	return pageData, nil
 }
 
-func (s *siteService) UpdateNotificationSettings(ctx context.Context, uid int64, notificationActions []string) error {
+func (s *SiteService) UpdateNotificationSettings(ctx context.Context, uid int64, notificationActions []string) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -898,7 +954,7 @@ func (s *siteService) UpdateNotificationSettings(ctx context.Context, uid int64,
 	return nil
 }
 
-func (s *siteService) UpdateSubscriptionSettings(ctx context.Context, uid, sid int64, subscribe bool) error {
+func (s *SiteService) UpdateSubscriptionSettings(ctx context.Context, uid, sid int64, subscribe bool) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)

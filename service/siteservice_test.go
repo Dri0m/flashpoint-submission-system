@@ -186,6 +186,21 @@ func (m *mockDAL) StoreNotification(_ database.DBSession, msg string) error {
 	return args.Error(0)
 }
 
+func (m *mockDAL) GetUsersForNotification(_ database.DBSession, authorID, sid int64, action string) ([]int64, error) {
+	args := m.Called(authorID, sid, action)
+	return args.Get(0).([]int64), args.Error(1)
+}
+
+func (m *mockDAL) GetOldestUnsentNotification(_ database.DBSession) (*types.Notification, error) {
+	args := m.Called()
+	return args.Get(0).(*types.Notification), args.Error(1)
+}
+
+func (m *mockDAL) MarkNotificationAsSent(_ database.DBSession, nid int64) error {
+	args := m.Called(nid)
+	return args.Error(0)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {
@@ -285,7 +300,7 @@ func (m *mockAuthTokenProvider) CreateAuthToken(userID int64) (*authToken, error
 ////////////////////////////////////////////////
 
 type testService struct {
-	s                    *siteService
+	s                    *SiteService
 	authBot              *mockAuthBot
 	notificationBot      *mockNotificationBot
 	dal                  *mockDAL
@@ -305,7 +320,7 @@ func NewTestSiteService() *testService {
 	authTokenProvider := &mockAuthTokenProvider{}
 
 	return &testService{
-		s: &siteService{
+		s: &SiteService{
 			authBot:                  authBot,
 			notificationBot:          notificationBot,
 			dal:                      dal,
@@ -1150,6 +1165,7 @@ func Test_siteService_ReceiveComments_OK(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 	var sids = []int64{sid}
+	var notifiedUsers []int64
 
 	formAction := constants.ActionComment
 	formMessage := "foo"
@@ -1178,6 +1194,8 @@ func Test_siteService_ReceiveComments_OK(t *testing.T) {
 
 	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.dal.On("GetUsersForNotification", uid, sid, formAction).Return(notifiedUsers, nil)
 
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
@@ -1287,7 +1305,7 @@ func Test_siteService_ReceiveComments_Fail_StoreComment(t *testing.T) {
 	ts.assertExpectations(t)
 }
 
-func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
+func Test_siteService_ReceiveComments_Fail_GetUsersForNotification(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
@@ -1321,6 +1339,55 @@ func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 
 	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.dal.On("GetUsersForNotification", uid, sid, formAction).Return(([]int64)(nil), errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var sids = []int64{sid}
+	var notifiedUsers []int64
+
+	formAction := constants.ActionComment
+	formMessage := "foo"
+	formIgnoreDupeActions := "false"
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{SubmitterID: uid},
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      &formMessage,
+		Action:       constants.ActionComment,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.dal.On("GetUsersForNotification", uid, sid, formAction).Return(notifiedUsers, nil)
 
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)

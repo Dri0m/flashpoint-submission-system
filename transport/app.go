@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -24,7 +25,7 @@ import (
 type App struct {
 	Conf    *config.Config
 	CC      utils.CookieCutter
-	Service service.Service
+	Service *service.SiteService
 	decoder *schema.Decoder
 }
 
@@ -50,13 +51,30 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, authBotSession, 
 	}
 
 	l.WithField("port", conf.Port).Infoln("starting the server...")
+
 	go func() {
 		a.handleRequests(l, srv, router)
+	}()
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	l.Infoln("starting the notification consumer...")
+
+	go func() {
+		a.Service.RunNotificationConsumer(l, ctx, wg)
 	}()
 
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-term
+	l.Infoln("signal received")
+
+	l.Infoln("waiting for all goroutines to finish...")
+	cancelFunc()
+	wg.Wait()
 
 	l.Infoln("closing the auth bot session...")
 	authBotSession.Close()

@@ -206,3 +206,10 @@ type UpdateNotificationSettings struct {
 type UpdateSubscriptionSettings struct {
 	Subscribe bool `schema:"subscribe"`
 }
+
+type Notification struct {
+	ID        int64
+	Message   string
+	CreatedAt time.Time
+	SentAt    time.Time
+}

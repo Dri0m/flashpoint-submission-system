@@ -44,6 +44,16 @@ func GetActionsWithMandatoryMessage() []string {
 	}
 }
 
+func GetActionsWithNotification() []string {
+	return []string{
+		ActionComment,
+		ActionApprove,
+		ActionRequestChanges,
+		ActionMarkAdded,
+		ActionUpload,
+	}
+}
+
 const (
 	ResourceKeySubmissionID  = "submission-id"
 	ResourceKeySubmissionIDs = "submission-ids"
