@@ -169,12 +169,13 @@
             {{end}}
 
             <h3>Subscription</h3>
-            <p>Subscribe to receive notifications about this submission.</p>
             {{if .IsUserSubscribed}}
+                <p>You're currently receiving notifications about this subscription.</p>
                 <button class="pure-button pure-button-primary"
                         onclick="updateSubscriptionSettings('{{$submissionID}}', false)">Unsubscribe
                 </button>
             {{else}}
+                <p>Subscribe to receive notifications about this submission.</p>
                 <button class="pure-button pure-button-primary"
                         onclick="updateSubscriptionSettings('{{$submissionID}}', true)">Subscribe
                 </button>
