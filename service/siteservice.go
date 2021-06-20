@@ -377,6 +377,9 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	if vr.IsExtreme {
 		yes := "Yes"
 		vr.Meta.Extreme = &yes
+	} else {
+		no := "No"
+		vr.Meta.Extreme = &no
 	}
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {

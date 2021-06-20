@@ -117,6 +117,7 @@ type SubmissionsFilter struct {
 	AssignedStatusMe           *string  `schema:"assigned-status-me"`
 	RequestedChangedStatusMe   *string  `schema:"requested-changes-status-me"`
 	ApprovalsStatusMe          *string  `schema:"approvals-status-me"`
+	IsExtreme                  *string  `schema:"is-extreme"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {

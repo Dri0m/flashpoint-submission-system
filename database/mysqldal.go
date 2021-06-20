@@ -351,8 +351,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			data = append(data, *filter.SubmitterID)
 		}
 		if filter.TitlePartial != nil {
-			filters = append(filters, "meta.title LIKE ?")
-			data = append(data, utils.FormatLike(*filter.TitlePartial))
+			filters = append(filters, "meta.title LIKE ? OR meta.alternate_titles LIKE ?")
+			data = append(data, utils.FormatLike(*filter.TitlePartial), utils.FormatLike(*filter.TitlePartial))
 		}
 		if filter.SubmitterUsernamePartial != nil {
 			filters = append(filters, "uploader.username LIKE ?")
@@ -465,6 +465,10 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				filters = append(filters, "active_approved.user_ids_with_enabled_action LIKE ?")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
+		}
+		if filter.IsExtreme != nil {
+			filters = append(filters, "meta.extreme = ?")
+			data = append(data, *filter.IsExtreme)
 		}
 	}
 
