@@ -395,6 +395,7 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 
 	var b strings.Builder
 	b.WriteString("You've got mail!\n")
+	b.WriteString(fmt.Sprintf("https://fpfss.unstable.life/submission/%d\n", sid))
 
 	if action == constants.ActionComment {
 		b.WriteString(fmt.Sprintf("There is a new comment on the submission."))
@@ -407,9 +408,7 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 	} else if action == constants.ActionUpload {
 		b.WriteString(fmt.Sprintf("A new version has been uploaded by <@%d>", authorID))
 	}
-
 	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("https://fpfss.unstable.life/submission/%d\n", sid))
 
 	for _, userID := range mentionUserIDs {
 		b.WriteString(fmt.Sprintf(" <@%d>", userID))
