@@ -23,25 +23,10 @@ type ViewSubmissionPageData struct {
 	CurationMeta     *CurationMeta
 	Comments         []*ExtendedComment
 	IsUserSubscribed bool
+	CurationImageIDs []int64
 }
 
 type SubmissionsFilesPageData struct {
 	BasePageData
 	SubmissionFiles []*ExtendedSubmissionFile
-}
-
-type ValidatorResponseImage struct {
-	Type string `json:"type"`
-	Data string `json:"data"`
-}
-
-type ValidatorResponse struct {
-	Filename         string                   `json:"filename"`
-	Path             string                   `json:"path"`
-	CurationErrors   []string                 `json:"curation_errors"`
-	CurationWarnings []string                 `json:"curation_warnings"`
-	IsExtreme        bool                     `json:"is_extreme"`
-	CurationType     int                      `json:"curation_type"`
-	Meta             CurationMeta             `json:"meta"`
-	Images           []ValidatorResponseImage `json:"images"`
 }

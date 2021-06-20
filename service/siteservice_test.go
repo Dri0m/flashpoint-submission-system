@@ -213,6 +213,11 @@ func (m *mockDAL) GetCurationImagesBySubmissionFileID(_ database.DBSession, sfid
 	return args.Get(0).([]*types.CurationImage), args.Error(1)
 }
 
+func (m *mockDAL) GetCurationImage(_ database.DBSession, ciid int64) (*types.CurationImage, error) {
+	args := m.Called(ciid)
+	return args.Get(0).(*types.CurationImage), args.Error(1)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {
@@ -497,6 +502,10 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
 
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
+
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
 
@@ -595,6 +604,10 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -771,6 +784,10 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
 
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
+
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
 
@@ -816,6 +833,10 @@ func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testi
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -863,6 +884,10 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -923,6 +948,10 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -992,6 +1021,10 @@ func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -1063,6 +1096,10 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -1151,6 +1188,10 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationImage(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -1260,6 +1301,10 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
 
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
+
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
 
@@ -1357,6 +1402,10 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
 	assert.NoError(t, err)
 	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
 
 	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
 	assert.NoError(t, err)
@@ -1700,6 +1749,7 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 	var fid int64 = 3
+	var ciid int64 = 4
 	bpd := createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
@@ -1716,14 +1766,16 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 
 	cm := &types.CurationMeta{}
 	comments := []*types.ExtendedComment{{}}
+	curationImages := []*types.CurationImage{{ID: ciid}}
 
 	expected := &types.ViewSubmissionPageData{
 		SubmissionsPageData: types.SubmissionsPageData{
 			BasePageData: *bpd,
 			Submissions:  submissions,
 		},
-		CurationMeta: cm,
-		Comments:     comments,
+		CurationMeta:     cm,
+		Comments:         comments,
+		CurationImageIDs: []int64{ciid},
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -1734,6 +1786,7 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
 	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
 	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
+	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(curationImages, nil)
 	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
@@ -1895,6 +1948,48 @@ func Test_siteService_GetViewSubmissionPageData_Fail_IsUserSubscribedToSubmissio
 	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
 	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
 	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationImagesBySubmissionFileID(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	cm := &types.CurationMeta{}
+	comments := []*types.ExtendedComment{{}}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
+	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
+	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
+	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(([]*types.CurationImage)(nil), errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
@@ -3477,6 +3572,73 @@ func Test_siteService_UpdateSubscriptionSettings_Fail_Commit(t *testing.T) {
 
 	err := ts.s.UpdateSubscriptionSettings(ctx, uid, sid, true)
 
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_GetCurationImage_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var ciid int64 = 2
+
+	ci := &types.CurationImage{
+		ID: ciid,
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetCurationImage", ciid).Return(ci, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetCurationImage(ctx, ciid)
+
+	assert.Equal(t, ci, actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetCurationImage_Fail_GetCurationImage(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var ciid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetCurationImage", ciid).Return((*types.CurationImage)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetCurationImage(ctx, ciid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetCurationImage_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var ciid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetCurationImage(ctx, ciid)
+
+	assert.Nil(t, actual)
 	assert.Error(t, err)
 
 	ts.assertExpectations(t)

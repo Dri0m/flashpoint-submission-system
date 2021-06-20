@@ -1298,3 +1298,21 @@ func (d *mysqlDAL) GetCurationImagesBySubmissionFileID(dbs DBSession, sfid int64
 
 	return result, nil
 }
+
+// GetCurationImage returns curation image
+func (d *mysqlDAL) GetCurationImage(dbs DBSession, ciid int64) (*types.CurationImage, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT fk_submission_file_id, (SELECT name FROM curation_image_type WHERE id = fk_curation_image_type_id), filename
+		FROM curation_image
+		WHERE id = ?`,
+		ciid)
+
+	ci := &types.CurationImage{ID: ciid}
+
+	err := row.Scan(&ci.SubmissionFileID, &ci.Type, &ci.Filename)
+	if err != nil {
+		return nil, err
+	}
+
+	return ci, nil
+}

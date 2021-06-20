@@ -461,3 +461,41 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (a *App) HandleDownloadCurationImage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	curationImageID := params[constants.ResourceKeyCurationImageID]
+
+	ciid, err := strconv.ParseInt(curationImageID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "invalid curation image id", http.StatusBadRequest)
+		return
+	}
+
+	ci, err := a.Service.GetCurationImage(ctx, ciid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, fmt.Sprintf("download image processor: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	f, err := os.Open(fmt.Sprintf("%s/%s", constants.SubmissionImagesDir, ci.Filename))
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to open file", http.StatusInternalServerError)
+		return
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		http.Error(w, "failed to stat file", http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Type", "image")
+	http.ServeContent(w, r, ci.Filename, fi.ModTime(), f)
+}

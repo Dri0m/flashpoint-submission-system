@@ -685,6 +685,18 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 		return nil, fmt.Errorf("failed to load curation comments")
 	}
 
+	curationImages, err := s.dal.GetCurationImagesBySubmissionFileID(dbs, submission.FileID)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load curation iamges")
+	}
+
+	ciids := make([]int64, 0, len(curationImages))
+
+	for _, curationImage := range curationImages {
+		ciids = append(ciids, curationImage.ID)
+	}
+
 	pageData := &types.ViewSubmissionPageData{
 		SubmissionsPageData: types.SubmissionsPageData{
 			BasePageData: *bpd,
@@ -693,6 +705,7 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 		CurationMeta:     meta,
 		Comments:         comments,
 		IsUserSubscribed: isUserSubscribed,
+		CurationImageIDs: ciids,
 	}
 
 	return pageData, nil
@@ -1068,4 +1081,20 @@ func (s *SiteService) UpdateSubscriptionSettings(ctx context.Context, uid, sid i
 	}
 
 	return nil
+}
+
+func (s *SiteService) GetCurationImage(ctx context.Context, ciid int64) (*types.CurationImage, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	ci, err := s.dal.GetCurationImage(dbs, ciid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load curation file")
+	}
+	return ci, nil
 }

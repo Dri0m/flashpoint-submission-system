@@ -39,6 +39,7 @@ type DAL interface {
 	MarkNotificationAsSent(dbs DBSession, nid int64) error
 	StoreCurationImage(dbs DBSession, c *types.CurationImage) (int64, error)
 	GetCurationImagesBySubmissionFileID(dbs DBSession, sfid int64) ([]*types.CurationImage, error)
+	GetCurationImage(dbs DBSession, ciid int64) (*types.CurationImage, error)
 }
 
 type DBSession interface {

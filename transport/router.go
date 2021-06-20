@@ -163,6 +163,13 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 				isStaff,
 				all(isTrialCurator, userOwnsAllSubmissions))))).Methods("GET")
 
+	router.Handle(fmt.Sprintf("/submission/{%s}/curation-image/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyCurationImageID),
+		http.HandlerFunc(a.UserAuthMux(
+			a.HandleDownloadCurationImage,
+			any(isStaff,
+				all(isTrialCurator, userOwnsSubmission),
+				all(isInAudit, userOwnsSubmission))))).Methods("GET")
+
 	// soft delete
 	router.Handle(fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.UserAuthMux(

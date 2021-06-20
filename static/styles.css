@@ -287,3 +287,14 @@ i {
 legend, label {
     font-weight: bold;
 }
+
+.clear-link {
+    text-decoration: none;
+}
+
+.curation-image {
+    max-width: 300px;
+    max-height: 300px;
+    margin: 10px;
+    border: 1px solid black;
+}
