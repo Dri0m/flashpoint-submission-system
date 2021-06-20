@@ -4,12 +4,20 @@ it's a thing, and it's pretty WIP
 
 it will be a submission management system for https://bluemaxima.org/flashpoint/ or something
 
-![logo](static/opal.png)
+<img src="static/opal.png" alt="drawing" width="200"/>
+
+## How to run this thing
+- it's using discord for user auth, so you need a discord app with oauth config
+- set up a discord bot to read user roles (FYI roles are hardcoded for Flashpoint discord server), roles are used for permission inside the system
+- set up a discord bot to post notifications, can be the same bot as the previous one
+- start a mysql instance, `make db` will do the work for you if you're a fan docker-compose
+- start a curation validator server https://github.com/FlashpointProject/Curation-Validation-Bot
+- fill in all the stuff in .env
+- start the thing using `go run ./main/*.go`
 
 it looks something like this
 
-![submission browser](github/ss1.png)
-
-and also like this
-
-![submission page](github/ss2.png)
+![submit page](github/ss2.png)
+![submissions page](github/ss3.png)
+![submission page](github/ss4.png)
+![profile page](github/ss1.png)
