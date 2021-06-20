@@ -213,3 +213,10 @@ type Notification struct {
 	CreatedAt time.Time
 	SentAt    time.Time
 }
+
+type CurationImage struct {
+	ID               int64
+	SubmissionFileID int64
+	Type             string
+	Filename         string
+}

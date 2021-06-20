@@ -167,3 +167,23 @@ CREATE TABLE IF NOT EXISTS submission_notification
 );
 CREATE INDEX idx_submission_notification_created_at ON submission_notification (created_at);
 CREATE INDEX idx_submission_notification_sent_at ON submission_notification (sent_at);
+
+CREATE TABLE IF NOT EXISTS curation_image_type
+(
+    id   BIGINT PRIMARY KEY,
+    name VARCHAR(63) UNIQUE
+);
+
+INSERT IGNORE INTO curation_image_type (id, name)
+VALUES (1, 'logo'),
+       (2, 'screenshot');
+
+CREATE TABLE IF NOT EXISTS curation_image
+(
+    id                        BIGINT PRIMARY KEY AUTO_INCREMENT,
+    fk_submission_file_id     BIGINT              NOT NULL,
+    fk_curation_image_type_id BIGINT              NOT NULL,
+    filename                  VARCHAR(255) UNIQUE NOT NULL,
+    FOREIGN KEY (fk_submission_file_id) REFERENCES submission_file (id),
+    FOREIGN KEY (fk_curation_image_type_id) REFERENCES curation_image_type (id)
+);

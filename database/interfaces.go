@@ -37,6 +37,8 @@ type DAL interface {
 	GetUsersForNotification(dbs DBSession, authorID, sid int64, action string) ([]int64, error)
 	GetOldestUnsentNotification(dbs DBSession) (*types.Notification, error)
 	MarkNotificationAsSent(dbs DBSession, nid int64) error
+	StoreCurationImage(dbs DBSession, c *types.CurationImage) (int64, error)
+	GetCurationImagesBySubmissionFileID(dbs DBSession, sfid int64) ([]*types.CurationImage, error)
 }
 
 type DBSession interface {

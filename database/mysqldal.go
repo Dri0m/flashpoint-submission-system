@@ -1258,3 +1258,43 @@ func (d *mysqlDAL) MarkNotificationAsSent(dbs DBSession, nid int64) error {
 
 	return err
 }
+
+// StoreCurationImage stores curation image
+func (d *mysqlDAL) StoreCurationImage(dbs DBSession, c *types.CurationImage) (int64, error) {
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		INSERT INTO curation_image (fk_submission_file_id, fk_curation_image_type_id, filename) 
+		VALUES (?, (SELECT id FROM curation_image_type WHERE name = ?), ?)`,
+		c.SubmissionFileID, c.Type, c.Filename)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// GetCurationImagesBySubmissionFileID return images for a given submission file ID
+func (d *mysqlDAL) GetCurationImagesBySubmissionFileID(dbs DBSession, sfid int64) ([]*types.CurationImage, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
+		SELECT id, (SELECT name FROM curation_image_type WHERE id = fk_curation_image_type_id), filename
+		FROM curation_image
+		WHERE fk_submission_file_id = ?`,
+		sfid)
+	if err != nil {
+		return nil, err
+	}
+
+	var result = make([]*types.CurationImage, 0)
+	for rows.Next() {
+		c := &types.CurationImage{SubmissionFileID: sfid}
+		err := rows.Scan(&c.ID, &c.Type, &c.Filename)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, c)
+	}
+
+	return result, nil
+}

@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/authbot"
@@ -18,6 +19,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -117,10 +119,11 @@ type SiteService struct {
 	authTokenProvider         AuthTokenizer
 	sessionExpirationSeconds  int64
 	submissionsDir            string
+	submissionImagesDir       string
 	notificationQueueNotEmpty chan bool
 }
 
-func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *SiteService {
+func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string) *SiteService {
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
 		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, l.WithField("botName", "notificationBot")),
@@ -131,6 +134,7 @@ func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBo
 		authTokenProvider:         NewAuthTokenProvider(),
 		sessionExpirationSeconds:  sessionExpirationSeconds,
 		submissionsDir:            submissionsDir,
+		submissionImagesDir:       submissionImagesDir,
 		notificationQueueNotEmpty: make(chan bool, 1),
 	}
 }
@@ -209,17 +213,25 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 	}
 
 	destinationFilenames := make([]string, 0)
+	imageFilePaths := make([]string, 0)
 
 	for _, fileProvider := range fileProviders {
-		destinationFilename, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid, submissionLevel)
+		destinationFilename, ifp, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid, submissionLevel)
 
 		if destinationFilename != nil {
 			destinationFilenames = append(destinationFilenames, *destinationFilename)
+		}
+		for _, imageFilePath := range ifp {
+			imageFilePaths = append(imageFilePaths, imageFilePath)
 		}
 
 		if err != nil {
 			for _, df := range destinationFilenames {
 				utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
+				utils.LogIfErr(ctx, os.Remove(df))
+			}
+			for _, df := range imageFilePaths {
+				utils.LogCtx(ctx).Debugf("cleaning up image file '%s'...", df)
 				utils.LogIfErr(ctx, os.Remove(df))
 			}
 			return fmt.Errorf("file '%s': %s", fileProvider.Filename(), err.Error())
@@ -231,6 +243,10 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 			utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", df)
 			utils.LogIfErr(ctx, os.Remove(df))
 		}
+		for _, df := range imageFilePaths {
+			utils.LogCtx(ctx).Debugf("cleaning up image file '%s'...", df)
+			utils.LogIfErr(ctx, os.Remove(df))
+		}
 		utils.LogCtx(ctx).Error(err)
 		return fmt.Errorf("failed to commit transaction")
 	}
@@ -240,27 +256,30 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 	return nil
 }
 
-func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, []string, error) {
 	userID := utils.UserIDFromContext(ctx)
 	if userID == 0 {
-		return nil, fmt.Errorf("no user associated with request")
+		return nil, nil, fmt.Errorf("no user associated with request")
 	}
 	file, err := fileHeader.Open()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open received file")
+		return nil, nil, fmt.Errorf("failed to open received file")
 	}
 	defer file.Close()
 
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", fileHeader.Filename(), fileHeader.Size())
 
 	if err := os.MkdirAll(s.submissionsDir, os.ModeDir); err != nil {
-		return nil, fmt.Errorf("failed to make directory structure")
+		return nil, nil, fmt.Errorf("failed to make directory structure")
+	}
+	if err := os.MkdirAll(s.submissionImagesDir, os.ModeDir); err != nil {
+		return nil, nil, fmt.Errorf("failed to make directory structure")
 	}
 
 	ext := filepath.Ext(fileHeader.Filename())
 
 	if ext != ".7z" && ext != ".zip" {
-		return nil, fmt.Errorf("unsupported file extension")
+		return nil, nil, fmt.Errorf("unsupported file extension")
 	}
 
 	destinationFilename := s.randomStringProvider.RandomString(64) + ext
@@ -268,7 +287,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	destination, err := os.Create(destinationFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create destination file")
+		return nil, nil, fmt.Errorf("failed to create destination file")
 	}
 	defer func() { utils.LogIfErr(ctx, destination.Close()) }()
 
@@ -280,10 +299,10 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	nBytes, err := io.Copy(multiWriter, file)
 	if err != nil {
-		return &destinationFilePath, fmt.Errorf("failed to copy file to destination")
+		return &destinationFilePath, nil, fmt.Errorf("failed to copy file to destination")
 	}
 	if nBytes != fileHeader.Size() {
-		return &destinationFilePath, fmt.Errorf("incorrect number of bytes copied to destination")
+		return &destinationFilePath, nil, fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
 	utils.LogCtx(ctx).Debug("storing submission...")
@@ -294,20 +313,20 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		submissionID, err = s.dal.StoreSubmission(dbs, submissionLevel)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			return &destinationFilePath, fmt.Errorf("failed to store submission")
+			return &destinationFilePath, nil, fmt.Errorf("failed to store submission")
 		}
 	} else {
 		submissionID = *sid
 
 		if err := s.createNotification(dbs, userID, submissionID, constants.ActionUpload); err != nil {
 			utils.LogCtx(ctx).Error(err)
-			return &destinationFilePath, fmt.Errorf("failed to create notification")
+			return &destinationFilePath, nil, fmt.Errorf("failed to create notification")
 		}
 	}
 
 	if err := s.dal.SubscribeUserToSubmission(dbs, userID, submissionID); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, fmt.Errorf("failed to subscribe user to submission")
+		return &destinationFilePath, nil, fmt.Errorf("failed to subscribe user to submission")
 	}
 
 	sf := &types.SubmissionFile{
@@ -327,10 +346,10 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		me, ok := err.(*mysql.MySQLError)
 		if ok {
 			if me.Number == 1062 {
-				return &destinationFilePath, fmt.Errorf("file with checksums md5:%s sha256:%s already present in the DB", sf.MD5Sum, sf.SHA256Sum)
+				return &destinationFilePath, nil, fmt.Errorf("file with checksums md5:%s sha256:%s already present in the DB", sf.MD5Sum, sf.SHA256Sum)
 			}
 		}
-		return &destinationFilePath, fmt.Errorf("failed to store submission file")
+		return &destinationFilePath, nil, fmt.Errorf("failed to store submission file")
 	}
 
 	utils.LogCtx(ctx).Debug("storing submission comment...")
@@ -345,19 +364,49 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	if err := s.dal.StoreComment(dbs, c); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, fmt.Errorf("failed to store uploader comment")
+		return &destinationFilePath, nil, fmt.Errorf("failed to store uploader comment")
 	}
 
 	utils.LogCtx(ctx).Debug("processing curation meta...")
 
 	vr, err := s.validator.Validate(ctx, destinationFilePath, submissionID, fid)
 	if err != nil {
-		return &destinationFilePath, fmt.Errorf("validator: %w", err)
+		return &destinationFilePath, nil, fmt.Errorf("validator: %w", err)
 	}
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, fmt.Errorf("failed to store curation meta")
+		return &destinationFilePath, nil, fmt.Errorf("failed to store curation meta")
+	}
+
+	// save images
+	imageFilePaths := make([]string, 0, len(vr.Images))
+	for _, image := range vr.Images {
+		imageData, err := base64.StdEncoding.DecodeString(image.Data)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return &destinationFilePath, imageFilePaths, fmt.Errorf("failed to decode submission image data")
+		}
+		imageFilename := s.randomStringProvider.RandomString(64)
+		imageFilenameFilePath := fmt.Sprintf("%s/%s", s.submissionImagesDir, imageFilename)
+
+		imageFilePaths = append(imageFilePaths, imageFilenameFilePath)
+
+		if err := ioutil.WriteFile(imageFilenameFilePath, imageData, 0644); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return &destinationFilePath, imageFilePaths, fmt.Errorf("failed to save submission image")
+		}
+
+		ci := &types.CurationImage{
+			SubmissionFileID: fid,
+			Type:             image.Type,
+			Filename:         imageFilename,
+		}
+
+		if _, err := s.dal.StoreCurationImage(dbs, ci); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return &destinationFilePath, imageFilePaths, fmt.Errorf("failed to store submission image")
+		}
 	}
 
 	utils.LogCtx(ctx).Debug("processing bot event...")
@@ -365,10 +414,10 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	bc := s.convertValidatorResponseToComment(vr)
 	if err := s.dal.StoreComment(dbs, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, fmt.Errorf("failed to store validator comment")
+		return &destinationFilePath, imageFilePaths, fmt.Errorf("failed to store validator comment")
 	}
 
-	return &destinationFilePath, nil
+	return &destinationFilePath, imageFilePaths, nil
 }
 
 // createNotification formats and stores notification

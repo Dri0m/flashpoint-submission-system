@@ -1,7 +1,8 @@
 package constants
 
 const ValidatorID = 810112564787675166
-const SubmissionsDir = "submissions"
+const SubmissionsDir = "files/submissions"
+const SubmissionImagesDir = "files/submissions-images"
 const UserInAuditSumbissionMaxFilesize = 200000000
 
 const (
