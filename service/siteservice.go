@@ -705,15 +705,40 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 		ciids = append(ciids, curationImage.ID)
 	}
 
+	var nextSID *int64
+	var prevSID *int64
+
+	nsid, err := s.dal.GetNextSubmission(dbs, sid)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			utils.LogCtx(ctx).Error(err)
+			return nil, fmt.Errorf("failed to load next submission ID")
+		}
+	} else {
+		nextSID = &nsid
+	}
+
+	psid, err := s.dal.GetPreviousSubmission(dbs, sid)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			utils.LogCtx(ctx).Error(err)
+			return nil, fmt.Errorf("failed to load previous submission ID")
+		}
+	} else {
+		prevSID = &psid
+	}
+
 	pageData := &types.ViewSubmissionPageData{
 		SubmissionsPageData: types.SubmissionsPageData{
 			BasePageData: *bpd,
 			Submissions:  submissions,
 		},
-		CurationMeta:     meta,
-		Comments:         comments,
-		IsUserSubscribed: isUserSubscribed,
-		CurationImageIDs: ciids,
+		CurationMeta:         meta,
+		Comments:             comments,
+		IsUserSubscribed:     isUserSubscribed,
+		CurationImageIDs:     ciids,
+		NextSubmissionID:     nextSID,
+		PreviousSubmissionID: prevSID,
 	}
 
 	return pageData, nil
@@ -1105,4 +1130,42 @@ func (s *SiteService) GetCurationImage(ctx context.Context, ciid int64) (*types.
 		return nil, fmt.Errorf("failed to load curation file")
 	}
 	return ci, nil
+}
+
+func (s *SiteService) GetNextSubmission(ctx context.Context, sid int64) (*int64, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	nsid, err := s.dal.GetNextSubmission(dbs, sid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load next submission ID")
+	}
+	return &nsid, nil
+}
+
+func (s *SiteService) GetPreviousSubmission(ctx context.Context, sid int64) (*int64, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf(constants.ErrorFailedToBeginTransaction)
+	}
+	defer dbs.Rollback()
+
+	psid, err := s.dal.GetPreviousSubmission(dbs, sid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		utils.LogCtx(ctx).Error(err)
+		return nil, fmt.Errorf("failed to load previous submission ID")
+	}
+	return &psid, nil
 }

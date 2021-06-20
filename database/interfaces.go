@@ -40,6 +40,8 @@ type DAL interface {
 	StoreCurationImage(dbs DBSession, c *types.CurationImage) (int64, error)
 	GetCurationImagesBySubmissionFileID(dbs DBSession, sfid int64) ([]*types.CurationImage, error)
 	GetCurationImage(dbs DBSession, ciid int64) (*types.CurationImage, error)
+	GetNextSubmission(dbs DBSession, sid int64) (int64, error)
+	GetPreviousSubmission(dbs DBSession, sid int64) (int64, error)
 }
 
 type DBSession interface {

@@ -388,7 +388,8 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/submission.gohtml",
 		"templates/submission-table.gohtml",
-		"templates/comment-form.gohtml")
+		"templates/comment-form.gohtml",
+		"templates/view-submission-nav.gohtml")
 }
 
 func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Request) {

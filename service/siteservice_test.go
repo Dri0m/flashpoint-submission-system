@@ -218,6 +218,16 @@ func (m *mockDAL) GetCurationImage(_ database.DBSession, ciid int64) (*types.Cur
 	return args.Get(0).(*types.CurationImage), args.Error(1)
 }
 
+func (m *mockDAL) GetNextSubmission(_ database.DBSession, sid int64) (int64, error) {
+	args := m.Called(sid)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockDAL) GetPreviousSubmission(_ database.DBSession, sid int64) (int64, error) {
+	args := m.Called(sid)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {
@@ -522,6 +532,8 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
 
+	extreme := "No"
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     sid,
 		SubmitterID:      uid,
@@ -544,6 +556,7 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	meta := types.CurationMeta{
 		SubmissionID:     sid,
 		SubmissionFileID: fid,
+		Extreme:          &extreme,
 	}
 
 	vr := &types.ValidatorResponse{
@@ -629,6 +642,8 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
 
+	extreme := "No"
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     sid,
 		SubmitterID:      uid,
@@ -651,6 +666,7 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 	meta := types.CurationMeta{
 		SubmissionID:     sid,
 		SubmissionFileID: fid,
+		Extreme:          &extreme,
 	}
 
 	imageType := "logo"
@@ -1117,6 +1133,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
 
+	extreme := "No"
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     sid,
 		SubmitterID:      uid,
@@ -1139,6 +1157,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 	meta := types.CurationMeta{
 		SubmissionID:     sid,
 		SubmissionFileID: fid,
+		Extreme:          &extreme,
 	}
 
 	vr := &types.ValidatorResponse{
@@ -1213,6 +1232,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationImage(t *testing.T) {
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
 
+	extreme := "No"
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     sid,
 		SubmitterID:      uid,
@@ -1235,6 +1256,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationImage(t *testing.T) {
 	meta := types.CurationMeta{
 		SubmissionID:     sid,
 		SubmissionFileID: fid,
+		Extreme:          &extreme,
 	}
 
 	imageType := "logo"
@@ -1321,6 +1343,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
 
+	extreme := "No"
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     sid,
 		SubmitterID:      uid,
@@ -1343,6 +1367,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 	meta := types.CurationMeta{
 		SubmissionID:     sid,
 		SubmissionFileID: fid,
+		Extreme:          &extreme,
 	}
 
 	vr := &types.ValidatorResponse{
@@ -1423,6 +1448,8 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
 
+	extreme := "No"
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     sid,
 		SubmitterID:      uid,
@@ -1445,6 +1472,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	meta := types.CurationMeta{
 		SubmissionID:     sid,
 		SubmissionFileID: fid,
+		Extreme:          &extreme,
 	}
 
 	vr := &types.ValidatorResponse{
@@ -1750,6 +1778,8 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	var sid int64 = 2
 	var fid int64 = 3
 	var ciid int64 = 4
+	var nsid int64 = 5
+	var psid int64 = 6
 	bpd := createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
@@ -1773,9 +1803,11 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 			BasePageData: *bpd,
 			Submissions:  submissions,
 		},
-		CurationMeta:     cm,
-		Comments:         comments,
-		CurationImageIDs: []int64{ciid},
+		CurationMeta:         cm,
+		Comments:             comments,
+		CurationImageIDs:     []int64{ciid},
+		NextSubmissionID:     &nsid,
+		PreviousSubmissionID: &psid,
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -1787,6 +1819,8 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
 	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
 	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(curationImages, nil)
+	ts.dal.On("GetNextSubmission", sid).Return(nsid, nil)
+	ts.dal.On("GetPreviousSubmission", sid).Return(psid, nil)
 	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
@@ -1990,6 +2024,98 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationImagesBySubmissi
 	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
 	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
 	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(([]*types.CurationImage)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_GetNextSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	var ciid int64 = 4
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	cm := &types.CurationMeta{}
+	comments := []*types.ExtendedComment{{}}
+	curationImages := []*types.CurationImage{{ID: ciid}}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
+	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
+	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
+	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(curationImages, nil)
+	ts.dal.On("GetNextSubmission", sid).Return((int64)(0), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_GetPreviousSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	var ciid int64 = 4
+	var nsid int64 = 5
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionID: &sid,
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	cm := &types.CurationMeta{}
+	comments := []*types.ExtendedComment{{}}
+	curationImages := []*types.CurationImage{{ID: ciid}}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
+	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
+	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
+	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(curationImages, nil)
+	ts.dal.On("GetNextSubmission", sid).Return(nsid, nil)
+	ts.dal.On("GetPreviousSubmission", sid).Return((int64)(0), errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
@@ -3637,6 +3763,134 @@ func Test_siteService_GetCurationImage_Fail_NewSession(t *testing.T) {
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
 	actual, err := ts.s.GetCurationImage(ctx, ciid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_GetNextSubmission_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var nsid int64 = 3
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetNextSubmission", sid).Return(nsid, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetNextSubmission(ctx, sid)
+
+	assert.Equal(t, nsid, *actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetNextSubmission_Fail_GetNextSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetNextSubmission", sid).Return((int64)(0), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetNextSubmission(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetNextSubmission_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetNextSubmission(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+////////////////////////////////////////////////
+
+func Test_siteService_GetPreviousSubmission_OK(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var psid int64 = 3
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetPreviousSubmission", sid).Return(psid, nil)
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetPreviousSubmission(ctx, sid)
+
+	assert.Equal(t, psid, *actual)
+	assert.NoError(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetPreviousSubmission_Fail_GetPreviousSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetPreviousSubmission", sid).Return((int64)(0), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetPreviousSubmission(ctx, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetPreviousSubmission_Fail_NewSession(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
+
+	actual, err := ts.s.GetPreviousSubmission(ctx, sid)
 
 	assert.Nil(t, actual)
 	assert.Error(t, err)

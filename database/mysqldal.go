@@ -1320,3 +1320,43 @@ func (d *mysqlDAL) GetCurationImage(dbs DBSession, ciid int64) (*types.CurationI
 
 	return ci, nil
 }
+
+// GetNextSubmission returns ID of next submission that's not deleted
+func (d *mysqlDAL) GetNextSubmission(dbs DBSession, sid int64) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT id
+		FROM submission
+		WHERE id > ? AND deleted_at IS NULL
+		ORDER BY id
+		LIMIT 1`,
+		sid)
+
+	var nsid int64
+
+	err := row.Scan(&nsid)
+	if err != nil {
+		return 0, err
+	}
+
+	return nsid, nil
+}
+
+// GetPreviousSubmission returns ID of previous submission that's not deleted
+func (d *mysqlDAL) GetPreviousSubmission(dbs DBSession, sid int64) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT id
+		FROM submission
+		WHERE id < ? AND deleted_at IS NULL
+		ORDER BY id DESC
+		LIMIT 1`,
+		sid)
+
+	var psid int64
+
+	err := row.Scan(&psid)
+	if err != nil {
+		return 0, err
+	}
+
+	return psid, nil
+}
