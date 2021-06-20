@@ -1201,7 +1201,7 @@ func (d *mysqlDAL) StoreNotification(dbs DBSession, msg string) error {
 // GetUsersForNotification returns a list of users who should be notified by an event
 func (d *mysqlDAL) GetUsersForNotification(dbs DBSession, authorID, sid int64, action string) ([]int64, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
-		SELECT notification_settings.fk_user_id
+		SELECT DISTINCT notification_settings.fk_user_id
 		FROM notification_settings
 		LEFT JOIN submission_notification_subscription ON submission_notification_subscription.fk_user_id = notification_settings.fk_user_id
 		WHERE submission_notification_subscription.fk_submission_id = ?
