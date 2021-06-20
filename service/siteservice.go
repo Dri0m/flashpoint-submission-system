@@ -444,7 +444,7 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 
 	var b strings.Builder
 	b.WriteString("You've got mail!\n")
-	b.WriteString(fmt.Sprintf("https://fpfss.unstable.life/submission/%d\n", sid))
+	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/submission/%d>\n", sid))
 
 	if action == constants.ActionComment {
 		b.WriteString(fmt.Sprintf("There is a new comment on the submission."))
