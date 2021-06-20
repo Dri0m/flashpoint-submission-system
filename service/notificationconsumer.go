@@ -14,7 +14,7 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 	l := logger.WithField("serviceName", "notificationConsumer")
 	defer l.Info("consumer stopped")
 
-	bucket, ticker := utils.NewBucketLimiter(500*time.Millisecond, 1)
+	bucket, ticker := utils.NewBucketLimiter(1000*time.Millisecond, 1)
 	defer ticker.Stop()
 
 	s.announceNotification()
