@@ -40,7 +40,7 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 			dbs, err := s.dal.NewSession(ctx)
 			if err != nil {
 				l.Error(err)
-				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				l.Debugf("sleeping for %d seconds", errorSleepTime.Seconds())
 				time.Sleep(errorSleepTime)
 				continue
 			}
@@ -53,7 +53,7 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 					continue
 				}
 				l.Error(err)
-				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				l.Debugf("sleeping for %d seconds", errorSleepTime.Seconds())
 				time.Sleep(errorSleepTime)
 				continue
 			}
@@ -61,21 +61,21 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 
 			if err := s.notificationBot.SendMessage(notification.Message); err != nil {
 				l.Error(err)
-				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				l.Debugf("sleeping for %d seconds", errorSleepTime.Seconds())
 				time.Sleep(errorSleepTime)
 				continue
 			}
 
 			if err := s.dal.MarkNotificationAsSent(dbs, notification.ID); err != nil {
 				l.Error(err)
-				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				l.Debugf("sleeping for %d seconds", errorSleepTime.Seconds())
 				time.Sleep(errorSleepTime)
 				continue
 			}
 
 			if err := dbs.Commit(); err != nil {
 				l.Error(err)
-				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				l.Debugf("sleeping for %d seconds", errorSleepTime.Seconds())
 				time.Sleep(errorSleepTime)
 				continue
 			}
