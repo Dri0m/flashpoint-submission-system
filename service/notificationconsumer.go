@@ -19,6 +19,8 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 
 	s.announceNotification()
 
+	const errorSleepTime = time.Second * 60
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -38,6 +40,8 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 			dbs, err := s.dal.NewSession(ctx)
 			if err != nil {
 				l.Error(err)
+				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				time.Sleep(errorSleepTime)
 				continue
 			}
 			defer dbs.Rollback()
@@ -49,22 +53,30 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 					continue
 				}
 				l.Error(err)
+				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				time.Sleep(errorSleepTime)
 				continue
 			}
 			s.announceNotification()
 
 			if err := s.notificationBot.SendMessage(notification.Message); err != nil {
 				l.Error(err)
+				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				time.Sleep(errorSleepTime)
 				continue
 			}
 
 			if err := s.dal.MarkNotificationAsSent(dbs, notification.ID); err != nil {
 				l.Error(err)
+				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				time.Sleep(errorSleepTime)
 				continue
 			}
 
 			if err := dbs.Commit(); err != nil {
 				l.Error(err)
+				l.Debugf("sleeping for %d seconds", errorSleepTime)
+				time.Sleep(errorSleepTime)
 				continue
 			}
 		}
