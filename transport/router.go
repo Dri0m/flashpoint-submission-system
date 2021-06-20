@@ -163,7 +163,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 				isStaff,
 				all(isTrialCurator, userOwnsAllSubmissions))))).Methods("GET")
 
-	router.Handle(fmt.Sprintf("/submission/{%s}/curation-image/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyCurationImageID),
+	router.Handle(fmt.Sprintf("/submission/{%s}/curation-image/{%s}.png", constants.ResourceKeySubmissionID, constants.ResourceKeyCurationImageID),
 		http.HandlerFunc(a.UserAuthMux(
 			a.HandleDownloadCurationImage,
 			any(isStaff,
