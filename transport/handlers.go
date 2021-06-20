@@ -259,9 +259,13 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		if err.Error() == "failed to get user data from database" {
+			utils.UnsetCookie(w, utils.Cookies.Login)
+		} else {
+			utils.LogCtx(ctx).Error(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/root.gohtml")
