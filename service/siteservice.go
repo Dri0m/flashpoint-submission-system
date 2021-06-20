@@ -108,30 +108,30 @@ func MapAuthToken(token *authToken) map[string]string {
 }
 
 type SiteService struct {
-	authBot                    authbot.DiscordRoleReader
-	notificationBot            notificationbot.DiscordNotificationSender
-	dal                        database.DAL
-	validator                  Validator
-	clock                      Clock
-	randomStringProvider       utils.RandomStringer
-	authTokenProvider          AuthTokenizer
-	sessionExpirationSeconds   int64
-	submissionsDir             string
-	notificationBufferNotEmpty chan bool
+	authBot                   authbot.DiscordRoleReader
+	notificationBot           notificationbot.DiscordNotificationSender
+	dal                       database.DAL
+	validator                 Validator
+	clock                     Clock
+	randomStringProvider      utils.RandomStringer
+	authTokenProvider         AuthTokenizer
+	sessionExpirationSeconds  int64
+	submissionsDir            string
+	notificationQueueNotEmpty chan bool
 }
 
 func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir string) *SiteService {
 	return &SiteService{
-		authBot:                    authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
-		notificationBot:            notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, l.WithField("botName", "notificationBot")),
-		dal:                        database.NewMysqlDAL(db),
-		validator:                  NewValidator(validatorServerURL),
-		clock:                      &RealClock{},
-		randomStringProvider:       utils.NewRealRandomStringProvider(),
-		authTokenProvider:          NewAuthTokenProvider(),
-		sessionExpirationSeconds:   sessionExpirationSeconds,
-		submissionsDir:             submissionsDir,
-		notificationBufferNotEmpty: make(chan bool, 1),
+		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
+		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, l.WithField("botName", "notificationBot")),
+		dal:                       database.NewMysqlDAL(db),
+		validator:                 NewValidator(validatorServerURL),
+		clock:                     &RealClock{},
+		randomStringProvider:      utils.NewRealRandomStringProvider(),
+		authTokenProvider:         NewAuthTokenProvider(),
+		sessionExpirationSeconds:  sessionExpirationSeconds,
+		submissionsDir:            submissionsDir,
+		notificationQueueNotEmpty: make(chan bool, 1),
 	}
 }
 

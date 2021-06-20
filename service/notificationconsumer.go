@@ -24,7 +24,7 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 		case <-ctx.Done():
 			l.Info("context cancelled, stopping notification consumer")
 			return
-		case <-s.notificationBufferNotEmpty:
+		case <-s.notificationQueueNotEmpty:
 			select {
 			case <-ctx.Done():
 				l.Info("context cancelled, stopping notification consumer")
@@ -73,8 +73,8 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 
 func (s *SiteService) announceNotification() {
 	select {
-	// non-blocking announce that something is in the buffer
-	case s.notificationBufferNotEmpty <- true:
+	// non-blocking announce that something is in the queue
+	case s.notificationQueueNotEmpty <- true:
 	default:
 	}
 }
