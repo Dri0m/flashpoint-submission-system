@@ -18,6 +18,15 @@ it will be a submission management system for https://bluemaxima.org/flashpoint/
 it looks something like this
 
 ![submit page](github/ss2.png)
+
+and this
+
 ![submissions page](github/ss3.png)
+
+and this
+
 ![submission page](github/ss4.png)
+
+and also this
+
 ![profile page](github/ss1.png)
