@@ -9,8 +9,6 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/mysql"
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -40,22 +38,6 @@ func OpenDB(l *logrus.Logger, conf *config.Config) *sql.DB {
 	db, err := sql.Open("mysql",
 		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", user, pass, ip, port, dbName))
 	if err != nil {
-		l.Fatal(err)
-	}
-	driver, err := mysql.WithInstance(db, &mysql.Config{})
-	if err != nil {
-		l.Fatal(err)
-	}
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations/",
-		"mysql",
-		driver,
-	)
-	if err != nil {
-		l.Fatal(err)
-	}
-	err = m.Up()
-	if err != nil && err.Error() != "no change" {
 		l.Fatal(err)
 	}
 
