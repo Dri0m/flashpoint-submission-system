@@ -1,7 +1,7 @@
 function sendXHR(url, method, data, reload, failureMessage, successMessage, prompt) {
     let confirmed = true
     if (prompt != null) {
-        confirmed = confirm(`Are you sure you want to (soft) delete '${url}'?`)
+        confirmed = confirm(prompt)
     }
     if (confirmed !== true) {
         return
@@ -11,7 +11,7 @@ function sendXHR(url, method, data, reload, failureMessage, successMessage, prom
     request.open(method, url, false)
 
     request.addEventListener("loadend", function () {
-        if (request.status !== 200) {
+        if (request.status !== 200 && request.status !== 204) {
             alert(`${failureMessage} - status ${request.status} - ${request.response}`)
         } else {
             if (successMessage !== null) {
@@ -233,3 +233,23 @@ window.onload = function () {
     }
 };
 
+function deleteSubmissionFile(sid, sfid) {
+    sendXHR(`/submission/${sid}/file/${sfid}`, "DELETE", null, true,
+        "Failed to delete submission file",
+        "Submission file deleted successfully",
+        "Are you sure you want to delete this submission file?")
+}
+
+function deleteSubmission(sid) {
+    sendXHR(`/submission/${sid}`, "DELETE", null, true,
+        "Failed to delete submission",
+        "Submission deleted successfully",
+        "Are you sure you want to delete this submission and all its related data?")
+}
+
+function deleteComment(sid, cid) {
+    sendXHR(`/submission/${sid}/comment/${cid}`, "DELETE", null, true,
+        "Failed to delete comment",
+        null,
+        "Are you sure you want to delete this comment?")
+}

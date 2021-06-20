@@ -25,7 +25,7 @@
                     <td class="center"><a href="/submission/{{.SubmissionID}}/file/{{.FileID}}">Get</a></td>
                     {{if $canDelete}}
                         <td class="center">
-                            <button onclick="sendDelete('/submission/{{.SubmissionID}}/file/{{.FileID}}')">Delete</button >
+                            <button onclick="deleteSubmissionFile({{.SubmissionID}}, {{.FileID}})">Delete</button >
                         </td>
                     {{end}}
                     <td title="{{.Size}}B">{{megabytify .Size}}MB</td>

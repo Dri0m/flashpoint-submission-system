@@ -21,7 +21,7 @@
             {{if $canDelete}}
                 <h3>Delete submission and all its related data</h3>
                 <button class="pure-button button-delete"
-                        onclick="sendDelete('/submission/{{$submissionID}}')">Delete
+                        onclick="deleteSubmission({{$submissionID}})">Delete
                 </button>
             {{end}}
 
@@ -200,7 +200,7 @@
                             <b>{{.Username}}</b><br>
                             {{if $canDelete}}
                                 <button class="micro-button" title="delete comment"
-                                        onclick="sendDelete('/submission/{{$submissionID}}/comment/{{.CommentID}}')">D
+                                        onclick="deleteComment({{$submissionID}}, {{.CommentID}})">D
                                 </button>
                             {{end}}
                             {{if $canViewSubmissionsOfOthers}}
