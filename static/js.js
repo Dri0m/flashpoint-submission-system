@@ -1,35 +1,21 @@
-function sendDelete(url) {
-    if (confirm(`Are you sure you want to (soft) delete '${url}'?`)) {
-        let request = new XMLHttpRequest()
-        request.open("DELETE", url)
-
-        request.addEventListener("loadend", function () {
-            if (request.status !== 204) {
-                alert(`failed to delete '${url}' - status ${request.status} - ${request.response}`)
-            } else {
-                alert(`delete of '${url}' successful`)
-                location.reload()
-            }
-        })
-
-        try {
-            request.send()
-        } catch (err) {
-            alert(`failed to delete '${url}' - exception '${err.message}'`)
-        }
+function sendXHR(url, method, data, reload, failureMessage, successMessage, prompt) {
+    let confirmed = true
+    if (prompt != null) {
+        confirmed = confirm(`Are you sure you want to (soft) delete '${url}'?`)
     }
-}
+    if (confirmed !== true) {
+        return
+    }
 
-function sendPost(url, data, reload, alertSuccess) {
     let request = new XMLHttpRequest()
-    request.open("POST", url)
+    request.open(method, url, false)
 
     request.addEventListener("loadend", function () {
         if (request.status !== 200) {
-            alert(`failed to post '${url}' - status ${request.status} - ${request.response}`)
+            alert(`${failureMessage} - status ${request.status} - ${request.response}`)
         } else {
-            if (alertSuccess) {
-                alert(`post of '${url}' successful`)
+            if (successMessage !== null) {
+                alert(`${successMessage}`)
             }
             if (reload === true) {
                 location.reload()
@@ -40,28 +26,7 @@ function sendPost(url, data, reload, alertSuccess) {
     try {
         request.send(data)
     } catch (err) {
-        alert(`failed to post '${url}' - exception '${err.message}'`)
-    }
-}
-
-function sendPut(url, data, reload) {
-    let request = new XMLHttpRequest()
-    request.open("PUT", url, false)
-
-    request.addEventListener("loadend", function () {
-        if (request.status !== 200) {
-            alert(`failed to update '${url}' - status ${request.status} - ${request.response}`)
-        } else {
-            if (reload === true) {
-                location.reload()
-            }
-        }
-    })
-
-    try {
-        request.send(data)
-    } catch (err) {
-        alert(`failed to update '${url}' - exception '${err.message}'`)
+        alert(`${failureMessage} - exception '${err.message}'`)
     }
 }
 
@@ -103,14 +68,14 @@ function batchComment(checkboxClassName, attribute, action) {
 
     let checkedCounter = 0
 
-    let magic = function (reload, alertSuccess) {
+    let magic = function (reload, successMessage) {
         url = url.slice(0, -1)
 
         let textArea = document.querySelector("#batch-comment-message")
         let ignoreDupesCheckbox = document.querySelector("#ignore-duplicate-actions")
         url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${ignoreDupesCheckbox.checked}`
 
-        sendPost(url, null, reload, alertSuccess)
+        sendXHR(url, "POST", null, reload, "Failed to post comment(s)", successMessage, null)
     }
 
     let u = new URL(window.location.href)
@@ -118,7 +83,7 @@ function batchComment(checkboxClassName, attribute, action) {
     // ugly black magic
     if (!u.href.endsWith("/submissions") && !u.href.endsWith("/my-submissions")) {
         url += checkboxes[0].dataset[attribute] + ","
-        magic(true, false)
+        magic(true, null)
     } else {
         for (let i = 0; i < checkboxes.length; i++) {
             if (checkboxes[i].checked) {
@@ -130,7 +95,7 @@ function batchComment(checkboxClassName, attribute, action) {
             alert("no submissions selected")
             return
         }
-        magic(false, true)
+        magic(false, "Comments posted successfully")
     }
 }
 
@@ -249,11 +214,11 @@ function updateNotificationSettings() {
 
     url = url.slice(0, -1)
 
-    sendPut(url, null, true)
+    sendXHR(url, "PUT", null, true, "Failed to update notification settings", "Notification settings updated", null)
 }
 
 function updateSubscriptionSettings(sid, newValue) {
-    sendPut(`/submission/${sid}/subscription-settings?subscribe=${newValue}`, null, true)
+    sendXHR(`/submission/${sid}/subscription-settings?subscribe=${newValue}`, "PUT", null, true, "Failed to update subscription settings", null, null)
 }
 
 window.onload = function () {
