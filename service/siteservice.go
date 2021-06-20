@@ -373,25 +373,47 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 // createNotification formats and stores notification
 func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid int64, action string) error {
-	userIDs, err := s.dal.GetUsersForNotification(dbs, authorID, sid, action)
+	validAction := false
+	for _, a := range constants.GetActionsWithNotification() {
+		if action == a {
+			validAction = true
+			break
+		}
+	}
+	if !validAction {
+		return nil
+	}
+
+	mentionUserIDs, err := s.dal.GetUsersForNotification(dbs, authorID, sid, action)
 	if err != nil {
 		return err
 	}
 
-	if len(userIDs) == 0 {
+	if len(mentionUserIDs) == 0 {
 		return nil
 	}
 
 	var b strings.Builder
+	b.WriteString("You've got mail!\n")
 
-	b.WriteString("notification test\n")
-	b.WriteString(fmt.Sprintf("subscription ID: %d\n", sid))
-	b.WriteString(fmt.Sprintf("action: %s\n", action))
-	b.WriteString("users that should be notified:")
-	for _, userID := range userIDs {
+	if action == constants.ActionComment {
+		b.WriteString(fmt.Sprintf("There is a new comment on the submission."))
+	} else if action == constants.ActionApprove {
+		b.WriteString(fmt.Sprintf("The submission has been approved."))
+	} else if action == constants.ActionRequestChanges {
+		b.WriteString(fmt.Sprintf("User has requested changes on the submission."))
+	} else if action == constants.ActionMarkAdded {
+		b.WriteString(fmt.Sprintf("The submission has been marked as added to Flashpoint."))
+	} else if action == constants.ActionUpload {
+		b.WriteString(fmt.Sprintf("A new version has been uploaded by <@%d>", authorID))
+	}
+
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("https://fpfss.unstable.life/submission/%d\n", sid))
+
+	for _, userID := range mentionUserIDs {
 		b.WriteString(fmt.Sprintf(" <@%d>", userID))
 	}
-	b.WriteString("\n")
 
 	msg := b.String()
 
@@ -552,16 +574,10 @@ SubmissionLoop:
 			return fmt.Errorf("failed to store comment")
 		}
 
-		for _, a := range constants.GetActionsWithNotification() {
-			if formAction == a {
-				if err := s.createNotification(dbs, uid, sid, formAction); err != nil {
-					utils.LogCtx(ctx).Error(err)
-					return fmt.Errorf("failed to create notification")
-				}
-				break
-			}
+		if err := s.createNotification(dbs, uid, sid, formAction); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return fmt.Errorf("failed to create notification")
 		}
-
 	}
 
 	if err := dbs.Commit(); err != nil {
