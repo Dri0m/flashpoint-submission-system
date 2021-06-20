@@ -28,7 +28,7 @@ function sendPost(url, data, reload, alertSuccess) {
         if (request.status !== 200) {
             alert(`failed to post '${url}' - status ${request.status} - ${request.response}`)
         } else {
-            if(alertSuccess) {
+            if (alertSuccess) {
                 alert(`post of '${url}' successful`)
             }
             if (reload === true) {
@@ -103,7 +103,7 @@ function batchComment(checkboxClassName, attribute, action) {
 
     let checkedCounter = 0
 
-    let magic = function(reload, alertSuccess) {
+    let magic = function (reload, alertSuccess) {
         url = url.slice(0, -1)
 
         let textArea = document.querySelector("#batch-comment-message")
@@ -203,7 +203,7 @@ function uploadHandler(url, files, i) {
         } else {
             progressText.innerHTML = `${file.name}<br>Upload successful.`
         }
-        uploadHandler(url, files, i+1)
+        uploadHandler(url, files, i + 1)
     }
 
     request.addEventListener("loadend", handleEnd);
@@ -255,3 +255,16 @@ function updateNotificationSettings() {
 function updateSubscriptionSettings(sid, newValue) {
     sendPut(`/submission/${sid}/subscription-settings?subscribe=${newValue}`, null, true)
 }
+
+window.onload = function () {
+    const images = document.getElementsByClassName('blur-img');
+    for (let i = 0; i < images.length; i++) {
+        images[i].addEventListener('click', toggleBlur);
+    }
+
+
+    function toggleBlur() {
+        this.classList.toggle('blur-img');
+    }
+};
+

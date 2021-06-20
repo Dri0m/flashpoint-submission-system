@@ -298,3 +298,8 @@ legend, label {
     margin: 10px;
     border: 1px solid black;
 }
+
+.blur-img {
+    filter: blur(15px);
+    cursor: pointer;
+}

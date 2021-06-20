@@ -24,9 +24,7 @@
 
             <h3>Curation images</h3>
             {{range .CurationImageIDs}}
-                <a href="/submission/{{$submissionID}}/curation-image/{{.}}" class="clear-link">
-                    <img src="/submission/{{$submissionID}}/curation-image/{{.}}" class="curation-image" alt="curation image">
-                </a>
+                <img src="/submission/{{$submissionID}}/curation-image/{{.}}" class="curation-image blur-img" alt="curation image">
             {{end}}
 
             <h3>Curation meta</h3>
