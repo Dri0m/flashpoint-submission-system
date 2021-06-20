@@ -374,6 +374,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, nil, fmt.Errorf("validator: %w", err)
 	}
 
+	if vr.IsExtreme {
+		yes := "Yes"
+		vr.Meta.Extreme = &yes
+	}
+
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, nil, fmt.Errorf("failed to store curation meta")
