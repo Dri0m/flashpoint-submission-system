@@ -20,6 +20,7 @@
                     <th title="Assigned">AS</th>
                     <th title="Requested Changes">RC</th>
                     <th title="Approved">AP</th>
+                    <th title="Marked as added to Flashpoint">FP</th>
                     <th>Uploaded at</th>
                     <th>Updated at</th>
                     <th>Original Filename</th>
@@ -50,6 +51,7 @@
                         <td>{{len .AssignedUserIDs}}</td>
                         <td>{{len .RequestedChangesUserIDs}}</td>
                         <td>{{len .ApprovedUserIDs}}</td>
+                        <td><div class="dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}" title="{{.BotAction}}"></div></td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.OriginalFilename}}</td>

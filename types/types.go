@@ -88,11 +88,11 @@ type ExtendedSubmission struct {
 	CurationLaunchCommand   *string   // newest file
 	CurationLibrary         *string   // newest file
 	BotAction               string
-	LatestAction            string
 	FileCount               uint64
 	AssignedUserIDs         []int64
 	RequestedChangesUserIDs []int64
 	ApprovedUserIDs         []int64
+	DistinctActions         []string
 }
 
 type SubmissionsFilter struct {
@@ -118,6 +118,8 @@ type SubmissionsFilter struct {
 	RequestedChangedStatusMe   *string  `schema:"requested-changes-status-me"`
 	ApprovalsStatusMe          *string  `schema:"approvals-status-me"`
 	IsExtreme                  *string  `schema:"is-extreme"`
+	DistinctActions            []string `schema:"distinct-action"`
+	DistinctActionsNot         []string `schema:"distinct-action-not"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {

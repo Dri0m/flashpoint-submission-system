@@ -1,7 +1,16 @@
 {{define "submission-filter"}}
 
     <div class="submission-filter-wrapper">
-        <form class="pure-form pure-form-stacked" method="GET">
+
+        Quick filters (WIP):
+        <button type="button" class="pure-button pure-button-primary"
+                onclick="filterReadyForTesting()">Ready for Testing</button>
+        <button type="button" class="pure-button pure-button-primary"
+                onclick="filterReadyForVerification()">Ready for Verification (WIP)</button>
+        <button type="button" class="pure-button pure-button-primary"
+                onclick="filterReadyForFlashpoint()">Ready for FP</button>
+        <br><br>
+        <form class="pure-form pure-form-stacked" id="filter-form" method="GET">
             <div class="pure-g">
                 <div class="pure-u-1-3">
                     <div class="form-column form-column-text">
@@ -36,9 +45,11 @@
                             <legend>Filter by Bot Actions (union)</legend>
                             <label for="bot-action">Bot Happy :D
                                 <input type="checkbox" name="bot-action" value="approve"
+                                       id="bot-action-approve"
                                        {{if has "approve" .Filter.BotActions}}checked{{end}}></label>
                             <label for="bot-action">Bot Sad :C
                                 <input type="checkbox" name="bot-action" value="request-changes"
+                                       id="bot-action-request-changes"
                                        {{if has "request-changes" .Filter.BotActions}}checked{{end}}></label>
                         </fieldset>
                     </div>
@@ -47,28 +58,71 @@
                             <legend>Filter by State (ctrl+click to uncheck)</legend>
                             <label>Unassigned
                                 <input type="radio" name="assigned-status" value="unassigned"
+                                       id="assigned-status-unassigned"
                                        {{if eq "unassigned" (unpointify .Filter.AssignedStatus)}}checked{{end}}></label>
                             <label>Assigned
                                 <input type="radio" name="assigned-status" value="assigned"
+                                       id="assigned-status-assigned"
                                        {{if eq "assigned" (unpointify .Filter.AssignedStatus)}}checked{{end}}></label>
                             <br>
                             <label>No RC
                                 <input type="radio" name="requested-changes-status" value="none"
+                                       id="requested-changes-status-none"
                                        {{if eq "none" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}></label>
                             <label>Ongoing RC
                                 <input type="radio" name="requested-changes-status" value="ongoing"
+                                       id="requested-changes-status-ongoing"
                                        {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}></label>
                             <br>
                             <label>No Approvals
                                 <input type="radio" name="approvals-status" value="none"
+                                       id="approvals-status-none"
                                        {{if eq "none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
                             <label>1 AP
                                 <input type="radio" name="approvals-status" value="one"
+                                       id="approvals-status-one"
                                        {{if eq "one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
                             <label>>=2 AP
                                 <input type="radio" name="approvals-status" value="more-than-one"
+                                       id="approvals-status-more-than-one"
                                        {{if eq "more-than-one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
                             <br>
+                        </fieldset>
+                    </div>
+                    <div class="form-column form-column-checkboxes">
+                        <fieldset>
+                            <legend>Filter by Raw Actions Present (union)</legend>
+                            <label>Comment
+                                <input type="checkbox" name="distinct-action" value="comment"
+                                       {{if has "comment" .Filter.DistinctActions}}checked{{end}}></label>
+                            <label>Approve
+                                <input type="checkbox" name="distinct-action" value="approve"
+                                       {{if has "approve" .Filter.DistinctActions}}checked{{end}}></label>
+                            <label>Request Changes
+                                <input type="checkbox" name="distinct-action" value="request-changes"
+                                       {{if has "request-changes" .Filter.DistinctActions}}checked{{end}}></label>
+                            <label>Mark as Added
+                                <input type="checkbox" name="distinct-action" value="mark-added"
+                                       id="distinct-action-mark-added"
+                                       {{if has "mark-added" .Filter.DistinctActions}}checked{{end}}></label>
+                        </fieldset>
+                    </div>
+                    <div class="form-column form-column-checkboxes">
+                        <fieldset>
+                            <legend>Filter by Raw Actions Not Present (intersection)</legend>
+                            <label>Comment
+                                <input type="checkbox" name="distinct-action-not" value="comment"
+                                       {{if has "comment" .Filter.DistinctActionsNot}}checked{{end}}></label>
+                            <label>Approve
+                                <input type="checkbox" name="distinct-action-not" value="approve"
+                                       {{if has "approve" .Filter.DistinctActionsNot}}checked{{end}}></label>
+                            <label>Request Changes
+                                <input type="checkbox" name="distinct-action-not" value="request-changes"
+                                       {{if has "request-changes" .Filter.DistinctActionsNot}}checked{{end}}></label>
+                            <label>Mark as Added
+                                <input type="checkbox" name="distinct-action-not" value="mark-added"
+                                       id="distinct-action-not-mark-added"
+                                       {{if has "mark-added" .Filter.DistinctActionsNot}}checked{{end}}></label>
                         </fieldset>
                     </div>
                 </div>
@@ -129,18 +183,12 @@
                             <label>Approve
                                 <input type="checkbox" name="post-last-action" value="approve"
                                        {{if has "approve" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label>Accept
-                                <input type="checkbox" name="post-last-action" value="accept"
-                                       {{if has "accept" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
                             <label>Request Changes
                                 <input type="checkbox" name="post-last-action" value="request-changes"
                                        {{if has "request-changes" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
                             <label>Mark as Added
                                 <input type="checkbox" name="post-last-action" value="mark-added"
                                        {{if has "mark-added" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
-                            <label>Reject
-                                <input type="checkbox" name="post-last-action" value="reject"
-                                       {{if has "reject" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
                             <label>Uploaded File
                                 <input type="checkbox" name="post-last-action" value="upload-file"
                                        {{if has "upload-file" .Filter.ActionsAfterMyLastComment}}checked{{end}}></label>
@@ -151,6 +199,7 @@
                             <legend>Filter by My State (ctrl+click to uncheck)</legend>
                             <label>Not assigned to me
                                 <input type="radio" name="assigned-status-me" value="unassigned"
+                                       id="assigned-status-me-unassigned"
                                        {{if eq "unassigned" (unpointify .Filter.AssignedStatusMe)}}checked{{end}}></label>
                             <label>Assigned to me
                                 <input type="radio" name="assigned-status-me" value="assigned"
@@ -158,6 +207,7 @@
                             <br>
                             <label>I have not RC
                                 <input type="radio" name="requested-changes-status-me" value="none"
+                                       id="requested-changes-status-me-none"
                                        {{if eq "none" (unpointify .Filter.RequestedChangedStatusMe)}}checked{{end}}></label>
                             <label>I have RC
                                 <input type="radio" name="requested-changes-status-me" value="ongoing"
@@ -165,6 +215,7 @@
                             <br>
                             <label>I have not approved
                                 <input type="radio" name="approvals-status-me" value="no"
+                                       id="approvals-status-me-no"
                                        {{if eq "no" (unpointify .Filter.ApprovalsStatusMe)}}checked{{end}}></label>
                             <label>I have approved
                                 <input type="radio" name="approvals-status-me" value="yes"
@@ -175,7 +226,8 @@
                 </div>
             </div>
             <div class="right">
-                <button type="submit" class="pure-button pure-button-primary">Search</button>
+                <button type="button" class="pure-button pure-button-primary" id="reset-button" onclick="resetFilterForm()">Reset</button>
+                <button type="submit" class="pure-button pure-button-primary" id="search-button">Search</button>
             </div>
         </form>
     </div>

@@ -100,6 +100,7 @@ textarea {
 .dot-reject,
 .dot-upload-file,
 .dot-assign,
+.dot-comment,
 .dot-unassign {
     border-radius: 50%;
     width: 1.5em;

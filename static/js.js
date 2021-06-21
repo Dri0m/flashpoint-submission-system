@@ -253,3 +253,51 @@ function deleteComment(sid, cid) {
         null,
         "Are you sure you want to delete this comment?")
 }
+
+function resetFilterForm() {
+    // default reset doesn't seem to work because i have divs inside the form
+    let form = document.getElementById("filter-form")
+    let inputs = form.getElementsByTagName("input")
+    for (let i=0; i<inputs.length; i++) {
+        if (inputs[i].type === "checkbox" || inputs[i].type === "radio") {
+            inputs[i].checked = false
+        } else if (inputs[i].type === "text" || inputs[i].type === "number") {
+            inputs[i].value = ""
+        }
+    }
+}
+
+function submitFilterForm() {
+    document.getElementById("filter-form").submit()
+}
+
+function filterReadyForTesting() {
+    resetFilterForm()
+    document.getElementById("bot-action-approve").checked = true
+    document.getElementById("approvals-status-none").checked = true
+    document.getElementById("requested-changes-status-none").checked = true
+    document.getElementById("assigned-status-unassigned").checked = true
+    document.getElementById("requested-changes-status-me-none").checked = true
+    document.getElementById("approvals-status-me-no").checked = true
+    submitFilterForm()
+}
+
+function filterReadyForVerification() {
+    resetFilterForm()
+    document.getElementById("bot-action-approve").checked = true
+    document.getElementById("approvals-status-one").checked = true
+    document.getElementById("requested-changes-status-none").checked = true
+    document.getElementById("assigned-status-unassigned").checked = true
+    document.getElementById("requested-changes-status-me-none").checked = true
+    document.getElementById("approvals-status-me-no").checked = true
+    submitFilterForm()
+}
+
+
+function filterReadyForFlashpoint() {
+    resetFilterForm()
+    document.getElementById("bot-action-approve").checked = true
+    document.getElementById("approvals-status-more-than-one").checked = true
+    document.getElementById("distinct-action-not-mark-added").checked = true
+    submitFilterForm()
+}

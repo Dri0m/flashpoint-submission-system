@@ -311,7 +311,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	data := make([]interface{}, 0)
 
 	uid := utils.UserIDFromContext(dbs.Ctx()) // TODO this should be passed as param
-	data = append(data, constants.ValidatorID, constants.ValidatorID, uid, uid, constants.ValidatorID, uid,
+	data = append(data, constants.ValidatorID, constants.ValidatorID, uid, constants.ValidatorID, uid,
 		constants.ValidatorID, constants.ValidatorID, constants.ValidatorID, constants.ValidatorID)
 
 	const defaultLimit int64 = 100
@@ -454,6 +454,18 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			filters = append(filters, "meta.extreme = ?")
 			data = append(data, *filter.IsExtreme)
 		}
+		if len(filter.DistinctActions) != 0 {
+			filters = append(filters, `REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActions)-1)+`))`)
+			for _, da := range filter.DistinctActions {
+				data = append(data, da)
+			}
+		}
+		if len(filter.DistinctActionsNot) != 0 {
+			filters = append(filters, `NOT REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActionsNot)-1)+`))`)
+			for _, da := range filter.DistinctActionsNot {
+				data = append(data, da)
+			}
+		}
 	}
 
 	data = append(data, currentLimit, currentOffset)
@@ -484,11 +496,11 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			meta.launch_command,
 			meta.library,
 			bot_comment.action AS bot_action,
-			latest_action.action AS latest_action,
 			file_counter.file_count,
 			active_assigned.user_ids_with_enabled_action AS assigned_user_ids,
 			active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
-			active_approved.user_ids_with_enabled_action AS approved_user_ids
+			active_approved.user_ids_with_enabled_action AS approved_user_ids,
+			distinct_actions.actions
 		FROM submission
 			LEFT JOIN (
 				WITH ranked_file AS (
@@ -549,32 +561,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				FROM ranked_comment
 				WHERE rn = 1
 			) AS bot_comment ON bot_comment.submission_id = submission.id
-			LEFT JOIN (
-				WITH ranked_comment AS (
-					SELECT c.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY fk_submission_id
-							ORDER BY created_at DESC
-						) AS rn
-					FROM comment AS c
-					WHERE c.fk_author_id != ?
-						AND c.fk_action_id != (
-							SELECT id
-							FROM action
-							WHERE name = "comment"
-						)
-						AND c.deleted_at IS NULL
-				)
-				SELECT ranked_comment.fk_submission_id AS submission_id,
-					ranked_comment.created_at,
-		(
-						SELECT name
-						FROM action
-						WHERE action.id = ranked_comment.fk_action_id
-					) AS action
-				FROM ranked_comment
-				WHERE rn = 1
-			) AS latest_action ON latest_action.submission_id = submission.id
 			LEFT JOIN (
 				SELECT fk_submission_id,
 					COUNT(id) AS file_count
@@ -869,6 +855,12 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					)
 				GROUP BY submission.id
 			) AS active_approved ON active_approved.submission = submission.id
+			LEFT JOIN (
+				SELECT submission.id as submission_id, GROUP_CONCAT(DISTINCT (SELECT name FROM action WHERE id = comment.fk_action_id)) AS actions
+				FROM comment
+				LEFT JOIN submission on submission.id = comment.fk_submission_id
+				GROUP BY submission.id
+			) AS distinct_actions ON distinct_actions.submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		ORDER BY newest.updated_at DESC
@@ -893,6 +885,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	var assignedUserIDs *string
 	var requestedChangesUserIDs *string
 	var approvedUserIDs *string
+	var distinctActions *string
 
 	for rows.Next() {
 		s := &types.ExtendedSubmission{}
@@ -905,9 +898,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			&uploadedAt, &updatedAt,
 			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationPlatform, &s.CurationLaunchCommand, &s.CurationLibrary,
 			&s.BotAction,
-			&s.LatestAction,
 			&s.FileCount,
-			&assignedUserIDs, &requestedChangesUserIDs, &approvedUserIDs); err != nil {
+			&assignedUserIDs, &requestedChangesUserIDs, &approvedUserIDs, &distinctActions); err != nil {
 			return nil, err
 		}
 		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)
@@ -949,6 +941,11 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				}
 				s.ApprovedUserIDs = append(s.ApprovedUserIDs, uid)
 			}
+		}
+
+		s.DistinctActions = []string{}
+		if distinctActions != nil && len(*distinctActions) > 0 {
+			s.DistinctActions = append(s.DistinctActions, strings.Split(*distinctActions, ",")...)
 		}
 
 		result = append(result, s)
