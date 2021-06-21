@@ -12,7 +12,7 @@ function sendXHR(url, method, data, reload, failureMessage, successMessage, prom
 
     request.addEventListener("loadend", function () {
         if (request.status !== 200 && request.status !== 204) {
-            alert(`${failureMessage} - status ${request.status} - ${request.response}`)
+            alert(`${failureMessage}\nRequest status: ${request.status}\nRequest response: ${request.response}`)
         } else {
             if (successMessage !== null) {
                 alert(`${successMessage}`)
@@ -75,7 +75,8 @@ function batchComment(checkboxClassName, attribute, action) {
         let ignoreDupesCheckbox = document.querySelector("#ignore-duplicate-actions")
         url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${ignoreDupesCheckbox.checked}`
 
-        sendXHR(url, "POST", null, reload, "Failed to post comment(s)", successMessage, null)
+        sendXHR(url, "POST", null, reload,
+            "Failed to post comment(s).", successMessage, null)
     }
 
     let u = new URL(window.location.href)
@@ -92,10 +93,10 @@ function batchComment(checkboxClassName, attribute, action) {
             }
         }
         if (checkedCounter === 0) {
-            alert("no submissions selected")
+            alert("No submissions selected,")
             return
         }
-        magic(false, "Comments posted successfully")
+        magic(false, "Comments posted successfully.")
     }
 }
 
@@ -214,11 +215,14 @@ function updateNotificationSettings() {
 
     url = url.slice(0, -1)
 
-    sendXHR(url, "PUT", null, true, "Failed to update notification settings", "Notification settings updated", null)
+    sendXHR(url, "PUT", null, true,
+        "Failed to update notification settings.",
+        "Notification settings updated.", null)
 }
 
 function updateSubscriptionSettings(sid, newValue) {
-    sendXHR(`/submission/${sid}/subscription-settings?subscribe=${newValue}`, "PUT", null, true, "Failed to update subscription settings", null, null)
+    sendXHR(`/submission/${sid}/subscription-settings?subscribe=${newValue}`, "PUT", null, true,
+        "Failed to update subscription settings.", null, null)
 }
 
 window.onload = function () {
@@ -235,21 +239,21 @@ window.onload = function () {
 
 function deleteSubmissionFile(sid, sfid) {
     sendXHR(`/submission/${sid}/file/${sfid}`, "DELETE", null, true,
-        "Failed to delete submission file",
-        "Submission file deleted successfully",
+        "Failed to delete submission file.",
+        "Submission file deleted successfully.",
         "Are you sure you want to delete this submission file?")
 }
 
 function deleteSubmission(sid) {
     sendXHR(`/submission/${sid}`, "DELETE", null, true,
-        "Failed to delete submission",
-        "Submission deleted successfully",
+        "Failed to delete submission.",
+        "Submission deleted successfully.",
         "Are you sure you want to delete this submission and all its related data?")
 }
 
 function deleteComment(sid, cid) {
     sendXHR(`/submission/${sid}/comment/${cid}`, "DELETE", null, true,
-        "Failed to delete comment",
+        "Failed to delete comment.",
         null,
         "Are you sure you want to delete this comment?")
 }
