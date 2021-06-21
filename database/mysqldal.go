@@ -418,10 +418,12 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			}
 		}
 		if filter.ApprovalsStatus != nil {
-			if *filter.ApprovalsStatus == "no" {
+			if *filter.ApprovalsStatus == "none" {
 				filters = append(filters, "(active_approved.user_count_with_enabled_action = 0 OR active_approved.user_count_with_enabled_action IS NULL)")
-			} else if *filter.ApprovalsStatus == "yes" {
-				filters = append(filters, "active_approved.user_count_with_enabled_action > 0")
+			} else if *filter.ApprovalsStatus == "one" {
+				filters = append(filters, "active_approved.user_count_with_enabled_action = 1")
+			} else if *filter.ApprovalsStatus == "more-than-one" {
+				filters = append(filters, "active_approved.user_count_with_enabled_action >= 2")
 			}
 		}
 		if filter.AssignedStatusMe != nil {

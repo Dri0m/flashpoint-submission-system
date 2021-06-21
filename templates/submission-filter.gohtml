@@ -60,11 +60,14 @@
                                        {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}></label>
                             <br>
                             <label>No Approvals
-                                <input type="radio" name="approvals-status" value="no"
-                                       {{if eq "no" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
-                            <label>Approved
-                                <input type="radio" name="approvals-status" value="yes"
-                                       {{if eq "yes" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
+                                <input type="radio" name="approvals-status" value="none"
+                                       {{if eq "none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
+                            <label>1 AP
+                                <input type="radio" name="approvals-status" value="one"
+                                       {{if eq "one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
+                            <label>>=2 AP
+                                <input type="radio" name="approvals-status" value="more-than-one"
+                                       {{if eq "more-than-one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}></label>
                             <br>
                         </fieldset>
                     </div>

@@ -173,7 +173,7 @@ func (sf *SubmissionsFilter) Validate() error {
 	if sf.RequestedChangedStatus != nil && *sf.RequestedChangedStatus != "none" && *sf.RequestedChangedStatus != "ongoing" {
 		return fmt.Errorf("invalid requested-changes-status")
 	}
-	if sf.ApprovalsStatus != nil && *sf.ApprovalsStatus != "no" && *sf.ApprovalsStatus != "yes" {
+	if sf.ApprovalsStatus != nil && *sf.ApprovalsStatus != "none" && *sf.ApprovalsStatus != "one" && *sf.ApprovalsStatus != "more-than-one" {
 		return fmt.Errorf("invalid approvals-status")
 	}
 
