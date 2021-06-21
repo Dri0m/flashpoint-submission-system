@@ -506,7 +506,7 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/submission/%d>\n", sid))
 	b.WriteString("Unfortunately, it does not quite reach the quality required to satisfy the cool crab.\n")
 
-	if meta.Library != nil && meta.Platform != nil && meta.Title != nil {
+	if meta.Library != nil && meta.Platform != nil && meta.Title != nil && meta.Extreme != nil {
 		llib := strings.ToLower(*meta.Library)
 		if strings.Contains(llib, "arcade") {
 			b.WriteString("🎮")
@@ -587,6 +587,12 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:AnimaFlex:807016001618968596>")
 		} else {
 			b.WriteString("❓")
+		}
+
+		b.WriteString(" ")
+
+		if *meta.Extreme == "Yes" {
+			b.WriteString("<:extreme:778145279714918400>")
 		}
 
 		b.WriteString(" ")
