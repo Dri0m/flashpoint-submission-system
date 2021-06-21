@@ -504,7 +504,10 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 		b.WriteString(fmt.Sprintf("A submission update has been uploaded by <@%d>\n", authorID))
 	}
 	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/submission/%d>\n", sid))
-	b.WriteString("Unfortunately, it does not quite reach the quality required to satisfy the cool crab.\n")
+
+	if !isCurationValid {
+		b.WriteString("Unfortunately, it does not quite reach the quality required to satisfy the cool crab.\n")
+	}
 
 	if meta.Library != nil && meta.Platform != nil && meta.Title != nil && meta.Extreme != nil {
 		llib := strings.ToLower(*meta.Library)
