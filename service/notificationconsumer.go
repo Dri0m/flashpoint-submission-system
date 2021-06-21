@@ -59,7 +59,7 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 			}
 			s.announceNotification()
 
-			if err := s.notificationBot.SendMessage(notification.Message); err != nil {
+			if err := s.notificationBot.SendNotification(notification.Message); err != nil {
 				l.Error(err)
 				l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
 				time.Sleep(errorSleepTime)

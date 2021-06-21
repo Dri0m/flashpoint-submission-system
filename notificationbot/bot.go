@@ -31,8 +31,8 @@ func ConnectBot(l *logrus.Logger, token string) *discordgo.Session {
 	return dg
 }
 
-// SendMessage sends a message
-func (b *bot) SendMessage(msg string) error {
+// SendNotification sends a message
+func (b *bot) SendNotification(msg string) error {
 	b.l.Debug("sending message")
 	_, err := b.session.ChannelMessageSend(b.notificationChannelID, msg)
 	return err

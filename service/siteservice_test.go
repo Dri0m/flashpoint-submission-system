@@ -250,7 +250,7 @@ type mockNotificationBot struct {
 	mock.Mock
 }
 
-func (m *mockNotificationBot) SendMessage(msg string) error {
+func (m *mockNotificationBot) SendNotification(msg string) error {
 	args := m.Called(msg)
 	return args.Error(0)
 }
