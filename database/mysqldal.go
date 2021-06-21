@@ -325,53 +325,53 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 
 	if filter != nil {
 		if filter.SubmissionID != nil {
-			filters = append(filters, "submission.id=?")
+			filters = append(filters, "(submission.id = ?)")
 			data = append(data, *filter.SubmissionID)
 		}
 		if filter.SubmitterID != nil {
-			filters = append(filters, "uploader.id=?")
+			filters = append(filters, "(uploader.id = ?)")
 			data = append(data, *filter.SubmitterID)
 		}
 		if filter.TitlePartial != nil {
-			filters = append(filters, "meta.title LIKE ? OR meta.alternate_titles LIKE ?")
+			filters = append(filters, "(meta.title LIKE ? OR meta.alternate_titles LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.TitlePartial), utils.FormatLike(*filter.TitlePartial))
 		}
 		if filter.SubmitterUsernamePartial != nil {
-			filters = append(filters, "uploader.username LIKE ?")
+			filters = append(filters, "(uploader.username LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.SubmitterUsernamePartial))
 		}
 		if filter.PlatformPartial != nil {
-			filters = append(filters, "meta.platform LIKE ?")
+			filters = append(filters, "(meta.platform LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.PlatformPartial))
 		}
 		if filter.LibraryPartial != nil {
-			filters = append(filters, "meta.library LIKE ?")
+			filters = append(filters, "(meta.library LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.LibraryPartial))
 		}
 		if filter.OriginalFilenamePartialAny != nil {
-			filters = append(filters, "filenames.original_filename_sequence LIKE ?")
+			filters = append(filters, "(filenames.original_filename_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.OriginalFilenamePartialAny))
 		}
 		if filter.CurrentFilenamePartialAny != nil {
-			filters = append(filters, "filenames.current_filename_sequence LIKE ?")
+			filters = append(filters, "(filenames.current_filename_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.CurrentFilenamePartialAny))
 		}
 		if filter.MD5SumPartialAny != nil {
-			filters = append(filters, "filenames.md5sum_sequence LIKE ?")
+			filters = append(filters, "(filenames.md5sum_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.MD5SumPartialAny))
 		}
 		if filter.SHA256SumPartialAny != nil {
-			filters = append(filters, "filenames.sha256sum_sequence LIKE ?")
+			filters = append(filters, "(filenames.sha256sum_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.SHA256SumPartialAny))
 		}
 		if len(filter.BotActions) != 0 {
-			filters = append(filters, `bot_comment.action IN(?`+strings.Repeat(",?", len(filter.BotActions)-1)+`)`)
+			filters = append(filters, `(bot_comment.action IN(?`+strings.Repeat(",?", len(filter.BotActions)-1)+`))`)
 			for _, ba := range filter.BotActions {
 				data = append(data, ba)
 			}
 		}
 		if len(filter.SubmissionLevels) != 0 {
-			filters = append(filters, `(SELECT name FROM submission_level WHERE id = submission.fk_submission_level_id) IN(?`+strings.Repeat(",?", len(filter.SubmissionLevels)-1)+`)`)
+			filters = append(filters, `((SELECT name FROM submission_level WHERE id = submission.fk_submission_level_id) IN(?`+strings.Repeat(",?", len(filter.SubmissionLevels)-1)+`))`)
 			for _, ba := range filter.SubmissionLevels {
 				data = append(data, ba)
 			}
@@ -384,9 +384,9 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				}
 			}
 			if foundAny {
-				filters = append(filters, `actions_after_my_last_comment.user_action_string IS NOT NULL`)
+				filters = append(filters, `(actions_after_my_last_comment.user_action_string IS NOT NULL)`)
 			} else {
-				filters = append(filters, `REGEXP_LIKE (actions_after_my_last_comment.user_action_string, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.ActionsAfterMyLastComment)-1)+`))`)
+				filters = append(filters, `(REGEXP_LIKE (actions_after_my_last_comment.user_action_string, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.ActionsAfterMyLastComment)-1)+`)))`)
 				for _, aamlc := range filter.ActionsAfterMyLastComment {
 					data = append(data, aamlc)
 				}
@@ -407,61 +407,61 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			if *filter.AssignedStatus == "unassigned" {
 				filters = append(filters, "(active_assigned.user_count_with_enabled_action = 0 OR active_assigned.user_count_with_enabled_action IS NULL)")
 			} else if *filter.AssignedStatus == "assigned" {
-				filters = append(filters, "active_assigned.user_count_with_enabled_action > 0")
+				filters = append(filters, "(active_assigned.user_count_with_enabled_action > 0)")
 			}
 		}
 		if filter.RequestedChangedStatus != nil {
 			if *filter.RequestedChangedStatus == "none" {
 				filters = append(filters, "(active_requested_changes.user_count_with_enabled_action = 0 OR active_requested_changes.user_count_with_enabled_action IS NULL)")
 			} else if *filter.RequestedChangedStatus == "ongoing" {
-				filters = append(filters, "active_requested_changes.user_count_with_enabled_action > 0")
+				filters = append(filters, "(active_requested_changes.user_count_with_enabled_action > 0)")
 			}
 		}
 		if filter.ApprovalsStatus != nil {
 			if *filter.ApprovalsStatus == "none" {
 				filters = append(filters, "(active_approved.user_count_with_enabled_action = 0 OR active_approved.user_count_with_enabled_action IS NULL)")
 			} else if *filter.ApprovalsStatus == "one" {
-				filters = append(filters, "active_approved.user_count_with_enabled_action = 1")
+				filters = append(filters, "(active_approved.user_count_with_enabled_action = 1)")
 			} else if *filter.ApprovalsStatus == "more-than-one" {
-				filters = append(filters, "active_approved.user_count_with_enabled_action >= 2")
+				filters = append(filters, "(active_approved.user_count_with_enabled_action >= 2)")
 			}
 		}
 		if filter.AssignedStatusMe != nil {
 			if *filter.AssignedStatusMe == "unassigned" {
-				filters = append(filters, "active_assigned.user_ids_with_enabled_action NOT LIKE ? OR active_assigned.user_ids_with_enabled_action IS NULL")
+				filters = append(filters, "(active_assigned.user_ids_with_enabled_action NOT LIKE ? OR active_assigned.user_ids_with_enabled_action IS NULL)")
 			} else if *filter.AssignedStatusMe == "assigned" {
-				filters = append(filters, "active_assigned.user_ids_with_enabled_action LIKE ?")
+				filters = append(filters, "(active_assigned.user_ids_with_enabled_action LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
 		if filter.RequestedChangedStatusMe != nil {
 			if *filter.RequestedChangedStatusMe == "none" {
-				filters = append(filters, "active_requested_changes.user_ids_with_enabled_action NOT LIKE ? OR active_requested_changes.user_ids_with_enabled_action IS NULL")
+				filters = append(filters, "(active_requested_changes.user_ids_with_enabled_action NOT LIKE ? OR active_requested_changes.user_ids_with_enabled_action IS NULL)")
 			} else if *filter.RequestedChangedStatusMe == "ongoing" {
-				filters = append(filters, "active_requested_changes.user_ids_with_enabled_action LIKE ?")
+				filters = append(filters, "(active_requested_changes.user_ids_with_enabled_action LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
 		if filter.ApprovalsStatusMe != nil {
 			if *filter.ApprovalsStatusMe == "no" {
-				filters = append(filters, "active_approved.user_ids_with_enabled_action NOT LIKE ? OR active_approved.user_ids_with_enabled_action IS NULL")
+				filters = append(filters, "(active_approved.user_ids_with_enabled_action NOT LIKE ? OR active_approved.user_ids_with_enabled_action IS NULL)")
 			} else if *filter.ApprovalsStatusMe == "yes" {
-				filters = append(filters, "active_approved.user_ids_with_enabled_action LIKE ?")
+				filters = append(filters, "(active_approved.user_ids_with_enabled_action LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
 		if filter.IsExtreme != nil {
-			filters = append(filters, "meta.extreme = ?")
+			filters = append(filters, "(meta.extreme = ?)")
 			data = append(data, *filter.IsExtreme)
 		}
 		if len(filter.DistinctActions) != 0 {
-			filters = append(filters, `REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActions)-1)+`))`)
+			filters = append(filters, `(REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActions)-1)+`)))`)
 			for _, da := range filter.DistinctActions {
 				data = append(data, da)
 			}
 		}
 		if len(filter.DistinctActionsNot) != 0 {
-			filters = append(filters, `NOT REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActionsNot)-1)+`))`)
+			filters = append(filters, `(NOT REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActionsNot)-1)+`)))`)
 			for _, da := range filter.DistinctActionsNot {
 				data = append(data, da)
 			}
