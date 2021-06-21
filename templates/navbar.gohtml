@@ -5,7 +5,7 @@
                 <div class="pure-menu pure-menu-horizontal">
                     <a href="/" class="pure-menu-heading pure-menu-link">FPFSS</a>
                     <ul class="pure-menu-list">
-                        {{if .Username}}
+                        {{if not (empty .Username)}}
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                                 <li class="pure-menu-item">
                                     <a href="/submit" class="pure-menu-link">Submit</a>
@@ -22,7 +22,7 @@
             </div>
             <div class="pure-u-1-2">
                 <div class="pure-menu pure-menu-horizontal right">
-                    {{if .Username}}
+                    {{if not (empty .Username)}}
                         <ul class="pure-menu-list">
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                                 <li class="pure-menu-item">
