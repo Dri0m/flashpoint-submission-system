@@ -1223,7 +1223,7 @@ func (d *mysqlDAL) GetOldestUnsentNotification(dbs DBSession) (*types.Notificati
 	var createdAt int64
 	var sentAt *int64
 
-	err := row.Scan(&notification.ID, &notification.Message, &createdAt, &sentAt)
+	err := row.Scan(&notification.ID, &notification.Type, &notification.Message, &createdAt, &sentAt)
 	if err != nil {
 		return nil, err
 	}
