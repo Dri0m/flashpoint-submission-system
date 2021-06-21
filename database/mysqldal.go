@@ -1176,9 +1176,9 @@ func (d *mysqlDAL) IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (
 // StoreNotification stores a notification message in the database which acts as a queue for the notification service
 func (d *mysqlDAL) StoreNotification(dbs DBSession, msg, notificationType string) error {
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
-		INSERT INTO submission_notification (message, created_at)
-		VALUES(?, UNIX_TIMESTAMP())`,
-		msg)
+		INSERT INTO submission_notification (message, fk_submission_notification_type_id, created_at)
+		VALUES(?, (SELECT id FROM submission_notification_type WHERE name = ?), UNIX_TIMESTAMP())`,
+		msg, notificationType)
 
 	return err
 }
