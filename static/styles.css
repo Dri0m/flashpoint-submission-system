@@ -304,3 +304,8 @@ legend, label {
     filter: blur(15px);
     cursor: pointer;
 }
+
+form [type="checkbox"],
+form [type="radio"] {
+    margin-right: 5px;
+}
