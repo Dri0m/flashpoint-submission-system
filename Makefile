@@ -19,7 +19,7 @@ dump-db:
 	docker exec fpfssdb /usr/bin/mysqldump -u root --password=${DB_ROOT_PASSWORD} ${DB_NAME} > ./backups/db/db-dump-${DB_NAME}-$(shell date -u +"%Y-%m-%d-%H-%M-%S").sql
 
 restore-db:
-	cat $(SQL_FILE) | docker exec -i fpfssdb /usr/bin/mysql -u root --password=${DB_ROOT_PASSWORD} ${DB_NAME}
+	pv $(SQL_FILE) | docker exec -i fpfssdb /usr/bin/mysql -u root --password=${DB_ROOT_PASSWORD} ${DB_NAME}
 
 run:
 	rm flashpoint-submission-system | true
