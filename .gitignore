@@ -19,3 +19,4 @@ db.db*
 static/fancy-logo.gif
 
 files/*
+backups/*
