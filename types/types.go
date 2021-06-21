@@ -212,6 +212,7 @@ type UpdateSubscriptionSettings struct {
 
 type Notification struct {
 	ID        int64
+	Type      string
 	Message   string
 	CreatedAt time.Time
 	SentAt    time.Time

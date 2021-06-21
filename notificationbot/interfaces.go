@@ -1,5 +1,5 @@
 package notificationbot
 
 type DiscordNotificationSender interface {
-	SendNotification(msg string) error
+	SendNotification(msg, notificationType string) error
 }

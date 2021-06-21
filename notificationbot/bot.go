@@ -1,6 +1,7 @@
 package notificationbot
 
 import (
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 )
@@ -9,14 +10,16 @@ type bot struct {
 	session               *discordgo.Session
 	flashpointServerID    string
 	notificationChannelID string
+	curationFeedChannelID string
 	l                     *logrus.Entry
 }
 
-func NewBot(botSession *discordgo.Session, flashpointServerID string, notificationChannelID string, l *logrus.Entry) *bot {
+func NewBot(botSession *discordgo.Session, flashpointServerID, notificationChannelID, curationFeedChannelID string, l *logrus.Entry) *bot {
 	return &bot{
 		session:               botSession,
 		flashpointServerID:    flashpointServerID,
 		notificationChannelID: notificationChannelID,
+		curationFeedChannelID: curationFeedChannelID,
 		l:                     l,
 	}
 }
@@ -32,8 +35,17 @@ func ConnectBot(l *logrus.Logger, token string) *discordgo.Session {
 }
 
 // SendNotification sends a message
-func (b *bot) SendNotification(msg string) error {
-	b.l.Debug("sending message")
-	_, err := b.session.ChannelMessageSend(b.notificationChannelID, msg)
+func (b *bot) SendNotification(msg, notificationType string) error {
+	var err error
+
+	b.l.Debugf("attempting to send a message of type %s", notificationType)
+	if notificationType == constants.NotificationDefault {
+		_, err = b.session.ChannelMessageSend(b.notificationChannelID, msg)
+	} else if notificationType == constants.NotificationCurationFeed {
+		_, err = b.session.ChannelMessageSend(b.curationFeedChannelID, msg)
+	} else {
+		b.l.Fatal("invalid notification type")
+	}
+
 	return err
 }

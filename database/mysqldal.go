@@ -1174,7 +1174,7 @@ func (d *mysqlDAL) IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (
 }
 
 // StoreNotification stores a notification message in the database which acts as a queue for the notification service
-func (d *mysqlDAL) StoreNotification(dbs DBSession, msg string) error {
+func (d *mysqlDAL) StoreNotification(dbs DBSession, msg, notificationType string) error {
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
 		INSERT INTO submission_notification (message, created_at)
 		VALUES(?, UNIX_TIMESTAMP())`,
@@ -1214,7 +1214,8 @@ func (d *mysqlDAL) GetUsersForNotification(dbs DBSession, authorID, sid int64, a
 // GetOldestUnsentNotification returns oldest unsent notification
 func (d *mysqlDAL) GetOldestUnsentNotification(dbs DBSession) (*types.Notification, error) {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
-		SELECT id, message, created_at, sent_at FROM submission_notification
+		SELECT id, (SELECT name FROM submission_notification_type WHERE id = fk_submission_notification_type_id), message, created_at, sent_at 
+		FROM submission_notification
 		WHERE sent_at IS NULL
 		ORDER BY created_at LIMIT 1`)
 

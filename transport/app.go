@@ -47,7 +47,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, authBotSession, 
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
 		Service: service.NewSiteService(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID,
-			conf.NotificationChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
+			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
 			constants.SubmissionsDir, constants.SubmissionImagesDir),
 		decoder: decoder,
 	}

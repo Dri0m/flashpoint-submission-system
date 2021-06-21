@@ -183,8 +183,8 @@ func (m *mockDAL) IsUserSubscribedToSubmission(_ database.DBSession, uid, sid in
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockDAL) StoreNotification(_ database.DBSession, msg string) error {
-	args := m.Called(msg)
+func (m *mockDAL) StoreNotification(_ database.DBSession, msg, notificationType string) error {
+	args := m.Called(msg, notificationType)
 	return args.Error(0)
 }
 
@@ -250,8 +250,8 @@ type mockNotificationBot struct {
 	mock.Mock
 }
 
-func (m *mockNotificationBot) SendNotification(msg string) error {
-	args := m.Called(msg)
+func (m *mockNotificationBot) SendNotification(msg, notificationType string) error {
+	args := m.Called(msg, notificationType)
 	return args.Error(0)
 }
 

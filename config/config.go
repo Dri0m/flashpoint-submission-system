@@ -29,6 +29,7 @@ type Config struct {
 	DBName                       string
 	NotificationBotToken         string
 	NotificationChannelID        string
+	CurationFeedChannelID        string
 }
 
 func EnvString(name string) string {
@@ -88,5 +89,6 @@ func GetConfig(l *logrus.Logger) *Config {
 		DBName:                       EnvString("DB_NAME"),
 		NotificationBotToken:         EnvString("NOTIFICATION_BOT_TOKEN"),
 		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
+		CurationFeedChannelID:        EnvString("CURATION_FEED_CHANNEL_ID"),
 	}
 }

@@ -123,10 +123,10 @@ type SiteService struct {
 	notificationQueueNotEmpty chan bool
 }
 
-func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string) *SiteService {
+func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string) *SiteService {
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
-		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, l.WithField("botName", "notificationBot")),
+		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, curationFeedChannelID, l.WithField("botName", "notificationBot")),
 		dal:                       database.NewMysqlDAL(db),
 		validator:                 NewValidator(validatorServerURL),
 		clock:                     &RealClock{},
@@ -473,7 +473,7 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 
 	msg := b.String()
 
-	if err := s.dal.StoreNotification(dbs, msg); err != nil {
+	if err := s.dal.StoreNotification(dbs, msg, constants.NotificationDefault); err != nil {
 		return err
 	}
 

@@ -63,3 +63,8 @@ const (
 	ResourceKeyCommentID       = "comment-id"
 	ResourceKeyCurationImageID = "curation-image-id"
 )
+
+const (
+	NotificationDefault      = "notification"
+	NotificationCurationFeed = "curation-feed"
+)
