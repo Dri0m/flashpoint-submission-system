@@ -484,6 +484,7 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 		b.WriteString(fmt.Sprintf(" <@%d>", userID))
 	}
 
+	b.WriteString("\n----------------------------------------------------------\n")
 	msg := b.String()
 
 	if err := s.dal.StoreNotification(dbs, msg, constants.NotificationDefault); err != nil {
@@ -594,7 +595,9 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 		b.WriteString("\n")
 	}
 
+	b.WriteString("----------------------------------------------------------\n")
 	msg := b.String()
+
 	if err := s.dal.StoreNotification(dbs, msg, constants.NotificationCurationFeed); err != nil {
 		return err
 	}
