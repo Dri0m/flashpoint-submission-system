@@ -311,8 +311,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	data := make([]interface{}, 0)
 
 	uid := utils.UserIDFromContext(dbs.Ctx()) // TODO this should be passed as param
-	data = append(data, constants.ValidatorID, constants.ValidatorID, uid, constants.ValidatorID, uid,
-		constants.ValidatorID, constants.ValidatorID, constants.ValidatorID, constants.ValidatorID)
+	data = append(data, uid, uid)
 
 	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
@@ -476,401 +475,238 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	}
 
 	finalQuery := `
-		SELECT submission.id AS submission_id,
-			(SELECT name FROM submission_level WHERE id = submission.fk_submission_level_id) AS submission_level,
-			uploader.id AS uploader_id,
-			uploader.username AS uploader_username,
-			uploader.avatar AS uploader_avatar,
-			updater.id AS updater_id,
-			updater.username AS updater_username,
-			updater.avatar AS updater_avatar,
-			newest.id AS submission_file_id,
-			newest.original_filename,
-			newest.current_filename,
-			newest.size,
-			oldest.uploaded_at,
-			newest.updated_at,
-			meta.title,
-			meta.alternate_titles,
-			meta.platform,
-			meta.launch_command,
-			meta.library,
-			bot_comment.action AS bot_action,
-			file_counter.file_count,
-			active_assigned.user_ids_with_enabled_action AS assigned_user_ids,
-			active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
-			active_approved.user_ids_with_enabled_action AS approved_user_ids,
-			distinct_actions.actions
-		FROM submission
-			LEFT JOIN (
-				WITH ranked_file AS (
-					SELECT s.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY fk_submission_id
-							ORDER BY uploaded_at ASC
-						) AS rn
-					FROM submission_file AS s
-					WHERE s.deleted_at IS NULL
-				)
-				SELECT fk_uploader_id AS uploader_id,
-					fk_submission_id,
-					uploaded_at AS uploaded_at
-				FROM ranked_file
-				WHERE rn = 1
-			) AS oldest ON oldest.fk_submission_id = submission.id
-			LEFT JOIN (
-				WITH ranked_file AS (
-					SELECT s.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY fk_submission_id
-							ORDER BY uploaded_at DESC
-						) AS rn
-					FROM submission_file AS s
-					WHERE s.deleted_at IS NULL
-				)
-				SELECT id,
-					fk_uploader_id AS updater_id,
-					fk_submission_id,
-					original_filename,
-					current_filename,
-					size,
-					uploaded_at AS updated_at
-				FROM ranked_file
-				WHERE rn = 1
-			) AS newest ON newest.fk_submission_id = submission.id
-			LEFT JOIN discord_user uploader ON oldest.uploader_id = uploader.id
-			LEFT JOIN discord_user updater ON newest.updater_id = updater.id
-			LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest.id
-			LEFT JOIN (
-				WITH ranked_comment AS (
-					SELECT c.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY fk_submission_id
-							ORDER BY created_at DESC
-						) AS rn
-					FROM comment AS c
-					WHERE c.fk_author_id = ?
-						AND c.deleted_at IS NULL
-				)
-				SELECT ranked_comment.fk_submission_id AS submission_id,
+			SELECT submission.id AS submission_id,
 		(
-						SELECT name
-						FROM action
-						WHERE action.id = ranked_comment.fk_action_id
-					) AS action
-				FROM ranked_comment
-				WHERE rn = 1
-			) AS bot_comment ON bot_comment.submission_id = submission.id
-			LEFT JOIN (
-				SELECT fk_submission_id,
-					COUNT(id) AS file_count
-				FROM submission_file
-				WHERE submission_file.deleted_at IS NULL
-				GROUP BY fk_submission_id
-			) AS file_counter ON file_counter.fk_submission_id = submission.id
-			LEFT JOIN (
-				SELECT *,
-					SUBSTRING(
-						full_substring
-						FROM POSITION(',' IN full_substring)
-					) AS user_action_string
-				FROM (
-						SELECT *,
-							SUBSTRING(
-								comment_sequence
-								FROM comment_sequence_substring_start
-							) AS full_substring
-						FROM (
-								SELECT *,
-									(
-										SELECT fk_action_id
-										FROM comment
-										WHERE id = comment_id
-									) AS fk_action_id,
-									CHAR_LENGTH(comment_sequence) - LOCATE(REVERSE(CONCAT(?)), REVERSE(comment_sequence)) - CHAR_LENGTH(CONCAT(?)) + 2 as comment_sequence_substring_start
-								FROM (
-										SELECT MAX(id) AS comment_id,
-											fk_submission_id,
-											GROUP_CONCAT(
-												CONCAT(
-													fk_author_id,
-													'-',
-													(
-														SELECT name
-														FROM action
-														WHERE action.id = fk_action_id
-													)
-												)
-											) AS comment_sequence
-										FROM comment
-										WHERE fk_author_id != ?
-											AND deleted_at IS NULL
-											AND fk_action_id != (
-												SELECT id
-												FROM action
-												WHERE name = "assign"
-											)
-											AND fk_action_id != (
-												SELECT id
-												FROM action
-												WHERE name = "unassign"
-											)
-										GROUP BY fk_submission_id
-										ORDER BY created_at DESC
-									) as a
-							) as b
-					) as c
-				WHERE REGEXP_LIKE(
-						SUBSTRING(
-							comment_sequence
-							FROM comment_sequence_substring_start
-						),
-						CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
+			SELECT name
+			FROM submission_level
+			WHERE id = submission.fk_submission_level_id
+		) AS submission_level,
+		uploader.id AS uploader_id,
+		uploader.username AS uploader_username,
+		uploader.avatar AS uploader_avatar,
+		updater.id AS updater_id,
+		updater.username AS updater_username,
+		updater.avatar AS updater_avatar,
+		submission.submission_file_id,
+		submission.original_filename,
+		submission.current_filename,
+		submission.size,
+		file_data.uploaded_at,
+		submission.updated_at,
+		meta.title,
+		meta.alternate_titles,
+		meta.platform,
+		meta.launch_command,
+		meta.library,
+		bot_comment.action AS bot_action,
+		submission.file_count,
+		active_assigned.user_ids_with_enabled_action AS assigned_user_ids,
+		active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
+		active_approved.user_ids_with_enabled_action AS approved_user_ids,
+		distinct_actions.actions
+	FROM (
+			SELECT submission.id,
+				submission.fk_submission_level_id AS fk_submission_level_id,
+				submission.deleted_at AS deleted_at,
+				newest.id AS submission_file_id,
+				newest.original_filename AS original_filename,
+				newest.current_filename AS current_filename,
+				newest.size AS size,
+				newest.updated_at AS updated_at,
+				newest.updater_id AS updater_id,
+				newest.file_count AS file_count
+			FROM submission
+				LEFT JOIN (
+					WITH ranked_file AS (
+						SELECT s.*,
+							ROW_NUMBER() OVER (
+								PARTITION BY fk_submission_id
+								ORDER BY uploaded_at DESC
+							) AS rn,
+							COUNT(s.id) AS file_count
+						FROM submission_file AS s
+						WHERE s.deleted_at IS NULL
+						GROUP BY s.fk_submission_id
 					)
-			) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
-			LEFT JOIN (
-				SELECT fk_submission_id,
+					SELECT id,
+						fk_uploader_id AS updater_id,
+						fk_submission_id,
+						original_filename,
+						current_filename,
+						size,
+						uploaded_at AS updated_at,
+						file_count
+					FROM ranked_file
+					WHERE rn = 1
+				) AS newest ON newest.fk_submission_id = submission.id
+			WHERE submission.deleted_at IS NULL
+			GROUP BY submission.id
+			ORDER BY newest.updated_at DESC
+			LIMIT 100
+		) AS submission
+		LEFT JOIN (
+			WITH ranked_file AS (
+				SELECT s.*,
+					ROW_NUMBER() OVER (
+						PARTITION BY fk_submission_id
+						ORDER BY uploaded_at ASC
+					) AS rn,
 					GROUP_CONCAT(original_filename) AS original_filename_sequence,
 					GROUP_CONCAT(current_filename) AS current_filename_sequence,
 					GROUP_CONCAT(md5sum) AS md5sum_sequence,
 					GROUP_CONCAT(sha256sum) AS sha256sum_sequence
-				FROM submission_file
-				WHERE deleted_at IS NULL
-				GROUP BY fk_submission_id
-			) AS filenames ON filenames.fk_submission_id = submission.id
-			LEFT JOIN (
-				SELECT submission.id AS submission,
-					COUNT(latest_enabler.author_id) AS user_count_with_enabled_action,
-					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
-					GROUP_CONCAT(
-						(
-							SELECT username
-							FROM discord_user
-							WHERE id = latest_enabler.author_id
-						)
-					) AS usernames_with_enabled_action
-				FROM submission
-					LEFT JOIN (
-						WITH ranked_comment AS (
-							SELECT c.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY c.fk_submission_id,
-									c.fk_author_id
+				FROM submission_file AS s
+				WHERE s.deleted_at IS NULL
+				GROUP BY s.fk_submission_id
+			)
+			SELECT fk_uploader_id AS uploader_id,
+				fk_submission_id,
+				uploaded_at AS uploaded_at,
+				original_filename_sequence,
+				current_filename_sequence,
+				md5sum_sequence,
+				sha256sum_sequence
+			FROM ranked_file
+			WHERE rn = 1
+		) AS file_data ON file_data.fk_submission_id = submission.id
+		LEFT JOIN discord_user uploader ON file_data.uploader_id = uploader.id
+		LEFT JOIN discord_user updater ON submission.updater_id = updater.id
+		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = submission.submission_file_id
+		LEFT JOIN (
+			WITH ranked_comment AS (
+				SELECT c.*,
+					ROW_NUMBER() OVER (
+						PARTITION BY fk_submission_id
+						ORDER BY created_at DESC
+					) AS rn
+				FROM comment AS c
+				WHERE c.fk_author_id = 810112564787675166
+					AND c.deleted_at IS NULL
+			)
+			SELECT ranked_comment.fk_submission_id AS submission_id,
+				(
+					SELECT name
+					FROM action
+					WHERE action.id = ranked_comment.fk_action_id
+				) AS action
+			FROM ranked_comment
+			WHERE rn = 1
+		) AS bot_comment ON bot_comment.submission_id = submission.id
+		LEFT JOIN (
+			SELECT *,
+				SUBSTRING(
+					full_substring
+					FROM POSITION(',' IN full_substring)
+				) AS user_action_string
+			FROM (
+					SELECT *,
+						SUBSTRING(
+							comment_sequence
+							FROM comment_sequence_substring_start
+						) AS full_substring
+					FROM (
+							SELECT *,
+								(
+									SELECT fk_action_id
+									FROM comment
+									WHERE id = comment_id
+								) AS fk_action_id,
+								CHAR_LENGTH(comment_sequence) - LOCATE(
+									REVERSE(CONCAT(810112564787675166)),
+									REVERSE(comment_sequence)
+								) - CHAR_LENGTH(CONCAT(?)) + 2 AS comment_sequence_substring_start
+							FROM (
+									SELECT MAX(id) AS comment_id,
+										fk_submission_id,
+										GROUP_CONCAT(
+											CONCAT(
+												fk_author_id,
+												'-',
+												(
+													SELECT name
+													FROM action
+													WHERE action.id = fk_action_id
+												)
+											)
+										) AS comment_sequence
+									FROM comment
+									WHERE fk_author_id != 810112564787675166
+										AND deleted_at IS NULL
+										AND fk_action_id != (
+											SELECT id
+											FROM action
+											WHERE name = "assign"
+										)
+										AND fk_action_id != (
+											SELECT id
+											FROM action
+											WHERE name = "unassign"
+										)
+									GROUP BY fk_submission_id
 									ORDER BY created_at DESC
-								) AS rn
-							FROM comment AS c
-							WHERE c.fk_action_id = (
-									SELECT id
-									FROM action
-									WHERE name = "assign"
-								)
-								AND c.deleted_at IS NULL
-							ORDER BY created_at ASC
-						)
-						SELECT ranked_comment.fk_submission_id AS submission_id,
-							ranked_comment.fk_author_id AS author_id,
-							ranked_comment.created_at
-						FROM ranked_comment
-						WHERE rn = 1
-					) AS latest_enabler ON latest_enabler.submission_id = submission.id
-					LEFT JOIN (
-						WITH ranked_comment AS (
-							SELECT c.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY c.fk_submission_id,
-									c.fk_author_id
-									ORDER BY created_at DESC
-								) AS rn
-							FROM comment AS c
-							WHERE c.fk_action_id = (
-									SELECT id
-									FROM action
-									WHERE name = "unassign"
-								)
-								AND c.deleted_at IS NULL
-						)
-						SELECT ranked_comment.fk_submission_id AS submission_id,
-							ranked_comment.fk_author_id AS author_id,
-							ranked_comment.created_at
-						FROM ranked_comment
-						WHERE rn = 1
-					) AS latest_disabler ON latest_disabler.submission_id = submission.id
-					AND latest_disabler.author_id = latest_enabler.author_id
-				WHERE (
-						(
-							latest_enabler.created_at IS NOT NULL
-							AND latest_disabler.created_at IS NOT NULL
-							AND latest_enabler.created_at > latest_disabler.created_at
-						)
-						OR (
-							latest_disabler.created_at IS NULL
-							AND latest_enabler.created_at IS NOT NULL
-						)
+								) AS a
+						) AS b
+				) AS c
+			WHERE REGEXP_LIKE(
+					SUBSTRING(
+						comment_sequence
+						FROM comment_sequence_substring_start
+					),
+					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
+				)
+		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
+		LEFT JOIN (
+			select s.*
+			FROM (
+					select @p1 = "assign" p
+				) parm1,
+				(
+					select @p2 = "unassign" p
+				) parm2,
+				dependent_actions s
+		) AS active_assigned ON active_assigned.submission = submission.id
+		LEFT JOIN (
+			select s.*
+			FROM (
+					select @p1 = "approve" p
+				) parm1,
+				(
+					select @p2 = "request-changes" p
+				) parm2,
+				dependent_actions s
+		) AS active_requested_changes ON active_requested_changes.submission = submission.id
+		LEFT JOIN (
+			select s.*
+			FROM (
+					select @p1 = "request-changes" p
+				) parm1,
+				(
+					select @p2 = "approve" p
+				) parm2,
+				dependent_actions s
+		) AS active_approved ON active_approved.submission = submission.id
+		LEFT JOIN (
+			SELECT submission.id AS submission_id,
+				GROUP_CONCAT(
+					DISTINCT (
+						SELECT name
+						FROM action
+						WHERE id = comment.fk_action_id
 					)
-				GROUP BY submission.id
-			) AS active_assigned ON active_assigned.submission = submission.id
-			LEFT JOIN (
-				SELECT submission.id AS submission,
-					COUNT(latest_enabler.author_id) AS user_count_with_enabled_action,
-					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
-					GROUP_CONCAT(
-						(
-							SELECT username
-							FROM discord_user
-							WHERE id = latest_enabler.author_id
-						)
-					) AS usernames_with_enabled_action
-				FROM submission
-					LEFT JOIN (
-						WITH ranked_comment AS (
-							SELECT c.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY c.fk_submission_id,
-									c.fk_author_id
-									ORDER BY created_at DESC
-								) AS rn
-							FROM comment AS c
-							WHERE c.fk_author_id != ?
-								AND c.fk_action_id = (
-									SELECT id
-									FROM action
-									WHERE name = "request-changes"
-								)
-								AND c.deleted_at IS NULL
-							ORDER BY created_at ASC
-						)
-						SELECT ranked_comment.fk_submission_id AS submission_id,
-							ranked_comment.fk_author_id AS author_id,
-							ranked_comment.created_at
-						FROM ranked_comment
-						WHERE rn = 1
-					) AS latest_enabler ON latest_enabler.submission_id = submission.id
-					LEFT JOIN (
-						WITH ranked_comment AS (
-							SELECT c.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY c.fk_submission_id,
-									c.fk_author_id
-									ORDER BY created_at DESC
-								) AS rn
-							FROM comment AS c
-							WHERE c.fk_author_id != ?
-								AND c.fk_action_id = (
-									SELECT id
-									FROM action
-									WHERE name = "approve"
-								)
-								AND c.deleted_at IS NULL
-						)
-						SELECT ranked_comment.fk_submission_id AS submission_id,
-							ranked_comment.fk_author_id AS author_id,
-							ranked_comment.created_at
-						FROM ranked_comment
-						WHERE rn = 1
-					) AS latest_disabler ON latest_disabler.submission_id = submission.id
-					AND latest_disabler.author_id = latest_enabler.author_id
-				WHERE (
-						(
-							latest_enabler.created_at IS NOT NULL
-							AND latest_disabler.created_at IS NOT NULL
-							AND latest_enabler.created_at > latest_disabler.created_at
-						)
-						OR (
-							latest_disabler.created_at IS NULL
-							AND latest_enabler.created_at IS NOT NULL
-						)
-					)
-				GROUP BY submission.id
-			) AS active_requested_changes ON active_requested_changes.submission = submission.id
-			LEFT JOIN (
-				SELECT submission.id AS submission,
-					COUNT(latest_enabler.author_id) AS user_count_with_enabled_action,
-					GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action,
-					GROUP_CONCAT(
-						(
-							SELECT username
-							FROM discord_user
-							WHERE id = latest_enabler.author_id
-						)
-					) AS usernames_with_enabled_action
-				FROM submission
-					LEFT JOIN (
-						WITH ranked_comment AS (
-							SELECT c.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY c.fk_submission_id,
-									c.fk_author_id
-									ORDER BY created_at DESC
-								) AS rn
-							FROM comment AS c
-							WHERE c.fk_author_id != ?
-								AND c.fk_action_id = (
-									SELECT id
-									FROM action
-									WHERE name = "approve"
-								)
-								AND c.deleted_at IS NULL
-							ORDER BY created_at ASC
-						)
-						SELECT ranked_comment.fk_submission_id AS submission_id,
-							ranked_comment.fk_author_id AS author_id,
-							ranked_comment.created_at
-						FROM ranked_comment
-						WHERE rn = 1
-					) AS latest_enabler ON latest_enabler.submission_id = submission.id
-					LEFT JOIN (
-						WITH ranked_comment AS (
-							SELECT c.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY c.fk_submission_id,
-									c.fk_author_id
-									ORDER BY created_at DESC
-								) AS rn
-							FROM comment AS c
-							WHERE c.fk_author_id != ?
-								AND c.fk_action_id = (
-									SELECT id
-									FROM action
-									WHERE name = "request-changes"
-								)
-								AND c.deleted_at IS NULL
-						)
-						SELECT ranked_comment.fk_submission_id AS submission_id,
-							ranked_comment.fk_author_id AS author_id,
-							ranked_comment.created_at
-						FROM ranked_comment
-						WHERE rn = 1
-					) AS latest_disabler ON latest_disabler.submission_id = submission.id
-					AND latest_disabler.author_id = latest_enabler.author_id
-				WHERE (
-						(
-							latest_enabler.created_at IS NOT NULL
-							AND latest_disabler.created_at IS NOT NULL
-							AND latest_enabler.created_at > latest_disabler.created_at
-						)
-						OR (
-							latest_disabler.created_at IS NULL
-							AND latest_enabler.created_at IS NOT NULL
-						)
-					)
-				GROUP BY submission.id
-			) AS active_approved ON active_approved.submission = submission.id
-			LEFT JOIN (
-				SELECT submission.id as submission_id, GROUP_CONCAT(DISTINCT (SELECT name FROM action WHERE id = comment.fk_action_id)) AS actions
-				FROM comment
+				) AS actions
+			FROM comment
 				LEFT JOIN submission on submission.id = comment.fk_submission_id
-				GROUP BY submission.id
-			) AS distinct_actions ON distinct_actions.submission_id = submission.id
+			GROUP BY submission.id
+		) AS distinct_actions ON distinct_actions.submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
-		ORDER BY newest.updated_at DESC
+		ORDER BY submission.updated_at DESC
 		` + limit + ` ` + offset
 
-	//fmt.Printf(finalQuery)
+	// fmt.Printf(finalQuery)
 
 	var rows *sql.Rows
-	var err error
-	rows, err = dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, data...)
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, data...)
 	if err != nil {
 		return nil, err
 	}
