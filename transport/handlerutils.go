@@ -48,9 +48,9 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	if cached {
-		utils.LogCtx(ctx).Error("using cached template files")
+		utils.LogCtx(ctx).Debug("using cached template files")
 	} else {
-		utils.LogCtx(ctx).Error("reading fresh template files from the disk")
+		utils.LogCtx(ctx).Debug("reading fresh template files from the disk")
 	}
 
 	tmpl := result.(*template.Template)
