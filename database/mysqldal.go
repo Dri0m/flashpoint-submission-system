@@ -72,7 +72,7 @@ func (dbs *MysqlSession) Rollback() error {
 		err = nil
 	}
 	if err != nil {
-		utils.LogIfErr(dbs.Ctx(), err)
+		utils.LogCtx(dbs.Ctx()).Error(err)
 	}
 	return err
 }

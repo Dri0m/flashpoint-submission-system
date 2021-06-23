@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 )
@@ -27,7 +26,7 @@ func (c *curationValidator) Validate(ctx context.Context, filePath string, sid, 
 	var vr types.ValidatorResponse
 	err = json.Unmarshal(resp, &vr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode validator response")
+		return nil, err
 	}
 
 	vr.Meta.SubmissionID = sid

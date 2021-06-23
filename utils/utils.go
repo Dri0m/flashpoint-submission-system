@@ -59,12 +59,6 @@ func FormatAvatarURL(uid int64, avatar string) string {
 	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s", uid, avatar)
 }
 
-func LogIfErr(ctx context.Context, err error) {
-	if err != nil {
-		LogCtx(ctx).Error(err)
-	}
-}
-
 // UploadFile POSTs a given file to a given URL via multipart writer and returns the response body if OK
 func UploadFile(ctx context.Context, url string, filePath string) ([]byte, error) {
 	LogCtx(ctx).WithField("filepath", filePath).Debug("opening file for upload")

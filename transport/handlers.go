@@ -26,7 +26,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		sid, err := strconv.ParseInt(submissionFileID, 10, 64)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			http.Error(w, "invalid submission id", http.StatusBadRequest)
+			writeError(w, perr("invalid submission id", http.StatusBadRequest))
 			return
 		}
 		sids = append(sids, sid)
@@ -34,7 +34,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 
 	if err := r.ParseForm(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse form", http.StatusBadRequest)
+		writeError(w, perr("failed to parse form", http.StatusBadRequest))
 		return
 	}
 
@@ -46,13 +46,12 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 	if len([]rune(formMessage)) > 20000 {
 		err := fmt.Errorf("message cannot be longer than 20000 characters")
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
 		return
 	}
 
 	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("comment processor: %s", err.Error()), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -67,14 +66,13 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 	sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission file id", http.StatusBadRequest)
+		writeError(w, perr("invalid submission file id", http.StatusBadRequest))
 		return
 	}
 
 	sfs, err := a.Service.GetSubmissionFiles(ctx, []int64{sfid})
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 	sf := sfs[0]
@@ -83,7 +81,7 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to open file", http.StatusInternalServerError)
+		writeError(w, perr("failed to read file", http.StatusInternalServerError))
 		return
 	}
 	defer f.Close()
@@ -101,17 +99,12 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 	sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission file id", http.StatusBadRequest)
+		writeError(w, perr("invalid submission file id", http.StatusBadRequest))
 		return
 	}
 
 	if err := a.Service.SoftDeleteSubmissionFile(ctx, sfid); err != nil {
-		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
-			http.Error(w, fmt.Sprintf("soft delete submission file processor: %s", err.Error()), http.StatusBadRequest)
-			return
-		}
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("soft delete submission file processor: %s", err.Error()), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -126,13 +119,12 @@ func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request)
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		writeError(w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
 	if err := a.Service.SoftDeleteSubmission(ctx, sid); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("soft delete submission processor: %s", err.Error()), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -147,13 +139,12 @@ func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
 	cid, err := strconv.ParseInt(commentID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid comment id", http.StatusBadRequest)
+		writeError(w, perr("invalid comment id", http.StatusBadRequest))
 		return
 	}
 
 	if err := a.Service.SoftDeleteComment(ctx, cid); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("soft delete comment processor: %s", err.Error()), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -170,7 +161,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 		sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			http.Error(w, "invalid submission file id", http.StatusBadRequest)
+			writeError(w, perr("invalid submission file id", http.StatusBadRequest))
 			return
 		}
 		sfids = append(sfids, sfid)
@@ -178,8 +169,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 
 	sfs, err := a.Service.GetSubmissionFiles(ctx, sfids)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("download submission processor: %s", err.Error()), http.StatusBadRequest)
+		writeError(w, err)
 		return
 	}
 
@@ -194,7 +184,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/octet-stream")
 	if err := utils.WriteTarball(w, filePaths); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to create tarball", http.StatusInternalServerError)
+		writeError(w, perr("failed to create tarball", http.StatusInternalServerError))
 		return
 	}
 }
@@ -210,7 +200,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		sidParsed, err := strconv.ParseInt(submissionID, 10, 64)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			http.Error(w, "invalid submission id", http.StatusBadRequest)
+			writeError(w, perr("invalid submission id", http.StatusBadRequest))
 			return
 		}
 		sid = &sidParsed
@@ -219,7 +209,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	// limit RAM usage to 100MB
 	if err := r.ParseMultipartForm(100 * 1000 * 1000); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse form", http.StatusInternalServerError)
+		writeError(w, perr("failed to parse form", http.StatusInternalServerError))
 		return
 	}
 
@@ -228,7 +218,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	if len(fileHeaders) == 0 {
 		err := fmt.Errorf("no files received")
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
 		return
 	}
 
@@ -238,8 +228,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.Service.ReceiveSubmissions(ctx, sid, fileWrappers); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("submission processor: %s", err.Error()), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -251,7 +240,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
@@ -259,13 +248,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
-		if err.Error() == "failed to get user data from database" {
-			utils.UnsetCookie(w, utils.Cookies.Login)
-		} else {
-			utils.LogCtx(ctx).Error(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		utils.UnsetCookie(w, utils.Cookies.Login)
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/root.gohtml")
@@ -277,8 +260,7 @@ func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetProfilePageData(ctx, uid)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -290,8 +272,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -305,20 +286,19 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	if err := filter.Validate(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, err)
 		return
 	}
 
 	pageData, err := a.Service.GetSubmissionsPageData(ctx, filter)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -338,13 +318,13 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	if err := filter.Validate(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, err)
 		return
 	}
 
@@ -352,8 +332,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetSubmissionsPageData(ctx, filter)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -374,14 +353,13 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		writeError(w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
 	pageData, err := a.Service.GetViewSubmissionPageData(ctx, uid, sid)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "submission not found", http.StatusNotFound)
+		writeError(w, err)
 		return
 	}
 
@@ -400,14 +378,13 @@ func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Reque
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		writeError(w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
 	pageData, err := a.Service.GetSubmissionsFilesPageData(ctx, sid)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		writeError(w, err)
 		return
 	}
 
@@ -422,14 +399,13 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 
 	if err := a.decoder.Decode(notificationSettings, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	err := a.Service.UpdateNotificationSettings(ctx, uid, notificationSettings.NotificationActions)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -445,7 +421,7 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid submission id", http.StatusBadRequest)
+		writeError(w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
@@ -453,14 +429,13 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 
 	if err := a.decoder.Decode(subscriptionSettings, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to decode query params", http.StatusInternalServerError)
+		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	err = a.Service.UpdateSubscriptionSettings(ctx, uid, sid, subscriptionSettings.Subscribe)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
@@ -475,28 +450,27 @@ func (a *App) HandleDownloadCurationImage(w http.ResponseWriter, r *http.Request
 	ciid, err := strconv.ParseInt(curationImageID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "invalid curation image id", http.StatusBadRequest)
+		writeError(w, perr("invalid curation image id", http.StatusBadRequest))
 		return
 	}
 
 	ci, err := a.Service.GetCurationImage(ctx, ciid)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		http.Error(w, fmt.Sprintf("download image processor: %s", err.Error()), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
 	f, err := os.Open(fmt.Sprintf("%s/%s", constants.SubmissionImagesDir, ci.Filename))
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to open file", http.StatusInternalServerError)
+		writeError(w, perr("failed to read file", http.StatusInternalServerError))
 		return
 	}
 
 	fi, err := f.Stat()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to stat file", http.StatusInternalServerError)
+		writeError(w, perr("failed to read file", http.StatusInternalServerError))
 		return
 	}
 	defer f.Close()

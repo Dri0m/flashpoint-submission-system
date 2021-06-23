@@ -1819,6 +1819,7 @@ func Test_siteService_ReceiveComments_Fail_GetUsersForNotification(t *testing.T)
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dbs.On("Ctx").Return(ctx)
 
 	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
 	ts.dal.On("StoreComment", c).Return(nil)

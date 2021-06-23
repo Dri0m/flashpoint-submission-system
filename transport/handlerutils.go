@@ -119,3 +119,16 @@ func (a *App) GetSecretFromCookie(r *http.Request) (string, error) {
 
 	return token.Secret, nil
 }
+
+func writeError(w http.ResponseWriter, err error) {
+	ufe := &constants.PublicError{}
+	if errors.As(err, ufe) {
+		http.Error(w, ufe.Msg, ufe.Status)
+	} else {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+func perr(msg string, status int) error {
+	return constants.PublicError{Msg: msg, Status: status}
+}
