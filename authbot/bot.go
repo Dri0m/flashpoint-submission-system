@@ -12,13 +12,15 @@ type bot struct {
 	session            *discordgo.Session
 	flashpointServerID string
 	l                  *logrus.Entry
+	isDev              bool
 }
 
-func NewBot(botSession *discordgo.Session, flashpointServerID string, l *logrus.Entry) *bot {
+func NewBot(botSession *discordgo.Session, flashpointServerID string, l *logrus.Entry, isDev bool) *bot {
 	return &bot{
 		session:            botSession,
 		flashpointServerID: flashpointServerID,
 		l:                  l,
+		isDev:              isDev,
 	}
 }
 

@@ -48,7 +48,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, authBotSession, 
 		},
 		Service: service.NewSiteService(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
-			constants.SubmissionsDir, constants.SubmissionImagesDir),
+			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.IsDev),
 		decoder: decoder,
 	}
 

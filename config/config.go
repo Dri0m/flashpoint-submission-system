@@ -30,6 +30,7 @@ type Config struct {
 	NotificationBotToken         string
 	NotificationChannelID        string
 	CurationFeedChannelID        string
+	IsDev                        bool
 }
 
 func EnvString(name string) string {
@@ -50,6 +51,18 @@ func EnvInt(name string) int64 {
 		panic(err)
 	}
 	return i
+}
+
+func EnvBool(name string) bool {
+	s := os.Getenv(name)
+	if s == "" {
+		panic(fmt.Sprintf("env variable '%s' is not set", name))
+	} else if s == "True" {
+		return true
+	} else if s == "False" {
+		return false
+	}
+	panic(fmt.Sprintf("invalid value of env variable '%s'", name))
 }
 
 func GetConfig(l *logrus.Logger) *Config {
@@ -90,5 +103,6 @@ func GetConfig(l *logrus.Logger) *Config {
 		NotificationBotToken:         EnvString("NOTIFICATION_BOT_TOKEN"),
 		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
 		CurationFeedChannelID:        EnvString("CURATION_FEED_CHANNEL_ID"),
+		IsDev:                        EnvBool("IS_DEV"),
 	}
 }

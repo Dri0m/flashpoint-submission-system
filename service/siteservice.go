@@ -121,12 +121,15 @@ type SiteService struct {
 	submissionsDir            string
 	submissionImagesDir       string
 	notificationQueueNotEmpty chan bool
+	isDev                     bool
 }
 
-func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string, sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string) *SiteService {
+func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
+	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
+	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string, isDev bool) *SiteService {
 	return &SiteService{
-		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot")),
-		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, curationFeedChannelID, l.WithField("botName", "notificationBot")),
+		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
+		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, curationFeedChannelID, l.WithField("botName", "notificationBot"), isDev),
 		dal:                       database.NewMysqlDAL(db),
 		validator:                 NewValidator(validatorServerURL),
 		clock:                     &RealClock{},
@@ -136,6 +139,7 @@ func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBo
 		submissionsDir:            submissionsDir,
 		submissionImagesDir:       submissionImagesDir,
 		notificationQueueNotEmpty: make(chan bool, 1),
+		isDev:                     isDev,
 	}
 }
 

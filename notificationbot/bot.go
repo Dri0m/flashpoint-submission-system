@@ -12,15 +12,17 @@ type bot struct {
 	notificationChannelID string
 	curationFeedChannelID string
 	l                     *logrus.Entry
+	isDev                 bool
 }
 
-func NewBot(botSession *discordgo.Session, flashpointServerID, notificationChannelID, curationFeedChannelID string, l *logrus.Entry) *bot {
+func NewBot(botSession *discordgo.Session, flashpointServerID, notificationChannelID, curationFeedChannelID string, l *logrus.Entry, isDev bool) *bot {
 	return &bot{
 		session:               botSession,
 		flashpointServerID:    flashpointServerID,
 		notificationChannelID: notificationChannelID,
 		curationFeedChannelID: curationFeedChannelID,
 		l:                     l,
+		isDev:                 isDev,
 	}
 }
 
@@ -36,6 +38,11 @@ func ConnectBot(l *logrus.Logger, token string) *discordgo.Session {
 
 // SendNotification sends a message
 func (b *bot) SendNotification(msg, notificationType string) error {
+	if b.isDev {
+		b.l.Debugf("dev mode active, not sending notificaiton")
+		return nil
+	}
+
 	var err error
 
 	b.l.Debugf("attempting to send a message of type %s", notificationType)
