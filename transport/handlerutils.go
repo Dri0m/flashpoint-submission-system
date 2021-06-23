@@ -8,18 +8,22 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/Masterminds/sprig"
+	"github.com/kofalt/go-memoize"
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 )
 
-// TODO cache templates
+var cache = memoize.NewMemoizer(10*time.Minute, 60*time.Minute)
 
 // RenderTemplates is a helper for rendering templates
 func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}, filenames ...string) {
 	templates := []string{"templates/base.gohtml", "templates/navbar.gohtml"}
 	templates = append(templates, filenames...)
-	tmpl, err := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{
+
+	t := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{
 		"boolString":         BoolString,
 		"unpointify":         utils.Unpointify,
 		"isStaff":            constants.IsStaff,
@@ -30,12 +34,27 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"isInAudit":          constants.IsInAudit,
 		"megabytify":         utils.Megabytify,
 		"splitMultilineText": utils.SplitMultilineText,
-	}).ParseFiles(templates...)
+	})
+
+	parse := func() (interface{}, error) {
+		return t.ParseFiles(templates...)
+	}
+
+	result, err, cached := cache.Memoize(strings.Join(templates, ","), parse)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)
 		return
 	}
+
+	if cached {
+		utils.LogCtx(ctx).Error("using cached template files")
+	} else {
+		utils.LogCtx(ctx).Error("reading fresh template files from the disk")
+	}
+
+	tmpl := result.(*template.Template)
+
 	templateBuffer := &bytes.Buffer{}
 	err = tmpl.ExecuteTemplate(templateBuffer, "layout", data)
 	if err != nil {
