@@ -514,8 +514,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		meta.library,
 		bot_comment.action AS bot_action,
 		submission.file_count,
-		active_assigned_testing.user_ids_with_enabled_action AS assigned_user_ids,
-		active_assigned_verification.user_ids_with_enabled_action AS assigned_user_ids,
+		active_assigned_testing.user_ids_with_enabled_action AS assigned_testing_user_ids,
+		active_assigned_verification.user_ids_with_enabled_action AS assigned_verification_user_ids,
 		active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
 		active_approved.user_ids_with_enabled_action AS approved_user_ids,
 		distinct_actions.actions
@@ -683,46 +683,10 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
 				)
 		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
-		LEFT JOIN (
-			select s.*
-			FROM (
-					select @p1 = "assign-testing" p
-				) parm1,
-				(
-					select @p2 = "unassign-testing" p
-				) parm2,
-				dependent_actions s
-		) AS active_assigned_testing ON active_assigned_testing.submission = submission.id
-		LEFT JOIN (
-			select s.*
-			FROM (
-					select @p1 = "assign-verification" p
-				) parm1,
-				(
-					select @p2 = "unassign-verification" p
-				) parm2,
-				dependent_actions s
-		) AS active_assigned_verification ON active_assigned_verification.submission = submission.id
-		LEFT JOIN (
-			select s.*
-			FROM (
-					select @p1 = "approve" p
-				) parm1,
-				(
-					select @p2 = "request-changes" p
-				) parm2,
-				dependent_actions s
-		) AS active_requested_changes ON active_requested_changes.submission = submission.id
-		LEFT JOIN (
-			select s.*
-			FROM (
-					select @p1 = "request-changes" p
-				) parm1,
-				(
-					select @p2 = "approve" p
-				) parm2,
-				dependent_actions s
-		) AS active_approved ON active_approved.submission = submission.id
+		LEFT JOIN view_active_assigned_testing AS active_assigned_testing ON active_assigned_testing.submission_id = submission.id
+		LEFT JOIN view_active_assigned_verification AS active_assigned_verification ON active_assigned_verification.submission_id = submission.id
+		LEFT JOIN view_active_requested_changes AS active_requested_changes ON active_requested_changes.submission_id = submission.id
+		LEFT JOIN view_active_approved AS active_approved ON active_approved.submission_id = submission.id
 		LEFT JOIN (
 			SELECT submission.id AS submission_id,
 				GROUP_CONCAT(
@@ -741,9 +705,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		ORDER BY submission.updated_at DESC
 		LIMIT ? OFFSET ?`
 
-	// fmt.Printf(finalQuery)
+	fmt.Println(finalQuery)
 
-	var rows *sql.Rows
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, data...)
 	if err != nil {
 		return nil, err

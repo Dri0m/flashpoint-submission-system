@@ -160,6 +160,10 @@
                                                {{if has "request-changes" .Filter.DistinctActions}}checked{{end}}>
                                         Request Changes</label>
                                     <label>
+                                        <input type="checkbox" name="distinct-action" value="verify"
+                                               {{if has "verify" .Filter.DistinctActions}}checked{{end}}>
+                                        Verify</label>
+                                    <label>
                                         <input type="checkbox" name="distinct-action" value="mark-added"
                                                id="distinct-action-mark-added"
                                                {{if has "mark-added" .Filter.DistinctActions}}checked{{end}}>
@@ -181,6 +185,10 @@
                                         <input type="checkbox" name="distinct-action-not" value="request-changes"
                                                {{if has "request-changes" .Filter.DistinctActionsNot}}checked{{end}}>
                                         Request Changes</label>
+                                    <label>
+                                        <input type="checkbox" name="distinct-action-not" value="verify"
+                                               {{if has "verify" .Filter.DistinctActionsNot}}checked{{end}}>
+                                        Verify</label>
                                     <label>
                                         <input type="checkbox" name="distinct-action-not" value="mark-added"
                                                id="distinct-action-not-mark-added"

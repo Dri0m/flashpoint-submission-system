@@ -250,10 +250,14 @@
                                     <i class="default-comment">Marked the submission as added to Flashpoint.</i>
                                 {{else if eq .Action "upload-file"}}
                                     <i class="default-comment">Uploaded a new file.</i>
-                                {{else if eq .Action "assign"}}
-                                    <i class="default-comment">Is now working on this.</i>
-                                {{else if eq .Action "unassign"}}
-                                    <i class="default-comment">Is not working on this anymore.</i>
+                                {{else if eq .Action "assign-testing"}}
+                                    <i class="default-comment">Is now testing this.</i>
+                                {{else if eq .Action "unassign-testing"}}
+                                    <i class="default-comment">Is not testing this anymore.</i>
+                                {{else if eq .Action "assign-verification"}}
+                                    <i class="default-comment">Is now verifying this.</i>
+                                {{else if eq .Action "unassign-verification"}}
+                                    <i class="default-comment">Is not verifying this anymore.</i>
                                 {{end}}
                             {{end}}
                         </div>

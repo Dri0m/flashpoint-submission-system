@@ -1,37 +1,116 @@
 {{define "comment-form"}}
+
     <form class="pure-form" id="batch-comment">
         <fieldset class="pure-group">
                     <textarea class="pure-input-1 comment-textarea" id="batch-comment-message"
                               placeholder="Add a comment"></textarea>
         </fieldset>
-        <div class="right">
-            <label>Ignore duplicate actions
-                <input type="checkbox" id="ignore-duplicate-actions" title="The system does not let you apply the same operation multiple times on a submission (like assigning it twice). Check this checkbox to simply skip them and apply the operation only on the submissions where it makes sense."></label>
-            <button type="button" class="pure-button pure-button button-comment"
-                    onclick="batchComment('submission-checkbox', 'sid', 'comment')">Comment
-            </button>
-            {{if or (isDecider .UserRoles) (isAdder .UserRoles)}}
-                <button type="button" class="pure-button pure-button button-assign"
-                        onclick="batchComment('submission-checkbox', 'sid', 'assign')">Assign
+
+        {{if eq 2 (len .Submissions)}}
+
+            {{$submission := index .Submissions 0}}
+
+            <div class="right">
+                <label>Ignore duplicate actions
+                    <input type="checkbox" id="ignore-duplicate-actions"
+                           title="The system does not let you apply the same operation multiple times on a submission (like assigning it twice). Check this checkbox to simply skip them and apply the operation only on the submissions where it makes sense."></label>
+                <button type="button" class="pure-button pure-button button-comment"
+                        onclick="batchComment('submission-checkbox', 'sid', 'comment')">
+                    Comment
                 </button>
-                <button type="button" class="pure-button pure-button button-unassign"
-                        onclick="batchComment('submission-checkbox', 'sid', 'unassign')">Unassign
+                {{if isDecider .UserRoles}}
+
+                    {{if not (has .UserID $submission.AssignedTestingUserIDs)}}
+                        <button type="button" class="pure-button pure-button button-assign-testing"
+                                onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
+                            Assign Testing
+                        </button>
+                    {{else}}
+                        <button type="button" class="pure-button pure-button button-unassign-testing"
+                                onclick="batchComment('submission-checkbox', 'sid', 'unassign-testing')">
+                            Unassign Testing
+                        </button>
+                    {{end}}
+                    {{if not (has .UserID $submission.AssignedVerificationUserIDs)}}
+                        <button type="button" class="pure-button pure-button button-assign-verification"
+                                onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
+                            Assign Verification
+                        </button>
+                    {{else}}
+                        <button type="button" class="pure-button pure-button button-unassign-verification"
+                                onclick="batchComment('submission-checkbox', 'sid', 'unassign-verification')">
+                            Unassign Verification
+                        </button>
+                    {{end}}
+
+                    <button type="button" class="pure-button pure-button button-approve"
+                            onclick="batchComment('submission-checkbox', 'sid', 'approve')">
+                        Approve
+                    </button>
+                    <button type="button" class="pure-button pure-button button-request-changes"
+                            onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
+                        Request Changes
+                    </button>
+                    <button type="button" class="pure-button pure-button button-verify"
+                            onclick="batchComment('submission-checkbox', 'sid', 'verify')">
+                        Verify
+                    </button>
+                {{end}}
+                {{if isAdder .UserRoles}}
+                    <button type="button" class="pure-button pure-button button-mark-added"
+                            onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
+                        Mark as Added
+                    </button>
+                {{end}}
+            </div>
+        {{else}}
+            <div class="right">
+                <label>Ignore duplicate actions
+                    <input type="checkbox" id="ignore-duplicate-actions"
+                           title="The system does not let you apply the same operation multiple times on a submission (like assigning it twice). Check this checkbox to simply skip them and apply the operation only on the submissions where it makes sense."></label>
+                <button type="button" class="pure-button pure-button button-comment"
+                        onclick="batchComment('submission-checkbox', 'sid', 'comment')">
+                    Comment
                 </button>
-            {{end}}
-            {{if isDecider .UserRoles}}
+                {{if isDecider .UserRoles}}
+                    <button type="button" class="pure-button pure-button button-assign-testing"
+                            onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
+                        Assign Testing
+                    </button>
+                    <button type="button" class="pure-button pure-button button-unassign-testing"
+                            onclick="batchComment('submission-checkbox', 'sid', 'unassign-testing')">
+                        Unassign Testing
+                    </button>
+                    <button type="button" class="pure-button pure-button button-assign-verification"
+                            onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
+                        Assign Verification
+                    </button>
+                    <button type="button" class="pure-button pure-button button-unassign-verification"
+                            onclick="batchComment('submission-checkbox', 'sid', 'unassign-verification')">
+                        Unassign Verification
+                    </button>
+                    <br>
+                    <br>
+                {{end}}
                 <button type="button" class="pure-button pure-button button-approve"
-                        onclick="batchComment('submission-checkbox', 'sid', 'approve')">Approve
+                        onclick="batchComment('submission-checkbox', 'sid', 'approve')">
+                    Approve
                 </button>
                 <button type="button" class="pure-button pure-button button-request-changes"
-                        onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">Request Changes
+                        onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
+                    Request Changes
                 </button>
-            {{end}}
-            {{if isAdder .UserRoles}}
-                <button type="button" class="pure-button pure-button button-mark-added"
-                        onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">Mark as Added
+                <button type="button" class="pure-button pure-button button-verify"
+                        onclick="batchComment('submission-checkbox', 'sid', 'verify')">
+                    Verify
                 </button>
-            {{end}}
-
-        </div>
+                {{if isAdder .UserRoles}}
+                    <button type="button" class="pure-button pure-button button-mark-added"
+                            onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
+                        Mark as Added
+                    </button>
+                {{end}}
+            </div>
+        {{end}}
     </form>
 {{end}}

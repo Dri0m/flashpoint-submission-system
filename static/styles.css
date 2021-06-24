@@ -83,25 +83,29 @@ textarea {
 .bgr-comment,
 .bgr-approve,
 .bgr-request-changes,
-.bgr-accept,
 .bgr-mark-added,
 .bgr-reject,
 .bgr-upload-file,
-.bgr-assign,
-.bgr-unassign {
+.bgr-verify,
+.bgr-assign-testing,
+.bgr-unassign-testing,
+.bgr-assign-verification,
+.bgr-unassign-verification {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .dot-approve,
 .dot-request-changes,
-.dot-accept,
 .dot-mark-added,
 .dot-reject,
 .dot-upload-file,
-.dot-assign,
+.dot-verify,
+.dot-assign-testing,
 .dot-comment,
-.dot-unassign {
+.dot-unassign-testing,
+.dot-assign-verification,
+.dot-unassign-verification {
     border-radius: 50%;
     width: 1.5em;
     height: 1.5em;
@@ -109,13 +113,15 @@ textarea {
 
 .button-approve,
 .button-request-changes,
-.button-accept,
 .button-mark-added,
 .button-reject,
 .button-upload-file,
+.button-verify,
 .button-delete,
-.button-assign,
-.button-unassign {
+.button-assign-testing,
+.button-unassign-testing,
+.button-assign-verification,
+.button-unassign-verification {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
@@ -138,22 +144,28 @@ textarea {
     background: rgb(202, 60, 60) !important;
 }
 
-.bgr-accept,
-.dot-accept,
-.button-accept {
+.bgr-assign-testing,
+.dot-assign-testing,
+.button-assign-testing {
     background: rgb(24, 83, 175) !important;
 }
 
-.bgr-assign,
-.dot-assign,
-.button-assign {
-    background: rgb(24, 83, 175) !important;
-}
-
-.bgr-unassign,
-.dot-unassign,
-.button-unassign {
+.bgr-unassign-testing,
+.dot-unassign-testing,
+.button-unassign-testing {
     background: rgb(98, 122, 165) !important;
+}
+
+.bgr-assign-verification,
+.dot-assign-verification,
+.button-assign-verification {
+    background: rgb(134, 85, 46) !important;
+}
+
+.bgr-unassign-verification,
+.dot-unassign-verification,
+.button-unassign-verification {
+    background: rgb(135, 115, 91) !important;
 }
 
 .bgr-mark-added,
@@ -172,6 +184,12 @@ textarea {
 .dot-upload-file,
 .button-upload-file {
     background: rgb(14, 175, 175) !important;
+}
+
+.bgr-verify,
+.dot-verify,
+.button-verify {
+    background: rgb(255, 132, 0) !important;
 }
 
 .button-delete {
@@ -225,24 +243,51 @@ textarea {
 }
 
 @-webkit-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @-moz-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @-o-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
 
 .rainbow-wrapper {
@@ -252,27 +297,55 @@ textarea {
     -webkit-animation: rainbow 18s linear infinite;
     -z-animation: rainbow 18s linear infinite;
     -o-animation: rainbow 18s linear infinite;
-    animation: rainbow 18s linear infinite;}
+    animation: rainbow 18s linear infinite;
+}
 
 @-webkit-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @-moz-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @-o-keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
+
 @keyframes rainbow {
-    0%{background-position:0% 82%}
-    50%{background-position:100% 19%}
-    100%{background-position:0% 82%}
+    0% {
+        background-position: 0% 82%
+    }
+    50% {
+        background-position: 100% 19%
+    }
+    100% {
+        background-position: 0% 82%
+    }
 }
 
 .test-instance {

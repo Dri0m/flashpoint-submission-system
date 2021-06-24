@@ -49,10 +49,10 @@
                         <td>
                             <div class="dot-{{.BotAction}}" title="{{.BotAction}}"></div>
                         </td>
-                        <td>{{len .AssignedTestingUserIDs}}</td>
-                        <td>{{len .AssignedVerificationUserIDs}}</td>
-                        <td>{{len .RequestedChangesUserIDs}}</td>
-                        <td>{{len .ApprovedUserIDs}}</td>
+                        <td><b>{{len .AssignedTestingUserIDs}}</b></td>
+                        <td><b>{{len .AssignedVerificationUserIDs}}</b></td>
+                        <td><b>{{len .RequestedChangesUserIDs}}</b></td>
+                        <td><b>{{len .ApprovedUserIDs}}</b></td>
                         <td>
                             <div class="dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}"
                                  title="{{if (has "mark-added" .DistinctActions)}}Marked as added to Flashpoint{{else}}Not marked as added to Flashpoint{{end}}"></div>
