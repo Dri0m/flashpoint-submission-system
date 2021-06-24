@@ -6,7 +6,7 @@
                               placeholder="Add a comment"></textarea>
         </fieldset>
 
-        {{if eq 2 (len .Submissions)}}
+        {{if eq 1 (len .Submissions)}}
 
             {{$submission := index .Submissions 0}}
 
@@ -21,21 +21,36 @@
                 {{if isDecider .UserRoles}}
 
                     {{if not (has .UserID $submission.AssignedTestingUserIDs)}}
-                        <button type="button" class="pure-button pure-button button-assign-testing"
-                                onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
-                            Assign Testing
-                        </button>
+                        {{if not (has .UserID $submission.ApprovedUserIDs)}}
+                            {{if not (has .UserID $submission.AssignedVerificationUserIDs)}}
+                                {{if not (has .UserID $submission.VerifiedUserIDs)}}
+                                    <button type="button" class="pure-button pure-button button-assign-testing"
+                                            onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
+                                        Assign Testing
+                                    </button>
+                                {{end}}
+                            {{end}}
+                        {{end}}
                     {{else}}
                         <button type="button" class="pure-button pure-button button-unassign-testing"
                                 onclick="batchComment('submission-checkbox', 'sid', 'unassign-testing')">
                             Unassign Testing
                         </button>
                     {{end}}
+
                     {{if not (has .UserID $submission.AssignedVerificationUserIDs)}}
-                        <button type="button" class="pure-button pure-button button-assign-verification"
-                                onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
-                            Assign Verification
-                        </button>
+                        {{if not (has .UserID $submission.ApprovedUserIDs)}}
+                            {{if gt (len $submission.ApprovedUserIDs) 0}}
+                                {{if not (has .UserID $submission.AssignedTestingUserIDs)}}
+                                    {{if not (has .UserID $submission.VerifiedUserIDs)}}
+                                        <button type="button" class="pure-button pure-button button-assign-verification"
+                                                onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
+                                            Assign Verification
+                                        </button>
+                                    {{end}}
+                                {{end}}
+                            {{end}}
+                        {{end}}
                     {{else}}
                         <button type="button" class="pure-button pure-button button-unassign-verification"
                                 onclick="batchComment('submission-checkbox', 'sid', 'unassign-verification')">
@@ -43,29 +58,37 @@
                         </button>
                     {{end}}
 
-                    <button type="button" class="pure-button pure-button button-request-changes"
-                            onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
-                        Request Changes
-                    </button>
+                    {{if or (or (has .UserID $submission.AssignedTestingUserIDs) (has .UserID $submission.ApprovedUserIDs)) (or (has .UserID $submission.AssignedVerificationUserIDs) (has .UserID $submission.VerifiedUserIDs))}}
+                        <button type="button" class="pure-button pure-button button-request-changes"
+                                onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
+                            Request Changes
+                        </button>
+                    {{end}}
 
-                    {{if not (has .UserID $submission.ApprovedUserIDs)}}
+                    {{if has .UserID $submission.AssignedTestingUserIDs}}
                         <button type="button" class="pure-button pure-button button-approve"
                                 onclick="batchComment('submission-checkbox', 'sid', 'approve')">
                             Approve
                         </button>
                     {{end}}
-                    {{if not (has .UserID $submission.VerifiedUserIDs)}}
-                        <button type="button" class="pure-button pure-button button-verify"
-                                onclick="batchComment('submission-checkbox', 'sid', 'verify')">
-                            Verify
-                        </button>
+                    {{if gt (len $submission.ApprovedUserIDs) 0}}
+                        {{if not (has .UserID $submission.VerifiedUserIDs)}}
+                            {{if has .UserID $submission.AssignedVerificationUserIDs}}
+                                <button type="button" class="pure-button pure-button button-verify"
+                                        onclick="batchComment('submission-checkbox', 'sid', 'verify')">
+                                    Verify
+                                </button>
+                            {{end}}
+                        {{end}}
                     {{end}}
                 {{end}}
                 {{if isAdder .UserRoles}}
-                    <button type="button" class="pure-button pure-button button-mark-added"
-                            onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
-                        Mark as Added
-                    </button>
+                    {{if and (gt (len $submission.ApprovedUserIDs) 0) (gt (len $submission.VerifiedUserIDs) 0)}}
+                        <button type="button" class="pure-button pure-button button-mark-added"
+                                onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
+                            Mark as Added
+                        </button>
+                    {{end}}
                 {{end}}
             </div>
         {{else}}

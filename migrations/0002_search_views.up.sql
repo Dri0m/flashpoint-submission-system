@@ -190,10 +190,10 @@ FROM submission
                    ) AS rn
         FROM comment AS c
         WHERE c.fk_author_id != 810112564787675166
-          AND c.fk_action_id = (
+          AND c.fk_action_id IN (
             SELECT id
             FROM action
-            WHERE name = "approve"
+            WHERE name IN ("approve", "verify")
         )
           AND c.deleted_at IS NULL
     )
