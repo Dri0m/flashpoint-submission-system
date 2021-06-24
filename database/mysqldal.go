@@ -319,9 +319,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	currentLimit := defaultLimit
 	currentOffset := defaultOffset
 
-	limit := "LIMIT ?"
-	offset := "OFFSET ?"
-
 	if filter != nil {
 		if filter.SubmissionID != nil {
 			filters = append(filters, "(submission.id = ?)")
@@ -512,8 +509,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				newest.original_filename AS original_filename,
 				newest.current_filename AS current_filename,
 				newest.size AS size,
-				newest.updated_at AS updated_at,
-				newest.updater_id AS updater_id,
+				newest_comment.created_at AS updated_at,
+				newest_comment.fk_author_id AS updater_id,
 				newest.file_count AS file_count
 			FROM submission
 				LEFT JOIN (
@@ -529,20 +526,33 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 						GROUP BY s.fk_submission_id
 					)
 					SELECT id,
-						fk_uploader_id AS updater_id,
 						fk_submission_id,
 						original_filename,
 						current_filename,
 						size,
-						uploaded_at AS updated_at,
 						file_count
 					FROM ranked_file
 					WHERE rn = 1
 				) AS newest ON newest.fk_submission_id = submission.id
+				LEFT JOIN (
+					WITH ranked_file AS (
+						SELECT s.*,
+							ROW_NUMBER() OVER (
+								PARTITION BY fk_submission_id
+								ORDER BY created_at DESC
+							) AS rn
+						FROM comment AS s
+						WHERE s.deleted_at IS NULL
+					)
+					SELECT id,
+						fk_submission_id,
+						fk_author_id,
+						created_at
+					FROM ranked_file
+					WHERE rn = 1
+				) AS newest_comment ON newest_comment.fk_submission_id = submission.id
 			WHERE submission.deleted_at IS NULL
 			GROUP BY submission.id
-			ORDER BY newest.updated_at DESC
-			LIMIT 100
 		) AS submission
 		LEFT JOIN (
 			WITH ranked_file AS (
@@ -701,7 +711,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		ORDER BY submission.updated_at DESC
-		` + limit + ` ` + offset
+		LIMIT ? OFFSET ?`
 
 	// fmt.Printf(finalQuery)
 
