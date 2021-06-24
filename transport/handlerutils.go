@@ -40,7 +40,15 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		return t.ParseFiles(templates...)
 	}
 
-	result, err, cached := cache.Memoize(strings.Join(templates, ","), parse)
+	var result interface{}
+	var err error
+	cached := false
+
+	if a.Conf.IsDev {
+		result, err = parse()
+	} else {
+		result, err, cached = cache.Memoize(strings.Join(templates, ","), parse)
+	}
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		http.Error(w, "failed to parse html templates", http.StatusInternalServerError)
