@@ -904,7 +904,7 @@ SubmissionLoop:
 			c = &types.Comment{
 				AuthorID:     uid,
 				SubmissionID: sid,
-				Message:      message,
+				Message:      nil,
 				Action:       constants.ActionUnassignTesting,
 				CreatedAt:    s.clock.Now().Add(time.Second),
 			}
@@ -917,7 +917,7 @@ SubmissionLoop:
 			c = &types.Comment{
 				AuthorID:     uid,
 				SubmissionID: sid,
-				Message:      message,
+				Message:      nil,
 				Action:       constants.ActionUnassignVerification,
 				CreatedAt:    s.clock.Now().Add(time.Second),
 			}
