@@ -894,6 +894,14 @@ SubmissionLoop:
 			CreatedAt:    s.clock.Now(),
 		}
 
+		// clear messages for assigns and unassigns
+		if formAction == constants.ActionAssignTesting ||
+			formAction == constants.ActionUnassignTesting ||
+			formAction == constants.ActionAssignVerification ||
+			formAction == constants.ActionUnassignVerification {
+			c.Message = nil
+		}
+
 		if err := s.dal.StoreComment(dbs, c); err != nil {
 			utils.LogCtx(ctx).Error(err)
 			return dberr(err)
