@@ -320,9 +320,11 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	currentOffset := defaultOffset
 
 	if filter != nil {
-		if filter.SubmissionID != nil {
-			filters = append(filters, "(submission.id = ?)")
-			data = append(data, *filter.SubmissionID)
+		if len(filter.SubmissionIDs) > 0 {
+			filters = append(filters, `(submission.id IN(?`+strings.Repeat(`,?`, len(filter.SubmissionIDs)-1)+`))`)
+			for _, sid := range filter.SubmissionIDs {
+				data = append(data, sid)
+			}
 		}
 		if filter.SubmitterID != nil {
 			filters = append(filters, "(uploader.id = ?)")
@@ -505,20 +507,20 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			SELECT submission.id,
 				submission.fk_submission_level_id AS fk_submission_level_id,
 				submission.deleted_at AS deleted_at,
-				newest.id AS submission_file_id,
-				newest.original_filename AS original_filename,
-				newest.current_filename AS current_filename,
-				newest.size AS size,
+				newest_file.id AS submission_file_id,
+				newest_file.original_filename AS original_filename,
+				newest_file.current_filename AS current_filename,
+				newest_file.size AS size,
 				newest_comment.created_at AS updated_at,
 				newest_comment.fk_author_id AS updater_id,
-				newest.file_count AS file_count
+				newest_file.file_count AS file_count
 			FROM submission
 				LEFT JOIN (
 					WITH ranked_file AS (
 						SELECT s.*,
 							ROW_NUMBER() OVER (
 								PARTITION BY fk_submission_id
-								ORDER BY uploaded_at DESC
+								ORDER BY uploaded_at DESC, id DESC
 							) AS rn,
 							COUNT(s.id) AS file_count
 						FROM submission_file AS s
@@ -533,13 +535,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 						file_count
 					FROM ranked_file
 					WHERE rn = 1
-				) AS newest ON newest.fk_submission_id = submission.id
+				) AS newest_file ON newest_file.fk_submission_id = submission.id
 				LEFT JOIN (
-					WITH ranked_file AS (
+					WITH ranked_comment AS (
 						SELECT s.*,
 							ROW_NUMBER() OVER (
 								PARTITION BY fk_submission_id
-								ORDER BY created_at DESC
+								ORDER BY created_at DESC, id DESC
 							) AS rn
 						FROM comment AS s
 						WHERE s.deleted_at IS NULL
@@ -548,7 +550,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 						fk_submission_id,
 						fk_author_id,
 						created_at
-					FROM ranked_file
+					FROM ranked_comment
 					WHERE rn = 1
 				) AS newest_comment ON newest_comment.fk_submission_id = submission.id
 			WHERE submission.deleted_at IS NULL

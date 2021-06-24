@@ -22,7 +22,7 @@
                                 <legend>Submission Filters</legend>
                                 <label for="submission-id">Submission ID</label>
                                 <input type="number" name="submission-id" min="1"
-                                       value="{{default "" .Filter.SubmissionID}}">
+                                       value="{{coalesce .Filter.SubmissionIDs ""}}">
                                 <label for="submitter-id">Submitter ID</label>
                                 <input type="number" name="submitter-id" min="1"
                                        value="{{default "" .Filter.SubmitterID}}">

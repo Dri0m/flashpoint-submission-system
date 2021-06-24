@@ -135,7 +135,7 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 			return false, fmt.Errorf("invalid submission id")
 		}
 
-		submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionID: &sid})
+		submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
 		if err != nil {
 			return false, err
 		}
@@ -163,7 +163,7 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 
 		for _, sid := range sids {
 			// TODO optimize search query
-			submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionID: &sid})
+			submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
 			if err != nil {
 				return false, fmt.Errorf("failed to load submission with id %d", sid)
 			}

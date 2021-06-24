@@ -96,7 +96,7 @@ type ExtendedSubmission struct {
 }
 
 type SubmissionsFilter struct {
-	SubmissionID               *int64   `schema:"submission-id"`
+	SubmissionIDs              []int64  `schema:"submission-id"`
 	SubmitterID                *int64   `schema:"submitter-id"`
 	TitlePartial               *string  `schema:"title-partial"`
 	SubmitterUsernamePartial   *string  `schema:"submitter-username-partial"`
@@ -139,13 +139,12 @@ func (sf *SubmissionsFilter) Validate() error {
 		}
 	}
 
-	if sf.SubmissionID != nil && *sf.SubmissionID < 1 {
-		if *sf.SubmissionID == 0 { // schema parser zeroes out pointer values ffs
-			sf.SubmissionID = nil
-		} else {
-			return fmt.Errorf("submission id must be >= 1")
+	for _, sid := range sf.SubmissionIDs {
+		if sid < 1 {
+			{
+				return fmt.Errorf("submission id must be >= 1")
+			}
 		}
-
 	}
 	if sf.SubmitterID != nil && *sf.SubmitterID < 1 {
 		if *sf.SubmitterID == 0 {

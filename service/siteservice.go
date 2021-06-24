@@ -699,9 +699,30 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		ignoreDupeActions = true
 	}
 
-	// TODO optimize batch operation
-SubmissionLoop:
+	utils.LogCtx(ctx).Debugf("searching submissions for comment batch")
+	foundSubmissions, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionIDs: sids})
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
 	for _, sid := range sids {
+		found := false
+		for _, s := range foundSubmissions {
+			if sid == s.SubmissionID {
+				found = true
+			}
+		}
+		if !found {
+			return perr(fmt.Sprintf("submission %d not found", sid), http.StatusNotFound)
+		}
+	}
+
+	// TODO optimize batch operation even more
+SubmissionLoop:
+	for _, submission := range foundSubmissions {
+		sid := submission.SubmissionID
+
 		c := &types.Comment{
 			AuthorID:     uid,
 			SubmissionID: sid,
@@ -709,19 +730,6 @@ SubmissionLoop:
 			Action:       formAction,
 			CreatedAt:    s.clock.Now(),
 		}
-
-		utils.LogCtx(ctx).Debugf("searching submission %d for comment batch", sid)
-		submissions, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionID: &sid})
-		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			return dberr(err)
-		}
-
-		if len(submissions) == 0 {
-			return perr(fmt.Sprintf("submission with id %d not found", sid), http.StatusNotFound)
-		}
-
-		submission := submissions[0]
 
 		if formAction == constants.ActionAssign {
 			for _, assignedUserID := range submission.AssignedUserIDs {
@@ -800,7 +808,7 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 	}
 
 	filter := &types.SubmissionsFilter{
-		SubmissionID: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions, err := s.dal.SearchSubmissions(dbs, filter)
