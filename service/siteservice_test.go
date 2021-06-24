@@ -575,7 +575,7 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 		SubmissionID: sid,
 		Message:      &approvalMessage,
 		Action:       constants.ActionApprove,
-		CreatedAt:    ts.s.clock.Now(),
+		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -700,7 +700,7 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 		SubmissionID: sid,
 		Message:      &approvalMessage,
 		Action:       constants.ActionApprove,
-		CreatedAt:    ts.s.clock.Now(),
+		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -1497,7 +1497,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 		SubmissionID: sid,
 		Message:      &approvalMessage,
 		Action:       constants.ActionApprove,
-		CreatedAt:    ts.s.clock.Now(),
+		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -1603,7 +1603,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 		SubmissionID: sid,
 		Message:      &approvalMessage,
 		Action:       constants.ActionApprove,
-		CreatedAt:    ts.s.clock.Now(),
+		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -1655,11 +1655,14 @@ func Test_siteService_ReceiveComments_OK(t *testing.T) {
 	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
-		{SubmitterID: uid},
+		{
+			SubmissionID: sid,
+			SubmitterID:  uid,
+		},
 	}
 
 	c := &types.Comment{
@@ -1725,7 +1728,7 @@ func Test_siteService_ReceiveComments_Fail_SearchSubmissions(t *testing.T) {
 	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -1756,11 +1759,14 @@ func Test_siteService_ReceiveComments_Fail_StoreComment(t *testing.T) {
 	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
-		{SubmitterID: uid},
+		{
+			SubmissionID: sid,
+			SubmitterID:  uid,
+		},
 	}
 
 	c := &types.Comment{
@@ -1800,11 +1806,14 @@ func Test_siteService_ReceiveComments_Fail_GetUsersForNotification(t *testing.T)
 	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
-		{SubmitterID: uid},
+		{
+			SubmissionID: sid,
+			SubmitterID:  uid,
+		},
 	}
 
 	c := &types.Comment{
@@ -1848,11 +1857,14 @@ func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 	formIgnoreDupeActions := "false"
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
-		{SubmitterID: uid},
+		{
+			SubmissionID: sid,
+			SubmitterID:  uid,
+		},
 	}
 
 	c := &types.Comment{
@@ -1897,7 +1909,7 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	bpd := createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -1972,7 +1984,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_SearchSubmissions(t *testin
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -1999,7 +2011,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationMetaBySubmission
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2035,7 +2047,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetExtendedCommentsBySubmis
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2074,7 +2086,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_IsUserSubscribedToSubmissio
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2115,7 +2127,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationImagesBySubmissi
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2158,7 +2170,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetNextSubmission(t *testin
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2204,7 +2216,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetPreviousSubmission(t *te
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2330,7 +2342,7 @@ func Test_siteService_GetSubmissionsPageData_OK(t *testing.T) {
 	bpd := createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2369,7 +2381,7 @@ func Test_siteService_GetSubmissionsPageData_Fail_NewSession(t *testing.T) {
 	var sid int64 = 2
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -2393,7 +2405,7 @@ func Test_siteService_GetSubmissionsPageData_Fail_SearchSubmissions(t *testing.T
 	createAssertBPD(ts, uid)
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -2421,7 +2433,7 @@ func Test_siteService_SearchSubmissions_OK(t *testing.T) {
 	var fid int64 = 3
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	submissions := []*types.ExtendedSubmission{
@@ -2454,7 +2466,7 @@ func Test_siteService_SearchSubmissions_Fail_NewSession(t *testing.T) {
 	var sid int64 = 2
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -2477,7 +2489,7 @@ func Test_siteService_SearchSubmissions_Fail_SearchSubmissions(t *testing.T) {
 	var sid int64 = 2
 
 	filter := &types.SubmissionsFilter{
-		SubmissionIDs: &sid,
+		SubmissionIDs: []int64{sid},
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
