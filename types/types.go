@@ -93,6 +93,7 @@ type ExtendedSubmission struct {
 	AssignedVerificationUserIDs []int64
 	RequestedChangesUserIDs     []int64
 	ApprovedUserIDs             []int64
+	VerifiedUserIDs             []int64
 	DistinctActions             []string
 }
 

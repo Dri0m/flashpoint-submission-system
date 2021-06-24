@@ -518,6 +518,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		active_assigned_verification.user_ids_with_enabled_action AS assigned_verification_user_ids,
 		active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
 		active_approved.user_ids_with_enabled_action AS approved_user_ids,
+		active_verified.user_ids_with_enabled_action AS verified_user_ids,
 		distinct_actions.actions
 	FROM (
 			SELECT submission.id,
@@ -687,6 +688,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		LEFT JOIN view_active_assigned_verification AS active_assigned_verification ON active_assigned_verification.submission_id = submission.id
 		LEFT JOIN view_active_requested_changes AS active_requested_changes ON active_requested_changes.submission_id = submission.id
 		LEFT JOIN view_active_approved AS active_approved ON active_approved.submission_id = submission.id
+		LEFT JOIN view_active_verified AS active_verified ON active_verified.submission_id = submission.id
 		LEFT JOIN (
 			SELECT submission.id AS submission_id,
 				GROUP_CONCAT(
@@ -705,7 +707,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		ORDER BY submission.updated_at DESC
 		LIMIT ? OFFSET ?`
 
-	fmt.Println(finalQuery)
+	// fmt.Println(finalQuery)
 
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, data...)
 	if err != nil {
@@ -723,6 +725,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	var assignedVerificationUserIDs *string
 	var requestedChangesUserIDs *string
 	var approvedUserIDs *string
+	var verifiedUserIDs *string
 	var distinctActions *string
 
 	for rows.Next() {
@@ -737,7 +740,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationPlatform, &s.CurationLaunchCommand, &s.CurationLibrary,
 			&s.BotAction,
 			&s.FileCount,
-			&assignedTestingUserIDs, &assignedVerificationUserIDs, &requestedChangesUserIDs, &approvedUserIDs, &distinctActions); err != nil {
+			&assignedTestingUserIDs, &assignedVerificationUserIDs, &requestedChangesUserIDs, &approvedUserIDs, &verifiedUserIDs,
+			&distinctActions); err != nil {
 			return nil, err
 		}
 		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)
@@ -790,6 +794,18 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					return nil, err
 				}
 				s.ApprovedUserIDs = append(s.ApprovedUserIDs, uid)
+			}
+		}
+
+		s.VerifiedUserIDs = []int64{}
+		if verifiedUserIDs != nil && len(*verifiedUserIDs) > 0 {
+			userIDs := strings.Split(*verifiedUserIDs, ",")
+			for _, userID := range userIDs {
+				uid, err := strconv.ParseInt(userID, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				s.VerifiedUserIDs = append(s.VerifiedUserIDs, uid)
 			}
 		}
 

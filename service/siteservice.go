@@ -623,7 +623,7 @@ func (s *SiteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 	c := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: vr.Meta.SubmissionID,
-		CreatedAt:    s.clock.Now(),
+		CreatedAt:    s.clock.Now().Add(time.Second),
 	}
 
 	approvalMessage := "Looks good to me 🤖"
@@ -723,6 +723,169 @@ SubmissionLoop:
 	for _, submission := range foundSubmissions {
 		sid := submission.SubmissionID
 
+		uidIn := func(ids []int64) bool {
+			for _, assignedUserID := range ids {
+				if uid == assignedUserID {
+					return true
+				}
+			}
+			return false
+		}
+
+		// stop (or ignore) double actions
+		if formAction == constants.ActionAssignTesting {
+			if uidIn(submission.AssignedTestingUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are already assigned to test submission %d", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionUnassignTesting {
+			if !uidIn(submission.AssignedTestingUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are not assigned to test submission %d", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionAssignVerification {
+			if uidIn(submission.AssignedVerificationUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are already assigned to verify submission %d", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionUnassignVerification {
+			if !uidIn(submission.AssignedVerificationUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are not assigned to verify submission %d", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionApprove {
+			if uidIn(submission.ApprovedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already approved submission %d", sid), http.StatusBadRequest)
+			}
+
+		} else if formAction == constants.ActionRequestChanges {
+			if uidIn(submission.RequestedChangesUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already requested changes on submission %d", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionVerify {
+			if uidIn(submission.VerifiedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already verified submission %d", sid), http.StatusBadRequest)
+			}
+
+		}
+
+		// don't let the same user assign the submission to himself for more than one type of assignment
+		if formAction == constants.ActionAssignTesting {
+			if uidIn(submission.AssignedVerificationUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are already assigned to verify submission %d so you cannot assign it for verification", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionAssignVerification {
+			if uidIn(submission.AssignedTestingUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are already assigned to test submission %d so you cannot assign it for testing", sid), http.StatusBadRequest)
+			}
+		}
+
+		// don't let the same user approve and verify the submission
+		if formAction == constants.ActionAssignTesting {
+			if uidIn(submission.VerifiedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already verified submission %d so you cannot assign it for testing", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionApprove {
+			if uidIn(submission.VerifiedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already verified submission %d so you cannot approve it", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionAssignVerification {
+			if uidIn(submission.ApprovedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already approved (tested) submission %d so you cannot assign it for verification", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionVerify {
+			if uidIn(submission.ApprovedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already approved (tested) submission %d so you cannot verify it", sid), http.StatusBadRequest)
+			}
+		}
+
+		// don't let users do actions without assigning first
+		if formAction == constants.ActionApprove {
+			if !uidIn(submission.AssignedTestingUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are not assigned to test submission %d so you cannot approve it", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionVerify {
+			if !uidIn(submission.AssignedVerificationUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are not assigned to verify submission %d so you cannot verify it", sid), http.StatusBadRequest)
+			}
+		}
+
+		// don't let users verify before approve
+		if formAction == constants.ActionAssignVerification {
+			if len(submission.ApprovedUserIDs) == 0 {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("submission %d is not approved (tested) so you cannot assign it for verification", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionVerify {
+			if len(submission.ApprovedUserIDs) == 0 {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("submission %d is not approved (tested) so you cannot verify it", sid), http.StatusBadRequest)
+			}
+		}
+
+		// don't let users assign submission they have already confirmed to be good
+		if formAction == constants.ActionAssignTesting {
+			if uidIn(submission.ApprovedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already approved submission %d so you cannot assign it for testing", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionAssignVerification {
+			if uidIn(submission.VerifiedUserIDs) {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you have already verified submission %d so you cannot assign it for verification", sid), http.StatusBadRequest)
+			}
+		}
+
+		// actually store the comment
 		c := &types.Comment{
 			AuthorID:     uid,
 			SubmissionID: sid,
@@ -731,73 +894,38 @@ SubmissionLoop:
 			CreatedAt:    s.clock.Now(),
 		}
 
-		if formAction == constants.ActionAssignTesting {
-			for _, assignedUserID := range submission.AssignedTestingUserIDs {
-				if uid == assignedUserID {
-					if ignoreDupeActions {
-						continue SubmissionLoop
-					}
-					return perr(fmt.Sprintf("you are already assigned to test submission %d", sid), http.StatusBadRequest)
-				}
-			}
-		} else if formAction == constants.ActionUnassignTesting {
-			found := false
-			for _, assignedUserID := range submission.AssignedTestingUserIDs {
-				if uid == assignedUserID {
-					found = true
-				}
-			}
-			if !found {
-				if ignoreDupeActions {
-					continue SubmissionLoop
-				}
-				return perr(fmt.Sprintf("you are not assigned to test submission %d", sid), http.StatusBadRequest)
-			}
-		} else if formAction == constants.ActionAssignVerification {
-			for _, assignedUserID := range submission.AssignedVerificationUserIDs {
-				if uid == assignedUserID {
-					if ignoreDupeActions {
-						continue SubmissionLoop
-					}
-					return perr(fmt.Sprintf("you are already assigned to verify submission %d", sid), http.StatusBadRequest)
-				}
-			}
-		} else if formAction == constants.ActionUnassignVerification {
-			found := false
-			for _, assignedUserID := range submission.AssignedVerificationUserIDs {
-				if uid == assignedUserID {
-					found = true
-				}
-			}
-			if !found {
-				if ignoreDupeActions {
-					continue SubmissionLoop
-				}
-				return perr(fmt.Sprintf("you are not assigned to verify submission %d", sid), http.StatusBadRequest)
-			}
-		} else if formAction == constants.ActionApprove {
-			for _, assignedUserID := range submission.ApprovedUserIDs {
-				if uid == assignedUserID {
-					if ignoreDupeActions {
-						continue SubmissionLoop
-					}
-					return perr(fmt.Sprintf("you have already approved submission %d", sid), http.StatusBadRequest)
-				}
-			}
-		} else if formAction == constants.ActionRequestChanges {
-			for _, assignedUserID := range submission.RequestedChangesUserIDs {
-				if uid == assignedUserID {
-					if ignoreDupeActions {
-						continue SubmissionLoop
-					}
-					return perr(fmt.Sprintf("you have already requested changes on submission %d", sid), http.StatusBadRequest)
-				}
-			}
-		}
-
 		if err := s.dal.StoreComment(dbs, c); err != nil {
 			utils.LogCtx(ctx).Error(err)
 			return dberr(err)
+		}
+
+		// unassign if needed
+		if formAction == constants.ActionApprove {
+			c = &types.Comment{
+				AuthorID:     uid,
+				SubmissionID: sid,
+				Message:      message,
+				Action:       constants.ActionUnassignTesting,
+				CreatedAt:    s.clock.Now().Add(time.Second),
+			}
+
+			if err := s.dal.StoreComment(dbs, c); err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return dberr(err)
+			}
+		} else if formAction == constants.ActionVerify {
+			c = &types.Comment{
+				AuthorID:     uid,
+				SubmissionID: sid,
+				Message:      message,
+				Action:       constants.ActionUnassignVerification,
+				CreatedAt:    s.clock.Now().Add(time.Second),
+			}
+
+			if err := s.dal.StoreComment(dbs, c); err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return dberr(err)
+			}
 		}
 
 		if err := s.createNotification(dbs, uid, sid, formAction); err != nil {

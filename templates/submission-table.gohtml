@@ -21,6 +21,7 @@
                     <th title="Assigned for verification">ASV</th>
                     <th title="Requested Changes">RC</th>
                     <th title="Approved">AP</th>
+                    <th title="Verified">VE</th>
                     <th title="Marked as added to Flashpoint">FP</th>
                     <th>Uploaded at</th>
                     <th>Updated at</th>
@@ -53,6 +54,7 @@
                         <td><b>{{len .AssignedVerificationUserIDs}}</b></td>
                         <td><b>{{len .RequestedChangesUserIDs}}</b></td>
                         <td><b>{{len .ApprovedUserIDs}}</b></td>
+                        <td><b>{{len .VerifiedUserIDs}}</b></td>
                         <td>
                             <div class="dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}"
                                  title="{{if (has "mark-added" .DistinctActions)}}Marked as added to Flashpoint{{else}}Not marked as added to Flashpoint{{end}}"></div>

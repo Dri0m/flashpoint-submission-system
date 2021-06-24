@@ -43,18 +43,23 @@
                         </button>
                     {{end}}
 
-                    <button type="button" class="pure-button pure-button button-approve"
-                            onclick="batchComment('submission-checkbox', 'sid', 'approve')">
-                        Approve
-                    </button>
                     <button type="button" class="pure-button pure-button button-request-changes"
                             onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
                         Request Changes
                     </button>
-                    <button type="button" class="pure-button pure-button button-verify"
-                            onclick="batchComment('submission-checkbox', 'sid', 'verify')">
-                        Verify
-                    </button>
+
+                    {{if not (has .UserID $submission.ApprovedUserIDs)}}
+                        <button type="button" class="pure-button pure-button button-approve"
+                                onclick="batchComment('submission-checkbox', 'sid', 'approve')">
+                            Approve
+                        </button>
+                    {{end}}
+                    {{if not (has .UserID $submission.VerifiedUserIDs)}}
+                        <button type="button" class="pure-button pure-button button-verify"
+                                onclick="batchComment('submission-checkbox', 'sid', 'verify')">
+                            Verify
+                        </button>
+                    {{end}}
                 {{end}}
                 {{if isAdder .UserRoles}}
                     <button type="button" class="pure-button pure-button button-mark-added"
@@ -92,13 +97,13 @@
                     <br>
                     <br>
                 {{end}}
-                <button type="button" class="pure-button pure-button button-approve"
-                        onclick="batchComment('submission-checkbox', 'sid', 'approve')">
-                    Approve
-                </button>
                 <button type="button" class="pure-button pure-button button-request-changes"
                         onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
                     Request Changes
+                </button>
+                <button type="button" class="pure-button pure-button button-approve"
+                        onclick="batchComment('submission-checkbox', 'sid', 'approve')">
+                    Approve
                 </button>
                 <button type="button" class="pure-button pure-button button-verify"
                         onclick="batchComment('submission-checkbox', 'sid', 'verify')">
