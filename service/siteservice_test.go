@@ -569,7 +569,7 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 		Meta:             meta,
 	}
 
-	approvalMessage := "LGTM 🤖"
+	approvalMessage := "Looks good to me 🤖"
 	bc := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: sid,
@@ -694,7 +694,7 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 		Filename:         imageDestinationFilename,
 	}
 
-	approvalMessage := "LGTM 🤖"
+	approvalMessage := "Looks good to me 🤖"
 	bc := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: sid,
@@ -1491,7 +1491,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 		Meta:             meta,
 	}
 
-	approvalMessage := "LGTM 🤖"
+	approvalMessage := "Looks good to me 🤖"
 	bc := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: sid,
@@ -1597,7 +1597,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 		Meta:             meta,
 	}
 
-	approvalMessage := "LGTM 🤖"
+	approvalMessage := "Looks good to me 🤖"
 	bc := &types.Comment{
 		AuthorID:     constants.ValidatorID,
 		SubmissionID: sid,

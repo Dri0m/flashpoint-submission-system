@@ -626,7 +626,7 @@ func (s *SiteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 		CreatedAt:    s.clock.Now(),
 	}
 
-	approvalMessage := "LGTM 🤖"
+	approvalMessage := "Looks good to me 🤖"
 	message := ""
 
 	if len(vr.CurationErrors) > 0 {
