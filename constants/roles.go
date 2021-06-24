@@ -34,6 +34,7 @@ func TrialCuratorRoles() []string {
 func DeletorRoles() []string {
 	return []string{
 		RoleAdministrator,
+		RoleModerator,
 	}
 }
 
