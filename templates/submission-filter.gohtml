@@ -15,7 +15,7 @@
         <br><br>
         <form class="pure-form pure-form-stacked" id="filter-form" method="GET">
             <div class="pure-g">
-                <div class="pure-u-1-3">
+                <div class="pure-u-9-24">
                     <div class="form-column">
                         <div class="form-column-text">
                             <fieldset>
@@ -74,28 +74,40 @@
                             </div>
                         </fieldset>
                         <fieldset>
-                            <legend>Filter by State (ctrl+click to uncheck)</legend>
+                            <legend>Filter by Current State</legend>
                             <div class="pure-g">
-                                <div class="pure-u-1-3">
+                                <div class="pure-u-1-2">
                                     <label>
-                                        <input type="radio" name="assigned-status" value="unassigned"
-                                               id="assigned-status-unassigned"
-                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatus)}}checked{{end}}>
-                                        Unassigned</label>
+                                        <input type="radio" name="assigned-status-testing" value="unassigned"
+                                               id="assigned-status-testing-unassigned"
+                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatusTesting)}}checked{{end}}>
+                                        Not assigned for testing</label>
                                     <label>
-                                        <input type="radio" name="assigned-status" value="assigned"
-                                               id="assigned-status-assigned"
-                                               {{if eq "assigned" (unpointify .Filter.AssignedStatus)}}checked{{end}}>
-                                        Assigned</label>
-                                </div>
-
-                                <div class="pure-u-1-3">
+                                        <input type="radio" name="assigned-status-verification" value="unassigned"
+                                               id="assigned-status-verification-unassigned"
+                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatusVerification)}}checked{{end}}>
+                                        Not assigned for verification</label>
                                     <label title="Select submissions with no changes requested.">
                                         <input type="radio" name="requested-changes-status" value="none"
                                                id="requested-changes-status-none"
                                                title="Select submissions with no changes requested."
                                                {{if eq "none" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}>
                                         No RC</label>
+
+                                </div>
+
+                                <div class="pure-u-1-2">
+                                    <label>
+                                        <input type="radio" name="assigned-status-testing" value="assigned"
+                                               id="assigned-status-testing-assigned"
+                                               {{if eq "assigned" (unpointify .Filter.AssignedStatusTesting)}}checked{{end}}>
+                                        Assigned for testing</label>
+                                    <label>
+                                        <input type="radio" name="assigned-status-verification" value="assigned"
+                                               id="assigned-status-verification-assigned"
+                                               {{if eq "assigned" (unpointify .Filter.AssignedStatusVerification)}}checked{{end}}>
+                                        Assigned for verification</label>
+                                    <br>
                                     <label title="Select submissions with some changes requested.">
                                         <input type="radio" name="requested-changes-status" value="ongoing"
                                                id="requested-changes-status-ongoing"
@@ -103,23 +115,29 @@
                                                {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}>
                                         Ongoing RC</label>
                                 </div>
-
+                            </div>
+                            <div class="pure-g">
                                 <div class="pure-u-1-3">
                                     <label title="Select submissions with zero approvals.">
                                         <input type="radio" name="approvals-status" value="none"
                                                id="approvals-status-none"
                                                title="Select submissions with zero approvals."
                                                {{if eq "none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
-                                        No Approvals</label>
-                                    <label title="Select submissions with one approval. Such submissions should be approved by at least one more user before further processing.">
+                                        0 AP</label>
+                                </div>
+                                <div class="pure-u-1-3">
+                                    <label title="Select submissions with one approval.">
                                         <input type="radio" name="approvals-status" value="one"
                                                id="approvals-status-one"
-                                               title="Select submissions with one approval. Such submissions should be approved by at least one more user before further processing."
+                                               title="Select submissions with one approval."
                                                {{if eq "one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
                                         1 AP</label>
-                                    <label>
+                                </div>
+                                <div class="pure-u-1-3">
+                                    <label title="Select submissions with two and more approvals.">
                                         <input type="radio" name="approvals-status" value="more-than-one"
                                                id="approvals-status-more-than-one"
+                                               title="Select submissions with two and more approvals."
                                                {{if eq "more-than-one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
                                         >=2 AP</label>
                                 </div>
@@ -173,7 +191,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="pure-u-1-3">
+                <div class="pure-u-6-24">
                     <div class="form-column">
                         <div class="form-column-text">
                             <fieldset>
@@ -216,7 +234,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="pure-u-1-3">
+                <div class="pure-u-9-24">
                     <div class="form-column">
                         <div class="form-column-text">
                             <fieldset>
@@ -263,14 +281,19 @@
                             </div>
                         </fieldset>
                         <fieldset>
-                            <legend>Filter by My State (ctrl+click to uncheck)</legend>
+                            <legend>Filter by My Current State</legend>
                             <div class="pure-g">
                                 <div class="pure-u-1-2">
                                     <label>
-                                        <input type="radio" name="assigned-status-me" value="unassigned"
-                                               id="assigned-status-me-unassigned"
-                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatusMe)}}checked{{end}}>
-                                        Not assigned to me</label>
+                                        <input type="radio" name="assigned-status-testing-me" value="unassigned"
+                                               id="assigned-status-testing-me-unassigned"
+                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatusTestingMe)}}checked{{end}}>
+                                        Not assigned to me for testing</label>
+                                    <label>
+                                        <input type="radio" name="assigned-status-verification-me" value="unassigned"
+                                               id="assigned-status-testing-me-verification"
+                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatusVerificationMe)}}checked{{end}}>
+                                        Not assigned to me for verification</label>
                                     <label title="Select submissions where I have no requested changes.">
                                         <input type="radio" name="requested-changes-status-me" value="none"
                                                id="requested-changes-status-me-none"
@@ -285,10 +308,13 @@
                                 </div>
                                 <div class="pure-u-1-2">
                                     <label>
-                                        <input type="radio" name="assigned-status-me" value="assigned"
-                                               {{if eq "assigned" (unpointify .Filter.AssignedStatusMe)}}checked{{end}}>
-                                        Assigned to me</label>
-
+                                        <input type="radio" name="assigned-status-testing-me" value="assigned"
+                                               {{if eq "assigned" (unpointify .Filter.AssignedStatusTestingMe)}}checked{{end}}>
+                                        Assigned to me for testing</label>
+                                    <label>
+                                        <input type="radio" name="assigned-status-verification-me" value="assigned"
+                                               {{if eq "assigned" (unpointify .Filter.AssignedStatusVerificationMe)}}checked{{end}}>
+                                        Assigned to me for verification</label>
                                     <label title="Select submissions where I have ongoing requested changes.">
                                         <input type="radio" name="requested-changes-status-me" value="ongoing"
                                                title="Select submissions where I have ongoing requested changes."

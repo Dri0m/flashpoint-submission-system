@@ -114,12 +114,13 @@ INSERT IGNORE INTO action (id, name)
 VALUES (1, 'comment'),
        (2, 'approve'),
        (3, 'request-changes'),
-       (4, 'accept'),
-       (5, 'mark-added'),
-       (6, 'reject'),
-       (7, 'upload-file'),
-       (8, 'assign'),
-       (9, 'unassign');
+       (4, 'mark-added'),
+       (5, 'upload-file'),
+       (6, 'verify'),
+       (7, 'assign-testing'),
+       (8, 'unassign-testing'),
+       (9, 'assign-verification'),
+       (10, 'unassign-verification');
 
 CREATE TABLE IF NOT EXISTS comment
 (

@@ -6,15 +6,16 @@ const SubmissionImagesDir = "files/submissions-images"
 const UserInAuditSumbissionMaxFilesize = 200000000
 
 const (
-	ActionComment        = "comment"
-	ActionApprove        = "approve"
-	ActionRequestChanges = "request-changes"
-	ActionAccept         = "accept"
-	ActionMarkAdded      = "mark-added"
-	ActionReject         = "reject"
-	ActionUpload         = "upload-file"
-	ActionAssign         = "assign"
-	ActionUnassign       = "unassign"
+	ActionComment              = "comment"
+	ActionApprove              = "approve"
+	ActionRequestChanges       = "request-changes"
+	ActionMarkAdded            = "mark-added"
+	ActionUpload               = "upload-file"
+	ActionVerify               = "verify"
+	ActionAssignTesting        = "assign-testing"
+	ActionUnassignTesting      = "unassign-testing"
+	ActionAssignVerification   = "assign-verification"
+	ActionUnassignVerification = "unassign-verification"
 )
 
 const (
@@ -28,12 +29,13 @@ func GetAllowedActions() []string {
 		ActionComment,
 		ActionApprove,
 		ActionRequestChanges,
-		ActionAccept,
 		ActionMarkAdded,
-		ActionReject,
 		ActionUpload,
-		ActionAssign,
-		ActionUnassign,
+		ActionVerify,
+		ActionAssignTesting,
+		ActionUnassignTesting,
+		ActionAssignVerification,
+		ActionUnassignVerification,
 	}
 }
 
@@ -41,7 +43,6 @@ func GetActionsWithMandatoryMessage() []string {
 	return []string{
 		ActionComment,
 		ActionRequestChanges,
-		ActionReject,
 	}
 }
 

@@ -17,7 +17,8 @@
                     <th>Updated by</th>
                     <th>Size</th>
                     <th>Bot</th>
-                    <th title="Assigned">AS</th>
+                    <th title="Assigned for testing">AST</th>
+                    <th title="Assigned for verification">ASV</th>
                     <th title="Requested Changes">RC</th>
                     <th title="Approved">AP</th>
                     <th title="Marked as added to Flashpoint">FP</th>
@@ -48,7 +49,8 @@
                         <td>
                             <div class="dot-{{.BotAction}}" title="{{.BotAction}}"></div>
                         </td>
-                        <td>{{len .AssignedUserIDs}}</td>
+                        <td>{{len .AssignedTestingUserIDs}}</td>
+                        <td>{{len .AssignedVerificationUserIDs}}</td>
                         <td>{{len .RequestedChangesUserIDs}}</td>
                         <td>{{len .ApprovedUserIDs}}</td>
                         <td>

@@ -259,10 +259,9 @@ func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
 
 	canComment := formAction == constants.ActionComment
 	isAdder := canDo([]string{constants.ActionMarkAdded}, constants.AdderRoles())
-	isDecider := canDo([]string{constants.ActionApprove, constants.ActionReject, constants.ActionRequestChanges, constants.ActionAccept}, constants.DeciderRoles())
-	canAssign := canDo([]string{constants.ActionAssign, constants.ActionUnassign}, constants.DeciderRoles()) ||
-		canDo([]string{constants.ActionAssign, constants.ActionUnassign}, constants.AdderRoles()) ||
-		canDo([]string{constants.ActionAssign, constants.ActionUnassign}, constants.TrialCuratorRoles())
+	isDecider := canDo([]string{constants.ActionApprove, constants.ActionRequestChanges,
+		constants.ActionVerify, constants.ActionAssignTesting, constants.ActionUnassignTesting,
+		constants.ActionAssignVerification, constants.ActionUnassignVerification}, constants.DeciderRoles())
 
-	return canComment || isAdder || isDecider || canAssign, nil
+	return canComment || isAdder || isDecider, nil
 }

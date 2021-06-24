@@ -401,11 +401,18 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		} else {
 			currentOffset = defaultOffset
 		}
-		if filter.AssignedStatus != nil {
-			if *filter.AssignedStatus == "unassigned" {
-				filters = append(filters, "(active_assigned.user_count_with_enabled_action = 0 OR active_assigned.user_count_with_enabled_action IS NULL)")
-			} else if *filter.AssignedStatus == "assigned" {
-				filters = append(filters, "(active_assigned.user_count_with_enabled_action > 0)")
+		if filter.AssignedStatusTesting != nil {
+			if *filter.AssignedStatusTesting == "unassigned" {
+				filters = append(filters, "(active_assigned_testing.user_count_with_enabled_action = 0 OR active_assigned_testing.user_count_with_enabled_action IS NULL)")
+			} else if *filter.AssignedStatusTesting == "assigned" {
+				filters = append(filters, "(active_assigned_testing.user_count_with_enabled_action > 0)")
+			}
+		}
+		if filter.AssignedStatusVerification != nil {
+			if *filter.AssignedStatusVerification == "unassigned" {
+				filters = append(filters, "(active_assigned_verification.user_count_with_enabled_action = 0 OR active_assigned_verification.user_count_with_enabled_action IS NULL)")
+			} else if *filter.AssignedStatusVerification == "assigned" {
+				filters = append(filters, "(active_assigned_verification.user_count_with_enabled_action > 0)")
 			}
 		}
 		if filter.RequestedChangedStatus != nil {
@@ -424,11 +431,19 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				filters = append(filters, "(active_approved.user_count_with_enabled_action >= 2)")
 			}
 		}
-		if filter.AssignedStatusMe != nil {
-			if *filter.AssignedStatusMe == "unassigned" {
-				filters = append(filters, "(active_assigned.user_ids_with_enabled_action NOT LIKE ? OR active_assigned.user_ids_with_enabled_action IS NULL)")
-			} else if *filter.AssignedStatusMe == "assigned" {
-				filters = append(filters, "(active_assigned.user_ids_with_enabled_action LIKE ?)")
+		if filter.AssignedStatusTestingMe != nil {
+			if *filter.AssignedStatusTestingMe == "unassigned" {
+				filters = append(filters, "(active_assigned_testing.user_ids_with_enabled_action NOT LIKE ? OR active_assigned_testing.user_ids_with_enabled_action IS NULL)")
+			} else if *filter.AssignedStatusTestingMe == "assigned" {
+				filters = append(filters, "(active_assigned_testing.user_ids_with_enabled_action LIKE ?)")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
+		}
+		if filter.AssignedStatusVerificationMe != nil {
+			if *filter.AssignedStatusVerificationMe == "unassigned" {
+				filters = append(filters, "(active_assigned_verification.user_ids_with_enabled_action NOT LIKE ? OR active_assigned_verification.user_ids_with_enabled_action IS NULL)")
+			} else if *filter.AssignedStatusVerificationMe == "assigned" {
+				filters = append(filters, "(active_assigned_verification.user_ids_with_enabled_action LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
@@ -499,7 +514,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		meta.library,
 		bot_comment.action AS bot_action,
 		submission.file_count,
-		active_assigned.user_ids_with_enabled_action AS assigned_user_ids,
+		active_assigned_testing.user_ids_with_enabled_action AS assigned_user_ids,
+		active_assigned_verification.user_ids_with_enabled_action AS assigned_user_ids,
 		active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
 		active_approved.user_ids_with_enabled_action AS approved_user_ids,
 		distinct_actions.actions
@@ -670,13 +686,23 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		LEFT JOIN (
 			select s.*
 			FROM (
-					select @p1 = "assign" p
+					select @p1 = "assign-testing" p
 				) parm1,
 				(
-					select @p2 = "unassign" p
+					select @p2 = "unassign-testing" p
 				) parm2,
 				dependent_actions s
-		) AS active_assigned ON active_assigned.submission = submission.id
+		) AS active_assigned_testing ON active_assigned_testing.submission = submission.id
+		LEFT JOIN (
+			select s.*
+			FROM (
+					select @p1 = "assign-verification" p
+				) parm1,
+				(
+					select @p2 = "unassign-verification" p
+				) parm2,
+				dependent_actions s
+		) AS active_assigned_verification ON active_assigned_verification.submission = submission.id
 		LEFT JOIN (
 			select s.*
 			FROM (
@@ -730,7 +756,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	var updatedAt int64
 	var submitterAvatar string
 	var updaterAvatar string
-	var assignedUserIDs *string
+	var assignedTestingUserIDs *string
+	var assignedVerificationUserIDs *string
 	var requestedChangesUserIDs *string
 	var approvedUserIDs *string
 	var distinctActions *string
@@ -747,7 +774,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationPlatform, &s.CurationLaunchCommand, &s.CurationLibrary,
 			&s.BotAction,
 			&s.FileCount,
-			&assignedUserIDs, &requestedChangesUserIDs, &approvedUserIDs, &distinctActions); err != nil {
+			&assignedTestingUserIDs, &assignedVerificationUserIDs, &requestedChangesUserIDs, &approvedUserIDs, &distinctActions); err != nil {
 			return nil, err
 		}
 		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)
@@ -755,15 +782,27 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		s.UploadedAt = time.Unix(uploadedAt, 0)
 		s.UpdatedAt = time.Unix(updatedAt, 0)
 
-		s.AssignedUserIDs = []int64{}
-		if assignedUserIDs != nil && len(*assignedUserIDs) > 0 {
-			userIDs := strings.Split(*assignedUserIDs, ",")
+		s.AssignedTestingUserIDs = []int64{}
+		if assignedTestingUserIDs != nil && len(*assignedTestingUserIDs) > 0 {
+			userIDs := strings.Split(*assignedTestingUserIDs, ",")
 			for _, userID := range userIDs {
 				uid, err := strconv.ParseInt(userID, 10, 64)
 				if err != nil {
 					return nil, err
 				}
-				s.AssignedUserIDs = append(s.AssignedUserIDs, uid)
+				s.AssignedTestingUserIDs = append(s.AssignedTestingUserIDs, uid)
+			}
+		}
+
+		s.AssignedVerificationUserIDs = []int64{}
+		if assignedVerificationUserIDs != nil && len(*assignedVerificationUserIDs) > 0 {
+			userIDs := strings.Split(*assignedVerificationUserIDs, ",")
+			for _, userID := range userIDs {
+				uid, err := strconv.ParseInt(userID, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				s.AssignedVerificationUserIDs = append(s.AssignedVerificationUserIDs, uid)
 			}
 		}
 

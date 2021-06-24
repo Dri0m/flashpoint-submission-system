@@ -731,18 +731,18 @@ SubmissionLoop:
 			CreatedAt:    s.clock.Now(),
 		}
 
-		if formAction == constants.ActionAssign {
-			for _, assignedUserID := range submission.AssignedUserIDs {
+		if formAction == constants.ActionAssignTesting {
+			for _, assignedUserID := range submission.AssignedTestingUserIDs {
 				if uid == assignedUserID {
 					if ignoreDupeActions {
 						continue SubmissionLoop
 					}
-					return perr(fmt.Sprintf("you are already assigned to submission %d", sid), http.StatusBadRequest)
+					return perr(fmt.Sprintf("you are already assigned to test submission %d", sid), http.StatusBadRequest)
 				}
 			}
-		} else if formAction == constants.ActionUnassign {
+		} else if formAction == constants.ActionUnassignTesting {
 			found := false
-			for _, assignedUserID := range submission.AssignedUserIDs {
+			for _, assignedUserID := range submission.AssignedTestingUserIDs {
 				if uid == assignedUserID {
 					found = true
 				}
@@ -751,7 +751,29 @@ SubmissionLoop:
 				if ignoreDupeActions {
 					continue SubmissionLoop
 				}
-				return perr(fmt.Sprintf("you are not assigned to submission %d", sid), http.StatusBadRequest)
+				return perr(fmt.Sprintf("you are not assigned to test submission %d", sid), http.StatusBadRequest)
+			}
+		} else if formAction == constants.ActionAssignVerification {
+			for _, assignedUserID := range submission.AssignedVerificationUserIDs {
+				if uid == assignedUserID {
+					if ignoreDupeActions {
+						continue SubmissionLoop
+					}
+					return perr(fmt.Sprintf("you are already assigned to verify submission %d", sid), http.StatusBadRequest)
+				}
+			}
+		} else if formAction == constants.ActionUnassignVerification {
+			found := false
+			for _, assignedUserID := range submission.AssignedVerificationUserIDs {
+				if uid == assignedUserID {
+					found = true
+				}
+			}
+			if !found {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("you are not assigned to verify submission %d", sid), http.StatusBadRequest)
 			}
 		} else if formAction == constants.ActionApprove {
 			for _, assignedUserID := range submission.ApprovedUserIDs {

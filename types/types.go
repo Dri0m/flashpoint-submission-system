@@ -68,58 +68,61 @@ type ExtendedSubmissionFile struct {
 }
 
 type ExtendedSubmission struct {
-	SubmissionID            int64
-	SubmissionLevel         string
-	SubmitterID             int64     // oldest file
-	SubmitterUsername       string    // oldest file
-	SubmitterAvatarURL      string    // oldest file
-	UpdaterID               int64     // newest file
-	UpdaterUsername         string    // newest file
-	UpdaterAvatarURL        string    // newest file
-	FileID                  int64     // newest file
-	OriginalFilename        string    // newest file
-	CurrentFilename         string    // newest file
-	Size                    int64     // newest file
-	UploadedAt              time.Time // oldest file
-	UpdatedAt               time.Time // newest file
-	CurationTitle           *string   // newest file
-	CurationAlternateTitles *string   // newest file
-	CurationPlatform        *string   // newest file
-	CurationLaunchCommand   *string   // newest file
-	CurationLibrary         *string   // newest file
-	BotAction               string
-	FileCount               uint64
-	AssignedUserIDs         []int64
-	RequestedChangesUserIDs []int64
-	ApprovedUserIDs         []int64
-	DistinctActions         []string
+	SubmissionID                int64
+	SubmissionLevel             string
+	SubmitterID                 int64     // oldest file
+	SubmitterUsername           string    // oldest file
+	SubmitterAvatarURL          string    // oldest file
+	UpdaterID                   int64     // newest file
+	UpdaterUsername             string    // newest file
+	UpdaterAvatarURL            string    // newest file
+	FileID                      int64     // newest file
+	OriginalFilename            string    // newest file
+	CurrentFilename             string    // newest file
+	Size                        int64     // newest file
+	UploadedAt                  time.Time // oldest file
+	UpdatedAt                   time.Time // newest file
+	CurationTitle               *string   // newest file
+	CurationAlternateTitles     *string   // newest file
+	CurationPlatform            *string   // newest file
+	CurationLaunchCommand       *string   // newest file
+	CurationLibrary             *string   // newest file
+	BotAction                   string
+	FileCount                   uint64
+	AssignedTestingUserIDs      []int64
+	AssignedVerificationUserIDs []int64
+	RequestedChangesUserIDs     []int64
+	ApprovedUserIDs             []int64
+	DistinctActions             []string
 }
 
 type SubmissionsFilter struct {
-	SubmissionIDs              []int64  `schema:"submission-id"`
-	SubmitterID                *int64   `schema:"submitter-id"`
-	TitlePartial               *string  `schema:"title-partial"`
-	SubmitterUsernamePartial   *string  `schema:"submitter-username-partial"`
-	PlatformPartial            *string  `schema:"platform-partial"`
-	LibraryPartial             *string  `schema:"library-partial"`
-	OriginalFilenamePartialAny *string  `schema:"original-filename-partial-any"`
-	CurrentFilenamePartialAny  *string  `schema:"current-filename-partial-any"`
-	MD5SumPartialAny           *string  `schema:"md5sum-partial-any"`
-	SHA256SumPartialAny        *string  `schema:"sha256sum-partial-any"`
-	BotActions                 []string `schema:"bot-action"`
-	ActionsAfterMyLastComment  []string `schema:"post-last-action"`
-	ResultsPerPage             *int64   `schema:"results-per-page"`
-	Page                       *int64   `schema:"page"`
-	AssignedStatus             *string  `schema:"assigned-status"`
-	RequestedChangedStatus     *string  `schema:"requested-changes-status"`
-	ApprovalsStatus            *string  `schema:"approvals-status"`
-	SubmissionLevels           []string `schema:"sumbission-level"`
-	AssignedStatusMe           *string  `schema:"assigned-status-me"`
-	RequestedChangedStatusMe   *string  `schema:"requested-changes-status-me"`
-	ApprovalsStatusMe          *string  `schema:"approvals-status-me"`
-	IsExtreme                  *string  `schema:"is-extreme"`
-	DistinctActions            []string `schema:"distinct-action"`
-	DistinctActionsNot         []string `schema:"distinct-action-not"`
+	SubmissionIDs                []int64  `schema:"submission-id"`
+	SubmitterID                  *int64   `schema:"submitter-id"`
+	TitlePartial                 *string  `schema:"title-partial"`
+	SubmitterUsernamePartial     *string  `schema:"submitter-username-partial"`
+	PlatformPartial              *string  `schema:"platform-partial"`
+	LibraryPartial               *string  `schema:"library-partial"`
+	OriginalFilenamePartialAny   *string  `schema:"original-filename-partial-any"`
+	CurrentFilenamePartialAny    *string  `schema:"current-filename-partial-any"`
+	MD5SumPartialAny             *string  `schema:"md5sum-partial-any"`
+	SHA256SumPartialAny          *string  `schema:"sha256sum-partial-any"`
+	BotActions                   []string `schema:"bot-action"`
+	ActionsAfterMyLastComment    []string `schema:"post-last-action"`
+	ResultsPerPage               *int64   `schema:"results-per-page"`
+	Page                         *int64   `schema:"page"`
+	AssignedStatusTesting        *string  `schema:"assigned-status-testing"`
+	AssignedStatusVerification   *string  `schema:"assigned-status-verification"`
+	RequestedChangedStatus       *string  `schema:"requested-changes-status"`
+	ApprovalsStatus              *string  `schema:"approvals-status"`
+	SubmissionLevels             []string `schema:"sumbission-level"`
+	AssignedStatusTestingMe      *string  `schema:"assigned-status-testing-me"`
+	AssignedStatusVerificationMe *string  `schema:"assigned-status-verification-me"`
+	RequestedChangedStatusMe     *string  `schema:"requested-changes-status-me"`
+	ApprovalsStatusMe            *string  `schema:"approvals-status-me"`
+	IsExtreme                    *string  `schema:"is-extreme"`
+	DistinctActions              []string `schema:"distinct-action"`
+	DistinctActionsNot           []string `schema:"distinct-action-not"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
@@ -168,7 +171,13 @@ func (sf *SubmissionsFilter) Validate() error {
 		}
 	}
 
-	if sf.AssignedStatus != nil && *sf.AssignedStatus != "unassigned" && *sf.AssignedStatus != "assigned" {
+	if sf.AssignedStatusTesting != nil && *sf.AssignedStatusTesting != "unassigned" && *sf.AssignedStatusTesting != "assigned" {
+		return fmt.Errorf("invalid assigned-status-testing")
+	}
+	if sf.AssignedStatusVerification != nil && *sf.AssignedStatusVerification != "unassigned" && *sf.AssignedStatusVerification != "assigned" {
+		return fmt.Errorf("invalid assigned-status-verification")
+	}
+	if sf.AssignedStatusTesting != nil && *sf.AssignedStatusTesting != "unassigned" && *sf.AssignedStatusTesting != "assigned" {
 		return fmt.Errorf("invalid assigned-status")
 	}
 	if sf.RequestedChangedStatus != nil && *sf.RequestedChangedStatus != "none" && *sf.RequestedChangedStatus != "ongoing" {
@@ -178,8 +187,11 @@ func (sf *SubmissionsFilter) Validate() error {
 		return fmt.Errorf("invalid approvals-status")
 	}
 
-	if sf.AssignedStatusMe != nil && *sf.AssignedStatusMe != "unassigned" && *sf.AssignedStatusMe != "assigned" {
-		return fmt.Errorf("invalid assigned-status-me")
+	if sf.AssignedStatusTestingMe != nil && *sf.AssignedStatusTestingMe != "unassigned" && *sf.AssignedStatusTestingMe != "assigned" {
+		return fmt.Errorf("invalid assigned-status-testing-me")
+	}
+	if sf.AssignedStatusVerificationMe != nil && *sf.AssignedStatusVerificationMe != "unassigned" && *sf.AssignedStatusVerificationMe != "assigned" {
+		return fmt.Errorf("invalid assigned-status-verification-me")
 	}
 	if sf.RequestedChangedStatusMe != nil && *sf.RequestedChangedStatusMe != "none" && *sf.RequestedChangedStatusMe != "ongoing" {
 		return fmt.Errorf("invalid requested-changes-status-me")

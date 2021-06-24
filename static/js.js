@@ -280,7 +280,7 @@ function filterReadyForTesting() {
     document.getElementById("bot-action-approve").checked = true
     document.getElementById("approvals-status-none").checked = true
     document.getElementById("requested-changes-status-none").checked = true
-    document.getElementById("assigned-status-unassigned").checked = true
+    document.getElementById("assigned-status-testing-unassigned").checked = true
     document.getElementById("requested-changes-status-me-none").checked = true
     document.getElementById("approvals-status-me-no").checked = true
     submitFilterForm()
@@ -291,7 +291,7 @@ function filterReadyForVerification() {
     document.getElementById("bot-action-approve").checked = true
     document.getElementById("approvals-status-one").checked = true
     document.getElementById("requested-changes-status-none").checked = true
-    document.getElementById("assigned-status-unassigned").checked = true
+    document.getElementById("assigned-status-verification-unassigned").checked = true
     document.getElementById("requested-changes-status-me-none").checked = true
     document.getElementById("approvals-status-me-no").checked = true
     submitFilterForm()
