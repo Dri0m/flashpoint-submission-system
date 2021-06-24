@@ -210,8 +210,15 @@ textarea {
 }
 
 .submissions-table td {
-    padding: .3em .7em;
+    padding: .2em .2em;
+    border-bottom: 1px solid #cbcbcb;
 }
+
+.submissions-table th {
+    padding: .1em .3em;
+    border-bottom: 1px solid #cbcbcb;
+}
+
 
 
 #table-wrapper {

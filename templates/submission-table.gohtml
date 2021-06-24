@@ -17,12 +17,12 @@
                     <th>Updated by</th>
                     <th>Size</th>
                     <th>Bot</th>
-                    <th title="Assigned for testing">AST</th>
-                    <th title="Assigned for verification">ASV</th>
-                    <th title="Requested Changes">RC</th>
-                    <th title="Approved">AP</th>
-                    <th title="Verified">VE</th>
-                    <th title="Marked as added to Flashpoint">FP</th>
+                    <th class="bgr-assign-testing" title="Assigned for testing">AST</th>
+                    <th class="bgr-assign-verification" title="Assigned for verification">ASV</th>
+                    <th class="bgr-request-changes" title="Requested Changes">RC</th>
+                    <th class="bgr-approve" title="Approved">AP</th>
+                    <th class="bgr-verify" title="Verified">VE</th>
+                    <th class="bgr-mark-added" title="Marked as added to Flashpoint">FP</th>
                     <th>Uploaded at</th>
                     <th>Updated at</th>
                     <th>Original Filename</th>
@@ -48,15 +48,20 @@
                         <td>{{.UpdaterUsername}}</td>
                         <td title="{{.Size}}B">{{megabytify .Size}}MB</td>
                         <td>
-                            <div class="dot-{{.BotAction}}" title="{{.BotAction}}"></div>
+                            <div class="center-image dot-{{.BotAction}}" title="{{.BotAction}}"></div>
                         </td>
-                        <td><b>{{len .AssignedTestingUserIDs}}</b></td>
-                        <td><b>{{len .AssignedVerificationUserIDs}}</b></td>
-                        <td><b>{{len .RequestedChangesUserIDs}}</b></td>
-                        <td><b>{{len .ApprovedUserIDs}}</b></td>
-                        <td><b>{{len .VerifiedUserIDs}}</b></td>
+                        <td class="center {{if gt (len .AssignedTestingUserIDs) 0}}bgr-assign-testing{{end}}">
+                            <b>{{len .AssignedTestingUserIDs}}</b></td>
+                        <td class="center {{if gt (len .AssignedVerificationUserIDs) 0}}bgr-assign-verification{{end}}">
+                            <b>{{len .AssignedVerificationUserIDs}}</b></td>
+                        <td class="center {{if gt (len .RequestedChangesUserIDs) 0}}bgr-request-changes{{end}}">
+                            <b>{{len .RequestedChangesUserIDs}}</b></td>
+                        <td class="center {{if gt (len .ApprovedUserIDs) 0}}bgr-approve{{end}}"><b>{{len .ApprovedUserIDs}}</b>
+                        </td>
+                        <td class="center {{if gt (len .VerifiedUserIDs) 0}}bgr-verify{{end}}"><b>{{len .VerifiedUserIDs}}</b>
+                        </td>
                         <td>
-                            <div class="dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}"
+                            <div class="center-image dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}"
                                  title="{{if (has "mark-added" .DistinctActions)}}Marked as added to Flashpoint{{else}}Not marked as added to Flashpoint{{end}}"></div>
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
