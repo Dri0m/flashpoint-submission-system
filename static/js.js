@@ -116,14 +116,13 @@ function changePage(number) {
     window.location.href = url
 }
 
-function uploadHandler(url, files, i) {
+function uploadHandler(url, files, i, step) {
     if (i >= files.length) {
-        document.querySelector("#upload-button").disabled = false
         return
     }
     let progressBarsContainer = document.querySelector("#progress-bars-container")
 
-    let file = files[i]
+    const file = files[i];
 
     let formData = new FormData()
     formData.append("files", file)
@@ -169,7 +168,7 @@ function uploadHandler(url, files, i) {
         } else {
             progressText.innerHTML = `${file.name}<br>Upload successful.`
         }
-        uploadHandler(url, files, i + 1)
+        uploadHandler(url, files, i + step, step)
     }
 
     request.addEventListener("loadend", handleEnd);
@@ -198,7 +197,8 @@ function bindFancierUpload(url) {
             }
         }
 
-        uploadHandler(url, files, 0)
+        uploadHandler(url, files, 0, 2)
+        uploadHandler(url, files, 1, 2)
     });
 }
 
