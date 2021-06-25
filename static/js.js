@@ -12,7 +12,7 @@ function sendXHR(url, method, data, reload, failureMessage, successMessage, prom
 
     request.addEventListener("loadend", function () {
         if (request.status !== 200 && request.status !== 204) {
-            alert(`${failureMessage}\nRequest status: ${request.status}\nRequest response: ${request.response}`)
+            alert(`${failureMessage}\nRequest status: ${request.status} - ${friendlyHttpStatus[request.status]}\nRequest response: ${request.response}`)
         } else {
             if (successMessage !== null) {
                 alert(`${successMessage}`)
@@ -164,7 +164,7 @@ function uploadHandler(url, files, i) {
 
     let handleEnd = function (e) {
         if (request.status !== 200) {
-            progressText.innerHTML = `${file.name}<br>something went wrong: status ${request.status} - ${request.response}`
+            progressText.innerHTML = `${file.name}<br>Upload failed!<br>Request status: ${request.status} - ${friendlyHttpStatus[request.status]}<br>Server response: ${request.response}`
             progressText.style.color = "red"
         } else {
             progressText.innerHTML = `${file.name}<br>Upload successful.`
@@ -305,3 +305,47 @@ function filterReadyForFlashpoint() {
     document.getElementById("distinct-action-not-mark-added").checked = true
     submitFilterForm()
 }
+
+let friendlyHttpStatus = {
+    '200': 'OK',
+    '201': 'Created',
+    '202': 'Accepted',
+    '203': 'Non-Authoritative Information',
+    '204': 'No Content',
+    '205': 'Reset Content',
+    '206': 'Partial Content',
+    '300': 'Multiple Choices',
+    '301': 'Moved Permanently',
+    '302': 'Found',
+    '303': 'See Other',
+    '304': 'Not Modified',
+    '305': 'Use Proxy',
+    '306': 'Unused',
+    '307': 'Temporary Redirect',
+    '400': 'Bad Request',
+    '401': 'Unauthorized',
+    '402': 'Payment Required',
+    '403': 'Forbidden',
+    '404': 'Not Found',
+    '405': 'Method Not Allowed',
+    '406': 'Not Acceptable',
+    '407': 'Proxy Authentication Required',
+    '408': 'Request Timeout',
+    '409': 'Conflict',
+    '410': 'Gone',
+    '411': 'Length Required',
+    '412': 'Precondition Required',
+    '413': 'Request Entry Too Large',
+    '414': 'Request-URI Too Long',
+    '415': 'Unsupported Media Type',
+    '416': 'Requested Range Not Satisfiable',
+    '417': 'Expectation Failed',
+    '418': 'I\'m a teapot',
+    '429': 'Too Many Requests',
+    '500': 'Internal Server Error',
+    '501': 'Not Implemented',
+    '502': 'Bad Gateway',
+    '503': 'Service Unavailable',
+    '504': 'Gateway Timeout',
+    '505': 'HTTP Version Not Supported',
+};

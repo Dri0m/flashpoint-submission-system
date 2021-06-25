@@ -626,7 +626,7 @@ func (s *SiteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 		CreatedAt:    s.clock.Now().Add(time.Second),
 	}
 
-	approvalMessage := "Looks good to me 🤖"
+	approvalMessage := "Looks good to me! 🤖"
 	message := ""
 
 	if len(vr.CurationErrors) > 0 {
@@ -732,6 +732,15 @@ SubmissionLoop:
 			return false
 		}
 
+		markedAdded := false
+
+		for _, distinctAction := range submission.DistinctActions {
+			if constants.ActionAssignVerification == distinctAction {
+				markedAdded = true
+				break
+			}
+		}
+
 		// stop (or ignore) double actions
 		if formAction == constants.ActionAssignTesting {
 			if uidIn(submission.AssignedTestingUserIDs) {
@@ -770,6 +779,9 @@ SubmissionLoop:
 			}
 
 		} else if formAction == constants.ActionRequestChanges {
+			if markedAdded {
+				return perr(fmt.Sprintf("submission %d is alrady marked as added so you cannot request changes on it, please submit a bug report or a pending fix if there is a problem with the submission", sid), http.StatusBadRequest)
+			}
 			if uidIn(submission.RequestedChangesUserIDs) {
 				if ignoreDupeActions {
 					continue SubmissionLoop
@@ -783,7 +795,13 @@ SubmissionLoop:
 				}
 				return perr(fmt.Sprintf("you have already verified submission %d", sid), http.StatusBadRequest)
 			}
-
+		} else if formAction == constants.ActionMarkAdded {
+			if markedAdded {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("submission %d is alrady marked as added so it cannot be marked again", sid), http.StatusBadRequest)
+			}
 		}
 
 		// don't let the same user assign the submission to himself for more than one type of assignment
