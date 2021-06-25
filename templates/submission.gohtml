@@ -84,14 +84,6 @@
                                 Tags</i>{{else}}
                                 {{range $i, $line := (splitMultilineText .CurationMeta.Tags) }}{{if gt $i 0}}<br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Tag Categories</td>
-                        <td>{{if not .CurationMeta.TagCategories}}<i>No Tag
-                                Categories</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.TagCategories) }}{{if gt $i 0}}<br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Play Mode</td>
