@@ -25,9 +25,9 @@ type DAL interface {
 	GetCurationMetaBySubmissionFileID(dbs DBSession, sfid int64) (*types.CurationMeta, error)
 	StoreComment(dbs DBSession, c *types.Comment) error
 	GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedComment, error)
-	SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error
-	SoftDeleteSubmission(dbs DBSession, sid int64) error
-	SoftDeleteComment(dbs DBSession, cid int64) error
+	SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteReason string) error
+	SoftDeleteSubmission(dbs DBSession, sid int64, deleteReason string) error
+	SoftDeleteComment(dbs DBSession, cid int64, deleteReason string) error
 	StoreNotificationSettings(dbs DBSession, uid int64, actions []string) error
 	GetNotificationSettingsByUserID(dbs DBSession, uid int64) ([]string, error)
 	SubscribeUserToSubmission(dbs DBSession, uid, sid int64) error

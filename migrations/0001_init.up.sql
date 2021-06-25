@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS submission
 (
     id                     BIGINT PRIMARY KEY AUTO_INCREMENT,
     fk_submission_level_id BIGINT NOT NULL,
-    deleted_at             BIGINT DEFAULT NULL,
+    deleted_at             BIGINT       DEFAULT NULL,
+    deleted_reason         VARCHAR(255) DEFAULT NULL,
     FOREIGN KEY (fk_submission_level_id) REFERENCES submission_level (id)
 );
 CREATE INDEX idx_submission_deleted_at ON submission (deleted_at);
@@ -62,13 +63,14 @@ CREATE TABLE IF NOT EXISTS submission_file
     id                BIGINT PRIMARY KEY AUTO_INCREMENT,
     fk_uploader_id    BIGINT              NOT NULL,
     fk_submission_id  BIGINT              NOT NULL,
-    original_filename VARCHAR(1023)       NOT NULL,
+    original_filename VARCHAR(255)        NOT NULL,
     current_filename  VARCHAR(255) UNIQUE NOT NULL,
     size              BIGINT              NOT NULL,
     uploaded_at       BIGINT              NOT NULL,
     md5sum            CHAR(32) UNIQUE     NOT NULL,
     sha256sum         CHAR(64) UNIQUE     NOT NULL,
-    deleted_at        BIGINT DEFAULT NULL,
+    deleted_at        BIGINT       DEFAULT NULL,
+    deleted_reason    VARCHAR(255) DEFAULT NULL,
     FOREIGN KEY (fk_uploader_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
 );
@@ -130,7 +132,8 @@ CREATE TABLE IF NOT EXISTS comment
     message          TEXT,
     fk_action_id     BIGINT,
     created_at       BIGINT NOT NULL,
-    deleted_at       BIGINT DEFAULT NULL,
+    deleted_at       BIGINT       DEFAULT NULL,
+    deleted_reason   VARCHAR(255) DEFAULT NULL,
     FOREIGN KEY (fk_author_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
     FOREIGN KEY (fk_action_id) REFERENCES action (id)

@@ -913,13 +913,13 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) (
 }
 
 // SoftDeleteSubmissionFile marks submission file as deleted
-func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error {
+func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteReason string) error {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
 		SELECT COUNT(*) FROM submission_file
 		WHERE fk_submission_id = (SELECT fk_submission_id FROM submission_file WHERE id = ?)
         AND submission_file.deleted_at IS NULL
 		GROUP BY fk_submission_id`,
-		sfid)
+		sfid, deleteReason)
 
 	var count int64
 	if err := row.Scan(&count); err != nil {
@@ -930,43 +930,43 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64) error {
 	}
 
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP() 
+		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE id  = ?`,
-		sfid)
+		deleteReason, sfid)
 	return err
 }
 
 // SoftDeleteSubmission marks submission and its files as deleted
-func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64) error {
+func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64, deleteReason string) error {
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP() 
+		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE fk_submission_id = ?`,
-		sid)
+		deleteReason, sid)
 	if err != nil {
 		return err
 	}
 
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE comment SET deleted_at = UNIX_TIMESTAMP() 
+		UPDATE comment SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE fk_submission_id = ?`,
-		sid)
+		deleteReason, sid)
 	if err != nil {
 		return err
 	}
 
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE submission SET deleted_at = UNIX_TIMESTAMP() 
+		UPDATE submission SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE id = ?`,
-		sid)
+		deleteReason, sid)
 	return err
 }
 
 // SoftDeleteComment marks comment as deleted
-func (d *mysqlDAL) SoftDeleteComment(dbs DBSession, cid int64) error {
+func (d *mysqlDAL) SoftDeleteComment(dbs DBSession, cid int64, deleteReason string) error {
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE comment SET deleted_at = UNIX_TIMESTAMP() 
+		UPDATE comment SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE id = ?`,
-		cid)
+		deleteReason, cid)
 	return err
 }
 

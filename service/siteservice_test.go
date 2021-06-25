@@ -143,18 +143,18 @@ func (m *mockDAL) GetExtendedCommentsBySubmissionID(_ database.DBSession, sid in
 	return args.Get(0).([]*types.ExtendedComment), args.Error(1)
 }
 
-func (m *mockDAL) SoftDeleteSubmissionFile(_ database.DBSession, sfid int64) error {
-	args := m.Called(sfid)
+func (m *mockDAL) SoftDeleteSubmissionFile(_ database.DBSession, sfid int64, deleteReason string) error {
+	args := m.Called(sfid, deleteReason)
 	return args.Error(0)
 }
 
-func (m *mockDAL) SoftDeleteSubmission(_ database.DBSession, sid int64) error {
-	args := m.Called(sid)
+func (m *mockDAL) SoftDeleteSubmission(_ database.DBSession, sid int64, deleteReason string) error {
+	args := m.Called(sid, deleteReason)
 	return args.Error(0)
 }
 
-func (m *mockDAL) SoftDeleteComment(_ database.DBSession, cid int64) error {
-	args := m.Called(cid)
+func (m *mockDAL) SoftDeleteComment(_ database.DBSession, cid int64, deleteReason string) error {
+	args := m.Called(cid, deleteReason)
 	return args.Error(0)
 }
 
@@ -2657,15 +2657,17 @@ func Test_siteService_SoftDeleteSubmissionFile_OK(t *testing.T) {
 	var uid int64 = 1
 	var fid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteSubmissionFile", fid).Return(nil)
+	ts.dal.On("SoftDeleteSubmissionFile", fid, deleteReason).Return(nil)
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteSubmissionFile(ctx, fid)
+	err := ts.s.SoftDeleteSubmissionFile(ctx, fid, deleteReason)
 
 	assert.NoError(t, err)
 
@@ -2678,12 +2680,14 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var fid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
-	err := ts.s.SoftDeleteSubmissionFile(ctx, fid)
+	err := ts.s.SoftDeleteSubmissionFile(ctx, fid, deleteReason)
 
 	assert.Error(t, err)
 
@@ -2696,14 +2700,16 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_SoftDeleteSubmissionFile(t *
 	var uid int64 = 1
 	var fid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteSubmissionFile", fid).Return(errors.New(""))
+	ts.dal.On("SoftDeleteSubmissionFile", fid, deleteReason).Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteSubmissionFile(ctx, fid)
+	err := ts.s.SoftDeleteSubmissionFile(ctx, fid, deleteReason)
 
 	assert.Error(t, err)
 
@@ -2716,15 +2722,17 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_Commit(t *testing.T) {
 	var uid int64 = 1
 	var fid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteSubmissionFile", fid).Return(nil)
+	ts.dal.On("SoftDeleteSubmissionFile", fid, deleteReason).Return(nil)
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteSubmissionFile(ctx, fid)
+	err := ts.s.SoftDeleteSubmissionFile(ctx, fid, deleteReason)
 
 	assert.Error(t, err)
 
@@ -2739,15 +2747,17 @@ func Test_siteService_SoftDeleteSubmission_OK(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteSubmission", sid).Return(nil)
+	ts.dal.On("SoftDeleteSubmission", sid, deleteReason).Return(nil)
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteSubmission(ctx, sid)
+	err := ts.s.SoftDeleteSubmission(ctx, sid, deleteReason)
 
 	assert.NoError(t, err)
 
@@ -2760,12 +2770,14 @@ func Test_siteService_SoftDeleteSubmission_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
-	err := ts.s.SoftDeleteSubmission(ctx, sid)
+	err := ts.s.SoftDeleteSubmission(ctx, sid, deleteReason)
 
 	assert.Error(t, err)
 
@@ -2778,14 +2790,16 @@ func Test_siteService_SoftDeleteSubmission_Fail_SoftDeleteSubmission(t *testing.
 	var uid int64 = 1
 	var sid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteSubmission", sid).Return(errors.New(""))
+	ts.dal.On("SoftDeleteSubmission", sid, deleteReason).Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteSubmission(ctx, sid)
+	err := ts.s.SoftDeleteSubmission(ctx, sid, deleteReason)
 
 	assert.Error(t, err)
 
@@ -2798,22 +2812,22 @@ func Test_siteService_SoftDeleteSubmission_Fail_Commit(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteSubmission", sid).Return(nil)
+	ts.dal.On("SoftDeleteSubmission", sid, deleteReason).Return(nil)
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteSubmission(ctx, sid)
+	err := ts.s.SoftDeleteSubmission(ctx, sid, deleteReason)
 
 	assert.Error(t, err)
 
 	ts.assertExpectations(t)
 }
-
-////////////////////////////////////////////////
 
 ////////////////////////////////////////////////
 
@@ -2823,15 +2837,17 @@ func Test_siteService_SoftDeleteComment_OK(t *testing.T) {
 	var uid int64 = 1
 	var cid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteComment", cid).Return(nil)
+	ts.dal.On("SoftDeleteComment", cid, deleteReason).Return(nil)
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteComment(ctx, cid)
+	err := ts.s.SoftDeleteComment(ctx, cid, deleteReason)
 
 	assert.NoError(t, err)
 
@@ -2844,12 +2860,14 @@ func Test_siteService_SoftDeleteComment_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var cid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
-	err := ts.s.SoftDeleteComment(ctx, cid)
+	err := ts.s.SoftDeleteComment(ctx, cid, deleteReason)
 
 	assert.Error(t, err)
 
@@ -2862,14 +2880,16 @@ func Test_siteService_SoftDeleteComment_Fail_SoftDeleteSubmission(t *testing.T) 
 	var uid int64 = 1
 	var cid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteComment", cid).Return(errors.New(""))
+	ts.dal.On("SoftDeleteComment", cid, deleteReason).Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteComment(ctx, cid)
+	err := ts.s.SoftDeleteComment(ctx, cid, deleteReason)
 
 	assert.Error(t, err)
 
@@ -2882,15 +2902,17 @@ func Test_siteService_SoftDeleteComment_Fail_Commit(t *testing.T) {
 	var uid int64 = 1
 	var cid int64 = 2
 
+	deleteReason := "foobar"
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
-	ts.dal.On("SoftDeleteComment", cid).Return(nil)
+	ts.dal.On("SoftDeleteComment", cid, deleteReason).Return(nil)
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err := ts.s.SoftDeleteComment(ctx, cid)
+	err := ts.s.SoftDeleteComment(ctx, cid, deleteReason)
 
 	assert.Error(t, err)
 

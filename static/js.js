@@ -42,13 +42,16 @@ let friendlyHttpStatus = {
     '505': 'HTTP Version Not Supported',
 };
 
-function sendXHR(url, method, data, reload, failureMessage, successMessage, prompt) {
-    let confirmed = true
-    if (prompt != null) {
-        confirmed = confirm(prompt)
-    }
-    if (confirmed !== true) {
-        return
+function sendXHR(url, method, data, reload, failureMessage, successMessage, promptMessage) {
+    let reason = ""
+    if (promptMessage != null) {
+        reason = prompt(promptMessage)
+        if (reason == null) {
+            return
+        }
+        let urlObject = new URL(window.location.origin + url)
+        urlObject.searchParams.set("reason", reason)
+        url = urlObject.toString()
     }
 
     let request = new XMLHttpRequest()
@@ -289,21 +292,21 @@ function deleteSubmissionFile(sid, sfid) {
     sendXHR(`/submission/${sid}/file/${sfid}`, "DELETE", null, true,
         "Failed to delete submission file.",
         "Submission file deleted successfully.",
-        "Are you sure you want to delete this submission file?")
+        "Please provide a reason to delete this submission file:")
 }
 
 function deleteSubmission(sid) {
     sendXHR(`/submission/${sid}`, "DELETE", null, true,
         "Failed to delete submission.",
         "Submission deleted successfully.",
-        "Are you sure you want to delete this submission and all its related data?")
+        "Please provide a reason to delete this submission and all its related data:")
 }
 
 function deleteComment(sid, cid) {
     sendXHR(`/submission/${sid}/comment/${cid}`, "DELETE", null, true,
         "Failed to delete comment.",
         null,
-        "Are you sure you want to delete this comment?")
+        "Please provide a reason to delete this comment:")
 }
 
 function resetFilterForm() {
@@ -312,7 +315,7 @@ function resetFilterForm() {
     let formAdvanced = document.getElementById("filter-form-advanced")
 
     function r(inputs) {
-        for (let i=0; i<inputs.length; i++) {
+        for (let i = 0; i < inputs.length; i++) {
             if (inputs[i].type === "checkbox" || inputs[i].type === "radio") {
                 inputs[i].checked = false
             } else if (inputs[i].type === "text" || inputs[i].type === "number") {
@@ -347,7 +350,7 @@ function filterReadyForVerification() {
     resetFilterForm()
     document.getElementById("bot-action-approve").checked =
 
-    document.getElementById("approvals-status-approved").checked = true
+        document.getElementById("approvals-status-approved").checked = true
     document.getElementById("requested-changes-status-none").checked = true
     document.getElementById("assigned-status-verification-unassigned").checked = true
     document.getElementById("verification-status-none").checked = true
@@ -410,11 +413,11 @@ function switchFilterLayout(newLayout) {
     let url = new URL(window.location.href)
 
     keys = []
-    for(let pair of url.searchParams.entries()) {
+    for (let pair of url.searchParams.entries()) {
         keys.push(pair[0])
     }
 
-    for(let k of keys) {
+    for (let k of keys) {
         url.searchParams.delete(k)
     }
 

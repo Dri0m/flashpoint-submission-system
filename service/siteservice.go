@@ -1177,7 +1177,7 @@ func (s *SiteService) GetUIDFromSession(ctx context.Context, key string) (int64,
 	return uid, ok, nil
 }
 
-func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) error {
+func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64, deleteReason string) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -1185,7 +1185,7 @@ func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) 
 	}
 	defer dbs.Rollback()
 
-	if err := s.dal.SoftDeleteSubmissionFile(dbs, sfid); err != nil {
+	if err := s.dal.SoftDeleteSubmissionFile(dbs, sfid, deleteReason); err != nil {
 		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
 			return perr(err.Error(), http.StatusBadRequest)
 		}
@@ -1201,7 +1201,7 @@ func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64) 
 	return nil
 }
 
-func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64) error {
+func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64, deleteReason string) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -1209,7 +1209,7 @@ func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64) error
 	}
 	defer dbs.Rollback()
 
-	if err := s.dal.SoftDeleteSubmission(dbs, sid); err != nil {
+	if err := s.dal.SoftDeleteSubmission(dbs, sid, deleteReason); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
@@ -1222,7 +1222,7 @@ func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64) error
 	return nil
 }
 
-func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64) error {
+func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteReason string) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -1230,7 +1230,7 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64) error {
 	}
 	defer dbs.Rollback()
 
-	if err := s.dal.SoftDeleteComment(dbs, cid); err != nil {
+	if err := s.dal.SoftDeleteComment(dbs, cid, deleteReason); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}

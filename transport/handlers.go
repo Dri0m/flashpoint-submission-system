@@ -103,7 +103,22 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := a.Service.SoftDeleteSubmissionFile(ctx, sfid); err != nil {
+	if err := r.ParseForm(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(w, perr("failed to parse form", http.StatusBadRequest))
+		return
+	}
+
+	deleteReason := r.FormValue("reason")
+	if len(deleteReason) < 3 {
+		writeError(w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
+		return
+	} else if len(deleteReason) > 255 {
+		writeError(w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
+		return
+	}
+
+	if err := a.Service.SoftDeleteSubmissionFile(ctx, sfid, deleteReason); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -123,7 +138,16 @@ func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := a.Service.SoftDeleteSubmission(ctx, sid); err != nil {
+	deleteReason := r.FormValue("reason")
+	if len(deleteReason) < 3 {
+		writeError(w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
+		return
+	} else if len(deleteReason) > 255 {
+		writeError(w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
+		return
+	}
+
+	if err := a.Service.SoftDeleteSubmission(ctx, sid, deleteReason); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -143,7 +167,16 @@ func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Service.SoftDeleteComment(ctx, cid); err != nil {
+	deleteReason := r.FormValue("reason")
+	if len(deleteReason) < 3 {
+		writeError(w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
+		return
+	} else if len(deleteReason) > 255 {
+		writeError(w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
+		return
+	}
+
+	if err := a.Service.SoftDeleteComment(ctx, cid, deleteReason); err != nil {
 		writeError(w, err)
 		return
 	}
