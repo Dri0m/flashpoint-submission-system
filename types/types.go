@@ -82,6 +82,7 @@ type ExtendedSubmission struct {
 	Size                        int64     // newest file
 	UploadedAt                  time.Time // oldest file
 	UpdatedAt                   time.Time // newest file
+	LastUploaderID              int64     // newest file
 	CurationTitle               *string   // newest file
 	CurationAlternateTitles     *string   // newest file
 	CurationPlatform            *string   // newest file

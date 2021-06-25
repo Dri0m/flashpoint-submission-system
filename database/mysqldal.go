@@ -521,6 +521,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		submission.size,
 		file_data.uploaded_at,
 		submission.updated_at,
+		submission.last_uploader_id,
 		meta.title,
 		meta.alternate_titles,
 		meta.platform,
@@ -545,7 +546,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				newest_file.size AS size,
 				newest_comment.created_at AS updated_at,
 				newest_comment.fk_author_id AS updater_id,
-				newest_file.file_count AS file_count
+				newest_file.file_count AS file_count,
+				newest_file.fk_uploader_id AS last_uploader_id
 			FROM submission
 				LEFT JOIN (
 					WITH ranked_file AS (
@@ -554,13 +556,16 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 								PARTITION BY fk_submission_id
 								ORDER BY uploaded_at DESC, id DESC
 							) AS rn,
-							COUNT(s.id) AS file_count
+							COUNT(s.id) OVER (
+								PARTITION BY fk_submission_id
+								ORDER BY uploaded_at DESC, id DESC
+							) AS file_count
 						FROM submission_file AS s
 						WHERE s.deleted_at IS NULL
-						GROUP BY s.fk_submission_id
 					)
 					SELECT id,
 						fk_submission_id,
+						fk_uploader_id,
 						original_filename,
 						current_filename,
 						size,
@@ -751,7 +756,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			&s.SubmitterID, &s.SubmitterUsername, &submitterAvatar,
 			&s.UpdaterID, &s.UpdaterUsername, &updaterAvatar,
 			&s.FileID, &s.OriginalFilename, &s.CurrentFilename, &s.Size,
-			&uploadedAt, &updatedAt,
+			&uploadedAt, &updatedAt, &s.LastUploaderID,
 			&s.CurationTitle, &s.CurationAlternateTitles, &s.CurationPlatform, &s.CurationLaunchCommand, &s.CurationLibrary, &s.CurationExtreme,
 			&s.BotAction,
 			&s.FileCount,

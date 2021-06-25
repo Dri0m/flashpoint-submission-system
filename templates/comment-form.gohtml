@@ -21,10 +21,12 @@
                         {{if not (has .UserID $submission.ApprovedUserIDs)}}
                             {{if not (has .UserID $submission.AssignedVerificationUserIDs)}}
                                 {{if not (has .UserID $submission.VerifiedUserIDs)}}
-                                    <button type="button" class="pure-button pure-button button-assign-testing"
-                                            onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
-                                        Assign Testing
-                                    </button>
+                                    {{if not (eq .UserID $submission.LastUploaderID)}}
+                                        <button type="button" class="pure-button pure-button button-assign-testing"
+                                                onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
+                                            Assign Testing
+                                        </button>
+                                    {{end}}
                                 {{end}}
                             {{end}}
                         {{end}}
@@ -40,10 +42,13 @@
                             {{if gt (len $submission.ApprovedUserIDs) 0}}
                                 {{if not (has .UserID $submission.AssignedTestingUserIDs)}}
                                     {{if not (has .UserID $submission.VerifiedUserIDs)}}
-                                        <button type="button" class="pure-button pure-button button-assign-verification"
-                                                onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
-                                            Assign Verification
-                                        </button>
+                                        {{if not (eq .UserID $submission.LastUploaderID)}}
+                                            <button type="button"
+                                                    class="pure-button pure-button button-assign-verification"
+                                                    onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
+                                                Assign Verification
+                                            </button>
+                                        {{end}}
                                     {{end}}
                                 {{end}}
                             {{end}}
@@ -57,6 +62,8 @@
 
                     {{if or (or (has .UserID $submission.AssignedTestingUserIDs) (has .UserID $submission.ApprovedUserIDs)) (or (has .UserID $submission.AssignedVerificationUserIDs) (has .UserID $submission.VerifiedUserIDs))}}
                         {{if not (has "mark-added" $submission.DistinctActions)}}
+                            {{if not (eq .UserID $submission.LastUploaderID)}}
+                            {{end}}
                             <button type="button" class="pure-button pure-button button-request-changes"
                                     onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
                                 Request Changes
@@ -65,10 +72,12 @@
                     {{end}}
 
                     {{if has .UserID $submission.AssignedTestingUserIDs}}
-                        <button type="button" class="pure-button pure-button button-approve"
-                                onclick="batchComment('submission-checkbox', 'sid', 'approve')">
-                            Approve
-                        </button>
+                        {{if not (eq .UserID $submission.LastUploaderID)}}
+                            <button type="button" class="pure-button pure-button button-approve"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'approve')">
+                                Approve
+                            </button>
+                        {{end}}
                     {{end}}
                     {{if gt (len $submission.ApprovedUserIDs) 0}}
                         {{if not (has .UserID $submission.VerifiedUserIDs)}}

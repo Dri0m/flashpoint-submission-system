@@ -9,14 +9,34 @@
 
             {{template "view-submission-nav" .}}
 
+
             <h3>Table data</h3>
             {{template "submission-table" .}}
 
-            <h3>Upload a fixed version</h3>
-            <input type="file" name="files" id="file-input">
-            <input class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
-            <div id="progress-bars-container"></div>
-            <script>bindFancierUpload("/submission-receiver/{{$submissionID}}")</script>
+            <div class="pure-g">
+                <div class="pure-u-1-2">
+                    <h3>Download submission</h3>
+                    <a class="pure-button pure-button-primary"
+                       href="/submission/{{(index .Submissions 0).SubmissionID}}/file/{{(index .Submissions 0).FileID}}">
+                        Download latest version
+                    </a>
+
+                    {{if gt (index .Submissions 0).FileCount 1}}
+                        <a class="pure-button pure-button-primary"
+                           href="/submission/{{(index .Submissions 0).SubmissionID}}/files">
+                            Browse submission versions
+                        </a>
+                    {{end}}
+                </div>
+
+                <div class="pure-u-1-2">
+                    <h3>Upload a fixed version</h3>
+                    <input type="file" name="files" id="file-input">
+                    <input class="pure-button button-upload-file" id="upload-button" value="Upload">
+                    <div id="progress-bars-container"></div>
+                    <script>bindFancierUpload("/submission-receiver/{{$submissionID}}")</script>
+                </div>
+            </div>
 
             {{if $canDelete}}
                 <h3>Delete submission and all its related data</h3>
@@ -39,7 +59,8 @@
                         <td class="meta-property">Title</td>
                         <td>{{if not .CurationMeta.Title}}<i>No
                                 Title</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Title) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Title) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}
                         </td>
                     </tr>
@@ -47,140 +68,160 @@
                         <td class="meta-property">Alternate Titles</td>
                         <td>{{if not .CurationMeta.AlternateTitles}}<i>No Alternate
                                 Titles</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.AlternateTitles) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.AlternateTitles) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Library</td>
                         <td>{{if not .CurationMeta.Library}}<i>No
                                 Library</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Library) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Library) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Series</td>
                         <td>{{if not .CurationMeta.Series}}<i>No
                                 Series</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Series) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Series) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Developer</td>
                         <td>{{if not .CurationMeta.Developer}}<i>No
                                 Developer</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Developer) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Developer) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Publisher</td>
                         <td>{{if not .CurationMeta.Publisher}}<i>No
                                 Publisher</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Publisher) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Publisher) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Tags</td>
                         <td>{{if not .CurationMeta.Tags}}<i>No
                                 Tags</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Tags) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Tags) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Play Mode</td>
                         <td>{{if not .CurationMeta.PlayMode}}<i>No Play
                                 Mode</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.PlayMode) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.PlayMode) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Status</td>
                         <td>{{if not .CurationMeta.Status}}<i>No
                                 Status</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Status) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Status) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Version</td>
                         <td>{{if not .CurationMeta.Version}}<i>No
                                 Version</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Version) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Version) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Release Date</td>
                         <td>{{if not .CurationMeta.ReleaseDate}}<i>No Release
                                 Date</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.ReleaseDate) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.ReleaseDate) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Language</td>
                         <td>{{if not .CurationMeta.Languages}}<i>No
                                 Language</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Languages) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Languages) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Source</td>
                         <td>{{if not .CurationMeta.Source}}<i>No
                                 Source</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Source) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Source) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Platform</td>
                         <td>{{if not .CurationMeta.Platform}}<i>No
                                 Platform</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Platform) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Platform) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Application Path</td>
                         <td>{{if not .CurationMeta.ApplicationPath}}<i>No Application
                                 Path</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.ApplicationPath) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.ApplicationPath) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Launch Command</td>
                         <td>{{if not .CurationMeta.LaunchCommand}}<i>No Launch
                                 Command</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.LaunchCommand) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.LaunchCommand) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Mount Parameters</td>
                         <td>{{if not .CurationMeta.MountParameters}}<i>No Mount
                                 Parameters</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.MountParameters) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.MountParameters) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Notes</td>
                         <td>{{if not .CurationMeta.GameNotes}}<i>No
                                 Notes</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.GameNotes) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.GameNotes) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Original Description</td>
                         <td>{{if not .CurationMeta.OriginalDescription}}<i>No Original
                                 Description</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.OriginalDescription) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.OriginalDescription) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Curation Notes</td>
                         <td>{{if not .CurationMeta.CurationNotes}}<i>No Curation
                                 Notes</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.CurationNotes) }}{{if gt $i 0}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.CurationNotes) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Extreme</td>
                         <td>{{if not .CurationMeta.Extreme}}<i>No
                                 Extreme</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Extreme)}}{{if gt $i 1}}<br>{{end}}{{$line}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.Extreme)}}{{if gt $i 1}}
+                                    <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
@@ -232,7 +273,8 @@
                     <div class="pure-u-5-6">
                         <div class="comment-body">
                             {{if .Message}}
-                                {{range $i, $line := (splitMultilineText .Message) }}{{if gt $i 0}}<br>{{end}}{{$line}}{{end}}
+                                {{range $i, $line := (splitMultilineText .Message) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}{{end}}
                             {{else}}
                                 {{if eq .Action "approve"}}
                                     <i class="default-comment">Approved the submission.</i>
