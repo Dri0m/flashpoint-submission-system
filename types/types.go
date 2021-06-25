@@ -87,6 +87,7 @@ type ExtendedSubmission struct {
 	CurationPlatform            *string   // newest file
 	CurationLaunchCommand       *string   // newest file
 	CurationLibrary             *string   // newest file
+	CurationExtreme             *string   // newest file
 	BotAction                   string
 	FileCount                   uint64
 	AssignedTestingUserIDs      []int64

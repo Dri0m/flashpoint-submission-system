@@ -10,6 +10,7 @@
                     <th class="center">Files</th>
                     <th class="center">View</th>
                     <th>Title</th>
+                    <th>18+</th>
                     <th>Platform</th>
                     <th>Library</th>
                     <th>Level</th>
@@ -41,6 +42,7 @@
                         </td>
                         <td class="center"><a href="/submission/{{.SubmissionID}}">View</a></td>
                         <td>{{.CurationTitle}}</td>
+                        <td>{{if eq "Yes" (unpointify .CurationExtreme)}}<img src="/static/extreme.png" alt="Extreme" title="Curation is marked as extreme" width="24" height="24">{{end}}</td>
                         <td>{{.CurationPlatform}}</td>
                         <td>{{.CurationLibrary}}</td>
                         <td>{{.SubmissionLevel}}</td>
