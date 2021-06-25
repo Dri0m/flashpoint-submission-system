@@ -37,48 +37,52 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 			// TODO yea, like this is fetching notifications one by one, which is lovely and simple,
 			// but also has some room for optimizing database access
 
-			dbs, err := s.dal.NewSession(ctx)
-			if err != nil {
-				l.Error(err)
-				l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
-				time.Sleep(errorSleepTime)
-				continue
-			}
-			defer dbs.Rollback()
-
-			notification, err := s.dal.GetOldestUnsentNotification(dbs)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					l.Debug("notification queue is empty, waiting for announcement to resume consumption")
-					continue
+			loopWrap := func() {
+				dbs, err := s.dal.NewSession(ctx)
+				if err != nil {
+					l.Error(err)
+					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
+					time.Sleep(errorSleepTime)
+					return
 				}
-				l.Error(err)
-				l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
-				time.Sleep(errorSleepTime)
-				continue
-			}
-			s.announceNotification()
+				defer dbs.Rollback()
 
-			if err := s.notificationBot.SendNotification(notification.Message, notification.Type); err != nil {
-				l.Error(err)
-				l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
-				time.Sleep(errorSleepTime)
-				continue
+				notification, err := s.dal.GetOldestUnsentNotification(dbs)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						l.Debug("notification queue is empty, waiting for announcement to resume consumption")
+						return
+					}
+					l.Error(err)
+					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
+					time.Sleep(errorSleepTime)
+					return
+				}
+				s.announceNotification()
+
+				if err := s.notificationBot.SendNotification(notification.Message, notification.Type); err != nil {
+					l.Error(err)
+					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
+					time.Sleep(errorSleepTime)
+					return
+				}
+
+				if err := s.dal.MarkNotificationAsSent(dbs, notification.ID); err != nil {
+					l.Error(err)
+					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
+					time.Sleep(errorSleepTime)
+					return
+				}
+
+				if err := dbs.Commit(); err != nil {
+					l.Error(err)
+					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
+					time.Sleep(errorSleepTime)
+					return
+				}
 			}
 
-			if err := s.dal.MarkNotificationAsSent(dbs, notification.ID); err != nil {
-				l.Error(err)
-				l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
-				time.Sleep(errorSleepTime)
-				continue
-			}
-
-			if err := dbs.Commit(); err != nil {
-				l.Error(err)
-				l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
-				time.Sleep(errorSleepTime)
-				continue
-			}
+			loopWrap()
 		}
 	}
 }
