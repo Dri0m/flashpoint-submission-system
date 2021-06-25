@@ -14,8 +14,9 @@ type ProfilePageData struct {
 
 type SubmissionsPageData struct {
 	BasePageData
-	Submissions []*ExtendedSubmission
-	Filter      SubmissionsFilter
+	Submissions  []*ExtendedSubmission
+	Filter       SubmissionsFilter
+	FilterLayout string
 }
 
 type ViewSubmissionPageData struct {

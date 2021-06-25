@@ -1,0 +1,77 @@
+{{define "submission-filter-maturity"}}
+    <fieldset>
+        <legend>Filter by maturity</legend>
+        <div class="pure-g">
+            <div class="pure-u-1-2">
+                <label>
+                    <input type="radio" name="is-extreme" value="no"
+                           {{if eq "no" (unpointify .Filter.IsExtreme)}}checked{{end}}>
+                    Not Extreme</label>
+            </div>
+            <div class="pure-u-1-2">
+                <label>
+                    <input type="radio" name="is-extreme" value="yes"
+                           {{if eq "yes" (unpointify .Filter.IsExtreme)}}checked{{end}}>
+                    Extreme</label>
+            </div>
+        </div>
+    </fieldset>
+{{end}}
+{{define "submission-filter-level"}}
+    <fieldset>
+        <legend>Filter by Submission Level (union)</legend>
+        <div class="pure-g">
+            <div class="pure-u-1-3">
+                <label for="sumbission-level">
+                    <input type="checkbox" name="sumbission-level" value="audition"
+                           {{if has "audition" .Filter.SubmissionLevels}}checked{{end}}>
+                    Audition</label>
+            </div>
+            <div class="pure-u-1-3">
+                <label for="sumbission-level">
+                    <input type="checkbox" name="sumbission-level" value="trial"
+                           {{if has "trial" .Filter.SubmissionLevels}}checked{{end}}>
+                    Trial</label>
+            </div>
+            <div class="pure-u-1-3">
+                <label for="sumbission-level">
+                    <input type="checkbox" name="sumbission-level" value="staff"
+                           {{if has "staff" .Filter.SubmissionLevels}}checked{{end}}>
+                    Staff</label>
+            </div>
+        </div>
+    </fieldset>
+{{end}}
+{{define "submission-filter-bot-actions"}}
+    <fieldset>
+        <legend>Filter by Bot Actions (union)</legend>
+        <div class="pure-g">
+            <div class="pure-u-1-2">
+                <label for="bot-action">
+                    <input type="checkbox" name="bot-action" value="approve"
+                           id="bot-action-approve"
+                           {{if has "approve" .Filter.BotActions}}checked{{end}}>
+                    Bot Happy :D</label>
+            </div>
+            <div class="pure-u-1-2">
+                <label for="bot-action">
+                    <input type="checkbox" name="bot-action" value="request-changes"
+                           id="bot-action-request-changes"
+                           {{if has "request-changes" .Filter.BotActions}}checked{{end}}>
+                    Bot Sad :C</label>
+            </div>
+        </div>
+    </fieldset>
+{{end}}
+{{define "submission-filter-basic-meta"}}
+    <div class="form-column-text">
+        <label for="title-partial">Title (partial)</label>
+        <input type="text" name="title-partial" value="{{default "" .Filter.TitlePartial}}">
+        <label for="platform-partial">Platform (partial)</label>
+        <input type="text" name="platform-partial"
+               value="{{default "" .Filter.PlatformPartial}}">
+        <label for="library-partial">Library (partial)</label>
+        <input type="text" name="library-partial"
+               value="{{default "" .Filter.LibraryPartial}}">
+    </div>
+{{end}}

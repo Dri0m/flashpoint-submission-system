@@ -39,6 +39,7 @@ func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, authBotSession, 
 
 	decoder := schema.NewDecoder()
 	decoder.ZeroEmpty(false)
+	decoder.IgnoreUnknownKeys(true)
 
 	a := &App{
 		Conf: conf,

@@ -302,11 +302,14 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pageData.FilterLayout = r.FormValue("filter-layout")
+
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/submissions.gohtml",
 		"templates/submission-filter.gohtml",
 		"templates/submission-table.gohtml",
 		"templates/submission-pagenav.gohtml",
+		"templates/submission-filter-chunks.gohtml",
 		"templates/comment-form.gohtml")
 }
 
@@ -336,11 +339,14 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pageData.FilterLayout = r.FormValue("filter-layout")
+
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/my-submissions.gohtml",
 		"templates/submission-filter.gohtml",
 		"templates/submission-table.gohtml",
 		"templates/submission-pagenav.gohtml",
+		"templates/submission-filter-chunks.gohtml",
 		"templates/comment-form.gohtml")
 }
 

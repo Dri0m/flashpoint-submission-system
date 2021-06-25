@@ -117,7 +117,11 @@ function batchComment(checkboxClassName, attribute, action) {
 
         let textArea = document.querySelector("#batch-comment-message")
         let ignoreDupesCheckbox = document.querySelector("#ignore-duplicate-actions")
-        url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${ignoreDupesCheckbox.checked}`
+        let checked = false
+        if (ignoreDupesCheckbox !== null) {
+            checked = ignoreDupesCheckbox.checked
+        }
+        url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${checked}`
 
         sendXHR(url, "POST", null, reload,
             "Failed to post comment(s).", successMessage, null)
@@ -304,19 +308,25 @@ function deleteComment(sid, cid) {
 
 function resetFilterForm() {
     // default reset doesn't seem to work because i have divs inside the form
-    let form = document.getElementById("filter-form")
-    let inputs = form.getElementsByTagName("input")
-    for (let i=0; i<inputs.length; i++) {
-        if (inputs[i].type === "checkbox" || inputs[i].type === "radio") {
-            inputs[i].checked = false
-        } else if (inputs[i].type === "text" || inputs[i].type === "number") {
-            inputs[i].value = ""
+    let formSimple = document.getElementById("filter-form-simple")
+    let formAdvanced = document.getElementById("filter-form-advanced")
+
+    function r(inputs) {
+        for (let i=0; i<inputs.length; i++) {
+            if (inputs[i].type === "checkbox" || inputs[i].type === "radio") {
+                inputs[i].checked = false
+            } else if (inputs[i].type === "text" || inputs[i].type === "number") {
+                inputs[i].value = ""
+            }
         }
     }
+
+    r(formSimple.getElementsByTagName("input"))
+    r(formAdvanced.getElementsByTagName("input"))
 }
 
-function submitFilterForm() {
-    document.getElementById("filter-form").submit()
+function submitAdvancedFilterForm() {
+    document.getElementById("filter-form-advanced").submit()
 }
 
 function filterReadyForTesting() {
@@ -330,7 +340,7 @@ function filterReadyForTesting() {
     document.getElementById("assigned-status-verification-unassigned").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
-    submitFilterForm()
+    submitAdvancedFilterForm()
 }
 
 function filterReadyForVerification() {
@@ -345,7 +355,7 @@ function filterReadyForVerification() {
     document.getElementById("approvals-status-me-no").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
-    submitFilterForm()
+    submitAdvancedFilterForm()
 }
 
 
@@ -356,7 +366,7 @@ function filterReadyForFlashpoint() {
     document.getElementById("verification-status-verified").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
-    submitFilterForm()
+    submitAdvancedFilterForm()
 }
 
 
@@ -365,7 +375,7 @@ function filterAssignedToMeForTesting() {
 
     document.getElementById("assigned-status-testing-me-assigned").checked = true
 
-    submitFilterForm()
+    submitAdvancedFilterForm()
 }
 
 
@@ -374,7 +384,7 @@ function filterAssignedToMeForVerification() {
 
     document.getElementById("assigned-status-verification-me-assigned").checked = true
 
-    submitFilterForm()
+    submitAdvancedFilterForm()
 }
 
 
@@ -384,7 +394,7 @@ function filterIHaveRequestedChangesAfterTesting() {
     document.getElementById("assigned-status-testing-me-assigned").checked = true
     document.getElementById("requested-changes-status-me-ongoing").checked = true
 
-    submitFilterForm()
+    submitAdvancedFilterForm()
 }
 
 function filterIHaveRequestedChangesVerification() {
@@ -393,5 +403,21 @@ function filterIHaveRequestedChangesVerification() {
     document.getElementById("assigned-status-verification-me-assigned").checked = true
     document.getElementById("requested-changes-status-me-ongoing").checked = true
 
-    submitFilterForm()
+    submitAdvancedFilterForm()
+}
+
+function switchFilterLayout(newLayout) {
+    let url = new URL(window.location.href)
+
+    keys = []
+    for(let pair of url.searchParams.entries()) {
+        keys.push(pair[0])
+    }
+
+    for(let k of keys) {
+        url.searchParams.delete(k)
+    }
+
+    url.searchParams.set("filter-layout", newLayout)
+    window.location.href = url
 }

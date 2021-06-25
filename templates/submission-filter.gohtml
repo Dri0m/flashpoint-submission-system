@@ -29,7 +29,38 @@
         </button>
 
         <br><br>
-        <form class="pure-form pure-form-stacked" id="filter-form" method="GET">
+        <form class="pure-form pure-form-stacked" id="filter-form-simple" method="GET" {{if eq "advanced" .FilterLayout}}hidden{{end}}>
+            <input type="hidden" name="filter-layout" value="simple">
+            <fieldset>
+                <div class="pure-g">
+                    <div class="pure-u-1-2">
+                        <div class="form-column">
+                            {{template "submission-filter-bot-actions" .}}
+                            {{template "submission-filter-maturity" .}}
+                            {{template "submission-filter-level" .}}
+                        </div>
+                    </div>
+                    <div class="pure-u-1-2">
+                        <div class="form-column">
+                            {{template "submission-filter-basic-meta" .}}
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+            <div class="right">
+                <button type="button" class="pure-button pure-button-primary" id="switch-filter-button"
+                        onclick="switchFilterLayout('advanced')">Swtich to advanced mode
+                </button>
+                <button type="button" class="pure-button pure-button-primary" id="reset-button"
+                        onclick="resetFilterForm()">Reset
+                </button>
+                <button type="submit" class="pure-button pure-button-primary"
+                        id="search-button">Search
+                </button>
+            </div>
+        </form>
+        <form class="pure-form pure-form-stacked" id="filter-form-advanced" method="GET" {{if not (eq "advanced" .FilterLayout)}}hidden{{end}}>
+            <input type="hidden" name="filter-layout" value="advanced">
             <div class="pure-g">
                 <div class="pure-u-9-24">
                     <div class="form-column">
@@ -47,48 +78,10 @@
                                        value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             </fieldset>
                         </div>
-                        <fieldset>
-                            <legend>Filter by Submission Level (union)</legend>
-                            <div class="pure-g">
-                                <div class="pure-u-1-3">
-                                    <label for="sumbission-level">
-                                        <input type="checkbox" name="sumbission-level" value="audition"
-                                               {{if has "audition" .Filter.SubmissionLevels}}checked{{end}}>
-                                        Audition</label>
-                                </div>
-                                <div class="pure-u-1-3">
-                                    <label for="sumbission-level">
-                                        <input type="checkbox" name="sumbission-level" value="trial"
-                                               {{if has "trial" .Filter.SubmissionLevels}}checked{{end}}>
-                                        Trial</label>
-                                </div>
-                                <div class="pure-u-1-3">
-                                    <label for="sumbission-level">
-                                        <input type="checkbox" name="sumbission-level" value="staff"
-                                               {{if has "staff" .Filter.SubmissionLevels}}checked{{end}}>
-                                        Staff</label>
-                                </div>
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <legend>Filter by Bot Actions (union)</legend>
-                            <div class="pure-g">
-                                <div class="pure-u-1-2">
-                                    <label for="bot-action">
-                                        <input type="checkbox" name="bot-action" value="approve"
-                                               id="bot-action-approve"
-                                               {{if has "approve" .Filter.BotActions}}checked{{end}}>
-                                        Bot Happy :D</label>
-                                </div>
-                                <div class="pure-u-1-2">
-                                    <label for="bot-action">
-                                        <input type="checkbox" name="bot-action" value="request-changes"
-                                               id="bot-action-request-changes"
-                                               {{if has "request-changes" .Filter.BotActions}}checked{{end}}>
-                                        Bot Sad :C</label>
-                                </div>
-                            </div>
-                        </fieldset>
+
+                        {{template "submission-filter-level" .}}
+                        {{template "submission-filter-bot-actions" .}}
+
                         <fieldset>
                             <legend>Filter by Current State</legend>
                             <div class="pure-g">
@@ -99,7 +92,8 @@
                                                {{if eq "unassigned" (unpointify .Filter.AssignedStatusTesting)}}checked{{end}}>
                                         Not assigned for testing</label>
                                     <label>
-                                        <input type="radio" name="assigned-status-verification" value="unassigned"
+                                        <input type="radio" name="assigned-status-verification"
+                                               value="unassigned"
                                                id="assigned-status-verification-unassigned"
                                                {{if eq "unassigned" (unpointify .Filter.AssignedStatusVerification)}}checked{{end}}>
                                         Not assigned for verification</label>
@@ -196,7 +190,8 @@
                                                {{if has "approve" .Filter.DistinctActionsNot}}checked{{end}}>
                                         Approve</label>
                                     <label>
-                                        <input type="checkbox" name="distinct-action-not" value="request-changes"
+                                        <input type="checkbox" name="distinct-action-not"
+                                               value="request-changes"
                                                {{if has "request-changes" .Filter.DistinctActionsNot}}checked{{end}}>
                                         Request Changes</label>
                                     <label>
@@ -215,45 +210,29 @@
                 </div>
                 <div class="pure-u-6-24">
                     <div class="form-column">
-                        <div class="form-column-text">
-                            <fieldset>
-                                <legend>Meta and File Filters</legend>
-                                <label for="title-partial">Title (partial)</label>
-                                <input type="text" name="title-partial" value="{{default "" .Filter.TitlePartial}}">
-                                <label for="platform-partial">Platform (partial)</label>
-                                <input type="text" name="platform-partial"
-                                       value="{{default "" .Filter.PlatformPartial}}">
-                                <label for="library-partial">Library (partial)</label>
-                                <input type="text" name="library-partial" value="{{default "" .Filter.LibraryPartial}}">
-                                <label for="original-filename-partial">Original Filename (partial) (any file)</label>
+                        <fieldset>
+                            <legend>Meta and File Filters</legend>
+                            {{template "submission-filter-basic-meta" .}}
+                            <div class="form-column-text">
+                                <label for="original-filename-partial">Original Filename (partial) (any
+                                    file)</label>
                                 <input type="text" name="original-filename-partial-any"
                                        value="{{default "" .Filter.OriginalFilenamePartialAny}}">
-                                <label for="current-filename-partial">Current Filename (partial) (any file)</label>
+                                <label for="current-filename-partial">Current Filename (partial) (any
+                                    file)</label>
                                 <input type="text" name="current-filename-partial-any"
                                        value="{{default "" .Filter.CurrentFilenamePartialAny}}">
                                 <label for="md5sum-partial-any">File MD5 Checksum (partial) (any file)</label>
                                 <input type="text" name="md5sum-partial-any"
                                        value="{{default "" .Filter.MD5SumPartialAny}}">
-                                <label for="sha256sum-partial-any">File SHA256 Checksum (partial) (any file)</label>
+                                <label for="sha256sum-partial-any">File SHA256 Checksum (partial) (any
+                                    file)</label>
                                 <input type="text" name="sha256sum-partial-any"
                                        value="{{default "" .Filter.SHA256SumPartialAny}}">
-                            </fieldset>
-
-                        </div>
-
-                        <div class="pure-g">
-                            <div class="pure-u-1-2">
-                                <label>
-                                    <input type="radio" name="is-extreme" value="no"
-                                           {{if eq "no" (unpointify .Filter.IsExtreme)}}checked{{end}}>
-                                    Not Extreme</label>
                             </div>
-                            <div class="pure-u-1-2">
-                                <label>
-                                    <input type="radio" name="is-extreme" value="yes"
-                                           {{if eq "yes" (unpointify .Filter.IsExtreme)}}checked{{end}}>Extreme</label>
-                            </div>
-                        </div>
+                        </fieldset>
+
+                        {{template "submission-filter-maturity" .}}
                     </div>
                 </div>
                 <div class="pure-u-9-24">
@@ -312,7 +291,8 @@
                                                {{if eq "unassigned" (unpointify .Filter.AssignedStatusTestingMe)}}checked{{end}}>
                                         Not assigned to me for testing</label>
                                     <label>
-                                        <input type="radio" name="assigned-status-verification-me" value="unassigned"
+                                        <input type="radio" name="assigned-status-verification-me"
+                                               value="unassigned"
                                                id="assigned-status-testing-me-verification"
                                                {{if eq "unassigned" (unpointify .Filter.AssignedStatusVerificationMe)}}checked{{end}}>
                                         Not assigned to me for verification</label>
@@ -340,7 +320,8 @@
                                                {{if eq "assigned" (unpointify .Filter.AssignedStatusTestingMe)}}checked{{end}}>
                                         Assigned to me for testing</label>
                                     <label>
-                                        <input type="radio" name="assigned-status-verification-me" value="assigned"
+                                        <input type="radio" name="assigned-status-verification-me"
+                                               value="assigned"
                                                id="assigned-status-verification-me-assigned"
                                                {{if eq "assigned" (unpointify .Filter.AssignedStatusVerificationMe)}}checked{{end}}>
                                         Assigned to me for verification</label>
@@ -367,6 +348,9 @@
                 </div>
             </div>
             <div class="right">
+                <button type="button" class="pure-button pure-button-primary" id="switch-filter-button"
+                        onclick="switchFilterLayout('simple')">Swtich to simple mode
+                </button>
                 <button type="button" class="pure-button pure-button-primary" id="reset-button"
                         onclick="resetFilterForm()">Reset
                 </button>
