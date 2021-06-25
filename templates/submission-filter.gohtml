@@ -94,6 +94,14 @@
                                                {{if eq "none" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}>
                                         No RC</label>
 
+                                    <label title="Select submissions with zero approvals.">
+                                        <input type="radio" name="approvals-status" value="none"
+                                               id="approvals-status-none"
+                                               title="Select submissions with zero approvals."
+                                               {{if eq "none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
+                                        No AP</label>
+
+
                                 </div>
 
                                 <div class="pure-u-1-2">
@@ -114,32 +122,12 @@
                                                title="Select submissions with some changes requested."
                                                {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}>
                                         Ongoing RC</label>
-                                </div>
-                            </div>
-                            <div class="pure-g">
-                                <div class="pure-u-1-3">
-                                    <label title="Select submissions with zero approvals.">
-                                        <input type="radio" name="approvals-status" value="none"
-                                               id="approvals-status-none"
-                                               title="Select submissions with zero approvals."
-                                               {{if eq "none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
-                                        0 AP</label>
-                                </div>
-                                <div class="pure-u-1-3">
-                                    <label title="Select submissions with one approval.">
-                                        <input type="radio" name="approvals-status" value="one"
-                                               id="approvals-status-one"
-                                               title="Select submissions with one approval."
-                                               {{if eq "one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
-                                        1 AP</label>
-                                </div>
-                                <div class="pure-u-1-3">
-                                    <label title="Select submissions with two and more approvals.">
-                                        <input type="radio" name="approvals-status" value="more-than-one"
-                                               id="approvals-status-more-than-one"
-                                               title="Select submissions with two and more approvals."
-                                               {{if eq "more-than-one" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
-                                        >=2 AP</label>
+                                    <label title="Select submissions with at least one approval.">
+                                        <input type="radio" name="approvals-status" value="not-none"
+                                               id="approvals-status-not-none"
+                                               title="Select submissions with at least one approval."
+                                               {{if eq "not-none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
+                                        Some AP</label>
                                 </div>
                             </div>
                         </fieldset>
