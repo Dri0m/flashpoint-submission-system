@@ -2,16 +2,32 @@
 
     <div class="submission-filter-wrapper">
 
-        Quick filters (WIP):
+        Quick filters:
+        <br>
         <button type="button" class="pure-button pure-button-primary"
                 onclick="filterReadyForTesting()">Ready for Testing
         </button>
         <button type="button" class="pure-button pure-button-primary"
-                onclick="filterReadyForVerification()">Ready for Verification (WIP)
+                onclick="filterReadyForVerification()">Ready for Verification
         </button>
         <button type="button" class="pure-button pure-button-primary"
                 onclick="filterReadyForFlashpoint()">Ready for FP
         </button>
+        <br>
+        <br>
+        <button type="button" class="pure-button pure-button-primary"
+                onclick="filterAssignedToMeForTesting()">Assigned to me for testing
+        </button>
+        <button type="button" class="pure-button pure-button-primary"
+                onclick="filterAssignedToMeForVerification()">Assigned to me for verification
+        </button>
+        <button type="button" class="pure-button pure-button-primary"
+                onclick="filterIHaveRequestedChangesAfterTesting()">I have RC after testing
+        </button>
+        <button type="button" class="pure-button pure-button-primary"
+                onclick="filterIHaveRequestedChangesVerification()">I have RC after verificaiton
+        </button>
+
         <br><br>
         <form class="pure-form pure-form-stacked" id="filter-form" method="GET">
             <div class="pure-g">
@@ -128,7 +144,7 @@
                                         Ongoing RC</label>
                                     <label title="Select submissions with at least one approval.">
                                         <input type="radio" name="approvals-status" value="approved"
-                                               id="approvals-status-not-none"
+                                               id="approvals-status-approved"
                                                title="Select submissions with at least one approval."
                                                {{if eq "approved" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
                                         Some AP</label>
@@ -320,15 +336,18 @@
                                 <div class="pure-u-1-2">
                                     <label>
                                         <input type="radio" name="assigned-status-testing-me" value="assigned"
+                                               id="assigned-status-testing-me-assigned"
                                                {{if eq "assigned" (unpointify .Filter.AssignedStatusTestingMe)}}checked{{end}}>
                                         Assigned to me for testing</label>
                                     <label>
                                         <input type="radio" name="assigned-status-verification-me" value="assigned"
+                                               id="assigned-status-verification-me-assigned"
                                                {{if eq "assigned" (unpointify .Filter.AssignedStatusVerificationMe)}}checked{{end}}>
                                         Assigned to me for verification</label>
                                     <label title="Select submissions where I have ongoing requested changes.">
                                         <input type="radio" name="requested-changes-status-me" value="ongoing"
                                                title="Select submissions where I have ongoing requested changes."
+                                               id="requested-changes-status-me-ongoing"
                                                {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatusMe)}}checked{{end}}>
                                         I have RC</label>
 

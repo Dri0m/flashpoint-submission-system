@@ -1,3 +1,47 @@
+let friendlyHttpStatus = {
+    '200': 'OK',
+    '201': 'Created',
+    '202': 'Accepted',
+    '203': 'Non-Authoritative Information',
+    '204': 'No Content',
+    '205': 'Reset Content',
+    '206': 'Partial Content',
+    '300': 'Multiple Choices',
+    '301': 'Moved Permanently',
+    '302': 'Found',
+    '303': 'See Other',
+    '304': 'Not Modified',
+    '305': 'Use Proxy',
+    '306': 'Unused',
+    '307': 'Temporary Redirect',
+    '400': 'Bad Request',
+    '401': 'Unauthorized',
+    '402': 'Payment Required',
+    '403': 'Forbidden',
+    '404': 'Not Found',
+    '405': 'Method Not Allowed',
+    '406': 'Not Acceptable',
+    '407': 'Proxy Authentication Required',
+    '408': 'Request Timeout',
+    '409': 'Conflict',
+    '410': 'Gone',
+    '411': 'Length Required',
+    '412': 'Precondition Required',
+    '413': 'Request Entry Too Large',
+    '414': 'Request-URI Too Long',
+    '415': 'Unsupported Media Type',
+    '416': 'Requested Range Not Satisfiable',
+    '417': 'Expectation Failed',
+    '418': 'I\'m a teapot',
+    '429': 'Too Many Requests',
+    '500': 'Internal Server Error',
+    '501': 'Not Implemented',
+    '502': 'Bad Gateway',
+    '503': 'Service Unavailable',
+    '504': 'Gateway Timeout',
+    '505': 'HTTP Version Not Supported',
+};
+
 function sendXHR(url, method, data, reload, failureMessage, successMessage, prompt) {
     let confirmed = true
     if (prompt != null) {
@@ -278,22 +322,29 @@ function submitFilterForm() {
 function filterReadyForTesting() {
     resetFilterForm()
     document.getElementById("bot-action-approve").checked = true
+
     document.getElementById("approvals-status-none").checked = true
+    document.getElementById("verification-status-none").checked = true
     document.getElementById("requested-changes-status-none").checked = true
     document.getElementById("assigned-status-testing-unassigned").checked = true
-    document.getElementById("requested-changes-status-me-none").checked = true
-    document.getElementById("approvals-status-me-no").checked = true
+    document.getElementById("assigned-status-verification-unassigned").checked = true
+
+    document.getElementById("distinct-action-not-mark-added").checked = true
     submitFilterForm()
 }
 
 function filterReadyForVerification() {
     resetFilterForm()
-    document.getElementById("bot-action-approve").checked = true
-    document.getElementById("approvals-status-one").checked = true
+    document.getElementById("bot-action-approve").checked =
+
+    document.getElementById("approvals-status-approved").checked = true
     document.getElementById("requested-changes-status-none").checked = true
     document.getElementById("assigned-status-verification-unassigned").checked = true
-    document.getElementById("requested-changes-status-me-none").checked = true
+    document.getElementById("verification-status-none").checked = true
+
     document.getElementById("approvals-status-me-no").checked = true
+
+    document.getElementById("distinct-action-not-mark-added").checked = true
     submitFilterForm()
 }
 
@@ -301,51 +352,46 @@ function filterReadyForVerification() {
 function filterReadyForFlashpoint() {
     resetFilterForm()
     document.getElementById("bot-action-approve").checked = true
-    document.getElementById("approvals-status-more-than-one").checked = true
+
+    document.getElementById("verification-status-verified").checked = true
+
     document.getElementById("distinct-action-not-mark-added").checked = true
     submitFilterForm()
 }
 
-let friendlyHttpStatus = {
-    '200': 'OK',
-    '201': 'Created',
-    '202': 'Accepted',
-    '203': 'Non-Authoritative Information',
-    '204': 'No Content',
-    '205': 'Reset Content',
-    '206': 'Partial Content',
-    '300': 'Multiple Choices',
-    '301': 'Moved Permanently',
-    '302': 'Found',
-    '303': 'See Other',
-    '304': 'Not Modified',
-    '305': 'Use Proxy',
-    '306': 'Unused',
-    '307': 'Temporary Redirect',
-    '400': 'Bad Request',
-    '401': 'Unauthorized',
-    '402': 'Payment Required',
-    '403': 'Forbidden',
-    '404': 'Not Found',
-    '405': 'Method Not Allowed',
-    '406': 'Not Acceptable',
-    '407': 'Proxy Authentication Required',
-    '408': 'Request Timeout',
-    '409': 'Conflict',
-    '410': 'Gone',
-    '411': 'Length Required',
-    '412': 'Precondition Required',
-    '413': 'Request Entry Too Large',
-    '414': 'Request-URI Too Long',
-    '415': 'Unsupported Media Type',
-    '416': 'Requested Range Not Satisfiable',
-    '417': 'Expectation Failed',
-    '418': 'I\'m a teapot',
-    '429': 'Too Many Requests',
-    '500': 'Internal Server Error',
-    '501': 'Not Implemented',
-    '502': 'Bad Gateway',
-    '503': 'Service Unavailable',
-    '504': 'Gateway Timeout',
-    '505': 'HTTP Version Not Supported',
-};
+
+function filterAssignedToMeForTesting() {
+    resetFilterForm()
+
+    document.getElementById("assigned-status-testing-me-assigned").checked = true
+
+    submitFilterForm()
+}
+
+
+function filterAssignedToMeForVerification() {
+    resetFilterForm()
+
+    document.getElementById("assigned-status-verification-me-assigned").checked = true
+
+    submitFilterForm()
+}
+
+
+function filterIHaveRequestedChangesAfterTesting() {
+    resetFilterForm()
+
+    document.getElementById("assigned-status-testing-me-assigned").checked = true
+    document.getElementById("requested-changes-status-me-ongoing").checked = true
+
+    submitFilterForm()
+}
+
+function filterIHaveRequestedChangesVerification() {
+    resetFilterForm()
+
+    document.getElementById("assigned-status-verification-me-assigned").checked = true
+    document.getElementById("requested-changes-status-me-ongoing").checked = true
+
+    submitFilterForm()
+}
