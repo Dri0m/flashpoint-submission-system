@@ -425,8 +425,15 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		if filter.ApprovalsStatus != nil {
 			if *filter.ApprovalsStatus == "none" {
 				filters = append(filters, "(active_approved.user_count_with_enabled_action = 0 OR active_approved.user_count_with_enabled_action IS NULL)")
-			} else if *filter.ApprovalsStatus == "not-none" {
+			} else if *filter.ApprovalsStatus == "approved" {
 				filters = append(filters, "(active_approved.user_count_with_enabled_action > 0)")
+			}
+		}
+		if filter.VerificationStatus != nil {
+			if *filter.VerificationStatus == "none" {
+				filters = append(filters, "(active_verified.user_count_with_enabled_action = 0 OR active_verified.user_count_with_enabled_action IS NULL)")
+			} else if *filter.VerificationStatus == "verified" {
+				filters = append(filters, "(active_verified.user_count_with_enabled_action > 0)")
 			}
 		}
 		if filter.AssignedStatusTestingMe != nil {
@@ -461,6 +468,15 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
+		if filter.VerificationStatusMe != nil {
+			if *filter.VerificationStatusMe == "no" {
+				filters = append(filters, "(active_verified.user_ids_with_enabled_action NOT LIKE ? OR active_verified.user_ids_with_enabled_action IS NULL)")
+			} else if *filter.VerificationStatusMe == "yes" {
+				filters = append(filters, "(active_verified.user_ids_with_enabled_action LIKE ?)")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
+		}
+
 		if filter.IsExtreme != nil {
 			filters = append(filters, "(meta.extreme = ?)")
 			data = append(data, *filter.IsExtreme)

@@ -100,8 +100,12 @@
                                                title="Select submissions with zero approvals."
                                                {{if eq "none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
                                         No AP</label>
-
-
+                                    <label title="Select submissions with zero approvals.">
+                                        <input type="radio" name="verification-status" value="none"
+                                               id="verification-status-none"
+                                               title="Select submissions with zero verifications."
+                                               {{if eq "none" (unpointify .Filter.VerificationStatus)}}checked{{end}}>
+                                        Not verified</label>
                                 </div>
 
                                 <div class="pure-u-1-2">
@@ -123,11 +127,17 @@
                                                {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatus)}}checked{{end}}>
                                         Ongoing RC</label>
                                     <label title="Select submissions with at least one approval.">
-                                        <input type="radio" name="approvals-status" value="not-none"
+                                        <input type="radio" name="approvals-status" value="approved"
                                                id="approvals-status-not-none"
                                                title="Select submissions with at least one approval."
-                                               {{if eq "not-none" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
+                                               {{if eq "approved" (unpointify .Filter.ApprovalsStatus)}}checked{{end}}>
                                         Some AP</label>
+                                    <label title="Select submissions with zero approvals.">
+                                        <input type="radio" name="verification-status" value="verified"
+                                               id="verification-status-verified"
+                                               title="Select submissions with zero verifications."
+                                               {{if eq "verified" (unpointify .Filter.VerificationStatus)}}checked{{end}}>
+                                        Verified</label>
                                 </div>
                             </div>
                         </fieldset>
@@ -301,6 +311,11 @@
                                                id="approvals-status-me-no"
                                                {{if eq "no" (unpointify .Filter.ApprovalsStatusMe)}}checked{{end}}>
                                         I have not approved</label>
+                                    <label>
+                                        <input type="radio" name="verification-status-me" value="no"
+                                               id="verification-status-me-no"
+                                               {{if eq "no" (unpointify .Filter.VerificationStatusMe)}}checked{{end}}>
+                                        I have not verified</label>
                                 </div>
                                 <div class="pure-u-1-2">
                                     <label>
@@ -321,6 +336,11 @@
                                         <input type="radio" name="approvals-status-me" value="yes"
                                                {{if eq "yes" (unpointify .Filter.ApprovalsStatusMe)}}checked{{end}}>
                                         I have approved</label>
+                                    <label>
+                                        <input type="radio" name="verification-status-me" value="yes"
+                                               id="verification-status-me-yes"
+                                               {{if eq "yes" (unpointify .Filter.VerificationStatusMe)}}checked{{end}}>
+                                        I have verified</label>
                                 </div>
                             </div>
                         </fieldset>

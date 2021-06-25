@@ -117,11 +117,13 @@ type SubmissionsFilter struct {
 	AssignedStatusVerification   *string  `schema:"assigned-status-verification"`
 	RequestedChangedStatus       *string  `schema:"requested-changes-status"`
 	ApprovalsStatus              *string  `schema:"approvals-status"`
+	VerificationStatus           *string  `schema:"verification-status"`
 	SubmissionLevels             []string `schema:"sumbission-level"`
 	AssignedStatusTestingMe      *string  `schema:"assigned-status-testing-me"`
 	AssignedStatusVerificationMe *string  `schema:"assigned-status-verification-me"`
 	RequestedChangedStatusMe     *string  `schema:"requested-changes-status-me"`
 	ApprovalsStatusMe            *string  `schema:"approvals-status-me"`
+	VerificationStatusMe         *string  `schema:"verification-status-me"`
 	IsExtreme                    *string  `schema:"is-extreme"`
 	DistinctActions              []string `schema:"distinct-action"`
 	DistinctActionsNot           []string `schema:"distinct-action-not"`
@@ -185,8 +187,11 @@ func (sf *SubmissionsFilter) Validate() error {
 	if sf.RequestedChangedStatus != nil && *sf.RequestedChangedStatus != "none" && *sf.RequestedChangedStatus != "ongoing" {
 		return fmt.Errorf("invalid requested-changes-status")
 	}
-	if sf.ApprovalsStatus != nil && *sf.ApprovalsStatus != "none" && *sf.ApprovalsStatus != "not-none" {
+	if sf.ApprovalsStatus != nil && *sf.ApprovalsStatus != "none" && *sf.ApprovalsStatus != "approved" {
 		return fmt.Errorf("invalid approvals-status")
+	}
+	if sf.VerificationStatus != nil && *sf.VerificationStatus != "none" && *sf.VerificationStatus != "verified" {
+		return fmt.Errorf("invalid verificaton-status")
 	}
 
 	if sf.AssignedStatusTestingMe != nil && *sf.AssignedStatusTestingMe != "unassigned" && *sf.AssignedStatusTestingMe != "assigned" {
@@ -200,6 +205,9 @@ func (sf *SubmissionsFilter) Validate() error {
 	}
 	if sf.ApprovalsStatusMe != nil && *sf.ApprovalsStatusMe != "no" && *sf.ApprovalsStatusMe != "yes" {
 		return fmt.Errorf("invalid approvals-status-me")
+	}
+	if sf.VerificationStatusMe != nil && *sf.VerificationStatusMe != "no" && *sf.VerificationStatusMe != "yes" {
+		return fmt.Errorf("invalid verificaton-status-me")
 	}
 	return nil
 }
