@@ -11,9 +11,6 @@
             {{$submission := index .Submissions 0}}
 
             <div class="right">
-                <label>Ignore duplicate actions
-                    <input type="checkbox" id="ignore-duplicate-actions"
-                           title="The system does not let you apply the same operation multiple times on a submission (like assigning it twice). Check this checkbox to simply skip them and apply the operation only on the submissions where it makes sense."></label>
                 <button type="button" class="pure-button pure-button button-comment"
                         onclick="batchComment('submission-checkbox', 'sid', 'comment')">
                     Comment
@@ -59,10 +56,12 @@
                     {{end}}
 
                     {{if or (or (has .UserID $submission.AssignedTestingUserIDs) (has .UserID $submission.ApprovedUserIDs)) (or (has .UserID $submission.AssignedVerificationUserIDs) (has .UserID $submission.VerifiedUserIDs))}}
-                        <button type="button" class="pure-button pure-button button-request-changes"
-                                onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
-                            Request Changes
-                        </button>
+                        {{if not (has "mark-added" $submission.DistinctActions)}}
+                            <button type="button" class="pure-button pure-button button-request-changes"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
+                                Request Changes
+                            </button>
+                        {{end}}
                     {{end}}
 
                     {{if has .UserID $submission.AssignedTestingUserIDs}}
@@ -84,16 +83,18 @@
                 {{end}}
                 {{if isAdder .UserRoles}}
                     {{if and (gt (len $submission.ApprovedUserIDs) 0) (gt (len $submission.VerifiedUserIDs) 0)}}
-                        <button type="button" class="pure-button pure-button button-mark-added"
-                                onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
-                            Mark as Added
-                        </button>
+                        {{if not (has "mark-added" $submission.DistinctActions)}}
+                            <button type="button" class="pure-button pure-button button-mark-added"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
+                                Mark as Added
+                            </button>
+                        {{end}}
                     {{end}}
                 {{end}}
             </div>
         {{else}}
             <div class="right">
-                <label>Ignore duplicate actions
+                <label>Ignore invalid actions
                     <input type="checkbox" id="ignore-duplicate-actions"
                            title="The system does not let you apply the same operation multiple times on a submission (like assigning it twice). Check this checkbox to simply skip them and apply the operation only on the submissions where it makes sense."></label>
                 <button type="button" class="pure-button pure-button button-comment"
@@ -119,19 +120,19 @@
                     </button>
                     <br>
                     <br>
+                    <button type="button" class="pure-button pure-button button-request-changes"
+                            onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
+                        Request Changes
+                    </button>
+                    <button type="button" class="pure-button pure-button button-approve"
+                            onclick="batchComment('submission-checkbox', 'sid', 'approve')">
+                        Approve
+                    </button>
+                    <button type="button" class="pure-button pure-button button-verify"
+                            onclick="batchComment('submission-checkbox', 'sid', 'verify')">
+                        Verify
+                    </button>
                 {{end}}
-                <button type="button" class="pure-button pure-button button-request-changes"
-                        onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
-                    Request Changes
-                </button>
-                <button type="button" class="pure-button pure-button button-approve"
-                        onclick="batchComment('submission-checkbox', 'sid', 'approve')">
-                    Approve
-                </button>
-                <button type="button" class="pure-button pure-button button-verify"
-                        onclick="batchComment('submission-checkbox', 'sid', 'verify')">
-                    Verify
-                </button>
                 {{if isAdder .UserRoles}}
                     <button type="button" class="pure-button pure-button button-mark-added"
                             onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
