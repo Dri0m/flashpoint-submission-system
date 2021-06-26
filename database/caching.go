@@ -38,6 +38,16 @@ func updateSubmissionCacheTable(dbs DBSession, sid int64) error {
 		return err
 	}
 
+	botAction, err := getBotAction(dbs, sid)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+
+	distinctActionsSeq, err := getDistinctActions(dbs, sid)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
 		UPDATE submission_cache
 		SET fk_newest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
@@ -53,12 +63,16 @@ func updateSubmissionCacheTable(dbs DBSession, sid int64) error {
 		    original_filename_sequence = ?,
 		    current_filename_sequence = ?,
 		    md5sum_sequence = ?,
-		    sha256sum_sequence = ?
+		    sha256sum_sequence = ?,
+		    
+		    bot_action = ?,
+		    distinct_actions = ?
 		
 		WHERE fk_submission_id = ?`,
 		sid, sid, sid,
 		assignedTestingIDseq, assignedVerificationIDseq, requestedChangesIDseq, approvedIDseq, verifiedIDseq,
 		ofs, cfs, md5s, sha256s,
+		botAction, distinctActionsSeq,
 		sid)
 	if err != nil {
 		return err
@@ -180,5 +194,50 @@ func getFileDataSequences(dbs DBSession, sid int64) (ofs, cfs, md5s, sha256s *st
 		sid)
 
 	err = row.Scan(&ofs, &cfs, &md5s, &sha256s)
+	return
+}
+
+func getDistinctActions(dbs DBSession, sid int64) (result *string, err error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT GROUP_CONCAT(
+					DISTINCT (
+						SELECT name
+						FROM action
+						WHERE id = comment.fk_action_id
+					)
+				) AS actions
+			FROM comment
+				LEFT JOIN submission on submission.id = comment.fk_submission_id
+			GROUP BY submission.id
+		AND fk_submission_id = ?`,
+		sid)
+
+	err = row.Scan(&result)
+	return
+}
+
+func getBotAction(dbs DBSession, sid int64) (result *string, err error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		WITH ranked_comment AS (
+			SELECT c.*,
+				ROW_NUMBER() OVER (
+					PARTITION BY fk_submission_id
+					ORDER BY created_at DESC
+				) AS rn
+			FROM comment AS c
+			WHERE c.fk_user_id = 810112564787675166
+				AND c.deleted_at IS NULL
+		)
+		SELECT (
+				SELECT name
+				FROM action
+				WHERE action.id = ranked_comment.fk_action_id
+			) AS action
+		FROM ranked_comment
+		WHERE rn = 1
+		AND fk_submission_id = ?`,
+		sid)
+
+	err = row.Scan(&result)
 	return
 }

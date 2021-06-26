@@ -67,7 +67,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			data = append(data, utils.FormatLike(*filter.SHA256SumPartialAny))
 		}
 		if len(filter.BotActions) != 0 {
-			filters = append(filters, `(bot_comment.action IN(?`+strings.Repeat(",?", len(filter.BotActions)-1)+`))`)
+			filters = append(filters, `(submission_cache.bot_action IN(?`+strings.Repeat(",?", len(filter.BotActions)-1)+`))`)
 			for _, ba := range filter.BotActions {
 				data = append(data, ba)
 			}
@@ -186,13 +186,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			data = append(data, *filter.IsExtreme)
 		}
 		if len(filter.DistinctActions) != 0 {
-			filters = append(filters, `(REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActions)-1)+`)))`)
+			filters = append(filters, `(REGEXP_LIKE (submission_cache.distinct_actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActions)-1)+`)))`)
 			for _, da := range filter.DistinctActions {
 				data = append(data, da)
 			}
 		}
 		if len(filter.DistinctActionsNot) != 0 {
-			filters = append(filters, `(NOT REGEXP_LIKE (distinct_actions.actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActionsNot)-1)+`)))`)
+			filters = append(filters, `(NOT REGEXP_LIKE (submission_cache.distinct_actions, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.DistinctActionsNot)-1)+`)))`)
 			for _, da := range filter.DistinctActionsNot {
 				data = append(data, da)
 			}
@@ -232,14 +232,14 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		meta.launch_command,
 		meta.library,
 		meta.extreme,
-		bot_comment.action AS bot_action,
+		submission_cache.bot_action,
 		submission_file_count.count,
 		submission_cache.active_assigned_testing_ids,
 		submission_cache.active_assigned_verification_ids,
 		submission_cache.active_requested_changes_ids,
 		submission_cache.active_approved_ids,
 		submission_cache.active_verified_ids,
-		distinct_actions.actions
+		submission_cache.distinct_actions
 		FROM submission
 		LEFT JOIN submission_cache ON submission_cache.fk_submission_id = submission.id
 		LEFT JOIN submission_file AS oldest_file ON oldest_file.id = submission_cache.fk_oldest_file_id
@@ -254,26 +254,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		LEFT JOIN discord_user uploader ON oldest_file.fk_user_id = uploader.id
 		LEFT JOIN discord_user updater ON newest_comment.fk_user_id = updater.id
 		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id
-		LEFT JOIN (
-			WITH ranked_comment AS (
-				SELECT c.*,
-					ROW_NUMBER() OVER (
-						PARTITION BY fk_submission_id
-						ORDER BY created_at DESC
-					) AS rn
-				FROM comment AS c
-				WHERE c.fk_user_id = 810112564787675166
-					AND c.deleted_at IS NULL
-			)
-			SELECT ranked_comment.fk_submission_id AS submission_id,
-				(
-					SELECT name
-					FROM action
-					WHERE action.id = ranked_comment.fk_action_id
-				) AS action
-			FROM ranked_comment
-			WHERE rn = 1
-		) AS bot_comment ON bot_comment.submission_id = submission.id
 		LEFT JOIN (
 			SELECT *,
 				SUBSTRING(
@@ -337,19 +317,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
 				)
 		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
-		LEFT JOIN (
-			SELECT submission.id AS submission_id,
-				GROUP_CONCAT(
-					DISTINCT (
-						SELECT name
-						FROM action
-						WHERE id = comment.fk_action_id
-					)
-				) AS actions
-			FROM comment
-				LEFT JOIN submission on submission.id = comment.fk_submission_id
-			GROUP BY submission.id
-		) AS distinct_actions ON distinct_actions.submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		ORDER BY newest_comment.created_at DESC
@@ -467,81 +434,4 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	}
 
 	return result, nil
-}
-
-func commentPair(enabler, disabler, choosenSubmissions string) string {
-	return fmt.Sprintf(`
-		(SELECT submission.id AS submission_id,
-		GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action
-		FROM submission
-			LEFT JOIN (
-				WITH ranked_comment AS (
-					SELECT c.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY c.fk_submission_id,
-							c.fk_user_id
-							ORDER BY created_at DESC
-						) AS rn
-					FROM comment AS c
-					WHERE c.fk_user_id != 810112564787675166
-						AND c.fk_action_id IN (
-							SELECT id
-							FROM action
-							WHERE name %s
-						)
-						AND c.deleted_at IS NULL
-						AND c.fk_submission_id IN %s
-					ORDER BY created_at ASC
-				)
-				SELECT ranked_comment.fk_submission_id AS submission_id,
-					ranked_comment.fk_user_id AS author_id,
-					ranked_comment.created_at
-				FROM ranked_comment
-					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id IN %s) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
-					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_submission_id
-				WHERE rn = 1
-					AND ranked_comment.created_at > last_file.created_at
-			) AS latest_enabler ON latest_enabler.submission_id = submission.id
-			LEFT JOIN (
-				WITH ranked_comment AS (
-					SELECT c.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY c.fk_submission_id,
-							c.fk_user_id
-							ORDER BY created_at DESC
-						) AS rn
-					FROM comment AS c
-					WHERE c.fk_user_id != 810112564787675166
-						AND c.fk_action_id IN (
-							SELECT id
-							FROM action
-							WHERE name %s
-						)
-						AND c.deleted_at IS NULL
-				    	AND c.fk_submission_id IN %s
-				)
-				SELECT ranked_comment.fk_submission_id AS submission_id,
-					ranked_comment.fk_user_id AS author_id,
-					ranked_comment.created_at
-				FROM ranked_comment
-					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id IN %s) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
-					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_submission_id
-				WHERE rn = 1
-					AND ranked_comment.created_at > last_file.created_at
-			) AS latest_disabler ON latest_disabler.submission_id = submission.id
-			AND latest_disabler.author_id = latest_enabler.author_id
-		WHERE (
-				(
-					latest_enabler.created_at IS NOT NULL
-					AND latest_disabler.created_at IS NOT NULL
-					AND latest_enabler.created_at > latest_disabler.created_at
-				)
-				OR (
-					latest_disabler.created_at IS NULL
-					AND latest_enabler.created_at IS NOT NULL
-				)
-			) AND submission.id IN %s
-		GROUP BY submission.id)`,
-		enabler, choosenSubmissions, choosenSubmissions,
-		disabler, choosenSubmissions, choosenSubmissions, choosenSubmissions)
 }

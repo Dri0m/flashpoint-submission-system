@@ -221,6 +221,9 @@ CREATE TABLE IF NOT EXISTS submission_cache
     sha256sum_sequence               TEXT,
     active_verified_ids              TEXT,
 
+    bot_action                       TEXT,
+    distinct_actions                 TEXT,
+
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
     FOREIGN KEY (fk_oldest_file_id) REFERENCES submission_file (id),
     FOREIGN KEY (fk_newest_file_id) REFERENCES submission_file (id),
