@@ -374,12 +374,23 @@ func (s *SiteService) GetUIDFromSession(ctx context.Context, key string) (int64,
 }
 
 func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64, deleteReason string) error {
+	uid := utils.UserIDFromContext(ctx)
+
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
 	defer dbs.Rollback()
+
+	sfs, err := s.dal.GetSubmissionFiles(dbs, []int64{sfid})
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	authorID := sfs[0].SubmitterID
+	sid := sfs[0].SubmissionID
 
 	if err := s.dal.SoftDeleteSubmissionFile(dbs, sfid, deleteReason); err != nil {
 		if err.Error() == constants.ErrorCannotDeleteLastSubmissionFile {
@@ -389,36 +400,62 @@ func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64, 
 		return dberr(err)
 	}
 
+	if err := s.createDeletionNotification(dbs, authorID, uid, &sid, nil, &sfid, deleteReason); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
 
+	s.announceNotification()
+
 	return nil
 }
 
 func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64, deleteReason string) error {
+	uid := utils.UserIDFromContext(ctx)
+
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
 	defer dbs.Rollback()
+
+	submissions, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	authorID := submissions[0].SubmitterID
 
 	if err := s.dal.SoftDeleteSubmission(dbs, sid, deleteReason); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
 
+	if err := s.createDeletionNotification(dbs, authorID, uid, &sid, nil, nil, deleteReason); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
 
+	s.announceNotification()
+
 	return nil
 }
 
 func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteReason string) error {
+	uid := utils.UserIDFromContext(ctx)
+
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -426,7 +463,18 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteRe
 	}
 	defer dbs.Rollback()
 
+	c, err := s.dal.GetCommentByID(dbs, cid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
 	if err := s.dal.SoftDeleteComment(dbs, cid, deleteReason); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	if err := s.createDeletionNotification(dbs, c.AuthorID, uid, &c.SubmissionID, &cid, nil, deleteReason); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
@@ -435,6 +483,8 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteRe
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
+
+	s.announceNotification()
 
 	return nil
 }

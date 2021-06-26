@@ -132,6 +132,11 @@ func (m *mockDAL) GetExtendedCommentsBySubmissionID(_ database.DBSession, sid in
 	return args.Get(0).([]*types.ExtendedComment), args.Error(1)
 }
 
+func (m *mockDAL) GetCommentByID(_ database.DBSession, cid int64) (*types.Comment, error) {
+	args := m.Called(cid)
+	return args.Get(0).(*types.Comment), args.Error(1)
+}
+
 func (m *mockDAL) SoftDeleteSubmissionFile(_ database.DBSession, sfid int64, deleteReason string) error {
 	args := m.Called(sfid, deleteReason)
 	return args.Error(0)

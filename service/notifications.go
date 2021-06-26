@@ -183,3 +183,34 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 
 	return nil
 }
+
+// createDeletionNotification formats and stores deletion notification
+func (s *SiteService) createDeletionNotification(dbs database.DBSession, authorID, deleterID int64, sid, cid, fid *int64, reason string) error {
+	if sid == nil {
+		utils.LogCtx(dbs.Ctx()).Fatal("submission id cannot be nil")
+	}
+	if cid != nil && fid != nil {
+		utils.LogCtx(dbs.Ctx()).Fatal("both cid and fid provided - not valid")
+	}
+
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("You've got mail! <@%d>\n", authorID))
+	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/submission/%d>\n", *sid))
+	if cid != nil {
+		b.WriteString(fmt.Sprintf("Your comment #%d was deleted by <@%d>\n", *cid, deleterID))
+	} else if fid != nil {
+		b.WriteString(fmt.Sprintf("Your file #%d was deleted by <@%d>\n", *fid, deleterID))
+	} else {
+		b.WriteString(fmt.Sprintf("Your submission #%d was deleted by <@%d>\n", *sid, deleterID))
+	}
+	b.WriteString(fmt.Sprintf("Reason: %s", reason))
+	b.WriteString("\n----------------------------------------------------------\n")
+	msg := b.String()
+
+	if err := s.dal.StoreNotification(dbs, msg, constants.NotificationDefault); err != nil {
+		utils.LogCtx(dbs.Ctx()).Error(err)
+		return dberr(err)
+	}
+
+	return nil
+}

@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"strconv"
 	"testing"
 )
@@ -953,7 +955,14 @@ func Test_siteService_SoftDeleteSubmissionFile_OK(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
-	var fid int64 = 2
+	var sid int64 = 2
+	var authorID int64 = 3
+	var fid int64 = 4
+
+	sfs := []*types.SubmissionFile{
+		{SubmissionID: sid},
+		{SubmitterID: authorID},
+	}
 
 	deleteReason := "foobar"
 
@@ -961,7 +970,9 @@ func Test_siteService_SoftDeleteSubmissionFile_OK(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetSubmissionFiles", []int64{fid}).Return(sfs, nil)
 	ts.dal.On("SoftDeleteSubmissionFile", fid, deleteReason).Return(nil)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(nil)
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -992,11 +1003,11 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_NewSession(t *testing.T) {
 	ts.assertExpectations(t)
 }
 
-func Test_siteService_SoftDeleteSubmissionFile_Fail_SoftDeleteSubmissionFile(t *testing.T) {
+func Test_siteService_SoftDeleteSubmissionFile_Fail_GetSubmissionFiles(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
-	var fid int64 = 2
+	var fid int64 = 4
 
 	deleteReason := "foobar"
 
@@ -1004,7 +1015,69 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_SoftDeleteSubmissionFile(t *
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetSubmissionFiles", []int64{fid}).Return(([]*types.SubmissionFile)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.SoftDeleteSubmissionFile(ctx, fid, deleteReason)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SoftDeleteSubmissionFile_Fail_SoftDeleteSubmissionFile(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var authorID int64 = 3
+	var fid int64 = 4
+
+	sfs := []*types.SubmissionFile{
+		{SubmissionID: sid},
+		{SubmitterID: authorID},
+	}
+
+	deleteReason := "foobar"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetSubmissionFiles", []int64{fid}).Return(sfs, nil)
 	ts.dal.On("SoftDeleteSubmissionFile", fid, deleteReason).Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.SoftDeleteSubmissionFile(ctx, fid, deleteReason)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SoftDeleteSubmissionFile_Fail_StoreNotification(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var authorID int64 = 3
+	var fid int64 = 4
+
+	sfs := []*types.SubmissionFile{
+		{SubmissionID: sid},
+		{SubmitterID: authorID},
+	}
+
+	deleteReason := "foobar"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetSubmissionFiles", []int64{fid}).Return(sfs, nil)
+	ts.dal.On("SoftDeleteSubmissionFile", fid, deleteReason).Return(nil)
+	ts.dbs.On("Ctx").Return(ctx)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
 	err := ts.s.SoftDeleteSubmissionFile(ctx, fid, deleteReason)
@@ -1018,7 +1091,14 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_Commit(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
-	var fid int64 = 2
+	var sid int64 = 2
+	var authorID int64 = 3
+	var fid int64 = 4
+
+	sfs := []*types.SubmissionFile{
+		{SubmissionID: sid},
+		{SubmitterID: authorID},
+	}
 
 	deleteReason := "foobar"
 
@@ -1026,7 +1106,9 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_Commit(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetSubmissionFiles", []int64{fid}).Return(sfs, nil)
 	ts.dal.On("SoftDeleteSubmissionFile", fid, deleteReason).Return(nil)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(nil)
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -1044,6 +1126,11 @@ func Test_siteService_SoftDeleteSubmission_OK(t *testing.T) {
 
 	var uid int64 = 1
 	var sid int64 = 2
+	var authorID int64 = 3
+
+	submissions := []*types.ExtendedSubmission{
+		{SubmitterID: authorID},
+	}
 
 	deleteReason := "foobar"
 
@@ -1051,7 +1138,9 @@ func Test_siteService_SoftDeleteSubmission_OK(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", &types.SubmissionsFilter{SubmissionIDs: []int64{sid}}).Return(submissions, nil)
 	ts.dal.On("SoftDeleteSubmission", sid, deleteReason).Return(nil)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(nil)
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -1082,7 +1171,7 @@ func Test_siteService_SoftDeleteSubmission_Fail_NewSession(t *testing.T) {
 	ts.assertExpectations(t)
 }
 
-func Test_siteService_SoftDeleteSubmission_Fail_SoftDeleteSubmission(t *testing.T) {
+func Test_siteService_SoftDeleteSubmission_Fail_SearchSubmissions(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
@@ -1094,7 +1183,65 @@ func Test_siteService_SoftDeleteSubmission_Fail_SoftDeleteSubmission(t *testing.
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", &types.SubmissionsFilter{SubmissionIDs: []int64{sid}}).Return(([]*types.ExtendedSubmission)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.SoftDeleteSubmission(ctx, sid, deleteReason)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SoftDeleteSubmission_Fail_SoftDeleteSubmission(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var authorID int64 = 3
+
+	submissions := []*types.ExtendedSubmission{
+		{SubmitterID: authorID},
+	}
+
+	deleteReason := "foobar"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", &types.SubmissionsFilter{SubmissionIDs: []int64{sid}}).Return(submissions, nil)
 	ts.dal.On("SoftDeleteSubmission", sid, deleteReason).Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.SoftDeleteSubmission(ctx, sid, deleteReason)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SoftDeleteSubmission_Fail_StoreNotification(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var authorID int64 = 3
+
+	submissions := []*types.ExtendedSubmission{
+		{SubmitterID: authorID},
+	}
+
+	deleteReason := "foobar"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", &types.SubmissionsFilter{SubmissionIDs: []int64{sid}}).Return(submissions, nil)
+	ts.dal.On("SoftDeleteSubmission", sid, deleteReason).Return(nil)
+	ts.dbs.On("Ctx").Return(ctx)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
 	err := ts.s.SoftDeleteSubmission(ctx, sid, deleteReason)
@@ -1109,6 +1256,11 @@ func Test_siteService_SoftDeleteSubmission_Fail_Commit(t *testing.T) {
 
 	var uid int64 = 1
 	var sid int64 = 2
+	var authorID int64 = 3
+
+	submissions := []*types.ExtendedSubmission{
+		{SubmitterID: authorID},
+	}
 
 	deleteReason := "foobar"
 
@@ -1116,7 +1268,9 @@ func Test_siteService_SoftDeleteSubmission_Fail_Commit(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", &types.SubmissionsFilter{SubmissionIDs: []int64{sid}}).Return(submissions, nil)
 	ts.dal.On("SoftDeleteSubmission", sid, deleteReason).Return(nil)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(nil)
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -1134,6 +1288,13 @@ func Test_siteService_SoftDeleteComment_OK(t *testing.T) {
 
 	var uid int64 = 1
 	var cid int64 = 2
+	var sid int64 = 3
+	var authorID int64 = 4
+
+	c := &types.Comment{
+		SubmissionID: sid,
+		AuthorID:     authorID,
+	}
 
 	deleteReason := "foobar"
 
@@ -1141,7 +1302,9 @@ func Test_siteService_SoftDeleteComment_OK(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetCommentByID", cid).Return(c, nil)
 	ts.dal.On("SoftDeleteComment", cid, deleteReason).Return(nil)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(nil)
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -1172,7 +1335,7 @@ func Test_siteService_SoftDeleteComment_Fail_NewSession(t *testing.T) {
 	ts.assertExpectations(t)
 }
 
-func Test_siteService_SoftDeleteComment_Fail_SoftDeleteSubmission(t *testing.T) {
+func Test_siteService_SoftDeleteComment_Fail_GetCommentByID(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
@@ -1184,7 +1347,69 @@ func Test_siteService_SoftDeleteComment_Fail_SoftDeleteSubmission(t *testing.T) 
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetCommentByID", cid).Return((*types.Comment)(nil), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.SoftDeleteComment(ctx, cid, deleteReason)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SoftDeleteComment_Fail_SoftDeleteComment(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var cid int64 = 2
+	var sid int64 = 3
+	var authorID int64 = 4
+
+	c := &types.Comment{
+		SubmissionID: sid,
+		AuthorID:     authorID,
+	}
+
+	deleteReason := "foobar"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetCommentByID", cid).Return(c, nil)
 	ts.dal.On("SoftDeleteComment", cid, deleteReason).Return(errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.SoftDeleteComment(ctx, cid, deleteReason)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_SoftDeleteComment_Fail_StoreNotification(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var cid int64 = 2
+	var sid int64 = 3
+	var authorID int64 = 4
+
+	c := &types.Comment{
+		SubmissionID: sid,
+		AuthorID:     authorID,
+	}
+
+	deleteReason := "foobar"
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetCommentByID", cid).Return(c, nil)
+	ts.dal.On("SoftDeleteComment", cid, deleteReason).Return(nil)
+	ts.dbs.On("Ctx").Return(ctx)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
 	err := ts.s.SoftDeleteComment(ctx, cid, deleteReason)
@@ -1199,6 +1424,13 @@ func Test_siteService_SoftDeleteComment_Fail_Commit(t *testing.T) {
 
 	var uid int64 = 1
 	var cid int64 = 2
+	var sid int64 = 3
+	var authorID int64 = 4
+
+	c := &types.Comment{
+		SubmissionID: sid,
+		AuthorID:     authorID,
+	}
 
 	deleteReason := "foobar"
 
@@ -1206,7 +1438,9 @@ func Test_siteService_SoftDeleteComment_Fail_Commit(t *testing.T) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("GetCommentByID", cid).Return(c, nil)
 	ts.dal.On("SoftDeleteComment", cid, deleteReason).Return(nil)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationDefault).Return(nil)
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 

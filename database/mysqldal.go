@@ -396,6 +396,24 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) (
 	return result, nil
 }
 
+// GetCommentByID returns a comment
+func (d *mysqlDAL) GetCommentByID(dbs DBSession, cid int64) (*types.Comment, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT fk_user_id, fk_submission_id, message, (SELECT name FROM action WHERE id=comment.fk_action_id), created_at
+		FROM comment
+		WHERE id = ?`,
+		cid)
+
+	c := &types.Comment{}
+	var createdAt int64
+	if err := row.Scan(&c.AuthorID, &c.SubmissionID, &c.Message, &c.Action, &createdAt); err != nil {
+		return nil, err
+	}
+	c.CreatedAt = time.Unix(createdAt, 0)
+
+	return c, nil
+}
+
 // SoftDeleteSubmissionFile marks submission file as deleted
 func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteReason string) error {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
@@ -403,7 +421,7 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteRea
 		WHERE fk_submission_id = (SELECT fk_submission_id FROM submission_file WHERE id = ?)
         AND submission_file.deleted_at IS NULL
 		GROUP BY fk_submission_id`,
-		sfid, deleteReason)
+		sfid)
 
 	var count int64
 	var sid int64
