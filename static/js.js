@@ -248,8 +248,10 @@ function bindFancierUpload(url) {
             }
         }
 
-        uploadHandler(url, files, 0, 2)
-        uploadHandler(url, files, 1, 2)
+        let uploadQueues = document.querySelector("#upload-queues")
+        for (let i = 0; i < parseInt(uploadQueues.value); i++) {
+            uploadHandler(url, files, i, parseInt(uploadQueues.value))
+        }
     });
 }
 

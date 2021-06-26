@@ -8,17 +8,22 @@
                 <input type="file" name="files" id="file-input">
             {{else}}
                 <p>
-                    Max filesize is 50GB. Note that it may take a long time to process large files after the upload step is
+                    Max filesize is 50GB. Note that it may take a long time to process large files after the upload step
+                    is
                     done, and the upload process is not finished until this step is over.<br>
-                    When uploading multiple files, they are treated as individual uploads, so if one fails, it does not cause the
+                    When uploading multiple files, they are treated as individual uploads, so if one fails, it does not
+                    cause the
                     other files to be rejected.<br>
-                    The form is uploading two files at once, so don't be spooked if you see the upload progress stop on a submission, it's just taking a breather. <br>
+                    The form is uploading two files at once, so don't be spooked if you see the upload progress stop on
+                    a submission, it's just taking a breather. <br>
                     In case the upload fails, you *should* always receive a red error message.<br>
                 </p>
+
                 <input type="file" name="files" id="file-input" multiple="multiple">
             {{end}}
 
             <input class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
+            Parallel upload queues: <input type="number" min="1" max="20" value="2" id="upload-queues"><br>
             <div id="progress-bars-container"></div>
         </div>
     </div>
