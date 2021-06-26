@@ -223,6 +223,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	vr, err := s.validator.Validate(ctx, destinationFilePath, submissionID, fid)
 	if err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, nil, err
 	}
 
