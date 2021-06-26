@@ -16,7 +16,7 @@
 .env
 log.log
 db.db*
-static/fancy-logo.gif
 
 files/*
 backups/*
+*.log.gz
