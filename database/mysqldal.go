@@ -209,26 +209,41 @@ func (d *mysqlDAL) StoreSubmission(dbs DBSession, submissionLevel string) (int64
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
+	sid, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
-	return id, nil
+
+	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
+		INSERT INTO submission_cache (fk_submission_id) 
+		VALUES (?)`,
+		sid)
+	if err != nil {
+		return 0, err
+	}
+
+	return sid, nil
 }
 
 // StoreSubmissionFile stores submission file
 func (d *mysqlDAL) StoreSubmissionFile(dbs DBSession, s *types.SubmissionFile) (int64, error) {
-	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO submission_file (fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum) 
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO submission_file (fk_user_id, fk_submission_id, original_filename, current_filename, size, created_at, md5sum, sha256sum) 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		s.SubmitterID, s.SubmissionID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix(), s.MD5Sum, s.SHA256Sum)
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
+	fid, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
-	return id, nil
+
+	err = updateSubmissionCache(dbs, s.SubmissionID)
+	if err != nil {
+		return 0, err
+	}
+
+	return fid, nil
 }
 
 // GetSubmissionFiles gets submission files, returns error if input len != output len
@@ -243,11 +258,11 @@ func (d *mysqlDAL) GetSubmissionFiles(dbs DBSession, sfids []int64) ([]*types.Su
 	}
 
 	q := `
-		SELECT fk_uploader_id, fk_submission_id, original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
+		SELECT fk_user_id, fk_submission_id, original_filename, current_filename, size, created_at, md5sum, sha256sum 
 		FROM submission_file 
 		WHERE id IN(?` + strings.Repeat(",?", len(sfids)-1) + `)
 		AND deleted_at IS NULL
-		ORDER BY uploaded_at DESC`
+		ORDER BY created_at DESC`
 
 	var rows *sql.Rows
 	var err error
@@ -278,13 +293,13 @@ func (d *mysqlDAL) GetSubmissionFiles(dbs DBSession, sfids []int64) ([]*types.Su
 // GetExtendedSubmissionFilesBySubmissionID returns all extended submission files for a given submission
 func (d *mysqlDAL) GetExtendedSubmissionFilesBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedSubmissionFile, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
-		SELECT submission_file.id, fk_uploader_id, username, avatar, 
-		       original_filename, current_filename, size, uploaded_at, md5sum, sha256sum 
+		SELECT submission_file.id, fk_user_id, username, avatar, 
+		       original_filename, current_filename, size, created_at, md5sum, sha256sum 
 		FROM submission_file 
-		LEFT JOIN discord_user ON fk_uploader_id=discord_user.id
+		LEFT JOIN discord_user ON fk_user_id=discord_user.id
 		WHERE fk_submission_id=?
 		AND submission_file.deleted_at IS NULL
-		ORDER BY uploaded_at DESC`, sid)
+		ORDER BY created_at DESC`, sid)
 	if err != nil {
 		return nil, err
 	}
@@ -495,16 +510,26 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		}
 	}
 
+	data = append(data, currentLimit, currentOffset)
+
 	and := ""
 	if len(filters) > 0 {
 		and = " AND "
 	}
 
-	subs, err := chooseSubmissions(dbs, currentLimit, currentOffset)
+	subs, subCount, err := chooseSubmissions(dbs)
 	if err != nil {
 		return nil, err
 	}
 	chosenSubmissions := *subs
+
+	fmt.Println(subCount)
+
+	if subCount == 0 {
+		return []*types.ExtendedSubmission{}, nil
+	}
+
+	chosenSubmissions = "(SELECT id from submission)"
 
 	finalQuery := `
 			SELECT submission.id AS submission_id,
@@ -519,13 +544,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		updater.id AS updater_id,
 		updater.username AS updater_username,
 		updater.avatar AS updater_avatar,
-		submission.submission_file_id,
-		submission.original_filename,
-		submission.current_filename,
-		submission.size,
-		file_data.uploaded_at,
-		submission.updated_at,
-		submission.last_uploader_id,
+		newest_file.id,
+		newest_file.original_filename,
+		newest_file.current_filename,
+		newest_file.size,
+		file_data.created_at,
+		newest_comment.created_at,
+		newest_file.fk_user_id,
 		meta.title,
 		meta.alternate_titles,
 		meta.platform,
@@ -533,79 +558,30 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		meta.library,
 		meta.extreme,
 		bot_comment.action AS bot_action,
-		submission.file_count,
+		submission_file_count.count,
 		active_assigned_testing.user_ids_with_enabled_action AS assigned_testing_user_ids,
 		active_assigned_verification.user_ids_with_enabled_action AS assigned_verification_user_ids,
 		active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
 		active_approved.user_ids_with_enabled_action AS approved_user_ids,
 		active_verified.user_ids_with_enabled_action AS verified_user_ids,
 		distinct_actions.actions
-	FROM (
-			SELECT submission.id,
-				submission.fk_submission_level_id AS fk_submission_level_id,
-				submission.deleted_at AS deleted_at,
-				newest_file.id AS submission_file_id,
-				newest_file.original_filename AS original_filename,
-				newest_file.current_filename AS current_filename,
-				newest_file.size AS size,
-				newest_comment.created_at AS updated_at,
-				newest_comment.fk_author_id AS updater_id,
-				newest_file.file_count AS file_count,
-				newest_file.fk_uploader_id AS last_uploader_id
-			FROM submission
-				LEFT JOIN (
-					WITH ranked_file AS (
-						SELECT s.*,
-							ROW_NUMBER() OVER (
-								PARTITION BY fk_submission_id
-								ORDER BY uploaded_at DESC, id DESC
-							) AS rn,
-							COUNT(s.id) OVER (
-								PARTITION BY fk_submission_id
-								ORDER BY uploaded_at DESC, id DESC
-							) AS file_count
-						FROM submission_file AS s
-						WHERE s.deleted_at IS NULL
-						AND s.fk_submission_id IN ` + chosenSubmissions + `
-					)
-					SELECT id,
-						fk_submission_id,
-						fk_uploader_id,
-						original_filename,
-						current_filename,
-						size,
-						file_count
-					FROM ranked_file
-					WHERE rn = 1
-				) AS newest_file ON newest_file.fk_submission_id = submission.id
-				LEFT JOIN (
-					WITH ranked_comment AS (
-						SELECT s.*,
-							ROW_NUMBER() OVER (
-								PARTITION BY fk_submission_id
-								ORDER BY created_at DESC, id DESC
-							) AS rn
-						FROM comment AS s
-						WHERE s.deleted_at IS NULL
-						AND s.fk_submission_id IN ` + chosenSubmissions + `
-					)
-					SELECT id,
-						fk_submission_id,
-						fk_author_id,
-						created_at
-					FROM ranked_comment
-					WHERE rn = 1
-				) AS newest_comment ON newest_comment.fk_submission_id = submission.id
-			WHERE submission.deleted_at IS NULL
-			AND submission.id IN ` + chosenSubmissions + `
-			GROUP BY submission.id
-		) AS submission
+		FROM submission
+		LEFT JOIN submission_cache ON submission_cache.fk_submission_id = submission.id
+		LEFT JOIN submission_file AS oldest_file ON oldest_file.id = submission_cache.fk_oldest_file_id
+		LEFT JOIN submission_file AS newest_file ON newest_file.id = submission_cache.fk_newest_file_id
+		LEFT JOIN comment AS newest_comment ON newest_comment.id = submission_cache.fk_newest_comment_id
+		LEFT JOIN (
+			SELECT fk_submission_id, COUNT(*) AS count 
+			FROM submission_file 
+			WHERE deleted_at IS NULL 
+			GROUP BY fk_submission_id
+		) AS submission_file_count ON submission_file_count.fk_submission_id = submission.id
 		LEFT JOIN (
 			WITH ranked_file AS (
 				SELECT s.*,
 					ROW_NUMBER() OVER (
 						PARTITION BY fk_submission_id
-						ORDER BY uploaded_at ASC
+						ORDER BY created_at ASC
 					) AS rn,
 					GROUP_CONCAT(original_filename) AS original_filename_sequence,
 					GROUP_CONCAT(current_filename) AS current_filename_sequence,
@@ -613,22 +589,22 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					GROUP_CONCAT(sha256sum) AS sha256sum_sequence
 				FROM submission_file AS s
 				WHERE s.deleted_at IS NULL
+				AND s.fk_submission_id IN ` + chosenSubmissions + `
 				GROUP BY s.fk_submission_id
 			)
-			SELECT fk_uploader_id AS uploader_id,
+			SELECT fk_user_id AS uploader_id,
 				fk_submission_id,
-				uploaded_at AS uploaded_at,
+				created_at AS created_at,
 				original_filename_sequence,
 				current_filename_sequence,
 				md5sum_sequence,
 				sha256sum_sequence
 			FROM ranked_file
 			WHERE rn = 1
-			AND fk_submission_id IN ` + chosenSubmissions + `
 		) AS file_data ON file_data.fk_submission_id = submission.id
-		LEFT JOIN discord_user uploader ON file_data.uploader_id = uploader.id
-		LEFT JOIN discord_user updater ON submission.updater_id = updater.id
-		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = submission.submission_file_id
+		LEFT JOIN discord_user uploader ON oldest_file.fk_user_id = uploader.id
+		LEFT JOIN discord_user updater ON newest_comment.fk_user_id = updater.id
+		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id
 		LEFT JOIN (
 			WITH ranked_comment AS (
 				SELECT c.*,
@@ -637,8 +613,9 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 						ORDER BY created_at DESC
 					) AS rn
 				FROM comment AS c
-				WHERE c.fk_author_id = 810112564787675166
+				WHERE c.fk_user_id = 810112564787675166
 					AND c.deleted_at IS NULL
+					AND c.fk_submission_id IN ` + chosenSubmissions + `
 			)
 			SELECT ranked_comment.fk_submission_id AS submission_id,
 				(
@@ -648,7 +625,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				) AS action
 			FROM ranked_comment
 			WHERE rn = 1
-			AND ranked_comment.fk_submission_id IN ` + chosenSubmissions + `
 		) AS bot_comment ON bot_comment.submission_id = submission.id
 		LEFT JOIN (
 			SELECT *,
@@ -678,7 +654,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 										fk_submission_id,
 										GROUP_CONCAT(
 											CONCAT(
-												fk_author_id,
+												fk_user_id,
 												'-',
 												(
 													SELECT name
@@ -688,7 +664,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 											)
 										) AS comment_sequence
 									FROM comment
-									WHERE fk_author_id != 810112564787675166
+									WHERE fk_user_id != 810112564787675166
 										AND deleted_at IS NULL
 										AND fk_action_id != (
 											SELECT id
@@ -736,7 +712,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		AND submission.id IN ` + chosenSubmissions + `
 		GROUP BY submission.id
-		ORDER BY submission.updated_at DESC
+		ORDER BY newest_comment.created_at DESC
+		LIMIT ? OFFSET ?
 		`
 
 	// fmt.Println(finalQuery)
@@ -890,10 +867,20 @@ func (d *mysqlDAL) StoreComment(dbs DBSession, c *types.Comment) error {
 		s := strings.TrimSpace(*c.Message)
 		msg = &s
 	}
-	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO comment (fk_author_id, fk_submission_id, message, fk_action_id, created_at) 
-                           VALUES (?, ?, ?, (SELECT id FROM action WHERE name=?), ?)`,
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		INSERT INTO comment (fk_user_id, fk_submission_id, message, fk_action_id, created_at) 
+        VALUES (?, ?, ?, (SELECT id FROM action WHERE name=?), ?)`,
 		c.AuthorID, c.SubmissionID, msg, c.Action, c.CreatedAt.Unix())
-	return err
+	if err != nil {
+		return err
+	}
+
+	err = updateSubmissionCache(dbs, c.SubmissionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
@@ -901,7 +888,7 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) (
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
 		SELECT comment.id, discord_user.id, username, avatar, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
 		FROM comment 
-		JOIN discord_user ON discord_user.id = fk_author_id
+		JOIN discord_user ON discord_user.id = fk_user_id
 		WHERE fk_submission_id=? 
 		AND comment.deleted_at IS NULL
 		ORDER BY created_at;`, sid)
@@ -932,14 +919,15 @@ func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) (
 // SoftDeleteSubmissionFile marks submission file as deleted
 func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteReason string) error {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
-		SELECT COUNT(*) FROM submission_file
+		SELECT COUNT(*), fk_submission_id FROM submission_file
 		WHERE fk_submission_id = (SELECT fk_submission_id FROM submission_file WHERE id = ?)
         AND submission_file.deleted_at IS NULL
 		GROUP BY fk_submission_id`,
 		sfid, deleteReason)
 
 	var count int64
-	if err := row.Scan(&count); err != nil {
+	var sid int64
+	if err := row.Scan(&count, &sid); err != nil {
 		return err
 	}
 	if count <= 1 {
@@ -950,6 +938,26 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteRea
 		UPDATE submission_file SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE id  = ?`,
 		deleteReason, sfid)
+	if err != nil {
+		return err
+	}
+
+	err = updateSubmissionCache(dbs, sid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateSubmissionCache(dbs DBSession, sid int64) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE submission_cache
+		SET fk_newest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
+		    fk_oldest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at LIMIT 1),
+		    fk_newest_comment_id = (SELECT id FROM comment WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)
+		WHERE fk_submission_id = ?`,
+		sid, sid, sid, sid)
 	return err
 }
 
@@ -975,7 +983,16 @@ func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64, deleteReason s
 		UPDATE submission SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE id = ?`,
 		deleteReason, sid)
-	return err
+	if err != nil {
+		return err
+	}
+
+	err = updateSubmissionCache(dbs, sid)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SoftDeleteComment marks comment as deleted
@@ -984,7 +1001,27 @@ func (d *mysqlDAL) SoftDeleteComment(dbs DBSession, cid int64, deleteReason stri
 		UPDATE comment SET deleted_at = UNIX_TIMESTAMP(), deleted_reason = ?
 		WHERE id = ?`,
 		deleteReason, cid)
-	return err
+	if err != nil {
+		return err
+	}
+
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT fk_submission_id FROM comment
+		WHERE id = ?`,
+		cid)
+
+	var sid int64
+	err = row.Scan(&sid)
+	if err != nil {
+		return err
+	}
+
+	err = updateSubmissionCache(dbs, sid)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // StoreNotificationSettings clears and stores new notification settings for user

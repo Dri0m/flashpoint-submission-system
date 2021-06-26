@@ -61,20 +61,20 @@ CREATE INDEX idx_submission_deleted_at ON submission (deleted_at);
 CREATE TABLE IF NOT EXISTS submission_file
 (
     id                BIGINT PRIMARY KEY AUTO_INCREMENT,
-    fk_uploader_id    BIGINT              NOT NULL,
+    fk_user_id    BIGINT              NOT NULL,
     fk_submission_id  BIGINT              NOT NULL,
     original_filename VARCHAR(255)        NOT NULL,
     current_filename  VARCHAR(255) UNIQUE NOT NULL,
     size              BIGINT              NOT NULL,
-    uploaded_at       BIGINT              NOT NULL,
+    created_at       BIGINT              NOT NULL,
     md5sum            CHAR(32) UNIQUE     NOT NULL,
     sha256sum         CHAR(64) UNIQUE     NOT NULL,
     deleted_at        BIGINT       DEFAULT NULL,
     deleted_reason    VARCHAR(255) DEFAULT NULL,
-    FOREIGN KEY (fk_uploader_id) REFERENCES discord_user (id),
+    FOREIGN KEY (fk_user_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id)
 );
-CREATE INDEX idx_submission_file_uploaded_at ON submission_file (uploaded_at);
+CREATE INDEX idx_submission_file_created_at ON submission_file (created_at);
 CREATE INDEX idx_submission_file_deleted_at ON submission_file (deleted_at);
 
 CREATE TABLE IF NOT EXISTS curation_meta
@@ -127,14 +127,14 @@ VALUES (1, 'comment'),
 CREATE TABLE IF NOT EXISTS comment
 (
     id               BIGINT PRIMARY KEY AUTO_INCREMENT,
-    fk_author_id     BIGINT NOT NULL,
+    fk_user_id     BIGINT NOT NULL,
     fk_submission_id BIGINT NOT NULL,
     message          TEXT,
     fk_action_id     BIGINT,
     created_at       BIGINT NOT NULL,
     deleted_at       BIGINT       DEFAULT NULL,
     deleted_reason   VARCHAR(255) DEFAULT NULL,
-    FOREIGN KEY (fk_author_id) REFERENCES discord_user (id),
+    FOREIGN KEY (fk_user_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
     FOREIGN KEY (fk_action_id) REFERENCES action (id)
 );
@@ -149,7 +149,6 @@ CREATE TABLE IF NOT EXISTS notification_settings
     FOREIGN KEY (fk_user_id) REFERENCES discord_user (id),
     FOREIGN KEY (fk_action_id) REFERENCES action (id)
 );
-
 
 CREATE TABLE IF NOT EXISTS submission_notification_subscription
 (
@@ -202,4 +201,16 @@ CREATE TABLE IF NOT EXISTS curation_image
     filename                  VARCHAR(255) UNIQUE NOT NULL,
     FOREIGN KEY (fk_submission_file_id) REFERENCES submission_file (id),
     FOREIGN KEY (fk_curation_image_type_id) REFERENCES curation_image_type (id)
+);
+
+CREATE TABLE IF NOT EXISTS submission_cache
+(
+    fk_submission_id     BIGINT,
+    fk_oldest_file_id    BIGINT,
+    fk_newest_file_id    BIGINT,
+    fk_newest_comment_id BIGINT,
+    FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
+    FOREIGN KEY (fk_oldest_file_id) REFERENCES submission_file (id),
+    FOREIGN KEY (fk_newest_file_id) REFERENCES submission_file (id),
+    FOREIGN KEY (fk_newest_comment_id) REFERENCES comment (id)
 );

@@ -129,8 +129,15 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return nil, nil, perr("unsupported file extension", http.StatusBadRequest)
 	}
 
-	destinationFilename := s.randomStringProvider.RandomString(64) + ext
-	destinationFilePath := fmt.Sprintf("%s/%s", s.submissionsDir, destinationFilename)
+	var destinationFilename string
+	var destinationFilePath string
+	for {
+		destinationFilename = s.randomStringProvider.RandomString(64) + ext
+		destinationFilePath = fmt.Sprintf("%s/%s", s.submissionsDir, destinationFilename)
+		if !utils.FileExists(destinationFilePath) {
+			break
+		}
+	}
 
 	destination, err := os.Create(destinationFilePath)
 	if err != nil {
@@ -253,8 +260,16 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		if err != nil {
 			return &destinationFilePath, imageFilePaths, err
 		}
-		imageFilename := s.randomStringProvider.RandomString(64)
-		imageFilenameFilePath := fmt.Sprintf("%s/%s", s.submissionImagesDir, imageFilename)
+
+		var imageFilename string
+		var imageFilenameFilePath string
+		for {
+			imageFilename = s.randomStringProvider.RandomString(64) + ext
+			imageFilenameFilePath = fmt.Sprintf("%s/%s", s.submissionImagesDir, imageFilename)
+			if !utils.FileExists(imageFilenameFilePath) {
+				break
+			}
+		}
 
 		imageFilePaths = append(imageFilePaths, imageFilenameFilePath)
 

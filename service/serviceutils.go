@@ -1,6 +1,8 @@
 package service
 
-import "github.com/Dri0m/flashpoint-submission-system/constants"
+import (
+	"github.com/Dri0m/flashpoint-submission-system/constants"
+)
 
 func dberr(err error) error {
 	return constants.DatabaseError{Err: err}

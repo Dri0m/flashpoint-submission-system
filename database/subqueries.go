@@ -6,32 +6,18 @@ import (
 	"strings"
 )
 
-func chooseSubmissions(dbs DBSession, currentLimit, currentOffset int64) (*string, error) {
+func chooseSubmissions(dbs DBSession) (*string, int, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
 	SELECT submission.id
 	FROM submission
-		LEFT JOIN (
-			WITH ranked_comment AS (
-				SELECT s.*,
-					ROW_NUMBER() OVER (
-						PARTITION BY fk_submission_id
-						ORDER BY created_at DESC, id DESC
-					) AS rn
-				FROM comment AS s
-				WHERE s.deleted_at IS NULL
-			)
-			SELECT fk_submission_id, created_at
-			FROM ranked_comment
-			WHERE rn = 1
-		) AS newest_comment ON newest_comment.fk_submission_id = submission.id
+		LEFT JOIN submission_cache ON submission_cache.fk_submission_id = submission.id
+		LEFT JOIN comment AS newest_comment ON newest_comment.id = submission_cache.fk_newest_comment_id
 	WHERE submission.deleted_at IS NULL
-	GROUP BY submission.id
     ORDER BY newest_comment.created_at DESC
-	LIMIT ? OFFSET ?
-	`, currentLimit, currentOffset)
+	`)
 
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -40,14 +26,14 @@ func chooseSubmissions(dbs DBSession, currentLimit, currentOffset int64) (*strin
 	for rows.Next() {
 		var sid int64
 		if err := rows.Scan(&sid); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		sids = append(sids, strconv.FormatInt(sid, 10))
 	}
 
 	result := "(" + strings.Join(sids, ",") + ")"
 
-	return &result, nil
+	return &result, len(sids), nil
 }
 
 func commentPair(enabler, disabler, choosenSubmissions string) string {
@@ -68,11 +54,11 @@ func commentPair(enabler, disabler, choosenSubmissions string) string {
 					SELECT c.*,
 						ROW_NUMBER() OVER (
 							PARTITION BY c.fk_submission_id,
-							c.fk_author_id
+							c.fk_user_id
 							ORDER BY created_at DESC
 						) AS rn
 					FROM comment AS c
-					WHERE c.fk_author_id != 810112564787675166
+					WHERE c.fk_user_id != 810112564787675166
 						AND c.fk_action_id IN (
 							SELECT id
 							FROM action
@@ -83,39 +69,24 @@ func commentPair(enabler, disabler, choosenSubmissions string) string {
 					ORDER BY created_at ASC
 				)
 				SELECT ranked_comment.fk_submission_id AS submission_id,
-					ranked_comment.fk_author_id AS author_id,
+					ranked_comment.fk_user_id AS author_id,
 					ranked_comment.created_at
 				FROM ranked_comment
-					LEFT JOIN (
-						WITH ranked_file AS (
-							SELECT s.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY fk_submission_id
-									ORDER BY uploaded_at DESC,
-										id DESC
-								) AS frn
-							FROM submission_file AS s
-							WHERE s.deleted_at IS NULL
-						    AND s.fk_submission_id IN %s
-						)
-						SELECT fk_submission_id,
-							uploaded_at
-						FROM ranked_file
-						WHERE frn = 1
-					) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
+					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id IN %s) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
+					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_submission_id
 				WHERE rn = 1
-					AND created_at > last_file.uploaded_at
+					AND ranked_comment.created_at > last_file.created_at
 			) AS latest_enabler ON latest_enabler.submission_id = submission.id
 			LEFT JOIN (
 				WITH ranked_comment AS (
 					SELECT c.*,
 						ROW_NUMBER() OVER (
 							PARTITION BY c.fk_submission_id,
-							c.fk_author_id
+							c.fk_user_id
 							ORDER BY created_at DESC
 						) AS rn
 					FROM comment AS c
-					WHERE c.fk_author_id != 810112564787675166
+					WHERE c.fk_user_id != 810112564787675166
 						AND c.fk_action_id IN (
 							SELECT id
 							FROM action
@@ -125,28 +96,13 @@ func commentPair(enabler, disabler, choosenSubmissions string) string {
 				    	AND c.fk_submission_id IN %s
 				)
 				SELECT ranked_comment.fk_submission_id AS submission_id,
-					ranked_comment.fk_author_id AS author_id,
+					ranked_comment.fk_user_id AS author_id,
 					ranked_comment.created_at
 				FROM ranked_comment
-					LEFT JOIN (
-						WITH ranked_file AS (
-							SELECT s.*,
-								ROW_NUMBER() OVER (
-									PARTITION BY fk_submission_id
-									ORDER BY uploaded_at DESC,
-										id DESC
-								) AS frn
-							FROM submission_file AS s
-							WHERE s.deleted_at IS NULL
-						    AND s.fk_submission_id IN %s
-						)
-						SELECT fk_submission_id,
-							uploaded_at
-						FROM ranked_file
-						WHERE frn = 1
-					) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
+					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id IN %s) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
+					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_submission_id
 				WHERE rn = 1
-					AND created_at > last_file.uploaded_at
+					AND ranked_comment.created_at > last_file.created_at
 			) AS latest_disabler ON latest_disabler.submission_id = submission.id
 			AND latest_disabler.author_id = latest_enabler.author_id
 		WHERE (
@@ -159,8 +115,8 @@ func commentPair(enabler, disabler, choosenSubmissions string) string {
 					latest_disabler.created_at IS NULL
 					AND latest_enabler.created_at IS NOT NULL
 				)
-			)
+			) AND submission.id IN %s
 		GROUP BY submission.id)`,
 		enabler, choosenSubmissions, choosenSubmissions,
-		disabler, choosenSubmissions, choosenSubmissions)
+		disabler, choosenSubmissions, choosenSubmissions, choosenSubmissions)
 }
