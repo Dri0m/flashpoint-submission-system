@@ -239,8 +239,8 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		sid = &sidParsed
 	}
 
-	// limit RAM usage to 100MB
-	if err := r.ParseMultipartForm(100 * 1000 * 1000); err != nil {
+	// limit RAM usage to 10MB
+	if err := r.ParseMultipartForm(10 * 1000 * 1000); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(w, perr("failed to parse form", http.StatusInternalServerError))
 		return
