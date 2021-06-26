@@ -16,6 +16,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -113,6 +114,7 @@ type SiteService struct {
 	submissionImagesDir       string
 	notificationQueueNotEmpty chan bool
 	isDev                     bool
+	submissionReceiverMutex   sync.Mutex
 }
 
 func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,

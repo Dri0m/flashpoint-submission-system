@@ -159,6 +159,9 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, nil, fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
+	// FIXME remove this lazy solution to prevent database deadlocks and fix it properly
+	s.submissionReceiverMutex.Lock()
+	defer s.submissionReceiverMutex.Unlock()
 	utils.LogCtx(ctx).Debug("storing submission...")
 
 	var submissionID int64
