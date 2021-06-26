@@ -238,7 +238,7 @@ func (d *mysqlDAL) StoreSubmissionFile(dbs DBSession, s *types.SubmissionFile) (
 		return 0, err
 	}
 
-	err = updateSubmissionCache(dbs, s.SubmissionID)
+	err = updateSubmissionCacheTable(dbs, s.SubmissionID)
 	if err != nil {
 		return 0, err
 	}
@@ -875,7 +875,7 @@ func (d *mysqlDAL) StoreComment(dbs DBSession, c *types.Comment) error {
 		return err
 	}
 
-	err = updateSubmissionCache(dbs, c.SubmissionID)
+	err = updateSubmissionCacheTable(dbs, c.SubmissionID)
 	if err != nil {
 		return err
 	}
@@ -942,7 +942,7 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteRea
 		return err
 	}
 
-	err = updateSubmissionCache(dbs, sid)
+	err = updateSubmissionCacheTable(dbs, sid)
 	if err != nil {
 		return err
 	}
@@ -950,7 +950,7 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteRea
 	return nil
 }
 
-func updateSubmissionCache(dbs DBSession, sid int64) error {
+func updateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
 		UPDATE submission_cache
 		SET fk_newest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
@@ -987,7 +987,7 @@ func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64, deleteReason s
 		return err
 	}
 
-	err = updateSubmissionCache(dbs, sid)
+	err = updateSubmissionCacheTable(dbs, sid)
 	if err != nil {
 		return err
 	}
@@ -1016,7 +1016,7 @@ func (d *mysqlDAL) SoftDeleteComment(dbs DBSession, cid int64, deleteReason stri
 		return err
 	}
 
-	err = updateSubmissionCache(dbs, sid)
+	err = updateSubmissionCacheTable(dbs, sid)
 	if err != nil {
 		return err
 	}
