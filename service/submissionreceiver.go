@@ -303,6 +303,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, imageFilePaths, dberr(err)
 	}
 
+	if err := s.dal.UpdateSubmissionCacheTable(dbs, submissionID); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, imageFilePaths, dberr(err)
+	}
+
 	return &destinationFilePath, imageFilePaths, nil
 }
 

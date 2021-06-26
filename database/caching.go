@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func updateSubmissionCacheTable(dbs DBSession, sid int64) error {
+func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	l := utils.LogCtx(dbs.Ctx()).WithField("event", "cache-table-update").WithField("table", "submission_cache")
 	l.Debug("updating submission cache table")
 	start := time.Now()
@@ -208,8 +208,8 @@ func getDistinctActions(dbs DBSession, sid int64) (result *string, err error) {
 				) AS actions
 			FROM comment
 				LEFT JOIN submission on submission.id = comment.fk_submission_id
-			GROUP BY submission.id
-		AND fk_submission_id = ?`,
+			WHERE fk_submission_id = ?
+			GROUP BY submission.id`,
 		sid)
 
 	err = row.Scan(&result)

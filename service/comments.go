@@ -353,6 +353,11 @@ SubmissionLoop:
 			utils.LogCtx(ctx).Error(err)
 			return dberr(err)
 		}
+
+		if err := s.dal.UpdateSubmissionCacheTable(dbs, sid); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return dberr(err)
+		}
 	}
 
 	if err := dbs.Commit(); err != nil {

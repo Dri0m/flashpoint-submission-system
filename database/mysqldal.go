@@ -237,11 +237,6 @@ func (d *mysqlDAL) StoreSubmissionFile(dbs DBSession, s *types.SubmissionFile) (
 		return 0, err
 	}
 
-	err = updateSubmissionCacheTable(dbs, s.SubmissionID)
-	if err != nil {
-		return 0, err
-	}
-
 	return fid, nil
 }
 
@@ -365,11 +360,6 @@ func (d *mysqlDAL) StoreComment(dbs DBSession, c *types.Comment) error {
 		return err
 	}
 
-	err = updateSubmissionCacheTable(dbs, c.SubmissionID)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -432,7 +422,7 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteRea
 		return err
 	}
 
-	err = updateSubmissionCacheTable(dbs, sid)
+	err = d.UpdateSubmissionCacheTable(dbs, sid)
 	if err != nil {
 		return err
 	}
@@ -466,7 +456,7 @@ func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64, deleteReason s
 		return err
 	}
 
-	err = updateSubmissionCacheTable(dbs, sid)
+	err = d.UpdateSubmissionCacheTable(dbs, sid)
 	if err != nil {
 		return err
 	}
@@ -495,7 +485,7 @@ func (d *mysqlDAL) SoftDeleteComment(dbs DBSession, cid int64, deleteReason stri
 		return err
 	}
 
-	err = updateSubmissionCacheTable(dbs, sid)
+	err = d.UpdateSubmissionCacheTable(dbs, sid)
 	if err != nil {
 		return err
 	}

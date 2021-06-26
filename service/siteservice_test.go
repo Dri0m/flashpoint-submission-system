@@ -228,6 +228,11 @@ func (m *mockDAL) GetPreviousSubmission(_ database.DBSession, sid int64) (int64,
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (m *mockDAL) UpdateSubmissionCacheTable(_ database.DBSession, sid int64) error {
+	args := m.Called(sid)
+	return args.Error(0)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {
@@ -599,6 +604,7 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
 	ts.dal.On("StoreComment", bc).Return(nil)
+	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(nil)
 
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
@@ -725,6 +731,7 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
 	ts.dal.On("StoreCurationImage", ci).Return(ciid, nil)
 	ts.dal.On("StoreComment", bc).Return(nil)
+	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(nil)
 
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
@@ -1587,6 +1594,113 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 	ts.assertExpectations(t)
 }
 
+func Test_siteService_ReceiveSubmissions_Fail_UpdateSubmissionCacheTable(t *testing.T) {
+	ts := NewTestSiteService()
+
+	tmpDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionsDir = tmpDir
+
+	tmpImageDir, err := ioutil.TempDir("", "Test_siteService_ReceiveSubmissions_OK_dir")
+	assert.NoError(t, err)
+	ts.s.submissionImagesDir = tmpImageDir
+
+	tmpFile, err := ioutil.TempFile("", "Test_siteService_ReceiveSubmissions_OK*.7z")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	var size int64 = 0
+
+	destinationFilename := ts.s.randomStringProvider.RandomString(64) + ".7z"
+	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+
+	userRoles := []string{}
+	submissionLevel := constants.SubmissionLevelAudition
+
+	extreme := "No"
+
+	sf := &types.SubmissionFile{
+		SubmissionID:     sid,
+		SubmitterID:      uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             size,
+		UploadedAt:       ts.s.clock.Now(),
+		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
+		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      nil,
+		Action:       constants.ActionUpload,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+		Extreme:          &extreme,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
+
+	approvalMessage := "Looks good to me! 🤖"
+	bc := &types.Comment{
+		AuthorID:     constants.ValidatorID,
+		SubmissionID: sid,
+		Message:      &approvalMessage,
+		Action:       constants.ActionApprove,
+		CreatedAt:    ts.s.clock.Now().Add(time.Second),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
+
+	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Filename").Return(filename)
+	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
+	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
+	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
+	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
+	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
+	ts.dal.On("StoreComment", bc).Return(nil)
+	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+
+	assert.Error(t, err)
+
+	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
+
+	ts.assertExpectations(t)
+}
+
 func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	ts := NewTestSiteService()
 
@@ -1681,6 +1795,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
 	ts.dal.On("StoreComment", bc).Return(nil)
+	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(nil)
 
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
@@ -1736,6 +1851,7 @@ func Test_siteService_ReceiveComments_OK(t *testing.T) {
 	ts.dal.On("StoreComment", c).Return(nil)
 
 	ts.dal.On("GetUsersForNotification", uid, sid, formAction).Return(notifiedUsers, nil)
+	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(nil)
 
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
@@ -1898,6 +2014,57 @@ func Test_siteService_ReceiveComments_Fail_GetUsersForNotification(t *testing.T)
 	ts.assertExpectations(t)
 }
 
+func Test_siteService_ReceiveComments_Fail_UpdateSubmissionCacheTable(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var sids = []int64{sid}
+	var notifiedUsers []int64
+
+	formAction := constants.ActionComment
+	formMessage := "foo"
+	formIgnoreDupeActions := "false"
+
+	filter := &types.SubmissionsFilter{
+		SubmissionIDs: []int64{sid},
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: sid,
+			SubmitterID:  uid,
+		},
+	}
+
+	c := &types.Comment{
+		AuthorID:     uid,
+		SubmissionID: sid,
+		Message:      &formMessage,
+		Action:       constants.ActionComment,
+		CreatedAt:    ts.s.clock.Now(),
+	}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("StoreComment", c).Return(nil)
+
+	ts.dal.On("GetUsersForNotification", uid, sid, formAction).Return(notifiedUsers, nil)
+	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(errors.New(""))
+
+	ts.dbs.On("Rollback").Return(nil)
+
+	err := ts.s.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions)
+
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
 func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 	ts := NewTestSiteService()
 
@@ -1938,6 +2105,7 @@ func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 	ts.dal.On("StoreComment", c).Return(nil)
 
 	ts.dal.On("GetUsersForNotification", uid, sid, formAction).Return(notifiedUsers, nil)
+	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(nil)
 
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)

@@ -42,6 +42,7 @@ type DAL interface {
 	GetCurationImage(dbs DBSession, ciid int64) (*types.CurationImage, error)
 	GetNextSubmission(dbs DBSession, sid int64) (int64, error)
 	GetPreviousSubmission(dbs DBSession, sid int64) (int64, error)
+	UpdateSubmissionCacheTable(dbs DBSession, sid int64) error
 }
 
 type DBSession interface {
