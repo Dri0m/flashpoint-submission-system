@@ -63,11 +63,11 @@
                     {{if or (or (has .UserID $submission.AssignedTestingUserIDs) (has .UserID $submission.ApprovedUserIDs)) (or (has .UserID $submission.AssignedVerificationUserIDs) (has .UserID $submission.VerifiedUserIDs))}}
                         {{if not (has "mark-added" $submission.DistinctActions)}}
                             {{if not (eq .UserID $submission.LastUploaderID)}}
+                                <button type="button" class="pure-button pure-button button-request-changes"
+                                        onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
+                                    Request Changes
+                                </button>
                             {{end}}
-                            <button type="button" class="pure-button pure-button button-request-changes"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
-                                Request Changes
-                            </button>
                         {{end}}
                     {{end}}
 

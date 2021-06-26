@@ -1,3 +1,5 @@
+-- TODO yea no, not like this
+
 create view view_active_assigned_testing as (
 SELECT submission.id AS submission_id,
        COUNT(latest_enabler.author_id) AS user_count_with_enabled_action,
@@ -32,7 +34,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_enabler ON latest_enabler.submission_id = submission.id
          LEFT JOIN (
     WITH ranked_comment AS (
@@ -55,7 +71,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_disabler ON latest_disabler.submission_id = submission.id
     AND latest_disabler.author_id = latest_enabler.author_id
 WHERE (
@@ -105,7 +135,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_enabler ON latest_enabler.submission_id = submission.id
          LEFT JOIN (
     WITH ranked_comment AS (
@@ -128,7 +172,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_disabler ON latest_disabler.submission_id = submission.id
     AND latest_disabler.author_id = latest_enabler.author_id
 WHERE (
@@ -178,7 +236,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_enabler ON latest_enabler.submission_id = submission.id
          LEFT JOIN (
     WITH ranked_comment AS (
@@ -201,7 +273,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_disabler ON latest_disabler.submission_id = submission.id
     AND latest_disabler.author_id = latest_enabler.author_id
 WHERE (
@@ -251,7 +337,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_enabler ON latest_enabler.submission_id = submission.id
          LEFT JOIN (
     WITH ranked_comment AS (
@@ -274,7 +374,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_disabler ON latest_disabler.submission_id = submission.id
     AND latest_disabler.author_id = latest_enabler.author_id
 WHERE (
@@ -324,7 +438,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_enabler ON latest_enabler.submission_id = submission.id
          LEFT JOIN (
     WITH ranked_comment AS (
@@ -347,7 +475,21 @@ FROM submission
            ranked_comment.fk_author_id AS author_id,
            ranked_comment.created_at
     FROM ranked_comment
+             LEFT JOIN (WITH ranked_file AS (
+        SELECT s.*,
+               ROW_NUMBER() OVER (
+                   PARTITION BY fk_submission_id
+                   ORDER BY uploaded_at DESC, id DESC
+                   ) AS frn
+        FROM submission_file AS s
+        WHERE s.deleted_at IS NULL
+    )
+                        SELECT fk_submission_id,
+                               uploaded_at
+                        FROM ranked_file
+                        WHERE frn = 1) AS last_file ON last_file.fk_submission_id = ranked_comment.fk_submission_id
     WHERE rn = 1
+      AND created_at > last_file.uploaded_at
 ) AS latest_disabler ON latest_disabler.submission_id = submission.id
     AND latest_disabler.author_id = latest_enabler.author_id
 WHERE (
