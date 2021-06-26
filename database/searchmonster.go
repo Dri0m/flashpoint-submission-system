@@ -51,19 +51,19 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			data = append(data, utils.FormatLike(*filter.LibraryPartial))
 		}
 		if filter.OriginalFilenamePartialAny != nil {
-			filters = append(filters, "(filenames.original_filename_sequence LIKE ?)")
+			filters = append(filters, "(submission_cache.original_filename_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.OriginalFilenamePartialAny))
 		}
 		if filter.CurrentFilenamePartialAny != nil {
-			filters = append(filters, "(filenames.current_filename_sequence LIKE ?)")
+			filters = append(filters, "(submission_cache.current_filename_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.CurrentFilenamePartialAny))
 		}
 		if filter.MD5SumPartialAny != nil {
-			filters = append(filters, "(filenames.md5sum_sequence LIKE ?)")
+			filters = append(filters, "(submission_cache.md5sum_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.MD5SumPartialAny))
 		}
 		if filter.SHA256SumPartialAny != nil {
-			filters = append(filters, "(filenames.sha256sum_sequence LIKE ?)")
+			filters = append(filters, "(submission_cache.sha256sum_sequence LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.SHA256SumPartialAny))
 		}
 		if len(filter.BotActions) != 0 {
@@ -223,7 +223,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		newest_file.original_filename,
 		newest_file.current_filename,
 		newest_file.size,
-		file_data.created_at,
+		oldest_file.created_at,
 		newest_comment.created_at,
 		newest_file.fk_user_id,
 		meta.title,
@@ -251,31 +251,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			WHERE deleted_at IS NULL 
 			GROUP BY fk_submission_id
 		) AS submission_file_count ON submission_file_count.fk_submission_id = submission.id
-		LEFT JOIN (
-			WITH ranked_file AS (
-				SELECT s.*,
-					ROW_NUMBER() OVER (
-						PARTITION BY fk_submission_id
-						ORDER BY created_at ASC
-					) AS rn,
-					GROUP_CONCAT(original_filename) AS original_filename_sequence,
-					GROUP_CONCAT(current_filename) AS current_filename_sequence,
-					GROUP_CONCAT(md5sum) AS md5sum_sequence,
-					GROUP_CONCAT(sha256sum) AS sha256sum_sequence
-				FROM submission_file AS s
-				WHERE s.deleted_at IS NULL
-				GROUP BY s.fk_submission_id
-			)
-			SELECT fk_user_id AS uploader_id,
-				fk_submission_id,
-				created_at AS created_at,
-				original_filename_sequence,
-				current_filename_sequence,
-				md5sum_sequence,
-				sha256sum_sequence
-			FROM ranked_file
-			WHERE rn = 1
-		) AS file_data ON file_data.fk_submission_id = submission.id
 		LEFT JOIN discord_user uploader ON oldest_file.fk_user_id = uploader.id
 		LEFT JOIN discord_user updater ON newest_comment.fk_user_id = updater.id
 		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id

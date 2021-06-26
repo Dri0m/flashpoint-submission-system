@@ -33,18 +33,33 @@ func updateSubmissionCacheTable(dbs DBSession, sid int64) error {
 		return err
 	}
 
+	ofs, cfs, md5s, sha256s, err := getFileDataSequences(dbs, sid)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
 		UPDATE submission_cache
 		SET fk_newest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
 		    fk_oldest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at LIMIT 1),
 		    fk_newest_comment_id = (SELECT id FROM comment WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
+		    
 		    active_assigned_testing_ids = ?,
 		    active_assigned_verification_ids = ?,
 		    active_requested_changes_ids = ?,
 		    active_approved_ids = ?,
-		    active_verified_ids = ?
+		    active_verified_ids = ?,
+		    
+		    original_filename_sequence = ?,
+		    current_filename_sequence = ?,
+		    md5sum_sequence = ?,
+		    sha256sum_sequence = ?
+		
 		WHERE fk_submission_id = ?`,
-		sid, sid, sid, assignedTestingIDseq, assignedVerificationIDseq, requestedChangesIDseq, approvedIDseq, verifiedIDseq, sid)
+		sid, sid, sid,
+		assignedTestingIDseq, assignedVerificationIDseq, requestedChangesIDseq, approvedIDseq, verifiedIDseq,
+		ofs, cfs, md5s, sha256s,
+		sid)
 	if err != nil {
 		return err
 	}
@@ -137,4 +152,33 @@ func getUserCountWithEnabledAction(dbs DBSession, enablerChunk, disablerChunk st
 	}
 
 	return &idSequence, nil
+}
+
+func getFileDataSequences(dbs DBSession, sid int64) (ofs, cfs, md5s, sha256s *string, err error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		WITH ranked_file AS (
+			SELECT s.*,
+				ROW_NUMBER() OVER (
+					PARTITION BY fk_submission_id
+					ORDER BY created_at
+				) AS rn,
+				GROUP_CONCAT(original_filename) AS original_filename_sequence,
+				GROUP_CONCAT(current_filename) AS current_filename_sequence,
+				GROUP_CONCAT(md5sum) AS md5sum_sequence,
+				GROUP_CONCAT(sha256sum) AS sha256sum_sequence
+			FROM submission_file AS s
+			WHERE s.deleted_at IS NULL
+			GROUP BY s.fk_submission_id
+		)
+		SELECT original_filename_sequence,
+			current_filename_sequence,
+			md5sum_sequence,
+			sha256sum_sequence
+		FROM ranked_file
+		WHERE rn = 1
+		AND fk_submission_id = ?`,
+		sid)
+
+	err = row.Scan(&ofs, &cfs, &md5s, &sha256s)
+	return
 }

@@ -209,11 +209,18 @@ CREATE TABLE IF NOT EXISTS submission_cache
     fk_oldest_file_id                BIGINT,
     fk_newest_file_id                BIGINT,
     fk_newest_comment_id             BIGINT,
+
     active_assigned_testing_ids      TEXT,
     active_assigned_verification_ids TEXT,
     active_requested_changes_ids     TEXT,
     active_approved_ids              TEXT,
-    active_verified_ids      TEXT,
+
+    original_filename_sequence       TEXT,
+    current_filename_sequence        TEXT,
+    md5sum_sequence                  TEXT,
+    sha256sum_sequence               TEXT,
+    active_verified_ids              TEXT,
+
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
     FOREIGN KEY (fk_oldest_file_id) REFERENCES submission_file (id),
     FOREIGN KEY (fk_newest_file_id) REFERENCES submission_file (id),
