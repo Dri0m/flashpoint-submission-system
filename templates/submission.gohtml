@@ -33,6 +33,7 @@
                     <h3>Upload a fixed version</h3>
                     <input type="file" name="files" id="file-input">
                     <input class="pure-button button-upload-file" id="upload-button" value="Upload">
+                    <input type="number" value="1" id="upload-queues" hidden>
                     <div id="progress-bars-container"></div>
                     <script>bindFancierUpload("/submission-receiver/{{$submissionID}}")</script>
                 </div>
