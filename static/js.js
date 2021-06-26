@@ -182,6 +182,9 @@ function uploadHandler(url, files, i, step) {
     progressBar.max = 100
     progressBar.value = 0
     let progressText = document.createElement("span");
+    progressText.style.fontWeight = "bold"
+    progressText.style.fontSize = "90%"
+    progressText.style.textShadow = "0 1px 1px rgba(0, 0, 0, 0.08)"
     progressBarsContainer.appendChild(progressText)
     progressBarsContainer.appendChild(progressBar)
 
@@ -215,7 +218,11 @@ function uploadHandler(url, files, i, step) {
     let handleEnd = function (e) {
         if (request.status !== 200) {
             progressText.innerHTML = `${file.name}<br>Upload failed!<br>Request status: ${request.status} - ${friendlyHttpStatus[request.status]}<br>Server response: ${request.response}`
-            progressText.style.color = "red"
+            if (request.status === 409) {
+                progressText.style.color = "orange"
+            } else {
+                progressText.style.color = "red"
+            }
         } else {
             progressText.innerHTML = `${file.name}<br>Upload successful.`
         }
