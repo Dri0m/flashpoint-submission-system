@@ -14,7 +14,7 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 	l := logger.WithField("serviceName", "notificationConsumer")
 	defer l.Info("consumer stopped")
 
-	bucket, ticker := utils.NewBucketLimiter(1000*time.Millisecond, 1)
+	bucket, ticker := utils.NewBucketLimiter(10*time.Millisecond, 1)
 	defer ticker.Stop()
 
 	s.announceNotification()
@@ -40,6 +40,9 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 			loopWrap := func() {
 				dbs, err := s.dal.NewSession(ctx)
 				if err != nil {
+					if err == context.Canceled {
+						return
+					}
 					l.Error(err)
 					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
 					time.Sleep(errorSleepTime)
@@ -49,6 +52,9 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 
 				notification, err := s.dal.GetOldestUnsentNotification(dbs)
 				if err != nil {
+					if err == context.Canceled {
+						return
+					}
 					if err == sql.ErrNoRows {
 						l.Debug("notification queue is empty, waiting for announcement to resume consumption")
 						return
@@ -68,6 +74,9 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 				}
 
 				if err := s.dal.MarkNotificationAsSent(dbs, notification.ID); err != nil {
+					if err == context.Canceled {
+						return
+					}
 					l.Error(err)
 					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
 					time.Sleep(errorSleepTime)
@@ -75,6 +84,9 @@ func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context
 				}
 
 				if err := dbs.Commit(); err != nil {
+					if err == context.Canceled {
+						return
+					}
 					l.Error(err)
 					l.Debugf("sleeping for %f seconds", errorSleepTime.Seconds())
 					time.Sleep(errorSleepTime)
