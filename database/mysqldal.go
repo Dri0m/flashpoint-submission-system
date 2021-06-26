@@ -440,17 +440,6 @@ func (d *mysqlDAL) SoftDeleteSubmissionFile(dbs DBSession, sfid int64, deleteRea
 	return nil
 }
 
-func updateSubmissionCacheTable(dbs DBSession, sid int64) error {
-	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE submission_cache
-		SET fk_newest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
-		    fk_oldest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at LIMIT 1),
-		    fk_newest_comment_id = (SELECT id FROM comment WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)
-		WHERE fk_submission_id = ?`,
-		sid, sid, sid, sid)
-	return err
-}
-
 // SoftDeleteSubmission marks submission and its files as deleted
 func (d *mysqlDAL) SoftDeleteSubmission(dbs DBSession, sid int64, deleteReason string) error {
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `

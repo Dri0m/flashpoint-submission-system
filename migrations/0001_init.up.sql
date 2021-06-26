@@ -61,12 +61,12 @@ CREATE INDEX idx_submission_deleted_at ON submission (deleted_at);
 CREATE TABLE IF NOT EXISTS submission_file
 (
     id                BIGINT PRIMARY KEY AUTO_INCREMENT,
-    fk_user_id    BIGINT              NOT NULL,
+    fk_user_id        BIGINT              NOT NULL,
     fk_submission_id  BIGINT              NOT NULL,
     original_filename VARCHAR(255)        NOT NULL,
     current_filename  VARCHAR(255) UNIQUE NOT NULL,
     size              BIGINT              NOT NULL,
-    created_at       BIGINT              NOT NULL,
+    created_at        BIGINT              NOT NULL,
     md5sum            CHAR(32) UNIQUE     NOT NULL,
     sha256sum         CHAR(64) UNIQUE     NOT NULL,
     deleted_at        BIGINT       DEFAULT NULL,
@@ -127,7 +127,7 @@ VALUES (1, 'comment'),
 CREATE TABLE IF NOT EXISTS comment
 (
     id               BIGINT PRIMARY KEY AUTO_INCREMENT,
-    fk_user_id     BIGINT NOT NULL,
+    fk_user_id       BIGINT NOT NULL,
     fk_submission_id BIGINT NOT NULL,
     message          TEXT,
     fk_action_id     BIGINT,
@@ -205,10 +205,15 @@ CREATE TABLE IF NOT EXISTS curation_image
 
 CREATE TABLE IF NOT EXISTS submission_cache
 (
-    fk_submission_id     BIGINT,
-    fk_oldest_file_id    BIGINT,
-    fk_newest_file_id    BIGINT,
-    fk_newest_comment_id BIGINT,
+    fk_submission_id                 BIGINT,
+    fk_oldest_file_id                BIGINT,
+    fk_newest_file_id                BIGINT,
+    fk_newest_comment_id             BIGINT,
+    active_assigned_testing_ids      TEXT,
+    active_assigned_verification_ids TEXT,
+    active_requested_changes_ids     TEXT,
+    active_approved_ids              TEXT,
+    active_verified_ids      TEXT,
     FOREIGN KEY (fk_submission_id) REFERENCES submission (id),
     FOREIGN KEY (fk_oldest_file_id) REFERENCES submission_file (id),
     FOREIGN KEY (fk_newest_file_id) REFERENCES submission_file (id),

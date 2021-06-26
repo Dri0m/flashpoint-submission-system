@@ -234,11 +234,11 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		meta.extreme,
 		bot_comment.action AS bot_action,
 		submission_file_count.count,
-		active_assigned_testing.user_ids_with_enabled_action AS assigned_testing_user_ids,
-		active_assigned_verification.user_ids_with_enabled_action AS assigned_verification_user_ids,
-		active_requested_changes.user_ids_with_enabled_action AS requested_changes_user_ids,
-		active_approved.user_ids_with_enabled_action AS approved_user_ids,
-		active_verified.user_ids_with_enabled_action AS verified_user_ids,
+		submission_cache.active_assigned_testing_ids,
+		submission_cache.active_assigned_verification_ids,
+		submission_cache.active_requested_changes_ids,
+		submission_cache.active_approved_ids,
+		submission_cache.active_verified_ids,
 		distinct_actions.actions
 		FROM submission
 		LEFT JOIN submission_cache ON submission_cache.fk_submission_id = submission.id
@@ -362,11 +362,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
 				)
 		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
-		LEFT JOIN ` + commentPair(`= "assign-testing"`, `= "unassign-testing"`, `(SELECT id FROM submission)`) + ` AS active_assigned_testing ON active_assigned_testing.submission_id = submission.id
-		LEFT JOIN ` + commentPair(`= "assign-verification"`, `= "unassign-verification"`, `(SELECT id FROM submission)`) + ` AS active_assigned_verification ON active_assigned_verification.submission_id = submission.id
-		LEFT JOIN ` + commentPair(`= "request-changes"`, `IN("approve", "verify")`, `(SELECT id FROM submission)`) + ` AS active_requested_changes ON active_requested_changes.submission_id = submission.id
-		LEFT JOIN ` + commentPair(`= "approve"`, `= "request-changes"`, `(SELECT id FROM submission)`) + ` AS active_approved ON active_approved.submission_id = submission.id
-		LEFT JOIN ` + commentPair(`= "verify"`, `= "request-changes"`, `(SELECT id FROM submission)`) + ` AS active_verified ON active_verified.submission_id = submission.id
 		LEFT JOIN (
 			SELECT submission.id AS submission_id,
 				GROUP_CONCAT(
@@ -574,87 +569,4 @@ func commentPair(enabler, disabler, choosenSubmissions string) string {
 		GROUP BY submission.id)`,
 		enabler, choosenSubmissions, choosenSubmissions,
 		disabler, choosenSubmissions, choosenSubmissions, choosenSubmissions)
-}
-
-func getUserCountWithEnabledAction(dbs DBSession, enablerChunk, disablerChunk string, sid int64) (string, error) {
-	row := dbs.Tx().QueryRowContext(dbs.Ctx(), fmt.Sprintf(`
-		SELECT GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action
-		FROM submission
-			LEFT JOIN (
-				WITH ranked_comment AS (
-					SELECT c.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY c.fk_submission_id,
-							c.fk_user_id
-							ORDER BY created_at DESC
-						) AS rn
-					FROM comment AS c
-					WHERE c.fk_user_id != 810112564787675166
-						AND c.fk_action_id IN (
-							SELECT id
-							FROM action
-							WHERE name %s
-						)
-						AND c.deleted_at IS NULL
-						AND c.fk_submission_id = %d
-					ORDER BY created_at ASC
-				)
-				SELECT ranked_comment.fk_submission_id AS submission_id,
-					ranked_comment.fk_user_id AS author_id,
-					ranked_comment.created_at
-				FROM ranked_comment
-					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id = %d) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
-					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_submission_id
-				WHERE rn = 1
-					AND ranked_comment.created_at > last_file.created_at
-			) AS latest_enabler ON latest_enabler.submission_id = submission.id
-			LEFT JOIN (
-				WITH ranked_comment AS (
-					SELECT c.*,
-						ROW_NUMBER() OVER (
-							PARTITION BY c.fk_submission_id,
-							c.fk_user_id
-							ORDER BY created_at DESC
-						) AS rn
-					FROM comment AS c
-					WHERE c.fk_user_id != 810112564787675166
-						AND c.fk_action_id IN (
-							SELECT id
-							FROM action
-							WHERE name %s
-						)
-						AND c.deleted_at IS NULL
-				    	AND c.fk_submission_id = %d
-				)
-				SELECT ranked_comment.fk_submission_id AS submission_id,
-					ranked_comment.fk_user_id AS author_id,
-					ranked_comment.created_at
-				FROM ranked_comment
-					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id = %d) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
-					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_submission_id
-				WHERE rn = 1
-					AND ranked_comment.created_at > last_file.created_at
-			) AS latest_disabler ON latest_disabler.submission_id = submission.id
-			AND latest_disabler.author_id = latest_enabler.author_id
-		WHERE (
-				(
-					latest_enabler.created_at IS NOT NULL
-					AND latest_disabler.created_at IS NOT NULL
-					AND latest_enabler.created_at > latest_disabler.created_at
-				)
-				OR (
-					latest_disabler.created_at IS NULL
-					AND latest_enabler.created_at IS NOT NULL
-				)
-			)
-		GROUP BY submission.id`,
-		enablerChunk, sid, sid, disablerChunk, sid, sid))
-
-	var idSequence string
-	err := row.Scan(&idSequence)
-	if err != nil {
-		return "", err
-	}
-
-	return idSequence, nil
 }
