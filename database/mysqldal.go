@@ -495,12 +495,16 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		}
 	}
 
-	data = append(data, currentLimit, currentOffset)
-
 	and := ""
 	if len(filters) > 0 {
 		and = " AND "
 	}
+
+	subs, err := chooseSubmissions(dbs, currentLimit, currentOffset)
+	if err != nil {
+		return nil, err
+	}
+	chosenSubmissions := *subs
 
 	finalQuery := `
 			SELECT submission.id AS submission_id,
@@ -562,6 +566,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 							) AS file_count
 						FROM submission_file AS s
 						WHERE s.deleted_at IS NULL
+						AND s.fk_submission_id IN ` + chosenSubmissions + `
 					)
 					SELECT id,
 						fk_submission_id,
@@ -582,6 +587,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 							) AS rn
 						FROM comment AS s
 						WHERE s.deleted_at IS NULL
+						AND s.fk_submission_id IN ` + chosenSubmissions + `
 					)
 					SELECT id,
 						fk_submission_id,
@@ -591,6 +597,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					WHERE rn = 1
 				) AS newest_comment ON newest_comment.fk_submission_id = submission.id
 			WHERE submission.deleted_at IS NULL
+			AND submission.id IN ` + chosenSubmissions + `
 			GROUP BY submission.id
 		) AS submission
 		LEFT JOIN (
@@ -617,6 +624,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				sha256sum_sequence
 			FROM ranked_file
 			WHERE rn = 1
+			AND fk_submission_id IN ` + chosenSubmissions + `
 		) AS file_data ON file_data.fk_submission_id = submission.id
 		LEFT JOIN discord_user uploader ON file_data.uploader_id = uploader.id
 		LEFT JOIN discord_user updater ON submission.updater_id = updater.id
@@ -640,6 +648,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				) AS action
 			FROM ranked_comment
 			WHERE rn = 1
+			AND ranked_comment.fk_submission_id IN ` + chosenSubmissions + `
 		) AS bot_comment ON bot_comment.submission_id = submission.id
 		LEFT JOIN (
 			SELECT *,
@@ -703,12 +712,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					),
 					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
 				)
+			AND fk_submission_id IN ` + chosenSubmissions + `
 		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
-		LEFT JOIN view_active_assigned_testing AS active_assigned_testing ON active_assigned_testing.submission_id = submission.id
-		LEFT JOIN view_active_assigned_verification AS active_assigned_verification ON active_assigned_verification.submission_id = submission.id
-		LEFT JOIN view_active_requested_changes AS active_requested_changes ON active_requested_changes.submission_id = submission.id
-		LEFT JOIN view_active_approved AS active_approved ON active_approved.submission_id = submission.id
-		LEFT JOIN view_active_verified AS active_verified ON active_verified.submission_id = submission.id
+		LEFT JOIN ` + commentPair(`= "assign-testing"`, `= "unassign-testing"`, chosenSubmissions) + ` AS active_assigned_testing ON active_assigned_testing.submission_id = submission.id
+		LEFT JOIN ` + commentPair(`= "assign-verification"`, `= "unassign-verification"`, chosenSubmissions) + ` AS active_assigned_verification ON active_assigned_verification.submission_id = submission.id
+		LEFT JOIN ` + commentPair(`= "request-changes"`, `IN("approve", "verify")`, chosenSubmissions) + ` AS active_requested_changes ON active_requested_changes.submission_id = submission.id
+		LEFT JOIN ` + commentPair(`= "approve"`, `= "request-changes"`, chosenSubmissions) + ` AS active_approved ON active_approved.submission_id = submission.id
+		LEFT JOIN ` + commentPair(`= "verify"`, `= "request-changes"`, chosenSubmissions) + ` AS active_verified ON active_verified.submission_id = submission.id
 		LEFT JOIN (
 			SELECT submission.id AS submission_id,
 				GROUP_CONCAT(
@@ -720,12 +730,14 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				) AS actions
 			FROM comment
 				LEFT JOIN submission on submission.id = comment.fk_submission_id
+			WHERE submission.id IN ` + chosenSubmissions + `
 			GROUP BY submission.id
 		) AS distinct_actions ON distinct_actions.submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
+		AND submission.id IN ` + chosenSubmissions + `
 		GROUP BY submission.id
 		ORDER BY submission.updated_at DESC
-		LIMIT ? OFFSET ?`
+		`
 
 	// fmt.Println(finalQuery)
 
