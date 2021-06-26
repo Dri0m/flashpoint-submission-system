@@ -264,7 +264,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		var imageFilename string
 		var imageFilenameFilePath string
 		for {
-			imageFilename = s.randomStringProvider.RandomString(64) + ext
+			imageFilename = s.randomStringProvider.RandomString(64)
 			imageFilenameFilePath = fmt.Sprintf("%s/%s", s.submissionImagesDir, imageFilename)
 			if !utils.FileExists(imageFilenameFilePath) {
 				break
