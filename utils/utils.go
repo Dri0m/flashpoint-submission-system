@@ -104,14 +104,17 @@ func UploadFile(ctx context.Context, url string, filePath string) ([]byte, error
 	}
 	defer resp.Body.Close()
 
-	// Check the response
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status: %s", resp.Status)
-	}
-
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check the response
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusInternalServerError {
+			return nil, fmt.Errorf("The validator bot has exploded, please send the following stack trace to @Dri0m or @CurationBotGuy on discord: %s", string(bodyBytes))
+		}
+		return nil, fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
 	LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("response OK")

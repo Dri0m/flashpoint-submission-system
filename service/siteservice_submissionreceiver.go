@@ -163,7 +163,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	vr, err := s.validator.Validate(ctx, destinationFilePath)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, err
+		return &destinationFilePath, nil, perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
 	}
 
 	// FIXME remove this lazy solution to prevent database deadlocks and fix it properly
