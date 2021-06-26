@@ -261,8 +261,8 @@ type mockValidator struct {
 	mock.Mock
 }
 
-func (m *mockValidator) Validate(_ context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error) {
-	args := m.Called(filePath, sid, fid)
+func (m *mockValidator) Validate(_ context.Context, filePath string) (*types.ValidatorResponse, error) {
+	args := m.Called(filePath)
 	return args.Get(0).(*types.ValidatorResponse), args.Error(1)
 }
 
@@ -589,12 +589,12 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
 
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
@@ -714,12 +714,12 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
 
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
@@ -817,9 +817,28 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 
 	var uid int64 = 1
 	var sid int64 = 2
+	var fid int64 = 3
 
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
+
+	extreme := "No"
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+		Extreme:          &extreme,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
@@ -831,6 +850,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, errors.New(""))
 
@@ -867,9 +888,28 @@ func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testi
 
 	var uid int64 = 1
 	var sid int64 = 2
+	var fid int64 = 3
 
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
+
+	extreme := "No"
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+		Extreme:          &extreme,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
@@ -881,6 +921,8 @@ func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testi
 	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(errors.New(""))
@@ -923,6 +965,24 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 	userRoles := []string{}
 	submissionLevel := constants.SubmissionLevelAudition
 
+	extreme := "No"
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+		Extreme:          &extreme,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
+
 	sf := &types.SubmissionFile{
 		SubmissionID:     sid,
 		SubmitterID:      uid,
@@ -944,6 +1004,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -1006,6 +1068,24 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now(),
 	}
 
+	extreme := "No"
+
+	meta := types.CurationMeta{
+		SubmissionID:     sid,
+		SubmissionFileID: fid,
+		Extreme:          &extreme,
+	}
+
+	vr := &types.ValidatorResponse{
+		Filename:         "",
+		Path:             "",
+		CurationErrors:   []string{},
+		CurationWarnings: []string{},
+		IsExtreme:        false,
+		CurationType:     0,
+		Meta:             meta,
+	}
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
@@ -1016,6 +1096,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
+
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -1054,30 +1136,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
 	destinationFilePath := fmt.Sprintf("%s/%s", ts.s.submissionsDir, destinationFilename)
 
 	var uid int64 = 1
-	var sid int64 = 2
-	var fid int64 = 3
-
 	userRoles := []string{}
-	submissionLevel := constants.SubmissionLevelAudition
-
-	sf := &types.SubmissionFile{
-		SubmissionID:     sid,
-		SubmitterID:      uid,
-		OriginalFilename: filename,
-		CurrentFilename:  destinationFilename,
-		Size:             size,
-		UploadedAt:       ts.s.clock.Now(),
-		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
-		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
-	}
-
-	c := &types.Comment{
-		AuthorID:     uid,
-		SubmissionID: sid,
-		Message:      nil,
-		Action:       constants.ActionUpload,
-		CreatedAt:    ts.s.clock.Now(),
-	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
@@ -1090,12 +1149,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
-	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
-	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
-	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return((*types.ValidatorResponse)(nil), errors.New(""))
+	ts.validator.On("Validate", destinationFilePath).Return((*types.ValidatorResponse)(nil), errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -1183,12 +1237,12 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
 
 	ts.dal.On("StoreCurationMeta", &meta).Return(errors.New(""))
 
@@ -1289,12 +1343,12 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreNotification(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
 
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(errors.New(""))
@@ -1404,12 +1458,12 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationImage(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
 
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
@@ -1511,12 +1565,12 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
 
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
@@ -1617,12 +1671,12 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
+	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
 	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
 	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.validator.On("Validate", destinationFilePath, sid, fid).Return(vr, nil)
 
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)

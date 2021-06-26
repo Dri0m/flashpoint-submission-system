@@ -8,7 +8,7 @@ import (
 )
 
 type Validator interface {
-	Validate(ctx context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error)
+	Validate(ctx context.Context, filePath string) (*types.ValidatorResponse, error)
 }
 
 type MultipartFileProvider interface {

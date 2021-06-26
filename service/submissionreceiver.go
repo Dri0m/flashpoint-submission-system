@@ -159,13 +159,19 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, nil, fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
+	utils.LogCtx(ctx).Debug("sending the submission for validation...")
+	vr, err := s.validator.Validate(ctx, destinationFilePath)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, nil, err
+	}
+
 	// FIXME remove this lazy solution to prevent database deadlocks and fix it properly
 	s.submissionReceiverMutex.Lock()
 	defer s.submissionReceiverMutex.Unlock()
 	utils.LogCtx(ctx).Debug("storing submission...")
 
 	var submissionID int64
-
 	isSubmissionNew := true
 
 	if sid == nil {
@@ -231,12 +237,6 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	utils.LogCtx(ctx).Debug("processing curation meta...")
 
-	vr, err := s.validator.Validate(ctx, destinationFilePath, submissionID, fid)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, err
-	}
-
 	if vr.IsExtreme {
 		yes := "Yes"
 		vr.Meta.Extreme = &yes
@@ -244,6 +244,9 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		no := "No"
 		vr.Meta.Extreme = &no
 	}
+
+	vr.Meta.SubmissionID = submissionID
+	vr.Meta.SubmissionFileID = fid
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)

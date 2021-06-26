@@ -17,7 +17,7 @@ func NewValidator(validatorServerURL string) *curationValidator {
 	}
 }
 
-func (c *curationValidator) Validate(ctx context.Context, filePath string, sid, fid int64) (*types.ValidatorResponse, error) {
+func (c *curationValidator) Validate(ctx context.Context, filePath string) (*types.ValidatorResponse, error) {
 	resp, err := utils.UploadFile(ctx, c.validatorServerURL, filePath)
 	if err != nil {
 		return nil, err
@@ -28,9 +28,6 @@ func (c *curationValidator) Validate(ctx context.Context, filePath string, sid, 
 	if err != nil {
 		return nil, err
 	}
-
-	vr.Meta.SubmissionID = sid
-	vr.Meta.SubmissionFileID = fid
 
 	return &vr, nil
 }
