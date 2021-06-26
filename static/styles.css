@@ -45,12 +45,19 @@ body {
 .comment-header {
     margin: auto 0;
     text-align: center;
-    padding: 1em;
+    padding: 0.5em;
     overflow-wrap: break-word;
 }
 
+.comment-header-user {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
 .comment-body {
-    padding: 1em;
+    padding: 0.7em;
     letter-spacing: normal;
     overflow-wrap: break-word;
 }
@@ -60,6 +67,7 @@ body {
     width: 32px;
     height: auto;
     border-radius: 50%;
+    margin-right: 10px;
     background-color: rgb(64, 64, 64) !important;
 }
 
