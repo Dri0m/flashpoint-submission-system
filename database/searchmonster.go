@@ -107,76 +107,76 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		}
 		if filter.AssignedStatusTesting != nil {
 			if *filter.AssignedStatusTesting == "unassigned" {
-				filters = append(filters, "(active_assigned_testing.user_count_with_enabled_action = 0 OR active_assigned_testing.user_count_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_assigned_testing_ids IS NULL)")
 			} else if *filter.AssignedStatusTesting == "assigned" {
-				filters = append(filters, "(active_assigned_testing.user_count_with_enabled_action > 0)")
+				filters = append(filters, "(submission_cache.active_assigned_testing_ids IS NOT NULL)")
 			}
 		}
 		if filter.AssignedStatusVerification != nil {
 			if *filter.AssignedStatusVerification == "unassigned" {
-				filters = append(filters, "(active_assigned_verification.user_count_with_enabled_action = 0 OR active_assigned_verification.user_count_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_assigned_verification_ids IS NULL)")
 			} else if *filter.AssignedStatusVerification == "assigned" {
-				filters = append(filters, "(active_assigned_verification.user_count_with_enabled_action > 0)")
+				filters = append(filters, "(submission_cache.active_assigned_verification_ids IS NOT NULL)")
 			}
 		}
 		if filter.RequestedChangedStatus != nil {
 			if *filter.RequestedChangedStatus == "none" {
-				filters = append(filters, "(active_requested_changes.user_count_with_enabled_action = 0 OR active_requested_changes.user_count_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_requested_changes_ids IS NULL)")
 			} else if *filter.RequestedChangedStatus == "ongoing" {
-				filters = append(filters, "(active_requested_changes.user_count_with_enabled_action > 0)")
+				filters = append(filters, "(submission_cache.active_requested_changes_ids IS NOT NULL)")
 			}
 		}
 		if filter.ApprovalsStatus != nil {
 			if *filter.ApprovalsStatus == "none" {
-				filters = append(filters, "(active_approved.user_count_with_enabled_action = 0 OR active_approved.user_count_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_approved_ids IS NULL)")
 			} else if *filter.ApprovalsStatus == "approved" {
-				filters = append(filters, "(active_approved.user_count_with_enabled_action > 0)")
+				filters = append(filters, "(submission_cache.active_approved_ids IS NOT NULL)")
 			}
 		}
 		if filter.VerificationStatus != nil {
 			if *filter.VerificationStatus == "none" {
-				filters = append(filters, "(active_verified.user_count_with_enabled_action = 0 OR active_verified.user_count_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_verified_ids IS NULL)")
 			} else if *filter.VerificationStatus == "verified" {
-				filters = append(filters, "(active_verified.user_count_with_enabled_action > 0)")
+				filters = append(filters, "(submission_cache.active_verified_ids IS NOT NULL)")
 			}
 		}
 		if filter.AssignedStatusTestingMe != nil {
 			if *filter.AssignedStatusTestingMe == "unassigned" {
-				filters = append(filters, "(active_assigned_testing.user_ids_with_enabled_action NOT LIKE ? OR active_assigned_testing.user_ids_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_assigned_testing_ids NOT LIKE ? OR submission_cache.active_assigned_testing_ids IS NULL)")
 			} else if *filter.AssignedStatusTestingMe == "assigned" {
-				filters = append(filters, "(active_assigned_testing.user_ids_with_enabled_action LIKE ?)")
+				filters = append(filters, "(submission_cache.active_assigned_testing_ids LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
 		if filter.AssignedStatusVerificationMe != nil {
 			if *filter.AssignedStatusVerificationMe == "unassigned" {
-				filters = append(filters, "(active_assigned_verification.user_ids_with_enabled_action NOT LIKE ? OR active_assigned_verification.user_ids_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_assigned_verification_ids NOT LIKE ? OR submission_cache.active_assigned_verification_ids IS NULL)")
 			} else if *filter.AssignedStatusVerificationMe == "assigned" {
-				filters = append(filters, "(active_assigned_verification.user_ids_with_enabled_action LIKE ?)")
+				filters = append(filters, "(submission_cache.active_assigned_verification_ids LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
 		if filter.RequestedChangedStatusMe != nil {
 			if *filter.RequestedChangedStatusMe == "none" {
-				filters = append(filters, "(active_requested_changes.user_ids_with_enabled_action NOT LIKE ? OR active_requested_changes.user_ids_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_requested_changes_ids NOT LIKE ? OR submission_cache.active_requested_changes_ids IS NULL)")
 			} else if *filter.RequestedChangedStatusMe == "ongoing" {
-				filters = append(filters, "(active_requested_changes.user_ids_with_enabled_action LIKE ?)")
+				filters = append(filters, "(submission_cache.active_requested_changes_ids LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
 		if filter.ApprovalsStatusMe != nil {
 			if *filter.ApprovalsStatusMe == "no" {
-				filters = append(filters, "(active_approved.user_ids_with_enabled_action NOT LIKE ? OR active_approved.user_ids_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_approved_ids NOT LIKE ? OR submission_cache.active_approved_ids IS NULL)")
 			} else if *filter.ApprovalsStatusMe == "yes" {
-				filters = append(filters, "(active_approved.user_ids_with_enabled_action LIKE ?)")
+				filters = append(filters, "(submission_cache.active_approved_ids LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
 		if filter.VerificationStatusMe != nil {
 			if *filter.VerificationStatusMe == "no" {
-				filters = append(filters, "(active_verified.user_ids_with_enabled_action NOT LIKE ? OR active_verified.user_ids_with_enabled_action IS NULL)")
+				filters = append(filters, "(submission_cache.active_verified_ids NOT LIKE ? OR submission_cache.active_verified_ids IS NULL)")
 			} else if *filter.VerificationStatusMe == "yes" {
-				filters = append(filters, "(active_verified.user_ids_with_enabled_action LIKE ?)")
+				filters = append(filters, "(submission_cache.active_verified_ids LIKE ?)")
 			}
 			data = append(data, utils.FormatLike(fmt.Sprintf("%d", uid)))
 		}
