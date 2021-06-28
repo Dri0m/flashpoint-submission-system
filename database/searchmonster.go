@@ -14,7 +14,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 
-	uid := utils.UserIDFromContext(dbs.Ctx()) // TODO this should be passed as param
+	uid := utils.UserID(dbs.Ctx()) // TODO this should be passed as param
 	data = append(data, uid, uid)
 
 	const defaultLimit int64 = 100

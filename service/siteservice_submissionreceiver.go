@@ -21,7 +21,7 @@ import (
 )
 
 func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileProviders []MultipartFileProvider) error {
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 	if uid == 0 {
 		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
@@ -103,7 +103,7 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 }
 
 func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, []string, error) {
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 	if uid == 0 {
 		utils.LogCtx(ctx).Panic("no user associated with request")
 	}

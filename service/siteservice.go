@@ -144,7 +144,7 @@ func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	}
 	defer dbs.Rollback()
 
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 	if uid == 0 {
 		return &types.BasePageData{}, nil
 	}
@@ -374,7 +374,7 @@ func (s *SiteService) GetUIDFromSession(ctx context.Context, key string) (int64,
 }
 
 func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64, deleteReason string) error {
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
@@ -416,7 +416,7 @@ func (s *SiteService) SoftDeleteSubmissionFile(ctx context.Context, sfid int64, 
 }
 
 func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64, deleteReason string) error {
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
@@ -454,7 +454,7 @@ func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64, delet
 }
 
 func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteReason string) error {
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {

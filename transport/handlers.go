@@ -16,7 +16,7 @@ import (
 
 func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 
 	params := mux.Vars(r)
 	submissionIDs := strings.Split(params["submission-ids"], ",")
@@ -289,7 +289,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 
 	pageData, err := a.Service.GetProfilePageData(ctx, uid)
 	if err != nil {
@@ -348,7 +348,7 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 
 	filter := &types.SubmissionsFilter{}
 
@@ -385,7 +385,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 	params := mux.Vars(r)
 	submissionID := params[constants.ResourceKeySubmissionID]
 
@@ -432,7 +432,7 @@ func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Reque
 
 func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 
 	notificationSettings := &types.UpdateNotificationSettings{}
 
@@ -453,7 +453,7 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 
 func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	uid := utils.UserIDFromContext(ctx)
+	uid := utils.UserID(ctx)
 	params := mux.Vars(r)
 	submissionID := params[constants.ResourceKeySubmissionID]
 
