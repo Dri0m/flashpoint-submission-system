@@ -132,7 +132,7 @@ func (a *App) GetSecretFromCookie(r *http.Request) (string, error) {
 func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{}, status int) {
 	requestType := utils.RequestType(ctx)
 	if requestType == "" {
-		utils.LogCtx(ctx).Fatal("request type not set")
+		utils.LogCtx(ctx).Panic("request type not set")
 		return
 	}
 
@@ -147,16 +147,10 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 		}
 		return
 	}
-	utils.LogCtx(ctx).Fatal("unsupported request type")
+	utils.LogCtx(ctx).Panic("unsupported request type")
 }
 
 func writeError(ctx context.Context, w http.ResponseWriter, err error) {
-	requestType := utils.RequestType(ctx)
-	if requestType == "" {
-		utils.LogCtx(ctx).Fatal("request type not set")
-		return
-	}
-
 	ufe := &constants.PublicError{}
 	if errors.As(err, ufe) {
 		writeResponse(ctx, w, presp(ufe.Msg), ufe.Status)

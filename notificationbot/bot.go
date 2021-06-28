@@ -51,7 +51,7 @@ func (b *bot) SendNotification(msg, notificationType string) error {
 	} else if notificationType == constants.NotificationCurationFeed {
 		_, err = b.session.ChannelMessageSend(b.curationFeedChannelID, msg)
 	} else {
-		b.l.Fatal("invalid notification type")
+		b.l.Panic("invalid notification type")
 	}
 
 	return err

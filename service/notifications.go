@@ -187,10 +187,10 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 // createDeletionNotification formats and stores deletion notification
 func (s *SiteService) createDeletionNotification(dbs database.DBSession, authorID, deleterID int64, sid, cid, fid *int64, reason string) error {
 	if sid == nil {
-		utils.LogCtx(dbs.Ctx()).Fatal("submission id cannot be nil")
+		utils.LogCtx(dbs.Ctx()).Panic("submission id cannot be nil")
 	}
 	if cid != nil && fid != nil {
-		utils.LogCtx(dbs.Ctx()).Fatal("both cid and fid provided - not valid")
+		utils.LogCtx(dbs.Ctx()).Panic("both cid and fid provided - not valid")
 	}
 
 	var b strings.Builder

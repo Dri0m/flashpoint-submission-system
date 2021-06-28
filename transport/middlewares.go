@@ -46,7 +46,7 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 			case constants.RequestData, constants.RequestJSON:
 				writeError(ctx, w, perr("failed to parse cookie, please clear your cookies and try again", http.StatusUnauthorized))
 			default:
-				utils.LogCtx(ctx).Fatal("request type not set")
+				utils.LogCtx(ctx).Panic("request type not set")
 			}
 
 		}
