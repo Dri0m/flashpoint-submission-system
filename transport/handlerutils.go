@@ -136,7 +136,8 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 		return
 	}
 
-	if requestType == constants.RequestJSON || requestType == constants.RequestData {
+	switch requestType {
+	case constants.RequestJSON, constants.RequestData, constants.RequestWeb:
 		w.WriteHeader(status)
 		w.Header().Set("Content-Type", "application/json")
 		if data != nil {
@@ -145,9 +146,9 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 				utils.LogCtx(ctx).Error(err)
 			}
 		}
-		return
+	default:
+		utils.LogCtx(ctx).Panic("unsupported request type")
 	}
-	utils.LogCtx(ctx).Panic("unsupported request type")
 }
 
 func writeError(ctx context.Context, w http.ResponseWriter, err error) {
@@ -156,7 +157,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, err error) {
 		writeResponse(ctx, w, presp(ufe.Msg), ufe.Status)
 	} else {
 		msg := http.StatusText(http.StatusInternalServerError)
-		writeResponse(ctx, w, &msg, http.StatusInternalServerError)
+		writeResponse(ctx, w, presp(msg), http.StatusInternalServerError)
 	}
 }
 

@@ -1,8 +1,8 @@
 package constants
 
 type PublicError struct {
-	Msg    string
-	Status int
+	Msg    string `json:"message"`
+	Status int    `json:"-"`
 }
 
 func (e PublicError) Error() string {
