@@ -69,45 +69,92 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("GET")
 
 	router.Handle(
-		"/web/profile",
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleProfilePage)))).
-		Methods("GET")
-
-	router.Handle(
 		"/web/submit",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleSubmitPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
+	////////////////////////
+
+	f := a.UserAuthMux(a.HandleProfilePage)
+
+	router.Handle(
+		"/web/profile",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/profile",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleSubmissionsPage, muxAny(isStaff))
+
 	router.Handle(
 		"/web/submissions",
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
-			a.HandleSubmissionsPage, muxAny(isStaff))))).
+		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
+
+	router.Handle(
+		"/api/submissions",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleMySubmissionsPage, muxAny(isStaff, isTrialCurator, isInAudit))
 
 	router.Handle(
 		"/web/my-submissions",
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
-			a.HandleMySubmissionsPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
+
+	router.Handle(
+		"/api/my-submissions",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleViewSubmissionPage,
+		muxAny(isStaff,
+			muxAll(isTrialCurator, userOwnsSubmission),
+			muxAll(isInAudit, userOwnsSubmission)))
 
 	router.Handle(
 		fmt.Sprintf("/web/submission/{%s}", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
-			a.HandleViewSubmissionPage,
-			muxAny(isStaff,
-				muxAll(isTrialCurator, userOwnsSubmission),
-				muxAll(isInAudit, userOwnsSubmission)))))).
+		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
 
 	router.Handle(
-		fmt.Sprintf("/web/submission/{%s}/files", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
-			a.HandleViewSubmissionFilesPage,
-			muxAny(isStaff,
-				muxAll(isTrialCurator, userOwnsSubmission),
-				muxAll(isInAudit, userOwnsSubmission)))))).
+		fmt.Sprintf("/api/submission/{%s}", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleViewSubmissionFilesPage,
+		muxAny(isStaff,
+			muxAll(isTrialCurator, userOwnsSubmission),
+			muxAll(isInAudit, userOwnsSubmission)))
+
+	router.Handle(
+		fmt.Sprintf("/web/submission/{%s}/files", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/submission/{%s}/files", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
 
 	// receivers
 	router.Handle(

@@ -225,6 +225,11 @@ func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
 	a.RenderTemplates(ctx, w, r, pageData, "templates/profile.gohtml")
 }
 
@@ -265,6 +270,11 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData.FilterLayout = r.FormValue("filter-layout")
 
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/submissions.gohtml",
 		"templates/submission-filter.gohtml",
@@ -302,6 +312,11 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData.FilterLayout = r.FormValue("filter-layout")
 
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/my-submissions.gohtml",
 		"templates/submission-filter.gohtml",
@@ -330,6 +345,11 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/submission.gohtml",
 		"templates/submission-table.gohtml",
@@ -352,6 +372,11 @@ func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Reque
 	pageData, err := a.Service.GetSubmissionsFilesPageData(ctx, sid)
 	if err != nil {
 		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
 		return
 	}
 
