@@ -147,7 +147,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	// providers
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
+		fmt.Sprintf("/data/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadSubmissionFile,
 			muxAny(isStaff,
@@ -156,7 +156,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("GET")
 
 	router.Handle(
-		fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs),
+		fmt.Sprintf("/data/submission-file-batch/{%s}", constants.ResourceKeyFileIDs),
 		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadSubmissionBatch, muxAny(
 				isStaff,
@@ -164,7 +164,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("GET")
 
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}/curation-image/{%s}.png", constants.ResourceKeySubmissionID, constants.ResourceKeyCurationImageID),
+		fmt.Sprintf("/data/submission/{%s}/curation-image/{%s}.png", constants.ResourceKeySubmissionID, constants.ResourceKeyCurationImageID),
 		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadCurationImage,
 			muxAny(isStaff,

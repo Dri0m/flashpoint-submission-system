@@ -22,7 +22,7 @@
                 <tbody>
                 {{range .SubmissionFiles}}
                 <tr>
-                    <td class="center"><a href="/submission/{{.SubmissionID}}/file/{{.FileID}}">Get</a></td>
+                    <td class="center"><a href="/data/submission/{{.SubmissionID}}/file/{{.FileID}}">Get</a></td>
                     {{if $canDelete}}
                         <td class="center">
                             <button onclick="deleteSubmissionFile({{.SubmissionID}}, {{.FileID}})">Delete</button >

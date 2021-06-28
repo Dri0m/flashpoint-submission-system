@@ -88,7 +88,7 @@ function controlAllCheckboxes(cb, className) {
 function batchDownloadFiles(checkboxClassName, attribute) {
     let checkboxes = document.getElementsByClassName(checkboxClassName)
 
-    let url = "/submission-file-batch/"
+    let url = "/data/submission-file-batch/"
 
     let checkedCounter = 0
 

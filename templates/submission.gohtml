@@ -17,7 +17,7 @@
                 <div class="pure-u-1-2">
                     <h3>Download submission</h3>
                     <a class="pure-button pure-button-primary"
-                       href="/submission/{{(index .Submissions 0).SubmissionID}}/file/{{(index .Submissions 0).FileID}}">
+                       href="/data/submission/{{(index .Submissions 0).SubmissionID}}/file/{{(index .Submissions 0).FileID}}">
                         Download latest version
                     </a>
 
@@ -48,7 +48,7 @@
 
             <h3>Curation images</h3>
             {{range .CurationImageIDs}}
-                <img src="/submission/{{$submissionID}}/curation-image/{{.}}.png"
+                <img src="/data/submission/{{$submissionID}}/curation-image/{{.}}.png"
                      class="curation-image {{if $isExtreme}}blur-img{{end}}" alt="curation image">
             {{end}}
 
