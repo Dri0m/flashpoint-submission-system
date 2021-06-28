@@ -128,7 +128,13 @@ func (a *App) GetSecretFromCookie(r *http.Request) (string, error) {
 	return token.Secret, nil
 }
 
-func writeError(w http.ResponseWriter, err error) {
+func writeError(ctx context.Context, w http.ResponseWriter, err error) {
+	requestType := utils.RequestType(ctx)
+	if requestType == "" {
+		utils.LogCtx(ctx).Fatal("request type not set")
+		return
+	}
+
 	ufe := &constants.PublicError{}
 	if errors.As(err, ufe) {
 		http.Error(w, ufe.Msg, ufe.Status)

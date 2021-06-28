@@ -17,9 +17,11 @@ import (
 // UserAuthMux takes many authorization middlewares and accepts if any of them does not return error
 func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authorizers ...func(*http.Request, int64) (bool, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		secret, err := a.GetSecretFromCookie(r)
+
 		if err != nil {
-			utils.LogCtx(r.Context()).Error(err)
+			utils.LogCtx(ctx).Error(err)
 			utils.UnsetCookie(w, utils.Cookies.Login)
 			http.Redirect(w, r, "/", http.StatusFound)
 			// TODO add user facing error message here
@@ -27,9 +29,9 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 			return
 		}
 
-		uid, ok, err := a.Service.GetUIDFromSession(r.Context(), secret)
+		uid, ok, err := a.Service.GetUIDFromSession(ctx, secret)
 		if err != nil {
-			utils.LogCtx(r.Context()).Error(err)
+			utils.LogCtx(ctx).Error(err)
 			utils.UnsetCookie(w, utils.Cookies.Login)
 			http.Redirect(w, r, "/", http.StatusFound)
 			// TODO add user facing error message here
@@ -37,7 +39,7 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 			return
 		}
 		if !ok {
-			utils.LogCtx(r.Context()).Error(err)
+			utils.LogCtx(ctx).Error(err)
 			utils.UnsetCookie(w, utils.Cookies.Login)
 			http.Redirect(w, r, "/", http.StatusFound)
 			// TODO add user facing error message here
@@ -46,7 +48,7 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 		}
 
 		if len(authorizers) == 0 {
-			r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
+			r = r.WithContext(context.WithValue(ctx, utils.CtxKeys.UserID, uid))
 			next(w, r)
 			return
 		}
@@ -56,8 +58,8 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 		for _, authorizer := range authorizers {
 			ok, err := authorizer(r, uid)
 			if err != nil {
-				utils.LogCtx(r.Context()).Error(err)
-				writeError(w, perr("failed to verify authority", http.StatusInternalServerError))
+				utils.LogCtx(ctx).Error(err)
+				writeError(ctx, w, perr("failed to verify authority", http.StatusInternalServerError))
 				return
 			}
 			if !ok {
@@ -67,13 +69,13 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 		}
 
 		if allOk {
-			r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
+			r = r.WithContext(context.WithValue(ctx, utils.CtxKeys.UserID, uid))
 			next(w, r)
 			return
 		}
 
-		utils.LogCtx(r.Context()).Debug("unauthorized attempt")
-		writeError(w, perr("you do not have the proper authorization to access this page", http.StatusUnauthorized))
+		utils.LogCtx(ctx).Debug("unauthorized attempt")
+		writeError(ctx, w, perr("you do not have the proper authorization to access this page", http.StatusUnauthorized))
 		return
 	}
 }

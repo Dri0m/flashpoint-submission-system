@@ -26,7 +26,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		sid, err := strconv.ParseInt(submissionFileID, 10, 64)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			writeError(w, perr("invalid submission id", http.StatusBadRequest))
+			writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
 			return
 		}
 		sids = append(sids, sid)
@@ -34,7 +34,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 
 	if err := r.ParseForm(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to parse form", http.StatusBadRequest))
+		writeError(ctx, w, perr("failed to parse form", http.StatusBadRequest))
 		return
 	}
 
@@ -46,12 +46,12 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 	if len([]rune(formMessage)) > 20000 {
 		err := fmt.Errorf("message cannot be longer than 20000 characters")
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
+		writeError(ctx, w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
 		return
 	}
 
 	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions); err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -66,13 +66,13 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 	sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid submission file id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid submission file id", http.StatusBadRequest))
 		return
 	}
 
 	sfs, err := a.Service.GetSubmissionFiles(ctx, []int64{sfid})
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 	sf := sfs[0]
@@ -81,7 +81,7 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to read file", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to read file", http.StatusInternalServerError))
 		return
 	}
 	defer f.Close()
@@ -99,27 +99,27 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 	sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid submission file id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid submission file id", http.StatusBadRequest))
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to parse form", http.StatusBadRequest))
+		writeError(ctx, w, perr("failed to parse form", http.StatusBadRequest))
 		return
 	}
 
 	deleteReason := r.FormValue("reason")
 	if len(deleteReason) < 3 {
-		writeError(w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
+		writeError(ctx, w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
 		return
 	} else if len(deleteReason) > 255 {
-		writeError(w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
+		writeError(ctx, w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
 		return
 	}
 
 	if err := a.Service.SoftDeleteSubmissionFile(ctx, sfid, deleteReason); err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -134,21 +134,21 @@ func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request)
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid submission id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
 	deleteReason := r.FormValue("reason")
 	if len(deleteReason) < 3 {
-		writeError(w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
+		writeError(ctx, w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
 		return
 	} else if len(deleteReason) > 255 {
-		writeError(w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
+		writeError(ctx, w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
 		return
 	}
 
 	if err := a.Service.SoftDeleteSubmission(ctx, sid, deleteReason); err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -163,21 +163,21 @@ func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
 	cid, err := strconv.ParseInt(commentID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid comment id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid comment id", http.StatusBadRequest))
 		return
 	}
 
 	deleteReason := r.FormValue("reason")
 	if len(deleteReason) < 3 {
-		writeError(w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
+		writeError(ctx, w, perr("reason must be at least 3 characters long", http.StatusBadRequest))
 		return
 	} else if len(deleteReason) > 255 {
-		writeError(w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
+		writeError(ctx, w, perr("reason cannot be longer than 255 characters", http.StatusBadRequest))
 		return
 	}
 
 	if err := a.Service.SoftDeleteComment(ctx, cid, deleteReason); err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -194,7 +194,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 		sfid, err := strconv.ParseInt(submissionFileID, 10, 64)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			writeError(w, perr("invalid submission file id", http.StatusBadRequest))
+			writeError(ctx, w, perr("invalid submission file id", http.StatusBadRequest))
 			return
 		}
 		sfids = append(sfids, sfid)
@@ -202,7 +202,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 
 	sfs, err := a.Service.GetSubmissionFiles(ctx, sfids)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -217,7 +217,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/octet-stream")
 	if err := utils.WriteTarball(w, filePaths); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to create tarball", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to create tarball", http.StatusInternalServerError))
 		return
 	}
 }
@@ -233,7 +233,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		sidParsed, err := strconv.ParseInt(submissionID, 10, 64)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			writeError(w, perr("invalid submission id", http.StatusBadRequest))
+			writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
 			return
 		}
 		sid = &sidParsed
@@ -242,7 +242,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	// limit RAM usage to 10MB
 	if err := r.ParseMultipartForm(10 * 1000 * 1000); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to parse form", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to parse form", http.StatusInternalServerError))
 		return
 	}
 
@@ -251,7 +251,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	if len(fileHeaders) == 0 {
 		err := fmt.Errorf("no files received")
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
+		writeError(ctx, w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
 		return
 	}
 
@@ -261,7 +261,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.Service.ReceiveSubmissions(ctx, sid, fileWrappers); err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -273,7 +273,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
@@ -293,7 +293,7 @@ func (a *App) HandleProfilePage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetProfilePageData(ctx, uid)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -305,7 +305,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -319,19 +319,19 @@ func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	if err := filter.Validate(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
 	pageData, err := a.Service.GetSubmissionsPageData(ctx, filter)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -354,13 +354,13 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	if err := filter.Validate(); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -368,7 +368,7 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetSubmissionsPageData(ctx, filter)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -392,13 +392,13 @@ func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid submission id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
 	pageData, err := a.Service.GetViewSubmissionPageData(ctx, uid, sid)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -417,13 +417,13 @@ func (a *App) HandleViewSubmissionFilesPage(w http.ResponseWriter, r *http.Reque
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid submission id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
 	pageData, err := a.Service.GetSubmissionsFilesPageData(ctx, sid)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -438,13 +438,13 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 
 	if err := a.decoder.Decode(notificationSettings, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	err := a.Service.UpdateNotificationSettings(ctx, uid, notificationSettings.NotificationActions)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -460,7 +460,7 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 	sid, err := strconv.ParseInt(submissionID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid submission id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
 		return
 	}
 
@@ -468,13 +468,13 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 
 	if err := a.decoder.Decode(subscriptionSettings, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to decode query params", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
 		return
 	}
 
 	err = a.Service.UpdateSubscriptionSettings(ctx, uid, sid, subscriptionSettings.Subscribe)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -489,27 +489,27 @@ func (a *App) HandleDownloadCurationImage(w http.ResponseWriter, r *http.Request
 	ciid, err := strconv.ParseInt(curationImageID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("invalid curation image id", http.StatusBadRequest))
+		writeError(ctx, w, perr("invalid curation image id", http.StatusBadRequest))
 		return
 	}
 
 	ci, err := a.Service.GetCurationImage(ctx, ciid)
 	if err != nil {
-		writeError(w, err)
+		writeError(ctx, w, err)
 		return
 	}
 
 	f, err := os.Open(fmt.Sprintf("%s/%s", constants.SubmissionImagesDir, ci.Filename))
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to read file", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to read file", http.StatusInternalServerError))
 		return
 	}
 
 	fi, err := f.Stat()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(w, perr("failed to read file", http.StatusInternalServerError))
+		writeError(ctx, w, perr("failed to read file", http.StatusInternalServerError))
 		return
 	}
 	defer f.Close()

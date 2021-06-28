@@ -69,3 +69,8 @@ const (
 	NotificationDefault      = "notification"
 	NotificationCurationFeed = "curation-feed"
 )
+
+const (
+	RequestWeb  = "web"
+	RequestJSON = "json"
+)
