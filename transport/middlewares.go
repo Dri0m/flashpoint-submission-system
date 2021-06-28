@@ -24,6 +24,12 @@ func (a *App) RequestJSON(next func(http.ResponseWriter, *http.Request)) func(ht
 	}
 }
 
+func (a *App) RequestData(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		next(w, r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.RequestType, constants.RequestData)))
+	}
+}
+
 // TODO optimize database access in middleware
 
 // UserAuthMux takes many authorization middlewares and accepts if any of them does not return error

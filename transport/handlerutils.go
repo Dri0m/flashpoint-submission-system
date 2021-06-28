@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/service"
@@ -128,6 +129,27 @@ func (a *App) GetSecretFromCookie(r *http.Request) (string, error) {
 	return token.Secret, nil
 }
 
+func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{}, status int) {
+	requestType := utils.RequestType(ctx)
+	if requestType == "" {
+		utils.LogCtx(ctx).Fatal("request type not set")
+		return
+	}
+
+	if requestType == constants.RequestJSON {
+		w.WriteHeader(status)
+		w.Header().Set("Content-Type", "application/json")
+		if data != nil {
+			err := json.NewEncoder(w).Encode(data)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+			}
+		}
+		return
+	}
+	utils.LogCtx(ctx).Fatal("unsupported request type")
+}
+
 func writeError(ctx context.Context, w http.ResponseWriter, err error) {
 	requestType := utils.RequestType(ctx)
 	if requestType == "" {
@@ -137,9 +159,10 @@ func writeError(ctx context.Context, w http.ResponseWriter, err error) {
 
 	ufe := &constants.PublicError{}
 	if errors.As(err, ufe) {
-		http.Error(w, ufe.Msg, ufe.Status)
+		writeResponse(ctx, w, presp(ufe.Msg), ufe.Status)
 	} else {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		msg := http.StatusText(http.StatusInternalServerError)
+		writeResponse(ctx, w, &msg, http.StatusInternalServerError)
 	}
 }
 
@@ -149,4 +172,8 @@ func perr(msg string, status int) error {
 
 func dberr(err error) error {
 	return constants.DatabaseError{Err: err}
+}
+
+func presp(msg string) constants.PublicResponse {
+	return constants.PublicResponse{Msg: &msg}
 }

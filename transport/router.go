@@ -109,7 +109,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	// receivers
 	router.Handle(
 		"/submission-receiver",
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiver, muxAny(
 				isStaff,
 				isTrialCurator,
@@ -118,7 +118,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	router.Handle(
 		fmt.Sprintf("/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiver,
 			muxAny(isStaff,
 				muxAll(isTrialCurator, userOwnsSubmission),
@@ -127,7 +127,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	router.Handle(
 		fmt.Sprintf("/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleCommentReceiverBatch, muxAny(
 				muxAll(isStaff, a.UserCanCommentAction),
 				muxAll(isTrialCurator, userOwnsAllSubmissions),
@@ -135,20 +135,20 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("POST")
 
 	router.Handle("/api/notification-settings",
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleUpdateNotificationSettings, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("PUT")
 
 	router.Handle(
 		fmt.Sprintf("/submission/{%s}/subscription-settings", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleUpdateSubscriptionSettings, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("PUT")
 
 	// providers
 	router.Handle(
 		fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadSubmissionFile,
 			muxAny(isStaff,
 				muxAll(isTrialCurator, userOwnsSubmission),
@@ -157,7 +157,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	router.Handle(
 		fmt.Sprintf("/submission-file-batch/{%s}", constants.ResourceKeyFileIDs),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadSubmissionBatch, muxAny(
 				isStaff,
 				muxAll(isTrialCurator, userOwnsAllSubmissions)))))).
@@ -165,7 +165,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	router.Handle(
 		fmt.Sprintf("/submission/{%s}/curation-image/{%s}.png", constants.ResourceKeySubmissionID, constants.ResourceKeyCurationImageID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadCurationImage,
 			muxAny(isStaff,
 				muxAll(isTrialCurator, userOwnsSubmission),
@@ -175,19 +175,19 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	// soft delete
 	router.Handle(
 		fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSoftDeleteSubmissionFile, muxAll(isDeleter))))).
 		Methods("DELETE")
 
 	router.Handle(
 		fmt.Sprintf("/submission/{%s}", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSoftDeleteSubmission, muxAll(isDeleter))))).
 		Methods("DELETE")
 
 	router.Handle(
 		fmt.Sprintf("/submission/{%s}/comment/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyCommentID),
-		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSoftDeleteComment, muxAll(isDeleter))))).
 		Methods("DELETE")
 

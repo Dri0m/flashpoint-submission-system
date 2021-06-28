@@ -73,4 +73,9 @@ const (
 const (
 	RequestWeb  = "web"
 	RequestJSON = "json"
+	RequestData = "data"
 )
+
+type PublicResponse struct {
+	Msg *string `json:"message"`
+}

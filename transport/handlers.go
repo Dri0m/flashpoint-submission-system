@@ -55,7 +55,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	writeResponse(ctx, w, presp("success"), http.StatusOK)
 }
 
 func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +123,7 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeResponse(ctx, w, presp("success"), http.StatusNoContent)
 }
 
 func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +152,7 @@ func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeResponse(ctx, w, presp("success"), http.StatusNoContent)
 }
 
 func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
@@ -181,7 +181,7 @@ func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeResponse(ctx, w, presp("success"), http.StatusNoContent)
 }
 
 func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Request) {
@@ -265,7 +265,7 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	writeResponse(ctx, w, presp("success"), http.StatusOK)
 }
 
 func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
@@ -448,7 +448,7 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	writeResponse(ctx, w, presp("success"), http.StatusOK)
 }
 
 func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
@@ -478,7 +478,7 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	writeResponse(ctx, w, presp("success"), http.StatusOK)
 }
 
 func (a *App) HandleDownloadCurationImage(w http.ResponseWriter, r *http.Request) {
