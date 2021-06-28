@@ -36,32 +36,36 @@ func (a *App) RequestData(next func(http.ResponseWriter, *http.Request)) func(ht
 func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authorizers ...func(*http.Request, int64) (bool, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		secret, err := a.GetSecretFromCookie(r)
-
-		if err != nil {
-			utils.LogCtx(ctx).Error(err)
+		handleAuthErr := func() {
 			utils.UnsetCookie(w, utils.Cookies.Login)
-			http.Redirect(w, r, "/web/", http.StatusFound)
-			// TODO add user facing error message here
-			//http.Error(w, "failed to parse cookie, please clear your cookies and try again", http.StatusBadRequest)
-			return
+			rt := utils.RequestType(ctx)
+
+			switch rt {
+			case constants.RequestWeb:
+				http.Redirect(w, r, "/web", http.StatusFound)
+			case constants.RequestData, constants.RequestJSON:
+				writeError(ctx, w, perr("failed to parse cookie, please clear your cookies and try again", http.StatusUnauthorized))
+			default:
+				utils.LogCtx(ctx).Fatal("request type not set")
+			}
+
 		}
 
+		secret, err := a.GetSecretFromCookie(r)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			handleAuthErr()
+			return
+		}
 		uid, ok, err := a.Service.GetUIDFromSession(ctx, secret)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			utils.UnsetCookie(w, utils.Cookies.Login)
-			http.Redirect(w, r, "/web/", http.StatusFound)
-			// TODO add user facing error message here
-			//http.Error(w, "failed to load session, please clear your cookies and try again", http.StatusBadRequest)
+			handleAuthErr()
 			return
 		}
 		if !ok {
 			utils.LogCtx(ctx).Error(err)
-			utils.UnsetCookie(w, utils.Cookies.Login)
-			http.Redirect(w, r, "/web/", http.StatusFound)
-			// TODO add user facing error message here
-			//http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
+			handleAuthErr()
 			return
 		}
 

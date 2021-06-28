@@ -136,7 +136,7 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 		return
 	}
 
-	if requestType == constants.RequestJSON {
+	if requestType == constants.RequestJSON || requestType == constants.RequestData {
 		w.WriteHeader(status)
 		w.Header().Set("Content-Type", "application/json")
 		if data != nil {

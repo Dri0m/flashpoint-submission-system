@@ -111,7 +111,7 @@ function batchDownloadFiles(checkboxClassName, attribute) {
 function batchComment(checkboxClassName, attribute, action) {
     let checkboxes = document.getElementsByClassName(checkboxClassName);
 
-    let url = "/submission-batch/"
+    let url = "/api/submission-batch/"
 
     let checkedCounter = 0
 
@@ -281,7 +281,7 @@ function updateNotificationSettings() {
 }
 
 function updateSubscriptionSettings(sid, newValue) {
-    sendXHR(`/submission/${sid}/subscription-settings?subscribe=${newValue}`, "PUT", null, true,
+    sendXHR(`/api/submission/${sid}/subscription-settings?subscribe=${newValue}`, "PUT", null, true,
         "Failed to update subscription settings.", null, null)
 }
 
@@ -298,21 +298,21 @@ window.onload = function () {
 };
 
 function deleteSubmissionFile(sid, sfid) {
-    sendXHR(`/submission/${sid}/file/${sfid}`, "DELETE", null, true,
+    sendXHR(`/api/submission/${sid}/file/${sfid}`, "DELETE", null, true,
         "Failed to delete submission file.",
         "Submission file deleted successfully.",
         "Please provide a reason to delete this submission file:")
 }
 
 function deleteSubmission(sid) {
-    sendXHR(`/submission/${sid}`, "DELETE", null, true,
+    sendXHR(`/api/submission/${sid}`, "DELETE", null, true,
         "Failed to delete submission.",
         "Submission deleted successfully.",
         "Please provide a reason to delete this submission and all its related data:")
 }
 
 function deleteComment(sid, cid) {
-    sendXHR(`/submission/${sid}/comment/${cid}`, "DELETE", null, true,
+    sendXHR(`/api/submission/${sid}/comment/${cid}`, "DELETE", null, true,
         "Failed to delete comment.",
         null,
         "Please provide a reason to delete this comment:")

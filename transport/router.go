@@ -45,16 +45,16 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	// auth
 	router.Handle(
-		"/web/auth",
+		"/auth",
 		http.HandlerFunc(a.RequestWeb(a.HandleDiscordAuth))).
 		Methods("GET")
 	router.Handle(
-		"/web/auth/callback",
+		"/auth/callback",
 		http.HandlerFunc(a.RequestWeb(a.HandleDiscordCallback))).
 		Methods("GET")
 	router.Handle(
-		"/logout",
-		http.HandlerFunc(a.RequestWeb(a.HandleLogout))).
+		"/api/logout",
+		http.HandlerFunc(a.RequestJSON(a.HandleLogout))).
 		Methods("GET")
 
 	// pages
@@ -111,7 +111,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	// receivers
 	router.Handle(
-		"/submission-receiver",
+		"/api/submission-receiver",
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiver, muxAny(
 				isStaff,
@@ -120,7 +120,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("POST")
 
 	router.Handle(
-		fmt.Sprintf("/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
+		fmt.Sprintf("/api/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiver,
 			muxAny(isStaff,
@@ -129,7 +129,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("POST")
 
 	router.Handle(
-		fmt.Sprintf("/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs),
+		fmt.Sprintf("/api/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleCommentReceiverBatch, muxAny(
 				muxAll(isStaff, a.UserCanCommentAction),
@@ -143,7 +143,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("PUT")
 
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}/subscription-settings", constants.ResourceKeySubmissionID),
+		fmt.Sprintf("/api/submission/{%s}/subscription-settings", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleUpdateSubscriptionSettings, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("PUT")
@@ -177,19 +177,19 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 
 	// soft delete
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
+		fmt.Sprintf("/api/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSoftDeleteSubmissionFile, muxAll(isDeleter))))).
 		Methods("DELETE")
 
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}", constants.ResourceKeySubmissionID),
+		fmt.Sprintf("/api/submission/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSoftDeleteSubmission, muxAll(isDeleter))))).
 		Methods("DELETE")
 
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}/comment/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyCommentID),
+		fmt.Sprintf("/api/submission/{%s}/comment/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyCommentID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSoftDeleteComment, muxAll(isDeleter))))).
 		Methods("DELETE")
