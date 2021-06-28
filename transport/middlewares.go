@@ -12,6 +12,18 @@ import (
 	"strings"
 )
 
+func (a *App) RequestWeb(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		next(w, r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.RequestType, constants.RequestWeb)))
+	}
+}
+
+func (a *App) RequestJSON(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		next(w, r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.RequestType, constants.RequestJSON)))
+	}
+}
+
 // TODO optimize database access in middleware
 
 // UserAuthMux takes many authorization middlewares and accepts if any of them does not return error
@@ -266,4 +278,40 @@ func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
 		constants.ActionAssignVerification, constants.ActionUnassignVerification}, constants.DeciderRoles())
 
 	return canComment || isAdder || isDecider, nil
+}
+
+func muxAny(authorizers ...func(*http.Request, int64) (bool, error)) func(*http.Request, int64) (bool, error) {
+	return func(r *http.Request, uid int64) (bool, error) {
+		for _, authorizer := range authorizers {
+			ok, err := authorizer(r, uid)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+}
+
+func muxAll(authorizers ...func(*http.Request, int64) (bool, error)) func(*http.Request, int64) (bool, error) {
+	return func(r *http.Request, uid int64) (bool, error) {
+		isAuthorized := true
+		for _, authorizer := range authorizers {
+			ok, err := authorizer(r, uid)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				isAuthorized = false
+				break
+			}
+		}
+
+		if !isAuthorized {
+			return false, nil
+		}
+		return true, nil
+	}
 }
