@@ -16,6 +16,7 @@
 .env
 log.log
 db.db*
+*.sqlite3
 
 files/*
 backups/*
