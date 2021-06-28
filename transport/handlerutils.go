@@ -35,6 +35,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"isInAudit":          constants.IsInAudit,
 		"megabytify":         utils.Megabytify,
 		"splitMultilineText": utils.SplitMultilineText,
+		"capitalizeAscii":    utils.CapitalizeASCII,
 	})
 
 	parse := func() (interface{}, error) {

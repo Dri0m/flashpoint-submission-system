@@ -218,3 +218,13 @@ func FileExists(name string) bool {
 	}
 	return true
 }
+
+func CapitalizeASCII(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	result := strings.ToUpper(string(s[0]))
+	result += s[1:]
+	return result
+}
