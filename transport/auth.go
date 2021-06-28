@@ -44,7 +44,7 @@ func (sk *StateKeeper) Generate() (string, error) {
 	return s, nil
 }
 
-func (sk *StateKeeper) Use(s string) bool {
+func (sk *StateKeeper) Consume(s string) bool {
 	sk.Clean()
 	sk.Lock()
 	defer sk.Unlock()
@@ -77,7 +77,7 @@ func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
 	state, err := stateKeeper.Generate()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to generate state", http.StatusInternalServerError)
+		writeError(w, perr("failed to generate state", http.StatusInternalServerError))
 		return
 	}
 
@@ -88,8 +88,8 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// verify state
-	if !stateKeeper.Use(r.FormValue("state")) {
-		http.Error(w, "state does not match", http.StatusBadRequest)
+	if !stateKeeper.Consume(r.FormValue("state")) {
+		writeError(w, perr("state does not match", http.StatusBadRequest))
 		return
 	}
 
@@ -98,7 +98,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to obtain discord auth token", http.StatusInternalServerError)
+		writeError(w, perr("failed to obtain discord auth token", http.StatusInternalServerError))
 		return
 	}
 
@@ -106,7 +106,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	resp, err := a.Conf.OauthConf.Client(context.Background(), token).Get("https://discordapp.com/api/users/@me")
 
 	if err != nil || resp.StatusCode != 200 {
-		http.Error(w, "failed to obtain discord user data", http.StatusInternalServerError)
+		writeError(w, perr("failed to obtain discord user data", http.StatusInternalServerError))
 		return
 	}
 	defer resp.Body.Close()
@@ -115,14 +115,14 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(resp.Body).Decode(&discordUserResp)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
+		writeError(w, perr("failed to parse discord response", http.StatusInternalServerError))
 		return
 	}
 
 	uid, err := strconv.ParseInt(discordUserResp.ID, 10, 64)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to parse discord response", http.StatusInternalServerError)
+		writeError(w, perr("failed to parse discord response", http.StatusInternalServerError))
 		return
 	}
 
@@ -140,13 +140,13 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	authToken, err := a.Service.SaveUser(ctx, discordUser)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to store user data", http.StatusInternalServerError)
+		writeError(w, dberr(err))
 		return
 	}
 
 	if err := a.CC.SetSecureCookie(w, utils.Cookies.Login, service.MapAuthToken(authToken)); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, "failed to set cookie", http.StatusInternalServerError)
+		writeError(w, perr("failed to set cookie", http.StatusInternalServerError))
 		return
 	}
 
@@ -159,20 +159,20 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	cookieMap, err := a.CC.GetSecureCookie(r, utils.Cookies.Login)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		writeError(w, perr(msg, http.StatusInternalServerError))
 		return
 	}
 
 	token, err := service.ParseAuthToken(cookieMap) // TODO move this into the Logout method
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		writeError(w, perr(msg, http.StatusInternalServerError))
 		return
 	}
 
 	if err := a.Service.Logout(ctx, token.Secret); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		http.Error(w, msg, http.StatusInternalServerError)
+		writeError(w, perr(msg, http.StatusInternalServerError))
 		return
 	}
 

@@ -140,3 +140,7 @@ func writeError(w http.ResponseWriter, err error) {
 func perr(msg string, status int) error {
 	return constants.PublicError{Msg: msg, Status: status}
 }
+
+func dberr(err error) error {
+	return constants.DatabaseError{Err: err}
+}
