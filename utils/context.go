@@ -43,7 +43,7 @@ func RequestID(ctx context.Context) string {
 
 // RequestType extracts requestID from context
 func RequestType(ctx context.Context) string {
-	v := ctx.Value(CtxKeys.RequestID)
+	v := ctx.Value(CtxKeys.RequestType)
 	if v == nil {
 		return ""
 	}
