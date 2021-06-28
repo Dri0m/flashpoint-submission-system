@@ -1,13 +1,13 @@
 {{define "view-submission-nav"}}
     <div class="submission-pagenav">
         {{if .PreviousSubmissionID}}
-            <a href="/submission/{{.PreviousSubmissionID}}" class="pure-button pure-button-primary"
+            <a href="/web/submission/{{.PreviousSubmissionID}}" class="pure-button pure-button-primary"
                onclick="">
                 Previous submission
             </a>
         {{end}}
         {{if .NextSubmissionID}}
-            <a href="/submission/{{.NextSubmissionID}}" class="pure-button pure-button-primary"
+            <a href="/web/submission/{{.NextSubmissionID}}" class="pure-button pure-button-primary"
                onclick="changePage(+1)">
                 Next submission
             </a>

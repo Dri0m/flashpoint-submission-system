@@ -43,17 +43,15 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	router.PathPrefix("/static/").Handler(
 		http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
-	// oauth
+	// auth
 	router.Handle(
-		"/auth",
+		"/web/auth",
 		http.HandlerFunc(a.RequestWeb(a.HandleDiscordAuth))).
 		Methods("GET")
 	router.Handle(
-		"/auth/callback",
+		"/web/auth/callback",
 		http.HandlerFunc(a.RequestWeb(a.HandleDiscordCallback))).
 		Methods("GET")
-
-	// logout
 	router.Handle(
 		"/logout",
 		http.HandlerFunc(a.RequestWeb(a.HandleLogout))).
@@ -66,30 +64,35 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("GET")
 
 	router.Handle(
-		"/profile",
+		"/web",
+		http.HandlerFunc(a.RequestWeb(a.HandleRootPage))).
+		Methods("GET")
+
+	router.Handle(
+		"/web/profile",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleProfilePage)))).
 		Methods("GET")
 
 	router.Handle(
-		"/submit",
+		"/web/submit",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleSubmitPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
 	router.Handle(
-		"/submissions",
+		"/web/submissions",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleSubmissionsPage, muxAny(isStaff))))).
 		Methods("GET")
 
 	router.Handle(
-		"/my-submissions",
+		"/web/my-submissions",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleMySubmissionsPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}", constants.ResourceKeySubmissionID),
+		fmt.Sprintf("/web/submission/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleViewSubmissionPage,
 			muxAny(isStaff,
@@ -98,7 +101,7 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		Methods("GET")
 
 	router.Handle(
-		fmt.Sprintf("/submission/{%s}/files", constants.ResourceKeySubmissionID),
+		fmt.Sprintf("/web/submission/{%s}/files", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleViewSubmissionFilesPage,
 			muxAny(isStaff,

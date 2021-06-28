@@ -41,7 +41,7 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
 			utils.UnsetCookie(w, utils.Cookies.Login)
-			http.Redirect(w, r, "/", http.StatusFound)
+			http.Redirect(w, r, "/web/", http.StatusFound)
 			// TODO add user facing error message here
 			//http.Error(w, "failed to parse cookie, please clear your cookies and try again", http.StatusBadRequest)
 			return
@@ -51,7 +51,7 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
 			utils.UnsetCookie(w, utils.Cookies.Login)
-			http.Redirect(w, r, "/", http.StatusFound)
+			http.Redirect(w, r, "/web/", http.StatusFound)
 			// TODO add user facing error message here
 			//http.Error(w, "failed to load session, please clear your cookies and try again", http.StatusBadRequest)
 			return
@@ -59,7 +59,7 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 		if !ok {
 			utils.LogCtx(ctx).Error(err)
 			utils.UnsetCookie(w, utils.Cookies.Login)
-			http.Redirect(w, r, "/", http.StatusFound)
+			http.Redirect(w, r, "/web/", http.StatusFound)
 			// TODO add user facing error message here
 			//http.Error(w, "session expired, please log in to continue", http.StatusUnauthorized)
 			return

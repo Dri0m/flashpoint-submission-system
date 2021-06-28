@@ -150,7 +150,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/profile", http.StatusFound)
+	http.Redirect(w, r, "/web/profile", http.StatusFound)
 }
 
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
@@ -177,5 +177,5 @@ func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.UnsetCookie(w, utils.Cookies.Login)
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/web", http.StatusFound)
 }

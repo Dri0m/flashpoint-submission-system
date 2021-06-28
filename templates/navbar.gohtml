@@ -3,18 +3,18 @@
         <div class="pure-g">
             <div class="pure-u-1-2">
                 <div class="pure-menu pure-menu-horizontal">
-                    <a href="/" class="pure-menu-heading pure-menu-link">FPFSS</a>
+                    <a href="/web" class="pure-menu-heading pure-menu-link">FPFSS</a>
                     <ul class="pure-menu-list">
                         {{if not (empty (unpointify .Username))}}
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                                 <li class="pure-menu-item">
-                                    <a href="/submit" class="pure-menu-link">Submit</a>
+                                    <a href="/web/submit" class="pure-menu-link">Submit</a>
                                 </li>
                             {{end}}
                         {{end}}
                         {{if isStaff .UserRoles}}
                             <li class="pure-menu-item">
-                                <a href="/submissions" class="pure-menu-link">Browse Submissions</a>
+                                <a href="/web/submissions" class="pure-menu-link">Browse Submissions</a>
                             </li>
                         {{end}}
                     </ul>
@@ -26,11 +26,11 @@
                         <ul class="pure-menu-list">
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                                 <li class="pure-menu-item">
-                                    <a href="/my-submissions" class="pure-menu-link">My Submissions</a>
+                                    <a href="/web/my-submissions" class="pure-menu-link">My Submissions</a>
                                 </li>
                             {{end}}
                             <li class="pure-menu-item">
-                                <a href="/profile" class="pure-menu-link">Profile</a>
+                                <a href="/web/profile" class="pure-menu-link">Profile</a>
                             </li>
                             <li class="pure-menu-item">
                                 <a href="/logout" class="pure-menu-link">Log out</a>

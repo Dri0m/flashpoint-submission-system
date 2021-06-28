@@ -34,7 +34,7 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 
 	var b strings.Builder
 	b.WriteString("You've got mail!\n")
-	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/submission/%d>\n", sid))
+	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/web/submission/%d>\n", sid))
 
 	if action == constants.ActionComment {
 		b.WriteString(fmt.Sprintf("There is a new comment on the submission."))
@@ -73,7 +73,7 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 	} else {
 		b.WriteString(fmt.Sprintf("A submission update has been uploaded by <@%d>\n", authorID))
 	}
-	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/submission/%d>\n", sid))
+	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/web/submission/%d>\n", sid))
 
 	if !isCurationValid {
 		b.WriteString("Unfortunately, it does not quite reach the quality required to satisfy the cool crab.\n")
@@ -195,7 +195,7 @@ func (s *SiteService) createDeletionNotification(dbs database.DBSession, authorI
 
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("You've got mail! <@%d>\n", authorID))
-	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/submission/%d>\n", *sid))
+	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/web/submission/%d>\n", *sid))
 	if cid != nil {
 		b.WriteString(fmt.Sprintf("Your comment #%d was deleted by <@%d>\n", *cid, deleterID))
 	} else if fid != nil {

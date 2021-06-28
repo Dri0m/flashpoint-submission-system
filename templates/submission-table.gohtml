@@ -38,9 +38,9 @@
                         </td>
                         <td class="center">
                             <a href="/data/submission/{{.SubmissionID}}/file/{{.FileID}}">Get</a>
-                            {{if gt .FileCount 1}}<br><a href="/submission/{{.SubmissionID}}/files">Browse</a>{{end}}
+                            {{if gt .FileCount 1}}<br><a href="/web/submission/{{.SubmissionID}}/files">Browse</a>{{end}}
                         </td>
-                        <td class="center"><a href="/submission/{{.SubmissionID}}">View</a></td>
+                        <td class="center"><a href="/web/submission/{{.SubmissionID}}">View</a></td>
                         <td>{{.CurationTitle}}</td>
                         <td>{{if eq "Yes" (unpointify .CurationExtreme)}}<img src="/static/extreme.png" alt="Extreme" title="Curation is marked as extreme" width="24" height="24">{{end}}</td>
                         <td>{{.CurationPlatform}}</td>
