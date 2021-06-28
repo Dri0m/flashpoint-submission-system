@@ -28,7 +28,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"unpointify":         utils.Unpointify,
 		"isStaff":            constants.IsStaff,
 		"isTrialCurator":     constants.IsTrialCurator,
-		"isDeletor":          constants.IsDeletor,
+		"isDeleter":          constants.IsDeleter,
 		"isDecider":          constants.IsDecider,
 		"isAdder":            constants.IsAdder,
 		"isInAudit":          constants.IsInAudit,

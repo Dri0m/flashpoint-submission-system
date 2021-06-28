@@ -46,7 +46,7 @@
             {{if isTrialCurator .UserRoles}}
                 You are a Trial Curator. You can interact only with your own submissions.<br>
             {{end}}
-            {{if isDeletor .UserRoles}}
+            {{if isDeleter .UserRoles}}
                 You have permissions to delete submissions, files and comments.<br>
             {{end}}
             {{if isDecider .UserRoles}}

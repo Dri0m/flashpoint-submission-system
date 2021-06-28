@@ -1,5 +1,5 @@
 {{define "main"}}
-    {{$canDelete := isDeletor .UserRoles}}
+    {{$canDelete := isDeleter .UserRoles}}
     {{$canViewSubmissionsOfOthers := not (or (isInAudit .UserRoles) (isTrialCurator .UserRoles))}}
     {{$submissionID := (index .Submissions 0).SubmissionID}}
     {{$isExtreme := eq "Yes" (unpointify .CurationMeta.Extreme)}}

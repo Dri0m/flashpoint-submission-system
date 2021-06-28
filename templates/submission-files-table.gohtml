@@ -1,5 +1,5 @@
 {{define "submission-files-table"}}
-    {{$canDelete := isDeletor .UserRoles}}
+    {{$canDelete := isDeleter .UserRoles}}
     <div id="table-wrapper">
         <i>tip: use shift+mousewheel to scroll horizontally</i>
         <div id="table-scroll">

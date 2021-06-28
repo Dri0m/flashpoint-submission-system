@@ -31,7 +31,7 @@ func TrialCuratorRoles() []string {
 	}
 }
 
-func DeletorRoles() []string {
+func DeleterRoles() []string {
 	return []string{
 		RoleAdministrator,
 		RoleModerator,
@@ -77,9 +77,9 @@ func IsTrialCurator(roles []string) bool {
 	return HasAnyRole(roles, TrialCuratorRoles())
 }
 
-// IsDeletor allows users to soft delete things
-func IsDeletor(roles []string) bool {
-	return HasAnyRole(roles, DeletorRoles())
+// IsDeleter allows users to soft delete things
+func IsDeleter(roles []string) bool {
+	return HasAnyRole(roles, DeleterRoles())
 }
 
 // IsDecider allows user to decide the state of submissions (approve, request changes, accept, reject)

@@ -15,8 +15,8 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	isTrialCurator := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.TrialCuratorRoles())
 	}
-	isDeletor := func(r *http.Request, uid int64) (bool, error) {
-		return a.UserHasAnyRole(r, uid, constants.DeletorRoles())
+	isDeleter := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserHasAnyRole(r, uid, constants.DeleterRoles())
 	}
 	isInAudit := func(r *http.Request, uid int64) (bool, error) {
 		s, err := a.UserHasAnyRole(r, uid, constants.StaffRoles())
@@ -136,16 +136,16 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 	// soft delete
 	router.Handle(fmt.Sprintf("/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.UserAuthMux(
-			a.HandleSoftDeleteSubmissionFile, muxAll(isDeletor)))).Methods("DELETE")
+			a.HandleSoftDeleteSubmissionFile, muxAll(isDeleter)))).Methods("DELETE")
 
 	router.Handle(fmt.Sprintf("/submission/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.UserAuthMux(
-			a.HandleSoftDeleteSubmission, muxAll(isDeletor)))).Methods("DELETE")
+			a.HandleSoftDeleteSubmission, muxAll(isDeleter)))).Methods("DELETE")
 
 	router.Handle(fmt.Sprintf(
 		"/submission/{%s}/comment/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyCommentID),
 		http.HandlerFunc(a.UserAuthMux(
-			a.HandleSoftDeleteComment, muxAll(isDeletor)))).Methods("DELETE")
+			a.HandleSoftDeleteComment, muxAll(isDeleter)))).Methods("DELETE")
 
 	err := srv.ListenAndServe()
 	if err != nil {
