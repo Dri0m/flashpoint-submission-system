@@ -58,7 +58,7 @@
                         </td>
                         <td>{{.CurationTitle}}</td>
                         <td>{{if eq "Yes" (unpointify .CurationExtreme)}}<img src="/static/extreme.png" alt="Extreme"
-                                                                              title="Curation is marked as extreme"
+                                                                              title="Curation is marked as extreme."
                                                                               width="24" height="24">{{end}}
                         </td>
                         {{if $showLaunchCommand}}
@@ -71,7 +71,7 @@
                         <td>{{if not $isLegacy}}{{.UpdaterUsername}}{{end}}</td>
                         <td title="{{.Size}}B">{{if not $isLegacy}}{{megabytify .Size}}MB{{end}}</td>
                         <td>
-                            <div class="center-image dot-{{.BotAction}}" title="{{.BotAction}}"></div>
+                            <div class="center-image dot-{{.BotAction}}" title="{{if (contains "approve" .BotAction)}}The bot has requested changes.{{else}}The bot approves.{{end}}"></div>
                         </td>
                         <td class="center {{if gt (len .AssignedTestingUserIDs) 0}}bgr-assign-testing{{end}}">
                             {{if not $isLegacy}}<b>{{len .AssignedTestingUserIDs}}</b>{{end}}
@@ -90,7 +90,7 @@
                         </td>
                         <td>
                             <div class="center-image dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}"
-                                 title="{{if (has "mark-added" .DistinctActions)}}Marked as added to Flashpoint{{else}}Not marked as added to Flashpoint{{end}}"></div>
+                                 title="{{if (has "mark-added" .DistinctActions)}}Marked as added to Flashpoint.{{else}}Not marked as added to Flashpoint.{{end}}"></div>
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
