@@ -50,10 +50,48 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
 		if filter.PlatformPartial != nil {
-			filters = append(filters, "(meta.platform LIKE ?)")
-			data = append(data, utils.FormatLike(*filter.PlatformPartial))
-			masterFilters = append(masterFilters, "(platform LIKE ?)")
-			masterData = append(masterData, utils.FormatLike(*filter.PlatformPartial))
+			substrings := strings.Split(*filter.PlatformPartial, ",")
+			trimmed := make([]string, 0, len(substrings))
+			for _, ss := range substrings {
+				trimmed = append(trimmed, strings.TrimSpace(ss))
+			}
+			include := make([]string, 0, len(substrings))
+			exclude := make([]string, 0, len(substrings))
+			for _, s := range trimmed {
+				if len(s) == 0 {
+					continue
+				}
+				if s[0] == '!' {
+					exclude = append(exclude, s[1:])
+				} else {
+					include = append(include, s)
+				}
+			}
+
+			if len(include) > 0 {
+				const includePlaceholder = `(meta.platform LIKE ?)`
+				filters = append(filters, `(`+includePlaceholder+strings.Repeat(` OR `+includePlaceholder, len(include)-1)+`)`)
+
+				const masterIncludePlaceholder = `(platform LIKE ?)`
+				masterFilters = append(masterFilters, `(`+masterIncludePlaceholder+strings.Repeat(` OR `+masterIncludePlaceholder, len(include)-1)+`)`)
+			}
+
+			if len(exclude) > 0 {
+				const excludePlaceholder = `(meta.platform NOT LIKE ?)`
+				filters = append(filters, `(`+excludePlaceholder+strings.Repeat(` AND `+excludePlaceholder, len(exclude)-1)+`)`)
+
+				const masterExcludePlaceholder = `(platform NOT LIKE ?)`
+				masterFilters = append(masterFilters, `(`+masterExcludePlaceholder+strings.Repeat(` AND `+masterExcludePlaceholder, len(exclude)-1)+`)`)
+			}
+
+			for _, s := range include {
+				data = append(data, utils.FormatLike(s))
+				masterData = append(masterData, utils.FormatLike(s))
+			}
+			for _, s := range exclude {
+				data = append(data, utils.FormatLike(s))
+				masterData = append(masterData, utils.FormatLike(s))
+			}
 		}
 		if filter.LibraryPartial != nil {
 			filters = append(filters, "(meta.library LIKE ?)")

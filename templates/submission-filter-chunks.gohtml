@@ -67,7 +67,7 @@
     <div class="form-column-text">
         <label for="title-partial">Title (partial)</label>
         <input type="text" name="title-partial" value="{{default "" .Filter.TitlePartial}}">
-        <label for="platform-partial">Platform (partial)</label>
+        <label for="platform-partial" title="Type comma-separated platform names (substrings) to search, prepend with '!' to exclude a substring. For example, write '!flash, !unity' to exclude flash and unity platforms. The search is case-insensitive.">Platform (hover for help)</label>
         <input type="text" name="platform-partial"
                value="{{default "" .Filter.PlatformPartial}}">
         <label for="library-partial">Library (partial)</label>
