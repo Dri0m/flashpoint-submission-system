@@ -31,36 +31,54 @@
                 </thead>
                 <tbody>
                 {{range .Submissions}}
+                    {{$isLegacy := eq -1 .SubmissionID}}
                     <tr>
                         <td class="center">
-                            <input type="checkbox" class="submission-checkbox" data-fid="{{.FileID}}"
-                                   data-sid="{{.SubmissionID}}"/>
+                            {{if not $isLegacy}}
+                                <input type="checkbox" class="submission-checkbox" data-fid="{{.FileID}}"
+                                       data-sid="{{.SubmissionID}}"/>
+                            {{end}}
                         </td>
                         <td class="center">
-                            <a href="/data/submission/{{.SubmissionID}}/file/{{.FileID}}">Get</a>
-                            {{if gt .FileCount 1}}<br><a href="/web/submission/{{.SubmissionID}}/files">Browse</a>{{end}}
+                            {{if not $isLegacy}}
+                                <a href="/data/submission/{{.SubmissionID}}/file/{{.FileID}}">Get</a>
+                                {{if gt .FileCount 1}}
+                                    <br><a href="/web/submission/{{.SubmissionID}}/files">Browse</a>
+                                {{end}}
+                            {{end}}
                         </td>
-                        <td class="center"><a href="/web/submission/{{.SubmissionID}}">View</a></td>
+                        <td class="center">
+                            {{if not $isLegacy}}
+                                <a href="/web/submission/{{.SubmissionID}}">View</a>
+                            {{end}}
+                        </td>
                         <td>{{.CurationTitle}}</td>
-                        <td>{{if eq "Yes" (unpointify .CurationExtreme)}}<img src="/static/extreme.png" alt="Extreme" title="Curation is marked as extreme" width="24" height="24">{{end}}</td>
+                        <td>{{if eq "Yes" (unpointify .CurationExtreme)}}<img src="/static/extreme.png" alt="Extreme"
+                                                                              title="Curation is marked as extreme"
+                                                                              width="24" height="24">{{end}}</td>
                         <td>{{.CurationPlatform}}</td>
                         <td>{{capitalizeAscii .CurationLibrary}}</td>
-                        <td>{{capitalizeAscii .SubmissionLevel}}</td>
-                        <td>{{.SubmitterUsername}}</td>
-                        <td>{{.UpdaterUsername}}</td>
-                        <td title="{{.Size}}B">{{megabytify .Size}}MB</td>
+                        <td>{{if not $isLegacy}}{{capitalizeAscii .SubmissionLevel}}{{end}}</td>
+                        <td>{{if not $isLegacy}}{{.SubmitterUsername}}{{end}}</td>
+                        <td>{{if not $isLegacy}}{{.UpdaterUsername}}{{end}}</td>
+                        <td title="{{.Size}}B">{{if not $isLegacy}}{{megabytify .Size}}MB{{end}}</td>
                         <td>
                             <div class="center-image dot-{{.BotAction}}" title="{{.BotAction}}"></div>
                         </td>
                         <td class="center {{if gt (len .AssignedTestingUserIDs) 0}}bgr-assign-testing{{end}}">
-                            <b>{{len .AssignedTestingUserIDs}}</b></td>
-                        <td class="center {{if gt (len .AssignedVerificationUserIDs) 0}}bgr-assign-verification{{end}}">
-                            <b>{{len .AssignedVerificationUserIDs}}</b></td>
-                        <td class="center {{if gt (len .RequestedChangesUserIDs) 0}}bgr-request-changes{{end}}">
-                            <b>{{len .RequestedChangesUserIDs}}</b></td>
-                        <td class="center {{if gt (len .ApprovedUserIDs) 0}}bgr-approve{{end}}"><b>{{len .ApprovedUserIDs}}</b>
+                            {{if not $isLegacy}}<b>{{len .AssignedTestingUserIDs}}</b>{{end}}
                         </td>
-                        <td class="center {{if gt (len .VerifiedUserIDs) 0}}bgr-verify{{end}}"><b>{{len .VerifiedUserIDs}}</b>
+                        <td class="center {{if gt (len .AssignedVerificationUserIDs) 0}}bgr-assign-verification{{end}}">
+                            {{if not $isLegacy}}<b>{{len .AssignedVerificationUserIDs}}</b>{{end}}
+                        </td>
+                        <td class="center {{if gt (len .RequestedChangesUserIDs) 0}}bgr-request-changes{{end}}">
+                            {{if not $isLegacy}}<b>{{len .RequestedChangesUserIDs}}</b>{{end}}
+                        </td>
+                        <td class="center {{if gt (len .ApprovedUserIDs) 0}}bgr-approve{{end}}">
+                            {{if not $isLegacy}}<b>{{len .ApprovedUserIDs}}</b>{{end}}
+                        </td>
+                        <td class="center {{if gt (len .VerifiedUserIDs) 0}}bgr-verify{{end}}">
+                            {{if not $isLegacy}}<b>{{len .VerifiedUserIDs}}</b>{{end}}
                         </td>
                         <td>
                             <div class="center-image dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}"
@@ -68,7 +86,7 @@
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
-                        <td>{{.OriginalFilename}}</td>
+                        <td>{{if not $isLegacy}}{{.OriginalFilename}}{{end}}</td>
                     </tr>
                 {{end}}
                 </tbody>
