@@ -780,7 +780,7 @@ func (s *SiteService) UpdateMasterDB(ctx context.Context) error {
 	utils.LogCtx(ctx).Debug("reading masterdb")
 	rows, err := db.Query(`
 		SELECT id, title, alternateTitles, series, developer, publisher, platform, extreme, playMode, status, notes,
-		       source, launchCommand, releaseDate, version, originalDescription, language, library, tagsStr
+		       source, launchCommand, releaseDate, version, originalDescription, language, library, tagsStr, dateAdded, dateModified
 		FROM game`)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -796,7 +796,7 @@ func (s *SiteService) UpdateMasterDB(ctx context.Context) error {
 		err := rows.Scan(
 			&g.UUID, &g.Title, &g.AlternateTitles, &g.Series, &g.Developer, &g.Publisher, &g.Platform,
 			&isExtreme, &g.PlayMode, &g.Status, &g.GameNotes, &g.Source, &g.LaunchCommand, &g.ReleaseDate,
-			&g.Version, &g.OriginalDescription, &g.Languages, &g.Library, &g.Tags)
+			&g.Version, &g.OriginalDescription, &g.Languages, &g.Library, &g.Tags, &g.DateAdded, &g.DateModified)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
 			return err

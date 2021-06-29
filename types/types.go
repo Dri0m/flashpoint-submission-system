@@ -54,6 +54,8 @@ type MasterDatabaseGame struct {
 	Languages           *string
 	Library             *string
 	Tags                *string
+	DateAdded           time.Time
+	DateModified        time.Time
 }
 
 type Comment struct {

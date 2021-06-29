@@ -1,1 +1,1 @@
-DROP TABLE masterdb_meta;
+DROP TABLE masterdb_game;

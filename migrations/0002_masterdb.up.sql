@@ -19,5 +19,7 @@ CREATE TABLE IF NOT EXISTS masterdb_game
     original_description TEXT,
     languages            TEXT,
     library              TEXT,
-    tags                 TEXT
+    tags                 TEXT,
+    date_added           BIGINT,
+    date_modified        BIGINT
 );

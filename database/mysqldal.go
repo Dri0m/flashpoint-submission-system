@@ -780,12 +780,12 @@ func (d *mysqlDAL) StoreMasterDBGames(dbs DBSession, games []*types.MasterDataba
 	for _, g := range games {
 		data = append(data, g.UUID, g.Title, g.AlternateTitles, g.Series, g.Developer, g.Publisher, g.Platform,
 			g.Extreme, g.PlayMode, g.Status, g.GameNotes, g.Source, g.LaunchCommand, g.ReleaseDate,
-			g.Version, g.OriginalDescription, g.Languages, g.Library, g.Tags)
+			g.Version, g.OriginalDescription, g.Languages, g.Library, g.Tags, g.DateAdded.Unix(), g.DateModified.Unix())
 	}
 
-	const valuePlaceholder = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	const valuePlaceholder = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(),
-		`INSERT IGNORE INTO masterdb_game (uuid, title, alternate_titles, series, developer, publisher, platform, extreme, play_mode, status, game_notes, source, launch_command, release_date, version, original_description, languages, library, tags) VALUES 
+		`INSERT IGNORE INTO masterdb_game (uuid, title, alternate_titles, series, developer, publisher, platform, extreme, play_mode, status, game_notes, source, launch_command, release_date, version, original_description, languages, library, tags, date_added, date_modified) VALUES 
 		`+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(games)-1),
 		data...)
 	return err
