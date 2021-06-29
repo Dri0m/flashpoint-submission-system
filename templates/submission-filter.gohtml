@@ -1,35 +1,41 @@
 {{define "submission-filter"}}
 
     <div class="submission-filter-wrapper">
-
-        Quick filters:
-        <br>
-        <button type="button" class="pure-button pure-button-primary"
-                onclick="filterReadyForTesting()">Ready for Testing
-        </button>
-        <button type="button" class="pure-button pure-button-primary"
-                onclick="filterReadyForVerification()">Ready for Verification
-        </button>
-        <button type="button" class="pure-button pure-button-primary"
-                onclick="filterReadyForFlashpoint()">Ready for FP
-        </button>
-        <br>
-        <br>
-        <button type="button" class="pure-button pure-button-primary"
-                onclick="filterAssignedToMeForTesting()">Assigned to me for testing
-        </button>
-        <button type="button" class="pure-button pure-button-primary"
-                onclick="filterAssignedToMeForVerification()">Assigned to me for verification
-        </button>
-        <button type="button" class="pure-button pure-button-primary"
-                onclick="filterIHaveRequestedChangesAfterTesting()">I have RC during testing
-        </button>
-        <button type="button" class="pure-button pure-button-primary"
-                onclick="filterIHaveRequestedChangesVerification()">I have RC during verification
-        </button>
+        <form class="pure-form pure-form-stacked">
+            <div class="form-column">
+                <div class="form-column-text">
+                    <legend>Quick filters</legend>
+                    <button type="button" class="pure-button pure-button-primary"
+                            onclick="filterReadyForTesting()">Ready for Testing
+                    </button>
+                    <button type="button" class="pure-button pure-button-primary"
+                            onclick="filterReadyForVerification()">Ready for Verification
+                    </button>
+                    <button type="button" class="pure-button pure-button-primary"
+                            onclick="filterReadyForFlashpoint()">Ready for FP
+                    </button>
+                    <br>
+                    <br>
+                    <button type="button" class="pure-button pure-button-primary"
+                            onclick="filterAssignedToMeForTesting()">Assigned to me for testing
+                    </button>
+                    <button type="button" class="pure-button pure-button-primary"
+                            onclick="filterAssignedToMeForVerification()">Assigned to me for verification
+                    </button>
+                    <button type="button" class="pure-button pure-button-primary"
+                            onclick="filterIHaveRequestedChangesAfterTesting()">I have RC during testing
+                    </button>
+                    <button type="button" class="pure-button pure-button-primary"
+                            onclick="filterIHaveRequestedChangesVerification()">I have RC during verification
+                    </button>
+                    </fieldset>
+                </div>
+            </div>
+        </form>
 
         <br><br>
-        <form class="pure-form pure-form-stacked" id="filter-form-simple" method="GET" {{if eq "advanced" .FilterLayout}}hidden{{end}}>
+        <form class="pure-form pure-form-stacked" id="filter-form-simple" method="GET"
+              {{if eq "advanced" .FilterLayout}}hidden{{end}}>
             <input type="hidden" name="filter-layout" value="simple">
             <fieldset>
                 <div class="pure-g">
@@ -59,7 +65,8 @@
                 </button>
             </div>
         </form>
-        <form class="pure-form pure-form-stacked" id="filter-form-advanced" method="GET" {{if not (eq "advanced" .FilterLayout)}}hidden{{end}}>
+        <form class="pure-form pure-form-stacked" id="filter-form-advanced" method="GET"
+              {{if not (eq "advanced" .FilterLayout)}}hidden{{end}}>
             <input type="hidden" name="filter-layout" value="advanced">
             <div class="pure-g">
                 <div class="pure-u-9-24">
