@@ -34,6 +34,28 @@ type CurationMeta struct {
 	//AdditionalApplications *CurationFormatAddApps `json:"Additional Applications"`
 }
 
+type MasterDatabaseGame struct {
+	UUID                string
+	Title               *string
+	AlternateTitles     *string
+	Series              *string
+	Developer           *string
+	Publisher           *string
+	Platform            *string
+	Extreme             *string
+	PlayMode            *string
+	Status              *string
+	GameNotes           *string
+	Source              *string
+	LaunchCommand       *string
+	ReleaseDate         *string
+	Version             *string
+	OriginalDescription *string
+	Languages           *string
+	Library             *string
+	Tags                *string
+}
+
 type Comment struct {
 	AuthorID     int64
 	SubmissionID int64

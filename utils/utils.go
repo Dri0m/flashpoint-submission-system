@@ -228,3 +228,26 @@ func CapitalizeASCII(s string) string {
 	result += s[1:]
 	return result
 }
+
+func GetURL(url string) ([]byte, error) {
+	var client = &http.Client{Timeout: 600 * time.Second}
+
+	r, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	if r.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("response not OK: %d", r.StatusCode)
+	}
+
+	var result bytes.Buffer
+
+	_, err = io.Copy(&result, r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Bytes(), nil
+}

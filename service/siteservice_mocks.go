@@ -227,6 +227,16 @@ func (m *mockDAL) UpdateSubmissionCacheTable(_ database.DBSession, sid int64) er
 	return args.Error(0)
 }
 
+func (m *mockDAL) ClearMasterDBGames(_ database.DBSession) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *mockDAL) StoreMasterDBGames(_ database.DBSession, games []*types.MasterDatabaseGame) error {
+	args := m.Called(games)
+	return args.Error(0)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {

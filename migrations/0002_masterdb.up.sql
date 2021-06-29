@@ -19,6 +19,5 @@ CREATE TABLE IF NOT EXISTS masterdb_game
     original_description TEXT,
     languages            TEXT,
     library              TEXT,
-    tags                 TEXT,
-    tag_categories       TEXT
+    tags                 TEXT
 );

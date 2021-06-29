@@ -764,3 +764,29 @@ func (d *mysqlDAL) GetPreviousSubmission(dbs DBSession, sid int64) (int64, error
 
 	return psid, nil
 }
+
+// ClearMasterDBGames clears the masterdb metadata table
+func (d *mysqlDAL) ClearMasterDBGames(dbs DBSession) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `DELETE FROM masterdb_game`)
+	return err
+}
+
+// StoreMasterDBGames stores games into the masterdb metadata table
+func (d *mysqlDAL) StoreMasterDBGames(dbs DBSession, games []*types.MasterDatabaseGame) error {
+	if len(games) == 0 {
+		return nil
+	}
+	data := make([]interface{}, 0, len(games)*3)
+	for _, g := range games {
+		data = append(data, g.UUID, g.Title, g.AlternateTitles, g.Series, g.Developer, g.Publisher, g.Platform,
+			g.Extreme, g.PlayMode, g.Status, g.GameNotes, g.Source, g.LaunchCommand, g.ReleaseDate,
+			g.Version, g.OriginalDescription, g.Languages, g.Library, g.Tags)
+	}
+
+	const valuePlaceholder = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(),
+		`INSERT IGNORE INTO masterdb_game (uuid, title, alternate_titles, series, developer, publisher, platform, extreme, play_mode, status, game_notes, source, launch_command, release_date, version, original_description, languages, library, tags) VALUES 
+		`+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(games)-1),
+		data...)
+	return err
+}

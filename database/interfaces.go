@@ -44,6 +44,8 @@ type DAL interface {
 	GetNextSubmission(dbs DBSession, sid int64) (int64, error)
 	GetPreviousSubmission(dbs DBSession, sid int64) (int64, error)
 	UpdateSubmissionCacheTable(dbs DBSession, sid int64) error
+	ClearMasterDBGames(dbs DBSession) error
+	StoreMasterDBGames(dbs DBSession, games []*types.MasterDatabaseGame) error
 }
 
 type DBSession interface {

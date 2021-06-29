@@ -13,8 +13,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -739,4 +741,113 @@ func (s *SiteService) GetPreviousSubmission(ctx context.Context, sid int64) (*in
 		return nil, dberr(err)
 	}
 	return &psid, nil
+}
+
+// UpdateMasterDB TODO internal, not covered by tests
+func (s *SiteService) UpdateMasterDB(ctx context.Context) error {
+	utils.LogCtx(ctx).Debug("downloading new masterdb")
+	databaseBytes, err := utils.GetURL("https://bluebot.unstable.life/master-db")
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+
+	utils.LogCtx(ctx).Debug("writing masterdb to temp file")
+	tmpDB, err := ioutil.TempFile("", "db*.sqlite3")
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+	defer func() {
+		tmpDB.Close()
+		os.Remove(tmpDB.Name())
+	}()
+
+	_, err = tmpDB.Write(databaseBytes)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+	tmpDB.Close()
+
+	utils.LogCtx(ctx).Debug("opening masterdb")
+	db, err := sql.Open("sqlite3", tmpDB.Name()+"?mode=ro")
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+
+	utils.LogCtx(ctx).Debug("reading masterdb")
+	rows, err := db.Query(`
+		SELECT id, title, alternateTitles, series, developer, publisher, platform, extreme, playMode, status, notes,
+		       source, launchCommand, releaseDate, version, originalDescription, language, library, tagsStr
+		FROM game`)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+
+	games := make([]*types.MasterDatabaseGame, 0, 100000)
+
+	var isExtreme bool
+
+	for rows.Next() {
+		g := &types.MasterDatabaseGame{}
+		err := rows.Scan(
+			&g.UUID, &g.Title, &g.AlternateTitles, &g.Series, &g.Developer, &g.Publisher, &g.Platform,
+			&isExtreme, &g.PlayMode, &g.Status, &g.GameNotes, &g.Source, &g.LaunchCommand, &g.ReleaseDate,
+			&g.Version, &g.OriginalDescription, &g.Languages, &g.Library, &g.Tags)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return err
+		}
+		if isExtreme {
+			yes := "Yes"
+			g.Extreme = &yes
+		} else {
+			no := "No"
+			g.Extreme = &no
+		}
+
+		games = append(games, g)
+	}
+
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	utils.LogCtx(ctx).Debug("clearing masterdb in fpfssdb")
+	err = s.dal.ClearMasterDBGames(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	utils.LogCtx(ctx).Debug("updating masterdb in fpfssdb")
+	batch := make([]*types.MasterDatabaseGame, 0, 1000)
+
+	for i, g := range games {
+		batch = append(batch, g)
+
+		if i%1000 == 0 || i == len(games)-1 {
+			utils.LogCtx(ctx).Debug("inserting masterdb batch into fpfssdb")
+			err = s.dal.StoreMasterDBGames(dbs, batch)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return dberr(err)
+			}
+			batch = make([]*types.MasterDatabaseGame, 0, 1000)
+		}
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	utils.LogCtx(ctx).Debug("masterdb update finished")
+	return nil
 }
