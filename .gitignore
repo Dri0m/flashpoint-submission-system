@@ -17,6 +17,7 @@
 log.log
 db.db*
 *.sqlite3
+*.sqlite3-journal
 
 files/*
 backups/*
