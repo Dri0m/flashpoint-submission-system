@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileProviders []MultipartFileProvider) error {
+func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, fileProviders []MultipartFileProvider) ([]int64, error) {
 	uid := utils.UserID(ctx)
 	if uid == 0 {
 		utils.LogCtx(ctx).Panic("no user associated with request")
@@ -29,22 +29,22 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return dberr(err)
+		return nil, dberr(err)
 	}
 	defer dbs.Rollback()
 
 	userRoles, err := s.dal.GetDiscordUserRoles(dbs, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return dberr(err)
+		return nil, dberr(err)
 	}
 
 	if constants.IsInAudit(userRoles) && len(fileProviders) > 1 {
-		return perr("cannot upload more than one submission at once when user is in audit", http.StatusForbidden)
+		return nil, perr("cannot upload more than one submission at once when user is in audit", http.StatusForbidden)
 	}
 
 	if constants.IsInAudit(userRoles) && fileProviders[0].Size() > constants.UserInAuditSumbissionMaxFilesize {
-		return perr("submission filesize limited to 200MB for users in audit", http.StatusForbidden)
+		return nil, perr("submission filesize limited to 200MB for users in audit", http.StatusForbidden)
 	}
 
 	var submissionLevel string
@@ -75,8 +75,10 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 		}
 	}
 
+	var submissionIDs = make([]int64, 0)
+
 	for _, fileProvider := range fileProviders {
-		destinationFilename, ifp, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid, submissionLevel)
+		destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid, submissionLevel)
 
 		if destinationFilename != nil {
 			destinationFilenames = append(destinationFilenames, *destinationFilename)
@@ -87,22 +89,24 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 
 		if err != nil {
 			cleanup()
-			return err
+			return nil, err
 		}
+
+		submissionIDs = append(submissionIDs, submissionID)
 	}
 
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		cleanup()
-		return dberr(err)
+		return nil, dberr(err)
 	}
 
 	s.announceNotification()
 
-	return nil
+	return submissionIDs, nil
 }
 
-func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, []string, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, []string, int64, error) {
 	uid := utils.UserID(ctx)
 	if uid == 0 {
 		utils.LogCtx(ctx).Panic("no user associated with request")
@@ -110,23 +114,23 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	file, err := fileHeader.Open()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 	defer file.Close()
 
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", fileHeader.Filename(), fileHeader.Size())
 
 	if err := os.MkdirAll(s.submissionsDir, os.ModeDir); err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 	if err := os.MkdirAll(s.submissionImagesDir, os.ModeDir); err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
 	ext := filepath.Ext(fileHeader.Filename())
 
 	if ext != ".7z" && ext != ".zip" {
-		return nil, nil, perr("unsupported file extension", http.StatusBadRequest)
+		return nil, nil, 0, perr("unsupported file extension", http.StatusBadRequest)
 	}
 
 	var destinationFilename string
@@ -141,7 +145,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	destination, err := os.Create(destinationFilePath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 	defer destination.Close()
 
@@ -153,17 +157,17 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	nBytes, err := io.Copy(multiWriter, file)
 	if err != nil {
-		return &destinationFilePath, nil, err
+		return &destinationFilePath, nil, 0, err
 	}
 	if nBytes != fileHeader.Size() {
-		return &destinationFilePath, nil, fmt.Errorf("incorrect number of bytes copied to destination")
+		return &destinationFilePath, nil, 0, fmt.Errorf("incorrect number of bytes copied to destination")
 	}
 
 	utils.LogCtx(ctx).Debug("sending the submission for validation...")
 	vr, err := s.validator.Validate(ctx, destinationFilePath)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
+		return &destinationFilePath, nil, 0, perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
 	}
 
 	// FIXME remove this lazy solution to prevent database deadlocks and fix it properly
@@ -178,7 +182,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		submissionID, err = s.dal.StoreSubmission(dbs, submissionLevel)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
-			return &destinationFilePath, nil, dberr(err)
+			return &destinationFilePath, nil, 0, dberr(err)
 		}
 	} else {
 		submissionID = *sid
@@ -188,13 +192,13 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	// send notification about new file uploaded
 	if !isSubmissionNew {
 		if err := s.createNotification(dbs, uid, submissionID, constants.ActionUpload); err != nil {
-			return &destinationFilePath, nil, err
+			return &destinationFilePath, nil, 0, err
 		}
 	}
 
 	if err := s.dal.SubscribeUserToSubmission(dbs, uid, submissionID); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, dberr(err)
+		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
 	sf := &types.SubmissionFile{
@@ -213,11 +217,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		me, ok := err.(*mysql.MySQLError)
 		if ok {
 			if me.Number == 1062 {
-				return &destinationFilePath, nil, perr(fmt.Sprintf("file '%s' with checksums md5:%s sha256:%s already present in the DB", fileHeader.Filename(), sf.MD5Sum, sf.SHA256Sum), http.StatusConflict)
+				return &destinationFilePath, nil, 0, perr(fmt.Sprintf("file '%s' with checksums md5:%s sha256:%s already present in the DB", fileHeader.Filename(), sf.MD5Sum, sf.SHA256Sum), http.StatusConflict)
 			}
 		}
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, dberr(err)
+		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
 	utils.LogCtx(ctx).Debug("storing submission comment...")
@@ -232,7 +236,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	if err := s.dal.StoreComment(dbs, c); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, dberr(err)
+		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
 	utils.LogCtx(ctx).Debug("processing curation meta...")
@@ -250,13 +254,13 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, dberr(err)
+		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
 	// feed the curation feed
 	isCurationValid := len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0
 	if err := s.createCurationFeedMessage(dbs, uid, submissionID, isSubmissionNew, isCurationValid, &vr.Meta); err != nil {
-		return &destinationFilePath, nil, dberr(err)
+		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
 	// save images
@@ -264,7 +268,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	for _, image := range vr.Images {
 		imageData, err := base64.StdEncoding.DecodeString(image.Data)
 		if err != nil {
-			return &destinationFilePath, imageFilePaths, err
+			return &destinationFilePath, imageFilePaths, 0, err
 		}
 
 		var imageFilename string
@@ -280,7 +284,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		imageFilePaths = append(imageFilePaths, imageFilenameFilePath)
 
 		if err := ioutil.WriteFile(imageFilenameFilePath, imageData, 0644); err != nil {
-			return &destinationFilePath, imageFilePaths, err
+			return &destinationFilePath, imageFilePaths, 0, err
 		}
 
 		ci := &types.CurationImage{
@@ -291,7 +295,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 		if _, err := s.dal.StoreCurationImage(dbs, ci); err != nil {
 			utils.LogCtx(ctx).Error(err)
-			return &destinationFilePath, imageFilePaths, dberr(err)
+			return &destinationFilePath, imageFilePaths, 0, dberr(err)
 		}
 	}
 
@@ -300,15 +304,15 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	bc := s.convertValidatorResponseToComment(vr)
 	if err := s.dal.StoreComment(dbs, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, imageFilePaths, dberr(err)
+		return &destinationFilePath, imageFilePaths, 0, dberr(err)
 	}
 
 	if err := s.dal.UpdateSubmissionCacheTable(dbs, submissionID); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, imageFilePaths, dberr(err)
+		return &destinationFilePath, imageFilePaths, 0, dberr(err)
 	}
 
-	return &destinationFilePath, imageFilePaths, nil
+	return &destinationFilePath, imageFilePaths, submissionID, nil
 }
 
 // convertValidatorResponseToComment produces appropriate comment based on validator response

@@ -224,7 +224,13 @@ function uploadHandler(url, files, i, step) {
                 progressText.style.color = "red"
             }
         } else {
-            progressText.innerHTML = `${file.name}<br>Upload successful.`
+            const obj = JSON.parse(request.response);
+
+            if (obj["submission_ids"].length === 1) {
+                progressText.innerHTML = `${file.name}<br>Upload successful. <a href="/web/submission/${obj["submission_ids"][0]}">View Submission</a>`
+            } else {
+                progressText.innerHTML = `${file.name}<br>Upload successful.`
+            }
         }
         uploadHandler(url, files, i + step, step)
     }

@@ -188,12 +188,18 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		fileWrappers = append(fileWrappers, service.NewMutlipartFileWrapper(fileHeader))
 	}
 
-	if err := a.Service.ReceiveSubmissions(ctx, sid, fileWrappers); err != nil {
+	submissionIDs, err := a.Service.ReceiveSubmissions(ctx, sid, fileWrappers)
+	if err != nil {
 		writeError(ctx, w, err)
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusOK)
+	resp := types.ReceiveSubmissionsResp{
+		Message:       "success",
+		SubmissionIDs: submissionIDs,
+	}
+
+	writeResponse(ctx, w, resp, http.StatusOK)
 }
 
 func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {

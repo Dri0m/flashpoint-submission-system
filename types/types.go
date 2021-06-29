@@ -287,3 +287,8 @@ type ValidatorResponse struct {
 	Meta             CurationMeta             `json:"meta"`
 	Images           []ValidatorResponseImage `json:"images"`
 }
+
+type ReceiveSubmissionsResp struct {
+	Message       string  `json:"message"`
+	SubmissionIDs []int64 `json:"submission_ids"`
+}

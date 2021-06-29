@@ -114,8 +114,9 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Equal(t, []int64{sid}, sids)
 	assert.NoError(t, err)
 
 	assert.FileExists(t, destinationFilePath) // submission file was copied successfully
@@ -241,8 +242,9 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 	ts.dbs.On("Commit").Return(nil)
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Equal(t, []int64{sid}, sids)
 	assert.NoError(t, err)
 
 	assert.FileExists(t, destinationFilePath)      // submission file was copied successfully
@@ -268,8 +270,9 @@ func Test_siteService_ReceiveSubmissions_Fail_NewSession(t *testing.T) {
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -298,8 +301,9 @@ func Test_siteService_ReceiveSubmissions_Fail_GetDiscordUserRoles(t *testing.T) 
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -369,8 +373,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -441,8 +446,9 @@ func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testi
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -525,8 +531,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -618,8 +625,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -665,8 +673,9 @@ func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -760,8 +769,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -867,8 +877,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreNotification(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath)      // cleanup when upload fails
@@ -983,8 +994,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationImage(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath)      // cleanup when upload fails
@@ -1090,8 +1102,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -1197,8 +1210,9 @@ func Test_siteService_ReceiveSubmissions_Fail_UpdateSubmissionCacheTable(t *test
 
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
@@ -1305,8 +1319,9 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 	ts.dbs.On("Commit").Return(errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
-	err = ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
+	sids, err := ts.s.ReceiveSubmissions(ctx, nil, []MultipartFileProvider{ts.multipartFileWrapper})
 
+	assert.Nil(t, sids)
 	assert.Error(t, err)
 
 	assert.NoFileExists(t, destinationFilePath) // cleanup when upload fails
