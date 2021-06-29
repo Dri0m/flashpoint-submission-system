@@ -229,6 +229,12 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			}
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
+		if filter.LaunchCommandFuzzy != nil {
+			filters = append(filters, "(meta.launch_command LIKE ?)")
+			data = append(data, utils.FormatLike(*filter.LaunchCommandFuzzy))
+			masterFilters = append(masterFilters, "(launch_command LIKE ?)")
+			masterData = append(masterData, utils.FormatLike(*filter.LaunchCommandFuzzy))
+		}
 	}
 
 	and := ""

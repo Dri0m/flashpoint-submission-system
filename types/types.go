@@ -152,6 +152,7 @@ type SubmissionsFilter struct {
 	IsExtreme                    *string  `schema:"is-extreme"`
 	DistinctActions              []string `schema:"distinct-action"`
 	DistinctActionsNot           []string `schema:"distinct-action-not"`
+	LaunchCommandFuzzy           *string  `schema:"launch-command-fuzzy"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {

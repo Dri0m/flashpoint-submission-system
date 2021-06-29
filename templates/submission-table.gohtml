@@ -1,4 +1,5 @@
 {{define "submission-table"}}
+    {{$showLaunchCommand := not ( empty ( default "" .Filter.LaunchCommandFuzzy))}}
     <div id="table-wrapper">
         <i>tip: use shift+mousewheel to scroll horizontally</i>
         <div id="table-scroll">
@@ -11,6 +12,9 @@
                     <th class="center">View</th>
                     <th>Title</th>
                     <th>18+</th>
+                    {{if $showLaunchCommand}}
+                        <th>Launch command</th>
+                    {{end}}
                     <th>Platform</th>
                     <th>Library</th>
                     <th>Level</th>
@@ -55,7 +59,11 @@
                         <td>{{.CurationTitle}}</td>
                         <td>{{if eq "Yes" (unpointify .CurationExtreme)}}<img src="/static/extreme.png" alt="Extreme"
                                                                               title="Curation is marked as extreme"
-                                                                              width="24" height="24">{{end}}</td>
+                                                                              width="24" height="24">{{end}}
+                        </td>
+                        {{if $showLaunchCommand}}
+                            <td>{{.CurationLaunchCommand}}</td>
+                        {{end}}
                         <td>{{.CurationPlatform}}</td>
                         <td>{{capitalizeAscii .CurationLibrary}}</td>
                         <td>{{if not $isLegacy}}{{capitalizeAscii .SubmissionLevel}}{{end}}</td>

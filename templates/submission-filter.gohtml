@@ -214,6 +214,9 @@
                             <legend>Meta and File Filters</legend>
                             {{template "submission-filter-basic-meta" .}}
                             <div class="form-column-text">
+                                <label for="launch-command-fuzzy">Launch command (fuzzy)</label>
+                                <input type="text" name="launch-command-fuzzy"
+                                       value="{{default "" .Filter.LaunchCommandFuzzy}}">
                                 <label for="original-filename-partial">Original Filename (partial) (any
                                     file)</label>
                                 <input type="text" name="original-filename-partial-any"
