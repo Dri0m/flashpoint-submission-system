@@ -33,6 +33,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"isDecider":          constants.IsDecider,
 		"isAdder":            constants.IsAdder,
 		"isInAudit":          constants.IsInAudit,
+		"isGod":              constants.IsGod,
 		"megabytify":         utils.Megabytify,
 		"splitMultilineText": utils.SplitMultilineText,
 		"capitalizeAscii":    utils.CapitalizeASCII,

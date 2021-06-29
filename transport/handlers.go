@@ -433,3 +433,22 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 
 	writeResponse(ctx, w, presp("success"), http.StatusOK)
 }
+
+func (a *App) HandleInternalPage(w http.ResponseWriter, r *http.Request) {
+	uid, err := a.GetUserIDFromCookie(r)
+	ctx := r.Context()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, err)
+		return
+	}
+	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
+	ctx = r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		utils.UnsetCookie(w, utils.Cookies.Login)
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/internal.gohtml")
+}

@@ -10,6 +10,8 @@ const (
 	RoleMechanic      = "Mechanic"
 	RoleHunter        = "Hunter"
 	RoleTrialCurator  = "Trial Curator"
+	RoleTheBlue       = "The Blue"
+	RoleTheD          = "The D"
 )
 
 func StaffRoles() []string {
@@ -22,6 +24,8 @@ func StaffRoles() []string {
 		RoleArchivist,
 		RoleMechanic,
 		RoleHunter,
+		RoleTheBlue,
+		RoleTheD,
 	}
 }
 
@@ -48,6 +52,13 @@ func DeciderRoles() []string {
 func AdderRoles() []string {
 	return []string{
 		RoleAdministrator,
+	}
+}
+
+func GodRoles() []string {
+	return []string{
+		RoleTheBlue,
+		RoleTheD,
 	}
 }
 
@@ -90,4 +101,9 @@ func IsDecider(roles []string) bool {
 // IsAdder allows user to mark submission as added to flashpoint
 func IsAdder(roles []string) bool {
 	return HasAnyRole(roles, AdderRoles())
+}
+
+// IsGod allows user to do various things
+func IsGod(roles []string) bool {
+	return HasAnyRole(roles, GodRoles())
 }

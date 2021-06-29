@@ -24,6 +24,11 @@
                 <div class="pure-menu pure-menu-horizontal right">
                     {{if not (empty (unpointify .Username))}}
                         <ul class="pure-menu-list">
+                            {{if or (isGod .UserRoles)}}
+                                <li class="pure-menu-item">
+                                    <a href="/web/internal" class="pure-menu-link">God Tools</a>
+                                </li>
+                            {{end}}
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                                 <li class="pure-menu-item">
                                     <a href="/web/my-submissions" class="pure-menu-link">My Submissions</a>

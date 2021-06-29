@@ -29,6 +29,9 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		}
 		return !(s || t), nil
 	}
+	isGod := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserHasAnyRole(r, uid, constants.GodRoles())
+	}
 	userOwnsSubmission := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserOwnsResource(r, uid, constants.ResourceKeySubmissionID)
 	}
@@ -240,6 +243,12 @@ func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Rou
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSoftDeleteComment, muxAll(isDeleter))))).
 		Methods("DELETE")
+
+	// god tools
+
+	router.Handle("/web/internal",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleInternalPage, isGod)))).
+		Methods("GET")
 
 	err := srv.ListenAndServe()
 	if err != nil {

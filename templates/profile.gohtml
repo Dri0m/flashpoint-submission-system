@@ -55,6 +55,9 @@
             {{if isAdder .UserRoles}}
                 You have permissions to mark submissions as added to Flashpoint.<br>
             {{end}}
+            {{if isGod .UserRoles}}
+                <b>You have permissions to access god tools.</b><br>
+            {{end}}
 
         </div>
     </div>
