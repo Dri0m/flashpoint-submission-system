@@ -790,3 +790,30 @@ func (d *mysqlDAL) StoreMasterDBGames(dbs DBSession, games []*types.MasterDataba
 		data...)
 	return err
 }
+
+// GetAllSimilarityAttributes returns IDs, titles and, launch commands
+func (d *mysqlDAL) GetAllSimilarityAttributes(dbs DBSession) ([]*types.SimilarityAttributes, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
+		SELECT CONCAT(submission.id), meta.title, meta.launch_command FROM submission
+		LEFT JOIN submission_cache ON submission_cache.fk_submission_id = submission.id
+		LEFT JOIN submission_file AS newest_file ON newest_file.id = submission_cache.fk_newest_file_id
+		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id
+	UNION 
+		SELECT uuid, title, launch_command from masterdb_game`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result = make([]*types.SimilarityAttributes, 0, 100000)
+	for rows.Next() {
+		lc := &types.SimilarityAttributes{}
+		err := rows.Scan(&lc.ID, &lc.Title, &lc.LaunchCommand)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, lc)
+	}
+
+	return result, nil
+}

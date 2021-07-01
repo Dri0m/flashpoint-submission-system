@@ -46,6 +46,7 @@ type DAL interface {
 	UpdateSubmissionCacheTable(dbs DBSession, sid int64) error
 	ClearMasterDBGames(dbs DBSession) error
 	StoreMasterDBGames(dbs DBSession, games []*types.MasterDatabaseGame) error
+	GetAllSimilarityAttributes(dbs DBSession) ([]*types.SimilarityAttributes, error)
 }
 
 type DBSession interface {

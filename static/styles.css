@@ -98,9 +98,10 @@ textarea {
 .bgr-assign-testing,
 .bgr-unassign-testing,
 .bgr-assign-verification,
+.bgr-system,
 .bgr-unassign-verification {
-    color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 .dot-approve,
@@ -113,6 +114,7 @@ textarea {
 .dot-comment,
 .dot-unassign-testing,
 .dot-assign-verification,
+.dot-system,
 .dot-unassign-verification {
     border-radius: 50%;
     width: 1.5em;
@@ -129,9 +131,10 @@ textarea {
 .button-assign-testing,
 .button-unassign-testing,
 .button-assign-verification,
+.button-system,
 .button-unassign-verification {
     color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 .bgr-comment,
@@ -198,6 +201,12 @@ textarea {
 .dot-verify,
 .button-verify {
     background: rgb(255, 132, 0) !important;
+}
+
+.bgr-system,
+.dot-system,
+.button-system {
+    background: rgb(255, 0, 229) !important;
 }
 
 .button-delete {

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS discord_user
     mfa_enabled   BIGINT       NOT NULL
 );
 
-INSERT IGNORE INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled)
+INSERT INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled)
 VALUES (810112564787675166, 'RedMinima', '156dd40e0c72ed8e84034b53aad32af4', '1337', 0, 0, 'en_US', 0);
 
 CREATE TABLE IF NOT EXISTS discord_role

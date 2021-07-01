@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
+	github.com/agnivade/levenshtein v1.1.1
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/go-sql-driver/mysql v1.6.0

@@ -17,6 +17,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -312,6 +314,19 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, imageFilePaths, 0, dberr(err)
 	}
 
+	utils.LogCtx(ctx).Debug("computing curation similarity comment...")
+
+	sc, err := s.computeSimilarityComment(dbs, submissionID, &vr.Meta)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, imageFilePaths, 0, err
+	}
+
+	if err := s.dal.StoreComment(dbs, sc); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, imageFilePaths, 0, dberr(err)
+	}
+
 	return &destinationFilePath, imageFilePaths, submissionID, nil
 }
 
@@ -349,4 +364,62 @@ func (s *SiteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 	}
 
 	return c
+}
+
+func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64, meta *types.CurationMeta) (*types.Comment, error) {
+	TitleSimilarities, LaunchCommandSimilarities, err := s.getSimilarityScores(dbs, 0.9, meta.Title, meta.LaunchCommand)
+	if err != nil {
+		utils.LogCtx(dbs.Ctx()).Error(err)
+		return nil, dberr(err)
+	}
+
+	var sb strings.Builder
+
+	if len(TitleSimilarities) > 0 || len(LaunchCommandSimilarities) > 0 {
+
+		strID := strconv.FormatInt(sid, 10)
+
+		if len(TitleSimilarities) > 0 {
+			sb.Write([]byte("Curations with similar titles have been found:\n"))
+
+			for _, ts := range TitleSimilarities {
+				if ts.ID == strID {
+					continue
+				}
+				sb.Write([]byte(fmt.Sprintf("(%.1f%%) ID %s - Title - '%s'\n", ts.TitleRatio*100, ts.ID, *ts.Title)))
+			}
+		}
+
+		if len(LaunchCommandSimilarities) > 0 {
+			sb.Write([]byte("\n"))
+			sb.Write([]byte("Curations with similar launch commands have been found:\n"))
+
+			for _, ts := range LaunchCommandSimilarities {
+				if ts.ID == strID {
+					continue
+				}
+				sb.Write([]byte(fmt.Sprintf("(%.1f%%) ID %s - Launch Command - '%s'\n", ts.LaunchCommandRatio*100, ts.ID, *ts.LaunchCommand)))
+			}
+		}
+
+		sb.Write([]byte("\n"))
+		sb.Write([]byte("This could mean that your submission is a duplicate."))
+	}
+
+	msg := sb.String()
+	var sc *types.Comment
+
+	if len(msg) > 0 {
+		sc = &types.Comment{
+			AuthorID:     constants.SystemID,
+			SubmissionID: sid,
+			Message:      &msg,
+			Action:       constants.ActionSystem,
+			CreatedAt:    s.clock.Now(),
+		}
+	} else {
+		utils.LogCtx(dbs.Ctx()).Debug("no similar curations found")
+	}
+
+	return sc, nil
 }

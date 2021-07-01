@@ -292,3 +292,11 @@ type ReceiveSubmissionsResp struct {
 	Message       string  `json:"message"`
 	SubmissionIDs []int64 `json:"submission_ids"`
 }
+
+type SimilarityAttributes struct {
+	ID                 string
+	Title              *string
+	LaunchCommand      *string
+	TitleRatio         float64
+	LaunchCommandRatio float64
+}

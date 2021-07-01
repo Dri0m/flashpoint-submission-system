@@ -237,6 +237,11 @@ func (m *mockDAL) StoreMasterDBGames(_ database.DBSession, games []*types.Master
 	return args.Error(0)
 }
 
+func (m *mockDAL) GetAllSimilarityAttributes(_ database.DBSession) ([]*types.SimilarityAttributes, error) {
+	args := m.Called()
+	return args.Get(0).([]*types.SimilarityAttributes), args.Error(1)
+}
+
 ////////////////////////////////////////////////
 
 type mockAuthBot struct {

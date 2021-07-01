@@ -10,14 +10,18 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/agnivade/levenshtein"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -850,4 +854,70 @@ func (s *SiteService) UpdateMasterDB(ctx context.Context) error {
 
 	utils.LogCtx(ctx).Debug("masterdb update finished")
 	return nil
+}
+
+func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch float64, title, launchCommand *string) ([]*types.SimilarityAttributes, []*types.SimilarityAttributes, error) {
+	ctx := dbs.Ctx()
+
+	sas, err := s.dal.GetAllSimilarityAttributes(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, dberr(err)
+	}
+
+	byTitle := make([]*types.SimilarityAttributes, 0)
+	byLaunchCommand := make([]*types.SimilarityAttributes, 0)
+
+	if len(sas) < 2 {
+		return byTitle, byLaunchCommand, nil
+	}
+
+	normalize := func(s string) string {
+		return strings.ReplaceAll(
+			strings.ReplaceAll(
+				strings.ReplaceAll(
+					strings.ReplaceAll(
+						s, "`", ""),
+					" ", ""),
+				"'", ""),
+			`"`, "")
+	}
+
+	for i, sa := range sas {
+		if (i % (len(sas) / 10)) == 0 {
+			utils.LogCtx(ctx).Debugf("levenshtein: scored %.1f%% (%d) strings", (float64(i)/float64(len(sas)))*100, i)
+		}
+		if title != nil && sa.Title != nil {
+			nin := normalize(*title)
+			nt := normalize(*sa.Title)
+			distance := levenshtein.ComputeDistance(nin, nt)
+			matchRatio := 1 - (float64(distance) / math.Max(float64(len(nin)), float64(len(nt))))
+
+			if matchRatio > minimumMatch {
+				sa.TitleRatio = matchRatio
+				byTitle = append(byTitle, sa)
+			}
+		}
+		if launchCommand != nil && sa.LaunchCommand != nil {
+			nin := normalize(*launchCommand)
+			nlc := normalize(*sa.LaunchCommand)
+			distance := levenshtein.ComputeDistance(nin, nlc)
+			matchRatio := 1 - (float64(distance) / math.Max(float64(len(nin)), float64(len(nlc))))
+
+			if matchRatio > minimumMatch {
+				sa.LaunchCommandRatio = matchRatio
+				byLaunchCommand = append(byLaunchCommand, sa)
+			}
+		}
+	}
+
+	sort.Slice(byTitle, func(i, j int) bool {
+		return byTitle[i].TitleRatio > byTitle[j].TitleRatio
+	})
+
+	sort.Slice(byLaunchCommand, func(i, j int) bool {
+		return byLaunchCommand[i].LaunchCommandRatio > byLaunchCommand[j].LaunchCommandRatio
+	})
+
+	return byTitle, byLaunchCommand, nil
 }
