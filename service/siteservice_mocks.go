@@ -280,6 +280,11 @@ func (m *mockValidator) Validate(_ context.Context, filePath string) (*types.Val
 	return args.Get(0).(*types.ValidatorResponse), args.Error(1)
 }
 
+func (m *mockValidator) GetTags(ctx context.Context) ([]types.Tag, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]types.Tag), args.Error(1)
+}
+
 ////////////////////////////////////////////////
 
 type mockMultipartFileWrapper struct {

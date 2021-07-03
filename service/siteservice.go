@@ -259,6 +259,12 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 		prevSID = &psid
 	}
 
+	tagList, err := s.validator.GetTags(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
 	pageData := &types.ViewSubmissionPageData{
 		SubmissionsPageData: types.SubmissionsPageData{
 			BasePageData: *bpd,
@@ -270,6 +276,7 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 		CurationImageIDs:     ciids,
 		NextSubmissionID:     nextSID,
 		PreviousSubmissionID: prevSID,
+		TagList:              tagList,
 	}
 
 	return pageData, nil

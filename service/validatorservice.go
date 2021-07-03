@@ -18,7 +18,7 @@ func NewValidator(validatorServerURL string) *curationValidator {
 }
 
 func (c *curationValidator) Validate(ctx context.Context, filePath string) (*types.ValidatorResponse, error) {
-	resp, err := utils.UploadFile(ctx, c.validatorServerURL, filePath)
+	resp, err := utils.UploadFile(ctx, c.validatorServerURL+"/upload", filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -30,4 +30,20 @@ func (c *curationValidator) Validate(ctx context.Context, filePath string) (*typ
 	}
 
 	return &vr, nil
+}
+
+func (c *curationValidator) GetTags(ctx context.Context) ([]types.Tag, error) {
+	utils.LogCtx(ctx).Debug("getting tags from validator")
+	resp, err := utils.GetURL(c.validatorServerURL + "/tags")
+	if err != nil {
+		return nil, err
+	}
+
+	var tr types.ValidatorTagResponse
+	err = json.Unmarshal(resp, &tr)
+	if err != nil {
+		return nil, err
+	}
+
+	return tr.Tags, nil
 }

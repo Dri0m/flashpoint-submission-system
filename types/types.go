@@ -300,3 +300,12 @@ type SimilarityAttributes struct {
 	TitleRatio         float64
 	LaunchCommandRatio float64
 }
+
+type Tag struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type ValidatorTagResponse struct {
+	Tags []Tag `json:"tags"`
+}

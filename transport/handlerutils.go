@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/service"
+	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/Masterminds/sprig"
 	"github.com/kofalt/go-memoize"
@@ -37,6 +38,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"megabytify":         utils.Megabytify,
 		"splitMultilineText": utils.SplitMultilineText,
 		"capitalizeAscii":    utils.CapitalizeASCII,
+		"parseMetaTags":      parseMetaTags,
 	})
 
 	parse := func() (interface{}, error) {
@@ -173,4 +175,31 @@ func dberr(err error) error {
 
 func presp(msg string) constants.PublicResponse {
 	return constants.PublicResponse{Msg: &msg}
+}
+
+func parseMetaTags(rawTags string, tagList []types.Tag) []types.Tag {
+	splitTags := strings.Split(rawTags, ";")
+	normalizedTags := make([]string, 0, len(splitTags))
+	for _, tag := range splitTags {
+		normalizedTags = append(normalizedTags, strings.ToLower(strings.TrimSpace(tag)))
+	}
+
+	tagMap := make(map[string]string)
+	for _, tag := range tagList {
+		tagMap[strings.ToLower(strings.TrimSpace(tag.Name))] = tag.Description
+	}
+
+	result := make([]types.Tag, 0, len(normalizedTags))
+	for i, tag := range normalizedTags {
+		resultTag := types.Tag{
+			Name:        splitTags[i],
+			Description: "Unknown tag.",
+		}
+		if desc, ok := tagMap[tag]; ok {
+			resultTag.Description = desc
+		}
+		result = append(result, resultTag)
+	}
+
+	return result
 }

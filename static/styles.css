@@ -466,3 +466,7 @@ form [type="radio"] {
     border-top: 1px solid black;
     width: 100%;
 }
+
+.underline {
+    text-decoration: underline;
+}

@@ -224,6 +224,8 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	comments := []*types.ExtendedComment{{}}
 	curationImages := []*types.CurationImage{{ID: ciid}}
 
+	tagList := []types.Tag{{Name: "foo", Description: "bar"}}
+
 	expected := &types.ViewSubmissionPageData{
 		SubmissionsPageData: types.SubmissionsPageData{
 			BasePageData: *bpd,
@@ -234,6 +236,7 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 		CurationImageIDs:     []int64{ciid},
 		NextSubmissionID:     &nsid,
 		PreviousSubmissionID: &psid,
+		TagList:              tagList,
 	}
 
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
@@ -247,6 +250,7 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(curationImages, nil)
 	ts.dal.On("GetNextSubmission", sid).Return(nsid, nil)
 	ts.dal.On("GetPreviousSubmission", sid).Return(psid, nil)
+	ts.validator.On("GetTags", ctx).Return(tagList, nil)
 	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
@@ -542,6 +546,55 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetPreviousSubmission(t *te
 	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(curationImages, nil)
 	ts.dal.On("GetNextSubmission", sid).Return(nsid, nil)
 	ts.dal.On("GetPreviousSubmission", sid).Return((int64)(0), errors.New(""))
+	ts.dbs.On("Rollback").Return(nil)
+
+	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)
+
+	assert.Nil(t, actual)
+	assert.Error(t, err)
+
+	ts.assertExpectations(t)
+}
+
+func Test_siteService_GetViewSubmissionPageData_Fail_GetTags(t *testing.T) {
+	ts := NewTestSiteService()
+
+	var uid int64 = 1
+	var sid int64 = 2
+	var fid int64 = 3
+	var ciid int64 = 4
+	var nsid int64 = 5
+	var psid int64 = 6
+	createAssertBPD(ts, uid)
+
+	filter := &types.SubmissionsFilter{
+		SubmissionIDs: []int64{sid},
+	}
+
+	submissions := []*types.ExtendedSubmission{
+		{
+			SubmissionID: uid,
+			SubmitterID:  sid,
+			FileID:       fid,
+		},
+	}
+
+	cm := &types.CurationMeta{}
+	comments := []*types.ExtendedComment{{}}
+	curationImages := []*types.CurationImage{{ID: ciid}}
+
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.dal.On("NewSession").Return(ts.dbs, nil)
+	ts.dal.On("SearchSubmissions", filter).Return(submissions, nil)
+	ts.dal.On("GetCurationMetaBySubmissionFileID", fid).Return(cm, nil)
+	ts.dal.On("GetExtendedCommentsBySubmissionID", sid).Return(comments, nil)
+	ts.dal.On("IsUserSubscribedToSubmission", uid, sid).Return(false, nil)
+	ts.dal.On("GetCurationImagesBySubmissionFileID", fid).Return(curationImages, nil)
+	ts.dal.On("GetNextSubmission", sid).Return(nsid, nil)
+	ts.dal.On("GetPreviousSubmission", sid).Return(psid, nil)
+	ts.validator.On("GetTags", ctx).Return(([]types.Tag)(nil), errors.New(""))
 	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.GetViewSubmissionPageData(ctx, uid, sid)

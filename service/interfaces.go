@@ -9,6 +9,7 @@ import (
 
 type Validator interface {
 	Validate(ctx context.Context, filePath string) (*types.ValidatorResponse, error)
+	GetTags(ctx context.Context) ([]types.Tag, error)
 }
 
 type MultipartFileProvider interface {

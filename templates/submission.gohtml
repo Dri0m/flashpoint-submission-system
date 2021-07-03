@@ -102,9 +102,10 @@
                     <tr>
                         <td class="meta-property">Tags</td>
                         <td>{{if not .CurationMeta.Tags}}<i>No Tags</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Tags) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
+                                {{range $i, $tag := (parseMetaTags .CurationMeta.Tags .TagList)}}{{if gt $i 0}};{{end}}
+                                <span title="{{$tag.Description}}" class="{{if not (eq "Unknown tag." $tag.Description)}}underline{{end}}">{{$tag.Name}}</span>
+                                {{end}}
+                            {{end}}</td>
                     </tr>
                     <tr>
                         <td class="meta-property">Play Mode</td>

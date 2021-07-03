@@ -27,6 +27,7 @@ type ViewSubmissionPageData struct {
 	CurationImageIDs     []int64
 	NextSubmissionID     *int64
 	PreviousSubmissionID *int64
+	TagList              []Tag
 }
 
 type SubmissionsFilesPageData struct {
