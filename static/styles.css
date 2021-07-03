@@ -8,7 +8,7 @@ body {
     padding-left: 0;
 }
 
-.navbar {
+#navbar, #system-announcement {
     max-width: 1300px;
     margin: 0 auto 10px;
     border: 1px solid #444;
@@ -28,7 +28,7 @@ body {
     text-align: center;
 }
 
-.main {
+#main {
     max-width: 1300px;
     margin: 0 auto 50px;
     border: 1px solid #444;
@@ -455,4 +455,10 @@ legend, label {
 form [type="checkbox"],
 form [type="radio"] {
     margin-right: 5px;
+}
+
+.horizontal-rule {
+    margin-top: 1em;
+    border-top: 1px solid black;
+    width: 100%;
 }

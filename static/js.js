@@ -292,15 +292,17 @@ function updateSubscriptionSettings(sid, newValue) {
 }
 
 window.onload = function () {
+    // blur pics
     const images = document.getElementsByClassName('blur-img');
     for (let i = 0; i < images.length; i++) {
         images[i].addEventListener('click', toggleBlur);
     }
 
-
     function toggleBlur() {
         this.classList.toggle('blur-img');
     }
+
+    setSiteMaxWidth()
 };
 
 function deleteSubmissionFile(sid, sfid) {
@@ -438,4 +440,27 @@ function switchFilterLayout(newLayout) {
 
     url.searchParams.set("filter-layout", newLayout)
     window.location.href = url
+}
+
+function updateLocalSettings() {
+    const maxWidthInput = document.getElementById("site-max-width")
+    let parsed = parseInt(maxWidthInput.value, 10)
+    if (isNaN(parsed)) {
+        parsed = 1300
+    }
+    localStorage.setItem("site-max-width", parsed.toString())
+    setSiteMaxWidth()
+    maxWidthInput.value = ""
+    maxWidthInput.placeholder = parsed.toString()
+}
+
+function setSiteMaxWidth() {
+    let maxWidth = localStorage.getItem("site-max-width")
+    if (maxWidth === null) {
+        maxWidth = "1300"
+    }
+    maxWidth += "px"
+    document.getElementById("navbar").style.maxWidth = maxWidth
+    document.getElementById("system-announcement").style.maxWidth = maxWidth
+    document.getElementById("main").style.maxWidth = maxWidth
 }

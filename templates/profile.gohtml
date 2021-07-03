@@ -1,5 +1,5 @@
 {{define "main"}}
-    <div class="main" xmlns="http://www.w3.org/1999/html">
+    <div id="main" xmlns="http://www.w3.org/1999/html">
         <div class="content">
             <h1>Profile</h1>
 
@@ -8,6 +8,8 @@
                  title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
             <br>
             <br>
+
+            <div class="horizontal-rule"></div>
 
             <h3>Notification preferences</h3>
             <p>Receive a discord notification when an event (comment) occurs on submissions which you are watching.</p>
@@ -32,6 +34,8 @@
                     Update
                 </button>
             </form>
+
+            <div class="horizontal-rule"></div>
 
             <h3>Permissions</h3>
             {{if or (isTrialCurator .UserRoles) (or (isDecider .UserRoles) (isAdder .UserRoles))}}
@@ -58,6 +62,26 @@
             {{if isGod .UserRoles}}
                 <b>You have permissions to access god tools.</b><br>
             {{end}}
+
+            <div class="horizontal-rule"></div>
+
+            <h3>Local settings</h3>
+            <form class="pure-form pure-form-stacked" id="local-settings-form">
+                <label for="site-max-width">Max site width</label>
+                <input type="number" min="400" id="site-max-width">
+                <button type="button" onclick="updateLocalSettings()" class="pure-button pure-button-primary">
+                    Update
+                </button>
+            </form>
+
+            <script>
+                let maxWidth = localStorage.getItem("site-max-width")
+                if (maxWidth === null) {
+                    maxWidth = "1300"
+                }
+                document.getElementById("site-max-width").placeholder = maxWidth
+                document.getElementById("site-max-width").value = ""
+            </script>
 
         </div>
     </div>
