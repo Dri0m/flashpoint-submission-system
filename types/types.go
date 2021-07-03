@@ -153,6 +153,7 @@ type SubmissionsFilter struct {
 	DistinctActions              []string `schema:"distinct-action"`
 	DistinctActionsNot           []string `schema:"distinct-action-not"`
 	LaunchCommandFuzzy           *string  `schema:"launch-command-fuzzy"`
+	LastUploaderNotMe            *string  `schema:"last-uploader-not-me"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
@@ -234,6 +235,9 @@ func (sf *SubmissionsFilter) Validate() error {
 	}
 	if sf.VerificationStatusMe != nil && *sf.VerificationStatusMe != "no" && *sf.VerificationStatusMe != "yes" {
 		return fmt.Errorf("invalid verificaton-status-me")
+	}
+	if sf.LastUploaderNotMe != nil && *sf.LastUploaderNotMe != "yes" {
+		return fmt.Errorf("last-uploader-not-me")
 	}
 	return nil
 }

@@ -359,6 +359,8 @@ function filterReadyForTesting() {
     document.getElementById("assigned-status-testing-unassigned").checked = true
     document.getElementById("assigned-status-verification-unassigned").checked = true
 
+    document.getElementById("last-uploader-not-me").checked = true
+
     document.getElementById("distinct-action-not-mark-added").checked = true
     submitAdvancedFilterForm()
 }
@@ -373,6 +375,7 @@ function filterReadyForVerification() {
     document.getElementById("verification-status-none").checked = true
 
     document.getElementById("approvals-status-me-no").checked = true
+    document.getElementById("last-uploader-not-me").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
     submitAdvancedFilterForm()

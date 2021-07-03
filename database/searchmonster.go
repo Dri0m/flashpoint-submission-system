@@ -236,6 +236,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			masterFilters = append(masterFilters, "(launch_command LIKE ?)")
 			masterData = append(masterData, utils.FormatLike(*filter.LaunchCommandFuzzy))
 		}
+		if filter.LastUploaderNotMe != nil {
+			if *filter.LastUploaderNotMe == "yes" {
+				filters = append(filters, "(uploader.id != ?)")
+				data = append(data, uid)
+			}
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
 	}
 
 	and := ""

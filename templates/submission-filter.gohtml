@@ -80,7 +80,9 @@
                                 <label for="submitter-id">Submitter ID</label>
                                 <input type="number" name="submitter-id" min="1"
                                        value="{{default "" .Filter.SubmitterID}}">
-                                <label for="submitter-username-partial" title="Type comma-separated usernames (substrings) to search, prepend with '!' to exclude a substring. For example, write '!dri0m, !bluemaxima' to exclude submissions from these users. The search is case-insensitive.">Submitter Username (hover for help)</label>
+                                <label for="submitter-username-partial"
+                                       title="Type comma-separated usernames (substrings) to search, prepend with '!' to exclude a substring. For example, write '!dri0m, !bluemaxima' to exclude submissions from these users. The search is case-insensitive.">Submitter
+                                    Username (hover for help)</label>
                                 <input type="text" name="submitter-username-partial"
                                        value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             </fieldset>
@@ -353,6 +355,14 @@
                                         I have verified</label>
                                 </div>
                             </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Filter by my submissions</legend>
+                            <label for="bot-action">
+                                <input type="checkbox" name="last-uploader-not-me" value="yes"
+                                       id="last-uploader-not-me"
+                                       {{if eq "yes" (unpointify .Filter.LastUploaderNotMe)}}checked{{end}}>
+                                Exclude my submissions</label>
                         </fieldset>
                     </div>
                 </div>
