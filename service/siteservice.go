@@ -261,8 +261,7 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 
 	tagList, err := s.validator.GetTags(ctx)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, dberr(err)
+		return nil, err
 	}
 
 	pageData := &types.ViewSubmissionPageData{
