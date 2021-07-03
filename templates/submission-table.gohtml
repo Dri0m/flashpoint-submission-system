@@ -65,7 +65,7 @@
                             <td>{{.CurationLaunchCommand}}</td>
                         {{end}}
                         <td>{{.CurationPlatform}}</td>
-                        <td>{{capitalizeAscii .CurationLibrary}}</td>
+                        <td>{{capitalizeAscii (unpointify .CurationLibrary)}}</td>
                         <td>{{if not $isLegacy}}{{capitalizeAscii .SubmissionLevel}}{{end}}</td>
                         <td>{{if not $isLegacy}}{{.SubmitterUsername}}{{end}}</td>
                         <td>{{if not $isLegacy}}{{.UpdaterUsername}}{{end}}</td>
