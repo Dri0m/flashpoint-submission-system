@@ -80,7 +80,7 @@
                                 <label for="submitter-id">Submitter ID</label>
                                 <input type="number" name="submitter-id" min="1"
                                        value="{{default "" .Filter.SubmitterID}}">
-                                <label for="submitter-username-partial">Submitter Username (partial)</label>
+                                <label for="submitter-username-partial" title="Type comma-separated usernames (substrings) to search, prepend with '!' to exclude a substring. For example, write '!dri0m, !bluemaxima' to exclude submissions from these users. The search is case-insensitive.">Submitter Username (hover for help)</label>
                                 <input type="text" name="submitter-username-partial"
                                        value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             </fieldset>

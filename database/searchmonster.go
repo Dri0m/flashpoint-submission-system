@@ -45,53 +45,16 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			masterData = append(masterData, utils.FormatLike(*filter.TitlePartial), utils.FormatLike(*filter.TitlePartial))
 		}
 		if filter.SubmitterUsernamePartial != nil {
-			filters = append(filters, "(uploader.username LIKE ?)")
-			data = append(data, utils.FormatLike(*filter.SubmitterUsernamePartial))
+			tableName := `uploader.username`
+			filters, masterFilters, data, masterData = addMultifilter(
+				tableName, nil, *filter.SubmitterUsernamePartial, filters, masterFilters, data, masterData)
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
 		if filter.PlatformPartial != nil {
-			substrings := strings.Split(*filter.PlatformPartial, ",")
-			trimmed := make([]string, 0, len(substrings))
-			for _, ss := range substrings {
-				trimmed = append(trimmed, strings.TrimSpace(ss))
-			}
-			include := make([]string, 0, len(substrings))
-			exclude := make([]string, 0, len(substrings))
-			for _, s := range trimmed {
-				if len(s) == 0 {
-					continue
-				}
-				if s[0] == '!' {
-					exclude = append(exclude, s[1:])
-				} else {
-					include = append(include, s)
-				}
-			}
-
-			if len(include) > 0 {
-				const includePlaceholder = `(meta.platform LIKE ?)`
-				filters = append(filters, `(`+includePlaceholder+strings.Repeat(` OR `+includePlaceholder, len(include)-1)+`)`)
-
-				const masterIncludePlaceholder = `(platform LIKE ?)`
-				masterFilters = append(masterFilters, `(`+masterIncludePlaceholder+strings.Repeat(` OR `+masterIncludePlaceholder, len(include)-1)+`)`)
-			}
-
-			if len(exclude) > 0 {
-				const excludePlaceholder = `(meta.platform NOT LIKE ?)`
-				filters = append(filters, `(`+excludePlaceholder+strings.Repeat(` AND `+excludePlaceholder, len(exclude)-1)+`)`)
-
-				const masterExcludePlaceholder = `(platform NOT LIKE ?)`
-				masterFilters = append(masterFilters, `(`+masterExcludePlaceholder+strings.Repeat(` AND `+masterExcludePlaceholder, len(exclude)-1)+`)`)
-			}
-
-			for _, s := range include {
-				data = append(data, utils.FormatLike(s))
-				masterData = append(masterData, utils.FormatLike(s))
-			}
-			for _, s := range exclude {
-				data = append(data, utils.FormatLike(s))
-				masterData = append(masterData, utils.FormatLike(s))
-			}
+			tableName := `meta.platform`
+			masterTableName := `platform`
+			filters, masterFilters, data, masterData = addMultifilter(
+				tableName, &masterTableName, *filter.PlatformPartial, filters, masterFilters, data, masterData)
 		}
 		if filter.LibraryPartial != nil {
 			filters = append(filters, "(meta.library LIKE ?)")
@@ -267,7 +230,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			}
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
-		if filter.LaunchCommandFuzzy != nil {
+		if filter.LaunchCommandFuzzy != nil { // TODO not really fuzzy is it
 			filters = append(filters, "(meta.launch_command LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.LaunchCommandFuzzy))
 			masterFilters = append(masterFilters, "(launch_command LIKE ?)")
@@ -547,4 +510,59 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	}
 
 	return result, nil
+}
+
+func addMultifilter(tableName string, masterTableName *string, filterContents string, filters, masterFilters []string, data, masterData []interface{}) ([]string, []string, []interface{}, []interface{}) {
+	substrings := strings.Split(filterContents, ",")
+	trimmed := make([]string, 0, len(substrings))
+	for _, ss := range substrings {
+		trimmed = append(trimmed, strings.TrimSpace(ss))
+	}
+	include := make([]string, 0, len(substrings))
+	exclude := make([]string, 0, len(substrings))
+	for _, s := range trimmed {
+		if len(s) == 0 {
+			continue
+		}
+		if s[0] == '!' {
+			exclude = append(exclude, s[1:])
+		} else {
+			include = append(include, s)
+		}
+	}
+
+	if len(include) > 0 {
+		includePlaceholder := `(` + tableName + ` LIKE ?)`
+		filters = append(filters, `(`+includePlaceholder+strings.Repeat(` OR `+includePlaceholder, len(include)-1)+`)`)
+
+		if masterTableName != nil {
+			masterIncludePlaceholder := `(` + *masterTableName + ` LIKE ?)`
+			masterFilters = append(masterFilters, `(`+masterIncludePlaceholder+strings.Repeat(` OR `+masterIncludePlaceholder, len(include)-1)+`)`)
+		}
+	}
+
+	if len(exclude) > 0 {
+		excludePlaceholder := `(` + tableName + ` NOT LIKE ?)`
+		filters = append(filters, `(`+excludePlaceholder+strings.Repeat(` AND `+excludePlaceholder, len(exclude)-1)+`)`)
+
+		if masterTableName != nil {
+			masterExcludePlaceholder := `(` + *masterTableName + ` NOT LIKE ?)`
+			masterFilters = append(masterFilters, `(`+masterExcludePlaceholder+strings.Repeat(` AND `+masterExcludePlaceholder, len(exclude)-1)+`)`)
+		}
+	}
+
+	for _, s := range include {
+		data = append(data, utils.FormatLike(s))
+		if masterTableName != nil {
+			masterData = append(masterData, utils.FormatLike(s))
+		}
+	}
+	for _, s := range exclude {
+		data = append(data, utils.FormatLike(s))
+		if masterTableName != nil {
+			masterData = append(masterData, utils.FormatLike(s))
+		}
+	}
+
+	return filters, masterFilters, data, masterData
 }
