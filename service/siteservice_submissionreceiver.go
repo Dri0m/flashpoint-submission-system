@@ -417,7 +417,7 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64
 			SubmissionID: sid,
 			Message:      &msg,
 			Action:       constants.ActionSystem,
-			CreatedAt:    s.clock.Now(),
+			CreatedAt:    s.clock.Now().Add(time.Second * 2),
 		}
 	} else {
 		utils.LogCtx(dbs.Ctx()).Debug("no similar curations found")
