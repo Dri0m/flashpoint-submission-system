@@ -184,6 +184,7 @@ func parseMetaTags(rawTags string, tagList []types.Tag) []types.Tag {
 		normalizedTags = append(normalizedTags, strings.ToLower(strings.TrimSpace(tag)))
 	}
 
+	// TODO this map is being remade every time for no reason really
 	tagMap := make(map[string]string)
 	for _, tag := range tagList {
 		tagMap[strings.ToLower(strings.TrimSpace(tag.Name))] = tag.Description
