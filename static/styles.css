@@ -19,6 +19,10 @@ body {
     text-align: right;
 }
 
+.left {
+    text-align: left !important;
+}
+
 .center-image {
     margin-left: auto;
     margin-right: auto;

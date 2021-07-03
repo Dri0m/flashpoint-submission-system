@@ -22,6 +22,17 @@
             </div>
             <div class="pure-u-1-2">
                 <div class="pure-menu pure-menu-horizontal right">
+                    <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+                        <a href="#" id="menuLink1" class="pure-menu-link">Useful Links</a>
+                        <ul class="pure-menu-children left">
+                            <li class="pure-menu-item">
+                                <a href="https://bluemaxima.org/flashpoint/" class="pure-menu-link">Flashpoint Site</a>
+                            </li>
+                            <li class="pure-menu-item">
+                                <a href="https://bluemaxima.org/flashpoint/datahub/Tags" class="pure-menu-link">List of Tags</a>
+                            </li>
+                        </ul>
+                    </li>
                     {{if not (empty (unpointify .Username))}}
                         <ul class="pure-menu-list">
                             {{if or (isGod .UserRoles)}}
