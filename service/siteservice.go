@@ -889,15 +889,24 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 			`"`, "")
 	}
 
+	var nt string
+	if title != nil {
+		nt = normalize(*title)
+	}
+
+	var nlc string
+	if title != nil {
+		nlc = normalize(*title)
+	}
+
 	for i, sa := range sas {
 		if (i % (len(sas) / 10)) == 0 {
 			utils.LogCtx(ctx).Debugf("levenshtein: scored %.1f%% (%d) strings", (float64(i)/float64(len(sas)))*100, i)
 		}
 		if title != nil && sa.Title != nil {
-			nin := normalize(*title)
-			nt := normalize(*sa.Title)
-			distance := levenshtein.ComputeDistance(nin, nt)
-			matchRatio := 1 - (float64(distance) / math.Max(float64(len(nin)), float64(len(nt))))
+			nc := normalize(*sa.Title)
+			distance := levenshtein.ComputeDistance(nt, nc)
+			matchRatio := 1 - (float64(distance) / math.Max(float64(len(nt)), float64(len(nc))))
 
 			if matchRatio > minimumMatch {
 				sa.TitleRatio = matchRatio
@@ -905,10 +914,9 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 			}
 		}
 		if launchCommand != nil && sa.LaunchCommand != nil {
-			nin := normalize(*launchCommand)
-			nlc := normalize(*sa.LaunchCommand)
-			distance := levenshtein.ComputeDistance(nin, nlc)
-			matchRatio := 1 - (float64(distance) / math.Max(float64(len(nin)), float64(len(nlc))))
+			nc := normalize(*sa.LaunchCommand)
+			distance := levenshtein.ComputeDistance(nlc, nc)
+			matchRatio := 1 - (float64(distance) / math.Max(float64(len(nlc)), float64(len(nc))))
 
 			if matchRatio > minimumMatch {
 				sa.LaunchCommandRatio = matchRatio

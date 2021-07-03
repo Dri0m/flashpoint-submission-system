@@ -322,9 +322,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, imageFilePaths, 0, err
 	}
 
-	if err := s.dal.StoreComment(dbs, sc); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, imageFilePaths, 0, dberr(err)
+	if sc != nil {
+		if err := s.dal.StoreComment(dbs, sc); err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return &destinationFilePath, imageFilePaths, 0, dberr(err)
+		}
 	}
 
 	return &destinationFilePath, imageFilePaths, submissionID, nil
@@ -375,11 +377,11 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64
 
 	var sb strings.Builder
 
-	if len(TitleSimilarities) > 0 || len(LaunchCommandSimilarities) > 0 {
+	if len(TitleSimilarities) > 1 || len(LaunchCommandSimilarities) > 1 {
 
 		strID := strconv.FormatInt(sid, 10)
 
-		if len(TitleSimilarities) > 0 {
+		if len(TitleSimilarities) > 1 {
 			sb.Write([]byte("Curations with similar titles have been found:\n"))
 
 			for _, ts := range TitleSimilarities {
@@ -390,7 +392,7 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64
 			}
 		}
 
-		if len(LaunchCommandSimilarities) > 0 {
+		if len(LaunchCommandSimilarities) > 1 {
 			sb.Write([]byte("\n"))
 			sb.Write([]byte("Curations with similar launch commands have been found:\n"))
 
