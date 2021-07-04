@@ -71,7 +71,7 @@
                         <td>{{if not $isLegacy}}{{.UpdaterUsername}}{{end}}</td>
                         <td title="{{.Size}}B">{{if not $isLegacy}}{{megabytify .Size}}MB{{end}}</td>
                         <td>
-                            <div class="center-image dot-{{.BotAction}}" title="{{if (contains "approve" .BotAction)}}The bot has requested changes.{{else}}The bot approves.{{end}}"></div>
+                            <div class="center-image dot-{{.BotAction}}" title="{{if (contains "approve" .BotAction)}}The bot approves.{{else}}The bot has requested changes.{{end}}"></div>
                         </td>
                         <td class="center {{if gt (len .AssignedTestingUserIDs) 0}}bgr-assign-testing{{end}}">
                             {{if not $isLegacy}}<b>{{len .AssignedTestingUserIDs}}</b>{{end}}
