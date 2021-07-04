@@ -1,12 +1,16 @@
 {{define "submission-pagenav"}}
     <div class="submission-pagenav">
-        <button class="pure-button pure-button-primary"
-                onclick="changePage(-1)">
-            Previous page
-        </button>
-        <button class="pure-button pure-button-primary"
-                onclick="changePage(+1)">
-            Next page
-        </button>
+        {{if submissionsShowPreviousButton .Filter.Page}}
+            <button class="pure-button pure-button-primary"
+                    onclick="changePage(-1)">
+                Previous page
+            </button>
+        {{end}}
+        {{if submissionsShowNextButton (len .Submissions) .Filter.ResultsPerPage}}
+            <button class="pure-button pure-button-primary"
+                    onclick="changePage(+1)">
+                Next page
+            </button>
+        {{end}}
     </div>
 {{end}}

@@ -26,19 +26,21 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 	templates = append(templates, filenames...)
 
 	t := template.New("base").Funcs(sprig.FuncMap()).Funcs(template.FuncMap{
-		"boolString":         BoolString,
-		"unpointify":         utils.Unpointify,
-		"isStaff":            constants.IsStaff,
-		"isTrialCurator":     constants.IsTrialCurator,
-		"isDeleter":          constants.IsDeleter,
-		"isDecider":          constants.IsDecider,
-		"isAdder":            constants.IsAdder,
-		"isInAudit":          constants.IsInAudit,
-		"isGod":              constants.IsGod,
-		"megabytify":         utils.Megabytify,
-		"splitMultilineText": utils.SplitMultilineText,
-		"capitalizeAscii":    utils.CapitalizeASCII,
-		"parseMetaTags":      parseMetaTags,
+		"boolString":                    BoolString,
+		"unpointify":                    utils.Unpointify,
+		"isStaff":                       constants.IsStaff,
+		"isTrialCurator":                constants.IsTrialCurator,
+		"isDeleter":                     constants.IsDeleter,
+		"isDecider":                     constants.IsDecider,
+		"isAdder":                       constants.IsAdder,
+		"isInAudit":                     constants.IsInAudit,
+		"isGod":                         constants.IsGod,
+		"megabytify":                    utils.Megabytify,
+		"splitMultilineText":            utils.SplitMultilineText,
+		"capitalizeAscii":               utils.CapitalizeASCII,
+		"parseMetaTags":                 parseMetaTags,
+		"submissionsShowPreviousButton": submissionsShowPreviousButton,
+		"submissionsShowNextButton":     submissionsShowNextButton,
 	})
 
 	parse := func() (interface{}, error) {
@@ -203,4 +205,17 @@ func parseMetaTags(rawTags string, tagList []types.Tag) []types.Tag {
 	}
 
 	return result
+}
+
+func submissionsShowPreviousButton(page *int64) bool {
+	return !(page == nil || *page < 2)
+}
+
+// TODO doesn't work correctly when the total number of results is divisible by perPage
+func submissionsShowNextButton(submissionCount int, perPage *int64) bool {
+	var currentPerPage int64 = 100
+	if perPage != nil {
+		currentPerPage = *perPage
+	}
+	return (int64)(submissionCount) == currentPerPage
 }
