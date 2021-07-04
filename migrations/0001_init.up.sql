@@ -9,14 +9,15 @@ CREATE TABLE IF NOT EXISTS session
 CREATE TABLE IF NOT EXISTS discord_user
 (
     id            BIGINT PRIMARY KEY,
-    username      VARCHAR(255) NOT NULL,
-    avatar        VARCHAR(255) NOT NULL,
-    discriminator VARCHAR(255) NOT NULL,
+    username      VARCHAR(127) NOT NULL,
+    avatar        VARCHAR(127) NOT NULL,
+    discriminator VARCHAR(127) NOT NULL,
     public_flags  BIGINT       NOT NULL,
     flags         BIGINT       NOT NULL,
-    locale        VARCHAR(255) NOT NULL,
+    locale        VARCHAR(127) NOT NULL,
     mfa_enabled   BIGINT       NOT NULL
 );
+CREATE INDEX idx_discord_user_username ON discord_user (username);
 
 INSERT INTO discord_user (id, username, avatar, discriminator, public_flags, flags, locale, mfa_enabled)
 VALUES (810112564787675166, 'RedMinima', '156dd40e0c72ed8e84034b53aad32af4', '1337', 0, 0, 'en_US', 0);
@@ -83,13 +84,13 @@ CREATE TABLE IF NOT EXISTS curation_meta
     fk_submission_file_id BIGINT NOT NULL,
     application_path      TEXT,
     developer             TEXT,
-    extreme               TEXT,
+    extreme               VARCHAR(7),
     game_notes            TEXT,
     languages             TEXT,
     launch_command        TEXT,
     original_description  TEXT,
     play_mode             TEXT,
-    platform              TEXT,
+    platform              VARCHAR(63),
     publisher             TEXT,
     release_date          TEXT,
     series                TEXT,
@@ -99,12 +100,14 @@ CREATE TABLE IF NOT EXISTS curation_meta
     tag_categories        TEXT,
     title                 TEXT,
     alternate_titles      TEXT,
-    library               TEXT,
+    library               VARCHAR(31),
     version               TEXT,
     curation_notes        TEXT,
     mount_parameters      TEXT,
     FOREIGN KEY (fk_submission_file_id) REFERENCES submission_file (id)
 );
+CREATE INDEX idx_curation_meta_extreme ON curation_meta (extreme);
+CREATE INDEX idx_curation_meta_library ON curation_meta (library);
 
 CREATE TABLE IF NOT EXISTS action
 (
