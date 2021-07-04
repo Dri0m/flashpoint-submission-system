@@ -52,8 +52,7 @@ func RequestType(ctx context.Context) string {
 
 // LogCtx returns logger with certain context values included
 func LogCtx(ctx context.Context) *logrus.Entry {
-	l := ctx.Value(CtxKeys.Log).(*logrus.Logger)
-	entry := logrus.NewEntry(l)
+	entry := ctx.Value(CtxKeys.Log).(*logrus.Entry)
 
 	if userID := UserID(ctx); userID != 0 {
 		entry = entry.WithField(string(CtxKeys.UserID), userID)
