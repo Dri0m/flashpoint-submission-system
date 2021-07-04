@@ -364,6 +364,35 @@
                                        {{if eq "yes" (unpointify .Filter.LastUploaderNotMe)}}checked{{end}}>
                                 Exclude my submissions</label>
                         </fieldset>
+                        <fieldset>
+                            <legend>Order Results</legend>
+                            <div class="pure-g">
+                                <div class="pure-u-1-2">
+                                    <label for="order-by">
+                                        <input type="radio" name="order-by" value="uploaded"
+                                               id="order-by-uploaded"
+                                               {{if eq "uploaded" (unpointify .Filter.OrderBy)}}checked{{end}}>
+                                        By Uploaded at</label>
+                                    <label for="asc-desc">
+                                        <input type="radio" name="asc-desc" value="asc"
+                                               id="asc-desc-asc"
+                                               {{if eq "asc" (unpointify .Filter.AscDesc)}}checked{{end}}>
+                                        Ascending</label>
+                                </div>
+                                <div class="pure-u-1-2">
+                                    <label for="order-by">
+                                        <input type="radio" name="order-by" value="updated"
+                                               id="order-by-updated"
+                                               {{if eq "updated" (unpointify .Filter.OrderBy)}}checked{{end}}>
+                                        By Updated at</label>
+                                    <label for="asc-desc">
+                                        <input type="radio" name="asc-desc" value="desc"
+                                               id="asc-desc-desc"
+                                               {{if eq "desc" (unpointify .Filter.AscDesc)}}checked{{end}}>
+                                        Descending</label>
+                                </div>
+                            </div>
+                        </fieldset>
                     </div>
                 </div>
             </div>

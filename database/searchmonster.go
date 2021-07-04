@@ -21,9 +21,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 
 	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
+	const defaultOrderBy string = "updated_at"
+	const defaultSortOrder string = "DESC"
 
 	currentLimit := defaultLimit
 	currentOffset := defaultOffset
+	currentOrderBy := defaultOrderBy
+	currentSortOrder := defaultSortOrder
 
 	if filter != nil {
 		if len(filter.SubmissionIDs) > 0 {
@@ -243,6 +247,20 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			}
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
+		if filter.OrderBy != nil {
+			if *filter.OrderBy == "uploaded" {
+				currentOrderBy = "created_at"
+			} else if *filter.OrderBy == "updated" {
+				currentOrderBy = "updated_at"
+			}
+		}
+		if filter.AscDesc != nil {
+			if *filter.AscDesc == "asc" {
+				currentSortOrder = "ASC"
+			} else if *filter.AscDesc == "desc" {
+				currentSortOrder = "DESC"
+			}
+		}
 	}
 
 	and := ""
@@ -400,7 +418,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			(SELECT "mark-added") AS distinct_actions
 			FROM masterdb_game
 			WHERE (SELECT 1) ` + masterAnd + strings.Join(masterFilters, " AND ") + `
-		ORDER BY updated_at DESC
+		ORDER BY ` + currentOrderBy + ` ` + currentSortOrder + `
 		LIMIT ? OFFSET ?
 		`
 

@@ -360,6 +360,8 @@ function filterReadyForTesting() {
     document.getElementById("assigned-status-verification-unassigned").checked = true
 
     document.getElementById("last-uploader-not-me").checked = true
+    document.getElementById("order-by-uploaded").checked = true
+    document.getElementById("asc-desc-asc").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
     submitAdvancedFilterForm()
@@ -377,6 +379,9 @@ function filterReadyForVerification() {
     document.getElementById("approvals-status-me-no").checked = true
     document.getElementById("last-uploader-not-me").checked = true
 
+    document.getElementById("order-by-uploaded").checked = true
+    document.getElementById("asc-desc-asc").checked = true
+
     document.getElementById("distinct-action-not-mark-added").checked = true
     submitAdvancedFilterForm()
 }
@@ -387,6 +392,9 @@ function filterReadyForFlashpoint() {
     document.getElementById("bot-action-approve").checked = true
 
     document.getElementById("verification-status-verified").checked = true
+
+    document.getElementById("order-by-uploaded").checked = true
+    document.getElementById("asc-desc-asc").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
     submitAdvancedFilterForm()

@@ -154,6 +154,8 @@ type SubmissionsFilter struct {
 	DistinctActionsNot           []string `schema:"distinct-action-not"`
 	LaunchCommandFuzzy           *string  `schema:"launch-command-fuzzy"`
 	LastUploaderNotMe            *string  `schema:"last-uploader-not-me"`
+	OrderBy                      *string  `schema:"order-by"`
+	AscDesc                      *string  `schema:"asc-desc"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
@@ -238,6 +240,12 @@ func (sf *SubmissionsFilter) Validate() error {
 	}
 	if sf.LastUploaderNotMe != nil && *sf.LastUploaderNotMe != "yes" {
 		return fmt.Errorf("last-uploader-not-me")
+	}
+	if sf.OrderBy != nil && *sf.OrderBy != "uploaded" && *sf.OrderBy != "updated" {
+		return fmt.Errorf("invalid order-by")
+	}
+	if sf.AscDesc != nil && *sf.AscDesc != "asc" && *sf.AscDesc != "desc" {
+		return fmt.Errorf("invalid asc-desc")
 	}
 	return nil
 }
