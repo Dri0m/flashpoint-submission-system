@@ -168,10 +168,11 @@ func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	}
 
 	bpd := &types.BasePageData{
-		Username:  discordUser.Username,
-		UserID:    discordUser.ID,
-		AvatarURL: utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
-		UserRoles: userRoles,
+		Username:      discordUser.Username,
+		UserID:        discordUser.ID,
+		AvatarURL:     utils.FormatAvatarURL(discordUser.ID, discordUser.Avatar),
+		UserRoles:     userRoles,
+		IsDevInstance: s.isDev,
 	}
 
 	return bpd, nil
