@@ -11,6 +11,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
 	"github.com/Dri0m/flashpoint-submission-system/transport"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -19,7 +20,7 @@ func main() {
 	log.Infoln("hi")
 
 	conf := config.GetConfig(log)
-	l := log.WithField("commit", conf.Commit)
+	l := log.WithField("commit", conf.Commit).WithField("runID", utils.NewRealRandomStringProvider().RandomString(8))
 	db := database.OpenDB(l, conf)
 	defer db.Close()
 	authBot := authbot.ConnectBot(l, conf.AuthBotToken)
