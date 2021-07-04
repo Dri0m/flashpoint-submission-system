@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (s *SiteService) RunNotificationConsumer(logger *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) {
+func (s *SiteService) RunNotificationConsumer(logger *logrus.Entry, ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	l := logger.WithField("serviceName", "notificationConsumer")
 	defer l.Info("consumer stopped")

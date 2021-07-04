@@ -25,7 +25,5 @@ restore-db:
 	pv $(SQL_FILE) | docker exec -i fpfssdb /usr/bin/mysql -u root --password=${DB_ROOT_PASSWORD} ${DB_NAME}
 
 run:
-	rm flashpoint-submission-system | true
-	go build ./cmd/
-	./flashpoint-submission-system
+	export GIT_COMMIT=$(shell git rev-list -1 HEAD) && go run ./main/*.go
 

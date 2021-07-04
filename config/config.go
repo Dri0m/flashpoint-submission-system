@@ -31,6 +31,7 @@ type Config struct {
 	NotificationChannelID        string
 	CurationFeedChannelID        string
 	IsDev                        bool
+	Commit                       string
 }
 
 func EnvString(name string) string {
@@ -104,5 +105,6 @@ func GetConfig(l *logrus.Logger) *Config {
 		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
 		CurationFeedChannelID:        EnvString("CURATION_FEED_CHANNEL_ID"),
 		IsDev:                        EnvBool("IS_DEV"),
+		Commit:                       EnvString("GIT_COMMIT"),
 	}
 }

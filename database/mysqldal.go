@@ -26,7 +26,7 @@ func NewMysqlDAL(conn *sql.DB) *mysqlDAL {
 }
 
 // OpenDB opens DAL or panics
-func OpenDB(l *logrus.Logger, conf *config.Config) *sql.DB {
+func OpenDB(l *logrus.Entry, conf *config.Config) *sql.DB {
 
 	user := conf.DBUser
 	pass := conf.DBPassword

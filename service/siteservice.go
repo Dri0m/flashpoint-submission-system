@@ -123,7 +123,7 @@ type SiteService struct {
 	submissionReceiverMutex   sync.Mutex
 }
 
-func NewSiteService(l *logrus.Logger, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
+func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
 	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string, isDev bool) *SiteService {
 	return &SiteService{

@@ -15,10 +15,11 @@ import (
 )
 
 func main() {
-	l := logging.InitLogger()
-	l.Infoln("hi")
+	log := logging.InitLogger()
+	log.Infoln("hi")
 
-	conf := config.GetConfig(l)
+	conf := config.GetConfig(log)
+	l := log.WithField("commit", conf.Commit)
 	db := database.OpenDB(l, conf)
 	defer db.Close()
 	authBot := authbot.ConnectBot(l, conf.AuthBotToken)

@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (a *App) handleRequests(l *logrus.Logger, srv *http.Server, router *mux.Router) {
+func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Router) {
 	isStaff := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.StaffRoles())
 	}

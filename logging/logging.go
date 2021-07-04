@@ -55,7 +55,7 @@ type HTTPReqInfo struct {
 }
 
 // LogRequestHandler is logging handler
-func LogRequestHandler(l *logrus.Logger, h http.Handler) http.Handler {
+func LogRequestHandler(l *logrus.Entry, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.Log, l))
 		r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.RequestID, utils.NewRealRandomStringProvider().RandomString(16)))

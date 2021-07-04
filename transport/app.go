@@ -29,7 +29,7 @@ type App struct {
 	decoder *schema.Decoder
 }
 
-func InitApp(l *logrus.Logger, conf *config.Config, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session) {
+func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
