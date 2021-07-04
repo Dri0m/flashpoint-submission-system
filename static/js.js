@@ -351,7 +351,10 @@ function submitAdvancedFilterForm() {
 
 function filterReadyForTesting() {
     resetFilterForm()
-    document.getElementById("bot-action-approve").checked = true
+    let checkboxes = document.getElementsByClassName("bot-action-approve")
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = true
+    }
 
     document.getElementById("approvals-status-none").checked = true
     document.getElementById("verification-status-none").checked = true
@@ -369,9 +372,12 @@ function filterReadyForTesting() {
 
 function filterReadyForVerification() {
     resetFilterForm()
-    document.getElementById("bot-action-approve").checked =
+    let checkboxes = document.getElementsByClassName("bot-action-approve")
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = true
+    }
 
-        document.getElementById("approvals-status-approved").checked = true
+    document.getElementById("approvals-status-approved").checked = true
     document.getElementById("requested-changes-status-none").checked = true
     document.getElementById("assigned-status-verification-unassigned").checked = true
     document.getElementById("verification-status-none").checked = true
@@ -389,7 +395,10 @@ function filterReadyForVerification() {
 
 function filterReadyForFlashpoint() {
     resetFilterForm()
-    document.getElementById("bot-action-approve").checked = true
+    let checkboxes = document.getElementsByClassName("bot-action-approve")
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = true
+    }
 
     document.getElementById("verification-status-verified").checked = true
 
