@@ -31,7 +31,6 @@ type Config struct {
 	NotificationChannelID        string
 	CurationFeedChannelID        string
 	IsDev                        bool
-	Commit                       string
 }
 
 func EnvString(name string) string {
@@ -66,7 +65,7 @@ func EnvBool(name string) bool {
 	panic(fmt.Sprintf("invalid value of env variable '%s'", name))
 }
 
-func GetConfig(l *logrus.Logger) *Config {
+func GetConfig(l *logrus.Entry) *Config {
 	l.Infoln("loading config...")
 	err := godotenv.Load()
 	if err != nil {
@@ -105,6 +104,5 @@ func GetConfig(l *logrus.Logger) *Config {
 		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
 		CurationFeedChannelID:        EnvString("CURATION_FEED_CHANNEL_ID"),
 		IsDev:                        EnvBool("IS_DEV"),
-		Commit:                       EnvString("GIT_COMMIT"),
 	}
 }

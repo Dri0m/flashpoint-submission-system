@@ -17,10 +17,10 @@ import (
 
 func main() {
 	log := logging.InitLogger()
-	log.Infoln("hi")
+	l := log.WithField("commit", config.EnvString("GIT_COMMIT")).WithField("runID", utils.NewRealRandomStringProvider().RandomString(8))
+	l.Infoln("hi")
 
-	conf := config.GetConfig(log)
-	l := log.WithField("commit", conf.Commit).WithField("runID", utils.NewRealRandomStringProvider().RandomString(8))
+	conf := config.GetConfig(l)
 	db := database.OpenDB(l, conf)
 	defer db.Close()
 	authBot := authbot.ConnectBot(l, conf.AuthBotToken)
