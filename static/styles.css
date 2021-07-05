@@ -240,7 +240,9 @@ textarea {
     border-bottom: 1px solid #cbcbcb;
 }
 
-
+.break-all {
+    word-break: break-all;
+}
 
 #table-wrapper {
     position: relative;
