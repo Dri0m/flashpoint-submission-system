@@ -41,6 +41,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"parseMetaTags":                 parseMetaTags,
 		"submissionsShowPreviousButton": submissionsShowPreviousButton,
 		"submissionsShowNextButton":     submissionsShowNextButton,
+		"capString":                     capString,
 	})
 
 	parse := func() (interface{}, error) {
@@ -218,4 +219,14 @@ func submissionsShowNextButton(submissionCount int, perPage *int64) bool {
 		currentPerPage = *perPage
 	}
 	return (int64)(submissionCount) == currentPerPage
+}
+
+func capString(maxLen int, s string) string {
+	if len(s) <= 3 {
+		return "..."
+	}
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }

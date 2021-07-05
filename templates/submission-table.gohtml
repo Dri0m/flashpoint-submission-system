@@ -56,13 +56,13 @@
                                 <a href="/web/submission/{{.SubmissionID}}">View</a>
                             {{end}}
                         </td>
-                        <td>{{.CurationTitle}}</td>
+                        <td>{{capString 100 .CurationTitle}}</td>
                         <td>{{if eq "Yes" (unpointify .CurationExtreme)}}<img src="/static/extreme.png" alt="Extreme"
                                                                               title="Curation is marked as extreme."
                                                                               width="24" height="24">{{end}}
                         </td>
                         {{if $showLaunchCommand}}
-                            <td>{{.CurationLaunchCommand}}</td>
+                            <td>{{capString 100 .CurationLaunchCommand}}</td>
                         {{end}}
                         <td>{{.CurationPlatform}}</td>
                         <td>{{capitalizeAscii (unpointify .CurationLibrary)}}</td>
@@ -94,7 +94,7 @@
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
-                        <td>{{if not $isLegacy}}{{.OriginalFilename}}{{end}}</td>
+                        <td>{{if not $isLegacy}}{{capString 100 .OriginalFilename}}{{end}}</td>
                     </tr>
                 {{end}}
                 </tbody>
