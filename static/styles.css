@@ -233,6 +233,7 @@ textarea {
 .submissions-table td {
     padding: .2em .2em;
     border-bottom: 1px solid #cbcbcb;
+    word-break: break-all;
 }
 
 .submissions-table th {
