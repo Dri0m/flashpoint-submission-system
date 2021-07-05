@@ -96,7 +96,7 @@ SubmissionLoop:
 		markedAdded := false
 
 		for _, distinctAction := range submission.DistinctActions {
-			if constants.ActionAssignVerification == distinctAction {
+			if constants.ActionMarkAdded == distinctAction {
 				markedAdded = true
 				break
 			}
@@ -295,6 +295,16 @@ SubmissionLoop:
 					continue SubmissionLoop
 				}
 				return perr(fmt.Sprintf("you have already verified submission %d so you cannot assign it for verification", sid), http.StatusBadRequest)
+			}
+		}
+
+		// don't let user mark submission as added until it's verified
+		if formAction == constants.ActionMarkAdded {
+			if len(submission.VerifiedUserIDs) == 0 {
+				if ignoreDupeActions {
+					continue SubmissionLoop
+				}
+				return perr(fmt.Sprintf("submission %d is not verified so you cannot mark it as added", sid), http.StatusBadRequest)
 			}
 		}
 
