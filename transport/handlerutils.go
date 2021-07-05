@@ -221,12 +221,16 @@ func submissionsShowNextButton(submissionCount int, perPage *int64) bool {
 	return (int64)(submissionCount) == currentPerPage
 }
 
-func capString(maxLen int, s string) string {
-	if len(s) <= 3 {
+func capString(maxLen int, s *string) string {
+	if s == nil {
+		return "<nil>"
+	}
+	str := *s
+	if len(str) <= 3 {
 		return "..."
 	}
-	if len(s) <= maxLen {
-		return s
+	if len(str) <= maxLen {
+		return str
 	}
-	return s[:maxLen-3] + "..."
+	return str[:maxLen-3] + "..."
 }
