@@ -127,7 +127,7 @@ function batchComment(checkboxClassName, attribute, action) {
         url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${checked}`
 
         sendXHR(url, "POST", null, reload,
-            "Failed to post comment(s).", successMessage, null)
+            `Failed to post comment(s) with action '${action}'.`, successMessage, null)
     }
 
     let u = new URL(window.location.href)
@@ -147,7 +147,7 @@ function batchComment(checkboxClassName, attribute, action) {
             alert("No submissions selected,")
             return
         }
-        magic(false, "Comments posted successfully.")
+        magic(false, `Comments with action '${action}' posted successfully.`)
     }
 }
 
