@@ -235,7 +235,7 @@ textarea {
     border-bottom: 1px solid #cbcbcb;
 }
 
-.submissions-table-title td {
+.submissions-table-title {
     padding: .2em .2em;
     border-bottom: 1px solid #cbcbcb;
     word-break: break-all;
