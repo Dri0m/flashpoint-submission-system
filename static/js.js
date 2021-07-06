@@ -301,8 +301,6 @@ window.onload = function () {
     function toggleBlur() {
         this.classList.toggle('blur-img');
     }
-
-    setSiteMaxWidth()
 };
 
 function deleteSubmissionFile(sid, sfid) {
@@ -484,3 +482,5 @@ function setSiteMaxWidth() {
     document.getElementById("system-announcement").style.maxWidth = maxWidth
     document.getElementById("main").style.maxWidth = maxWidth
 }
+
+setSiteMaxWidth()
