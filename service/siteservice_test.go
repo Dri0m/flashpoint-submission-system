@@ -115,7 +115,7 @@ func Test_siteService_GetBasePageData_OK(t *testing.T) {
 		AvatarURL: avatarURL,
 		UserRoles: userRoles,
 	}
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -142,7 +142,7 @@ func Test_siteService_GetBasePageData_Fail_GetDiscordUserRoles(t *testing.T) {
 		Username: username,
 		Avatar:   avatar,
 	}
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -162,7 +162,7 @@ func Test_siteService_GetBasePageData_Fail_GetDiscordUser(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -182,7 +182,7 @@ func Test_siteService_GetBasePageData_Fail_NewSession(t *testing.T) {
 
 	var uid int64 = 1
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -239,7 +239,7 @@ func Test_siteService_GetViewSubmissionPageData_OK(t *testing.T) {
 		TagList:              tagList,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -267,7 +267,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -291,7 +291,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_SearchSubmissions(t *testin
 		SubmissionIDs: []int64{sid},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -326,7 +326,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationMetaBySubmission
 		},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -364,7 +364,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetExtendedCommentsBySubmis
 
 	cm := &types.CurationMeta{}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -404,7 +404,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_IsUserSubscribedToSubmissio
 	cm := &types.CurationMeta{}
 	comments := []*types.ExtendedComment{{}}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -445,7 +445,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetCurationImagesBySubmissi
 	cm := &types.CurationMeta{}
 	comments := []*types.ExtendedComment{{}}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -489,7 +489,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetNextSubmission(t *testin
 	comments := []*types.ExtendedComment{{}}
 	curationImages := []*types.CurationImage{{ID: ciid}}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -535,7 +535,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetPreviousSubmission(t *te
 	comments := []*types.ExtendedComment{{}}
 	curationImages := []*types.CurationImage{{ID: ciid}}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -583,7 +583,7 @@ func Test_siteService_GetViewSubmissionPageData_Fail_GetTags(t *testing.T) {
 	comments := []*types.ExtendedComment{{}}
 	curationImages := []*types.CurationImage{{ID: ciid}}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -628,7 +628,7 @@ func Test_siteService_GetSubmissionsFilesPageData_OK(t *testing.T) {
 		SubmissionFiles: sf,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -649,7 +649,7 @@ func Test_siteService_GetSubmissionsFilesPageData_Fail_NewSession(t *testing.T) 
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -669,7 +669,7 @@ func Test_siteService_GetSubmissionsFilesPageData_Fail_GetExtendedSubmissionFile
 	var sid int64 = 2
 	createAssertBPD(ts, uid)
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -712,7 +712,7 @@ func Test_siteService_GetSubmissionsPageData_OK(t *testing.T) {
 		Filter:       *filter,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -737,7 +737,7 @@ func Test_siteService_GetSubmissionsPageData_Fail_NewSession(t *testing.T) {
 		SubmissionIDs: []int64{sid},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -761,7 +761,7 @@ func Test_siteService_GetSubmissionsPageData_Fail_SearchSubmissions(t *testing.T
 		SubmissionIDs: []int64{sid},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -797,7 +797,7 @@ func Test_siteService_SearchSubmissions_OK(t *testing.T) {
 		},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -822,7 +822,7 @@ func Test_siteService_SearchSubmissions_Fail_NewSession(t *testing.T) {
 		SubmissionIDs: []int64{sid},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -845,7 +845,7 @@ func Test_siteService_SearchSubmissions_Fail_SearchSubmissions(t *testing.T) {
 		SubmissionIDs: []int64{sid},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -878,7 +878,7 @@ func Test_siteService_GetSubmissionFiles_OK(t *testing.T) {
 		},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -901,7 +901,7 @@ func Test_siteService_GetSubmissionFiles_Fail_GetSubmissionFiles(t *testing.T) {
 
 	sfids := []int64{fid}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -924,7 +924,7 @@ func Test_siteService_GetSubmissionFiles_Fail_NewSession(t *testing.T) {
 
 	sfids := []int64{fid}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -945,7 +945,7 @@ func Test_siteService_GetUIDFromSession_OK(t *testing.T) {
 	var uid int64 = 1
 	key := "foo"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -967,7 +967,7 @@ func Test_siteService_GetUIDFromSession_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	key := "foo"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -986,7 +986,7 @@ func Test_siteService_GetUIDFromSession_Fail_GetUIDFromSession(t *testing.T) {
 	var uid int64 = 1
 	key := "foo"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1019,7 +1019,7 @@ func Test_siteService_SoftDeleteSubmissionFile_OK(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1044,7 +1044,7 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_NewSession(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -1064,7 +1064,7 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_GetSubmissionFiles(t *testin
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1093,7 +1093,7 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_SoftDeleteSubmissionFile(t *
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1123,7 +1123,7 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_StoreNotification(t *testing
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1155,7 +1155,7 @@ func Test_siteService_SoftDeleteSubmissionFile_Fail_Commit(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1187,7 +1187,7 @@ func Test_siteService_SoftDeleteSubmission_OK(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1212,7 +1212,7 @@ func Test_siteService_SoftDeleteSubmission_Fail_NewSession(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -1232,7 +1232,7 @@ func Test_siteService_SoftDeleteSubmission_Fail_SearchSubmissions(t *testing.T) 
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1259,7 +1259,7 @@ func Test_siteService_SoftDeleteSubmission_Fail_SoftDeleteSubmission(t *testing.
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1287,7 +1287,7 @@ func Test_siteService_SoftDeleteSubmission_Fail_StoreNotification(t *testing.T) 
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1317,7 +1317,7 @@ func Test_siteService_SoftDeleteSubmission_Fail_Commit(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1351,7 +1351,7 @@ func Test_siteService_SoftDeleteComment_OK(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1376,7 +1376,7 @@ func Test_siteService_SoftDeleteComment_Fail_NewSession(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -1396,7 +1396,7 @@ func Test_siteService_SoftDeleteComment_Fail_GetCommentByID(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1425,7 +1425,7 @@ func Test_siteService_SoftDeleteComment_Fail_SoftDeleteComment(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1455,7 +1455,7 @@ func Test_siteService_SoftDeleteComment_Fail_StoreNotification(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1487,7 +1487,7 @@ func Test_siteService_SoftDeleteComment_Fail_Commit(t *testing.T) {
 
 	deleteReason := "foobar"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1539,7 +1539,7 @@ func Test_siteService_SaveUser_OK(t *testing.T) {
 		UserID: strconv.FormatInt(uid, 10),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1600,7 +1600,7 @@ func Test_siteService_SaveUser_Fail_Commit(t *testing.T) {
 		UserID: strconv.FormatInt(uid, 10),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1661,7 +1661,7 @@ func Test_siteService_SaveUser_Fail_StoreSession(t *testing.T) {
 		UserID: strconv.FormatInt(uid, 10),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1716,7 +1716,7 @@ func Test_siteService_SaveUser_Fail_CreateAuthToken(t *testing.T) {
 		rid,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1770,7 +1770,7 @@ func Test_siteService_SaveUser_Fail_StoreDiscordUserRoles(t *testing.T) {
 		rid,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1818,7 +1818,7 @@ func Test_siteService_SaveUser_Fail_StoreDiscordServerRoles(t *testing.T) {
 		strconv.FormatInt(rid, 10),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1861,7 +1861,7 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoleIDsForUser(t *testing.T) {
 		},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1893,7 +1893,7 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoles(t *testing.T) {
 		Avatar:   "bar",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1924,7 +1924,7 @@ func Test_siteService_SaveUser_Fail_StoreDiscordUser(t *testing.T) {
 		Avatar:   "bar",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1953,7 +1953,7 @@ func Test_siteService_SaveUser_Fail_GetDiscordUser(t *testing.T) {
 		Avatar:   "bar",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1981,7 +1981,7 @@ func Test_siteService_SaveUser_Fail_NewSession(t *testing.T) {
 		Avatar:   "bar",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2002,7 +2002,7 @@ func Test_siteService_Logout_OK(t *testing.T) {
 	var uid int64 = 1
 	secret := "foo"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2025,7 +2025,7 @@ func Test_siteService_Logout_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	secret := "foo"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2043,7 +2043,7 @@ func Test_siteService_Logout_Fail_DeleteSession(t *testing.T) {
 	var uid int64 = 1
 	secret := "foo"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2065,7 +2065,7 @@ func Test_siteService_Logout_Fail_Commit(t *testing.T) {
 	var uid int64 = 1
 	secret := "foo"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2093,7 +2093,7 @@ func Test_siteService_GetUserRoles_OK(t *testing.T) {
 		"foo",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2113,7 +2113,7 @@ func Test_siteService_GetUserRoles_Fail_NewSession(t *testing.T) {
 
 	var uid int64 = 1
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2131,7 +2131,7 @@ func Test_siteService_GetUserRoles_Fail_GetDiscordUserRoles(t *testing.T) {
 
 	var uid int64 = 1
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2164,7 +2164,7 @@ func Test_siteService_GetProfilePageData_OK(t *testing.T) {
 		NotificationActions: actions,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2186,7 +2186,7 @@ func Test_siteService_GetProfilePageData_Fail_GetNotificationSettingsByUserID(t 
 
 	createAssertBPD(ts, uid)
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2206,7 +2206,7 @@ func Test_siteService_GetProfilePageData_Fail_NewSession(t *testing.T) {
 
 	var uid int64 = 1
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2230,7 +2230,7 @@ func Test_siteService_UpdateNotificationSettings_OK(t *testing.T) {
 		"foo",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2254,7 +2254,7 @@ func Test_siteService_UpdateNotificationSettings_Fail_Commit(t *testing.T) {
 		"foo",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2278,7 +2278,7 @@ func Test_siteService_UpdateNotificationSettings_Fail_StoreNotificationSettings(
 		"foo",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2301,7 +2301,7 @@ func Test_siteService_UpdateNotificationSettings_Fail_NewSession(t *testing.T) {
 		"foo",
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2321,7 +2321,7 @@ func Test_siteService_UpdateSubscriptionSettings_OK_Subscribe(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2342,7 +2342,7 @@ func Test_siteService_UpdateSubscriptionSettings_OK_Unsubscribe(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2363,7 +2363,7 @@ func Test_siteService_UpdateSubscriptionSettings_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2381,7 +2381,7 @@ func Test_siteService_UpdateSubscriptionSettings_Fail_UnsubscribeUserFromSubmiss
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2401,7 +2401,7 @@ func Test_siteService_UpdateSubscriptionSettings_Fail_SubscribeUserToSubmission(
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2421,7 +2421,7 @@ func Test_siteService_UpdateSubscriptionSettings_Fail_Commit(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2448,7 +2448,7 @@ func Test_siteService_GetCurationImage_OK(t *testing.T) {
 		ID: ciid,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2469,7 +2469,7 @@ func Test_siteService_GetCurationImage_Fail_GetCurationImage(t *testing.T) {
 	var uid int64 = 1
 	var ciid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2490,7 +2490,7 @@ func Test_siteService_GetCurationImage_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var ciid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2512,7 +2512,7 @@ func Test_siteService_GetNextSubmission_OK(t *testing.T) {
 	var sid int64 = 2
 	var nsid int64 = 3
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2533,7 +2533,7 @@ func Test_siteService_GetNextSubmission_Fail_GetNextSubmission(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2554,7 +2554,7 @@ func Test_siteService_GetNextSubmission_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -2576,7 +2576,7 @@ func Test_siteService_GetPreviousSubmission_OK(t *testing.T) {
 	var sid int64 = 2
 	var psid int64 = 3
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2597,7 +2597,7 @@ func Test_siteService_GetPreviousSubmission_Fail_GetPreviousSubmission(t *testin
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -2618,7 +2618,7 @@ func Test_siteService_GetPreviousSubmission_Fail_NewSession(t *testing.T) {
 	var uid int64 = 1
 	var sid int64 = 2
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))

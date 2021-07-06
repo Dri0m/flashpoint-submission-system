@@ -42,7 +42,7 @@ func Test_siteService_ReceiveComments_OK(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now(),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -74,7 +74,7 @@ func Test_siteService_ReceiveComments_Fail_NewSession(t *testing.T) {
 	formMessage := "foo"
 	formIgnoreDupeActions := "false"
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -101,7 +101,7 @@ func Test_siteService_ReceiveComments_Fail_SearchSubmissions(t *testing.T) {
 		SubmissionIDs: []int64{sid},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -147,7 +147,7 @@ func Test_siteService_ReceiveComments_Fail_StoreComment(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now(),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -194,7 +194,7 @@ func Test_siteService_ReceiveComments_Fail_GetUsersForNotification(t *testing.T)
 		CreatedAt:    ts.s.clock.Now(),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -245,7 +245,7 @@ func Test_siteService_ReceiveComments_Fail_UpdateSubmissionCacheTable(t *testing
 		CreatedAt:    ts.s.clock.Now(),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -296,7 +296,7 @@ func Test_siteService_ReceiveComments_Fail_Commit(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now(),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)

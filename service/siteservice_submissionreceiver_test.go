@@ -88,7 +88,7 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -100,6 +100,7 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.validator.On("Validate", destinationFilePath).Return(vr, nil)
+	ts.dbs.On("Ctx").Return(ctx)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -215,7 +216,7 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -265,7 +266,7 @@ func Test_siteService_ReceiveSubmissions_Fail_NewSession(t *testing.T) {
 
 	var uid int64 = 1
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
@@ -292,7 +293,7 @@ func Test_siteService_ReceiveSubmissions_Fail_GetDiscordUserRoles(t *testing.T) 
 
 	var uid int64 = 1
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -356,7 +357,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 		Meta:             meta,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -428,7 +429,7 @@ func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testi
 		Meta:             meta,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -512,7 +513,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -605,7 +606,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 		Meta:             meta,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -658,7 +659,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
 	var uid int64 = 1
 	userRoles := []string{}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -747,7 +748,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 		Meta:             meta,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -854,7 +855,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreNotification(t *testing.T) {
 		},
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -970,7 +971,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationImage(t *testing.T) {
 		Filename:         imageDestinationFilename,
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1078,7 +1079,7 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1185,7 +1186,7 @@ func Test_siteService_ReceiveSubmissions_Fail_UpdateSubmissionCacheTable(t *test
 		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
@@ -1293,7 +1294,7 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 		CreatedAt:    ts.s.clock.Now().Add(time.Second),
 	}
 
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.New())
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
