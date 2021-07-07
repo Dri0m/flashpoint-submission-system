@@ -462,3 +462,14 @@ func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
 
 	writeResponse(ctx, w, presp("success"), http.StatusOK)
 }
+
+func (a *App) HandleHelpPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		utils.UnsetCookie(w, utils.Cookies.Login)
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/help.gohtml")
+}

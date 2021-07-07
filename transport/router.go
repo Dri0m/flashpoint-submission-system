@@ -77,6 +77,11 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 			a.HandleSubmitPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
+	router.Handle(
+		"/web/help",
+		http.HandlerFunc(a.RequestWeb(a.HandleHelpPage))).
+		Methods("GET")
+
 	////////////////////////
 
 	f := a.UserAuthMux(a.HandleProfilePage)
