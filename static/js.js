@@ -133,7 +133,7 @@ function batchComment(checkboxClassName, attribute, action) {
     let u = new URL(window.location.href)
 
     // ugly black magic
-    if (!u.href.endsWith("/submissions") && !u.href.endsWith("/my-submissions")) {
+    if (!u.pathname.endsWith("/submissions") && !u.pathname.endsWith("/my-submissions")) {
         url += checkboxes[0].dataset[attribute] + ","
         magic(true, null)
     } else {
@@ -144,7 +144,7 @@ function batchComment(checkboxClassName, attribute, action) {
             }
         }
         if (checkedCounter === 0) {
-            alert("No submissions selected,")
+            alert("No submissions selected.")
             return
         }
         magic(false, `Comments with action '${action}' posted successfully.`)
