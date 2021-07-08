@@ -216,6 +216,7 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
 		utils.UnsetCookie(w, utils.Cookies.Login)
+		http.Redirect(w, r, "/web", http.StatusFound)
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/root.gohtml")
@@ -445,7 +446,9 @@ func (a *App) HandleInternalPage(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
-		utils.UnsetCookie(w, utils.Cookies.Login)
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, err)
+		return
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/internal.gohtml")
@@ -464,11 +467,21 @@ func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandleHelpPage(w http.ResponseWriter, r *http.Request) {
+	// TODO all auth-free pages should use a middleware to remove all of this user ID handling from the handlers
 	ctx := r.Context()
+	uid, err := a.GetUserIDFromCookie(r)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, err)
+		return
+	}
+	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
+	ctx = r.Context()
 
 	pageData, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
 		utils.UnsetCookie(w, utils.Cookies.Login)
+		http.Redirect(w, r, "/web", http.StatusFound)
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/help.gohtml")
