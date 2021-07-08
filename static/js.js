@@ -481,5 +481,9 @@ function setSiteMaxWidth() {
     }
     maxWidth += "px"
     document.getElementById("navbar").style.maxWidth = maxWidth
+    let announcement = document.getElementById("system-announcement")
+    if (announcement !== null) {
+        announcement.style.maxWidth = maxWidth
+    }
     document.getElementById("main").style.maxWidth = maxWidth
 }
