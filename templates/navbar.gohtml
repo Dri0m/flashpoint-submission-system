@@ -5,7 +5,7 @@
                 <div class="pure-menu pure-menu-horizontal">
                     <a href="/web" class="pure-menu-heading pure-menu-link">FPFSS</a>
                     <ul class="pure-menu-list">
-                        {{if not (empty (unpointify .Username))}}
+                        {{if not (empty .Username)}}
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                                 <li class="pure-menu-item">
                                     <a href="/web/submit" class="pure-menu-link">Submit</a>
@@ -32,6 +32,9 @@
                                 <a href="https://bluemaxima.org/flashpoint/datahub/Tags" class="pure-menu-link">List of Tags</a>
                             </li>
                             <li class="pure-menu-item">
+                                <a href="https://bluemaxima.org/flashpoint/datahub/Not_Accepted_Curations" class="pure-menu-link">Not accepted curations</a>
+                            </li>
+                            <li class="pure-menu-item">
                                 <a href="https://nul.sh/misc/flashpoint/" class="pure-menu-link">Flashpoint Browser</a>
                             </li>
                             <li class="pure-menu-item">
@@ -42,7 +45,7 @@
                     <li class="pure-menu-item">
                         <a href="/web/help" class="pure-menu-link">Help</a>
                     </li>
-                    {{if not (empty (unpointify .Username))}}
+                    {{if not (empty .Username)}}
                         <ul class="pure-menu-list">
                             {{if or (isGod .UserRoles)}}
                                 <li class="pure-menu-item">
