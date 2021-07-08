@@ -158,6 +158,8 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:Alambik:814621713350262856>")
 		} else if strings.Contains(lplat, "animaflex") {
 			b.WriteString("<:AnimaFlex:807016001618968596>")
+		} else if strings.Contains(lplat, "webmap") {
+			b.WriteString("<:Visual_WebMap:815055929589891122>")
 		} else {
 			b.WriteString("❓")
 		}
