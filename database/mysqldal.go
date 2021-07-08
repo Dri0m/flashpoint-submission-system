@@ -798,6 +798,7 @@ func (d *mysqlDAL) GetAllSimilarityAttributes(dbs DBSession) ([]*types.Similarit
 		LEFT JOIN submission_cache ON submission_cache.fk_submission_id = submission.id
 		LEFT JOIN submission_file AS newest_file ON newest_file.id = submission_cache.fk_newest_file_id
 		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id
+		WHERE submission.deleted_at IS NULL
 	UNION 
 		SELECT uuid, title, launch_command from masterdb_game`)
 
