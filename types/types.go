@@ -26,7 +26,7 @@ type CurationMeta struct {
 	Tags                *string `json:"Tags"`
 	TagCategories       *string `json:"Tag Categories"`
 	Title               *string `json:"Title"`
-	AlternateTitles     *string `json:"Alternate Title"`
+	AlternateTitles     *string `json:"Alternate Titles"`
 	Library             *string `json:"Library"`
 	Version             *string `json:"Version"`
 	CurationNotes       *string `json:"Curation Notes"`
