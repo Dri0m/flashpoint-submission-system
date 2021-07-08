@@ -207,7 +207,8 @@ func (a *App) HandleRootPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(ctx, w, err)
+		utils.UnsetCookie(w, utils.Cookies.Login)
+		http.Redirect(w, r, "/web", http.StatusFound)
 		return
 	}
 	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
@@ -472,7 +473,8 @@ func (a *App) HandleHelpPage(w http.ResponseWriter, r *http.Request) {
 	uid, err := a.GetUserIDFromCookie(r)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		writeError(ctx, w, err)
+		utils.UnsetCookie(w, utils.Cookies.Login)
+		http.Redirect(w, r, "/web", http.StatusFound)
 		return
 	}
 	r = r.WithContext(context.WithValue(r.Context(), utils.CtxKeys.UserID, uid))
