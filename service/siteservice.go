@@ -504,6 +504,19 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteRe
 }
 
 func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
+	// get discord roles
+	serverRoles, err := s.authBot.GetFlashpointRoles() // TODO changes in roles need to be refreshed sometimes
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+	userRoleIDs, err := s.authBot.GetFlashpointRoleIDsForUser(discordUser.ID)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	// start session
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -534,18 +547,6 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 			utils.LogCtx(ctx).Error(err)
 			return nil, dberr(err)
 		}
-	}
-
-	// get discord roles
-	serverRoles, err := s.authBot.GetFlashpointRoles() // TODO changes in roles need to be refreshed sometimes
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, err
-	}
-	userRoleIDs, err := s.authBot.GetFlashpointRoleIDsForUser(discordUser.ID)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, err
 	}
 
 	userRolesIDsNumeric := make([]int64, 0, len(userRoleIDs))

@@ -1821,13 +1821,13 @@ func Test_siteService_SaveUser_Fail_StoreDiscordServerRoles(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
+
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 
 	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
 	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
-
-	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
-	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("StoreDiscordServerRoles", serverRoles).Return(errors.New(""))
 
@@ -1864,15 +1864,8 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoleIDsForUser(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
-	ts.dal.On("NewSession").Return(ts.dbs, nil)
-
-	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
-	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
-
 	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
 	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(([]string)(nil), errors.New(""))
-
-	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.SaveUser(ctx, discordUser)
 
@@ -1896,14 +1889,7 @@ func Test_siteService_SaveUser_Fail_GetFlashpointRoles(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
 
-	ts.dal.On("NewSession").Return(ts.dbs, nil)
-
-	ts.dal.On("GetDiscordUser", uid).Return(discordUser, nil)
-	ts.dal.On("StoreDiscordUser", discordUser).Return(nil)
-
 	ts.authBot.On("GetFlashpointRoles").Return(([]types.DiscordRole)(nil), errors.New(""))
-
-	ts.dbs.On("Rollback").Return(nil)
 
 	actual, err := ts.s.SaveUser(ctx, discordUser)
 
@@ -1917,6 +1903,7 @@ func Test_siteService_SaveUser_Fail_StoreDiscordUser(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
+	var rid int64 = 2
 
 	discordUser := &types.DiscordUser{
 		ID:       uid,
@@ -1924,8 +1911,23 @@ func Test_siteService_SaveUser_Fail_StoreDiscordUser(t *testing.T) {
 		Avatar:   "bar",
 	}
 
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 
@@ -1946,6 +1948,7 @@ func Test_siteService_SaveUser_Fail_GetDiscordUser(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
+	var rid int64 = 2
 
 	discordUser := &types.DiscordUser{
 		ID:       uid,
@@ -1953,8 +1956,23 @@ func Test_siteService_SaveUser_Fail_GetDiscordUser(t *testing.T) {
 		Avatar:   "bar",
 	}
 
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("NewSession").Return(ts.dbs, nil)
 
@@ -1974,6 +1992,7 @@ func Test_siteService_SaveUser_Fail_NewSession(t *testing.T) {
 	ts := NewTestSiteService()
 
 	var uid int64 = 1
+	var rid int64 = 2
 
 	discordUser := &types.DiscordUser{
 		ID:       uid,
@@ -1981,8 +2000,23 @@ func Test_siteService_SaveUser_Fail_NewSession(t *testing.T) {
 		Avatar:   "bar",
 	}
 
+	serverRoles := []types.DiscordRole{
+		{
+			ID:    rid,
+			Name:  "baz",
+			Color: "octarine",
+		},
+	}
+
+	userRolesIDs := []string{
+		strconv.FormatInt(rid, 10),
+	}
+
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, logrus.NewEntry(logrus.New()))
 	ctx = context.WithValue(ctx, utils.CtxKeys.UserID, uid)
+
+	ts.authBot.On("GetFlashpointRoles").Return(serverRoles, nil)
+	ts.authBot.On("GetFlashpointRoleIDsForUser", uid).Return(userRolesIDs, nil)
 
 	ts.dal.On("NewSession").Return((*mockDBSession)(nil), errors.New(""))
 
