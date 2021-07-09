@@ -16,10 +16,12 @@
                 {{template "submission-pagenav" .}}
 
                 <h2>Batch download submission files</h2>
+
                 <button class="pure-button pure-button-primary"
                         onclick="batchDownloadFiles('submission-checkbox', 'fid')">
                     Download selected
                 </button>
+                <span id="submission-batch-size"></span>
                 <h2>Batch comment on submissions</h2>
 
                 {{template "comment-form" .}}

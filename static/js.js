@@ -83,6 +83,8 @@ function controlAllCheckboxes(cb, className) {
     for (let i = 0; i < checkboxes.length; i++) {
         checkboxes[i].checked = cb.checked
     }
+
+    updateBatchSize()
 }
 
 function batchDownloadFiles(checkboxClassName, attribute) {
@@ -295,15 +297,52 @@ window.onload = function () {
     // blur pics
     const images = document.getElementsByClassName('blur-img');
     for (let i = 0; i < images.length; i++) {
-        images[i].addEventListener('click', toggleBlur);
-    }
-
-    function toggleBlur() {
-        this.classList.toggle('blur-img');
+        images[i].addEventListener('click', () => this.classList.toggle('blur-img'));
     }
 
     setSiteMaxWidth()
+
+    let checkboxes = document.getElementsByClassName("submission-checkbox")
+
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].addEventListener('change', updateBatchSize)
+    }
+
+    updateBatchSize()
 };
+
+function updateBatchSize(event) {
+    let sizeSpan = document.getElementById("submission-batch-size")
+    if (sizeSpan !== null) {
+        let checkboxes = document.getElementsByClassName("submission-checkbox")
+
+        let totalSize = 0
+
+        for (let i = 0; i < checkboxes.length; i++) {
+            let cb = checkboxes[i]
+            if (cb.checked) {
+                let sid = cb.dataset.sid
+                let tdSize = document.getElementById(`submission-file-size-${sid}`).dataset.size
+                let parsed = parseInt(tdSize, 10)
+                totalSize += parsed
+            }
+        }
+
+        sizeSpan.innerText = `Total size of the selected batch: ${sizeToString(totalSize)}`
+    }
+}
+
+function sizeToString(bytes, decimals = 1) {
+    if (bytes === 0) return '0B';
+
+    const k = 1000;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + sizes[i];
+}
 
 function deleteSubmissionFile(sid, sfid) {
     sendXHR(`/api/submission/${sid}/file/${sfid}`, "DELETE", null, true,
