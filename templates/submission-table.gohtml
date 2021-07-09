@@ -23,9 +23,9 @@
                     <th>Size</th>
                     <th>Bot</th>
                     <th class="bgr-assign-testing" title="Assigned for testing">AST</th>
-                    <th class="bgr-assign-verification" title="Assigned for verification">ASV</th>
                     <th class="bgr-request-changes" title="Requested Changes">RC</th>
                     <th class="bgr-approve" title="Approved">AP</th>
+                    <th class="bgr-assign-verification" title="Assigned for verification">ASV</th>
                     <th class="bgr-verify" title="Verified">VE</th>
                     <th class="bgr-mark-added" title="Marked as added to Flashpoint">FP</th>
                     <th>Uploaded at</th>
@@ -80,14 +80,14 @@
                         <td class="center {{if gt (len .AssignedTestingUserIDs) 0}}bgr-assign-testing{{end}}">
                             {{if not $isLegacy}}<b>{{len .AssignedTestingUserIDs}}</b>{{end}}
                         </td>
-                        <td class="center {{if gt (len .AssignedVerificationUserIDs) 0}}bgr-assign-verification{{end}}">
-                            {{if not $isLegacy}}<b>{{len .AssignedVerificationUserIDs}}</b>{{end}}
-                        </td>
                         <td class="center {{if gt (len .RequestedChangesUserIDs) 0}}bgr-request-changes{{end}}">
                             {{if not $isLegacy}}<b>{{len .RequestedChangesUserIDs}}</b>{{end}}
                         </td>
                         <td class="center {{if gt (len .ApprovedUserIDs) 0}}bgr-approve{{end}}">
                             {{if not $isLegacy}}<b>{{len .ApprovedUserIDs}}</b>{{end}}
+                        </td>
+                        <td class="center {{if gt (len .AssignedVerificationUserIDs) 0}}bgr-assign-verification{{end}}">
+                            {{if not $isLegacy}}<b>{{len .AssignedVerificationUserIDs}}</b>{{end}}
                         </td>
                         <td class="center {{if gt (len .VerifiedUserIDs) 0}}bgr-verify{{end}}">
                             {{if not $isLegacy}}<b>{{len .VerifiedUserIDs}}</b>{{end}}
