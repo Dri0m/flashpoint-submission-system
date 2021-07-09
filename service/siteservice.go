@@ -4,16 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/Dri0m/flashpoint-submission-system/authbot"
-	"github.com/Dri0m/flashpoint-submission-system/constants"
-	"github.com/Dri0m/flashpoint-submission-system/database"
-	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
-	"github.com/Dri0m/flashpoint-submission-system/types"
-	"github.com/Dri0m/flashpoint-submission-system/utils"
-	"github.com/agnivade/levenshtein"
-	"github.com/bwmarrin/discordgo"
-	"github.com/gofrs/uuid"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math"
 	"mime/multipart"
@@ -24,6 +14,17 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Dri0m/flashpoint-submission-system/authbot"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/database"
+	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
+	"github.com/Dri0m/flashpoint-submission-system/types"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/agnivade/levenshtein"
+	"github.com/bwmarrin/discordgo"
+	"github.com/gofrs/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type MultipartFileWrapper struct {
@@ -901,8 +902,10 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 	}
 
 	for i, sa := range sas {
-		if (i % (len(sas) / 10)) == 0 {
-			utils.LogCtx(ctx).Debugf("levenshtein: scored %.1f%% (%d) strings", (float64(i)/float64(len(sas)))*100, i)
+		if len(sas) > 10 {
+			if (i % (len(sas) / 10)) == 0 {
+				utils.LogCtx(ctx).Debugf("levenshtein: scored %.1f%% (%d) strings", (float64(i)/float64(len(sas)))*100, i)
+			}
 		}
 		if title != nil && sa.Title != nil {
 			nc := normalize(*sa.Title)
