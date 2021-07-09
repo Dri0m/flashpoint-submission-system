@@ -158,17 +158,17 @@ func (d *mysqlDAL) StoreDiscordServerRoles(dbs DBSession, roles []types.DiscordR
 
 // StoreDiscordUserRoles store discord user roles
 func (d *mysqlDAL) StoreDiscordUserRoles(dbs DBSession, uid int64, roles []int64) error {
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `DELETE FROM discord_user_role WHERE fk_uid = ?`, uid)
+	if err != nil {
+		return err
+	}
+
 	if len(roles) == 0 {
 		return nil
 	}
 	data := make([]interface{}, 0, len(roles)*3)
 	for _, role := range roles {
 		data = append(data, uid, role)
-	}
-
-	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `DELETE FROM discord_user_role WHERE fk_uid = ?`, uid)
-	if err != nil {
-		return err
 	}
 
 	const valuePlaceholder = `(?, ?)`
