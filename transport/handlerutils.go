@@ -5,17 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"html/template"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/Masterminds/sprig"
 	"github.com/kofalt/go-memoize"
-	"html/template"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 var cache = memoize.NewMemoizer(10*time.Minute, 60*time.Minute)
@@ -35,7 +36,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"isAdder":                       constants.IsAdder,
 		"isInAudit":                     constants.IsInAudit,
 		"isGod":                         constants.IsGod,
-		"megabytify":                    utils.Megabytify,
+		"sizeToString":                  utils.SizeToString,
 		"splitMultilineText":            utils.SplitMultilineText,
 		"capitalizeAscii":               utils.CapitalizeASCII,
 		"parseMetaTags":                 parseMetaTags,

@@ -180,12 +180,19 @@ func Unpointify(s *string) string {
 	return *s
 }
 
-// Megabytify convert size in bytes (123456789B) to a string with a separator at the megabyte position and some precision
-func Megabytify(size int64) string {
-	mb := size / 1000000
-	b := (size % 1000000) / 100000
-
-	return fmt.Sprintf("%d.%01d", mb, b)
+// Convert size in bytes (123456789B) to a human readable string (Extensions B through EB)
+func SizeToString(size int64) string {
+	const unit = 1000
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%cB",
+		float64(size)/float64(div), "kMGTPE"[exp])
 }
 
 func SplitMultilineText(s *string) []string {
