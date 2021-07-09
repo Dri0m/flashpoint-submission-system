@@ -69,7 +69,7 @@
                         <td>{{if not $isLegacy}}{{capitalizeAscii .SubmissionLevel}}{{end}}</td>
                         <td>{{if not $isLegacy}}{{.SubmitterUsername}}{{end}}</td>
                         <td>{{if not $isLegacy}}{{.UpdaterUsername}}{{end}}</td>
-                        <td title="{{.Size}}B">{{if not $isLegacy}}{{megabytify .Size}}MB{{end}}</td>
+                        <td title="{{.Size}}B">{{if not $isLegacy}}{{sizeToString .Size}}{{end}}</td>
                         <td>
                             <div class="center-image dot-{{.BotAction}}" title="{{if (contains "approve" .BotAction)}}The bot approves.{{else}}The bot has requested changes.{{end}}"></div>
                         </td>
