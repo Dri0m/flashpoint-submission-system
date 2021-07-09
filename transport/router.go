@@ -99,7 +99,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	f = a.UserAuthMux(
-		a.HandleSubmissionsPage, muxAny(isStaff))
+		a.HandleSubmissionsPage, muxAny(isStaff, isTrialCurator, isInAudit))
 
 	router.Handle(
 		"/web/submissions",
@@ -130,9 +130,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	f = a.UserAuthMux(
 		a.HandleViewSubmissionPage,
-		muxAny(isStaff,
-			muxAll(isTrialCurator, userOwnsSubmission),
-			muxAll(isInAudit, userOwnsSubmission)))
+		muxAny(isStaff, isTrialCurator, isInAudit))
 
 	router.Handle(
 		fmt.Sprintf("/web/submission/{%s}", constants.ResourceKeySubmissionID),
@@ -148,9 +146,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	f = a.UserAuthMux(
 		a.HandleViewSubmissionFilesPage,
-		muxAny(isStaff,
-			muxAll(isTrialCurator, userOwnsSubmission),
-			muxAll(isInAudit, userOwnsSubmission)))
+		muxAny(isStaff, isTrialCurator, isInAudit))
 
 	router.Handle(
 		fmt.Sprintf("/web/submission/{%s}/files", constants.ResourceKeySubmissionID),
@@ -208,26 +204,20 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		fmt.Sprintf("/data/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadSubmissionFile,
-			muxAny(isStaff,
-				muxAll(isTrialCurator, userOwnsSubmission),
-				muxAll(isInAudit, userOwnsSubmission)))))).
+			muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
 	router.Handle(
 		fmt.Sprintf("/data/submission-file-batch/{%s}", constants.ResourceKeyFileIDs),
 		http.HandlerFunc(a.RequestData(a.UserAuthMux(
-			a.HandleDownloadSubmissionBatch, muxAny(
-				isStaff,
-				muxAll(isTrialCurator, userOwnsAllSubmissions)))))).
+			a.HandleDownloadSubmissionBatch, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
 	router.Handle(
 		fmt.Sprintf("/data/submission/{%s}/curation-image/{%s}.png", constants.ResourceKeySubmissionID, constants.ResourceKeyCurationImageID),
 		http.HandlerFunc(a.RequestData(a.UserAuthMux(
 			a.HandleDownloadCurationImage,
-			muxAny(isStaff,
-				muxAll(isTrialCurator, userOwnsSubmission),
-				muxAll(isInAudit, userOwnsSubmission)))))).
+			muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
 	// soft delete

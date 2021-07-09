@@ -12,7 +12,7 @@
                                 </li>
                             {{end}}
                         {{end}}
-                        {{if isStaff .UserRoles}}
+                        {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                             <li class="pure-menu-item">
                                 <a href="/web/submissions" class="pure-menu-link">Browse Submissions</a>
                             </li>
