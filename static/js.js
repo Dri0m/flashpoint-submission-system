@@ -321,8 +321,8 @@ function updateBatchSize(event) {
         for (let i = 0; i < checkboxes.length; i++) {
             let cb = checkboxes[i]
             if (cb.checked) {
-                let sid = cb.dataset.sid
-                let tdSize = document.getElementById(`submission-file-size-${sid}`).dataset.size
+                let fid = cb.dataset.fid
+                let tdSize = document.getElementById(`submission-file-size-${fid}`).dataset.size
                 let parsed = parseInt(tdSize, 10)
                 totalSize += parsed
             }
