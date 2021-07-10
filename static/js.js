@@ -300,8 +300,6 @@ window.onload = function () {
         images[i].addEventListener('click', () => this.classList.toggle('blur-img'));
     }
 
-    setSiteMaxWidth()
-
     let checkboxes = document.getElementsByClassName("submission-checkbox")
 
     for (let i = 0; i < checkboxes.length; i++) {

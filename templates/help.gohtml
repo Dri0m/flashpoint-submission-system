@@ -1,93 +1,91 @@
 {{define "main"}}
-    <div id="main">
-        <div class="content">
-            <h1>How to use this site</h1>
-            <p>This is an attempt to describe how to use FPFSS.
-            </p>
+    <div class="content">
+        <h1>How to use this site</h1>
+        <p>This is an attempt to describe how to use FPFSS.
+        </p>
 
-            <h2>Basic usage</h2>
-            <p>I'm not going to describe here how to curate games, we have tons of resources on that on the
-                <a href="https://bluemaxima.org/flashpoint/datahub/Main_Page">wiki</a>. This
-                site is just a management system so that our poor staff member don't have to dig through a linear list
-                of 10k+
-                discord messages anymore.
-            </p>
+        <h2>Basic usage</h2>
+        <p>I'm not going to describe here how to curate games, we have tons of resources on that on the
+            <a href="https://bluemaxima.org/flashpoint/datahub/Main_Page">wiki</a>. This
+            site is just a management system so that our poor staff member don't have to dig through a linear list
+            of 10k+
+            discord messages anymore.
+        </p>
 
-            <h3>Submitting a curation</h3>
-            <p>You head over to the Submit page. You choose the file(s) from your computer and click upload.
-                The only supported filetypes are zip and 7z, which is perfectly not important if you've used Core to
-                create
-                your curation (which you should and if you're not, then you're doing it wrong).
-                You can select how many files should be uploaded in parallel. 2 queues should be good enough for
-                everybody though.
-                You click upload. The files will start uploading, showing you a nice progress bar and some text for each
-                file.
-                After the upload is done, you will receive a link to the submission. Or an error telling you that you've
-                uploaded an exact duplicate. Or some other error, usually with a descriptive message attached.
-                If your curation is incorrect, you can upload a fixed version - there is an upload button on the
-                submission's page.
-                If you have uploaded something by mistake and want to delete it, ask @Dri0m (with a reason explaining
-                why and a link to the submission, please).
-            </p>
+        <h3>Submitting a curation</h3>
+        <p>You head over to the Submit page. You choose the file(s) from your computer and click upload.
+            The only supported filetypes are zip and 7z, which is perfectly not important if you've used Core to
+            create
+            your curation (which you should and if you're not, then you're doing it wrong).
+            You can select how many files should be uploaded in parallel. 2 queues should be good enough for
+            everybody though.
+            You click upload. The files will start uploading, showing you a nice progress bar and some text for each
+            file.
+            After the upload is done, you will receive a link to the submission. Or an error telling you that you've
+            uploaded an exact duplicate. Or some other error, usually with a descriptive message attached.
+            If your curation is incorrect, you can upload a fixed version - there is an upload button on the
+            submission's page.
+            If you have uploaded something by mistake and want to delete it, ask @Dri0m (with a reason explaining
+            why and a link to the submission, please).
+        </p>
 
-            <h3>User roles</h3>
-            <p>The site respects your discord roles and grants you appropriate permissions.
-                Users without any roles can upload only one submission and interact only with this one submission. The
-                filesize is limited as well.
-                Trial curators can upload as many submissions as they want, but they can still interact only with their
-                own submissions.
-                Staff members (curators) can interact with all submissions.
-                Curators and testers specifically can test and verify the submissions (and request changes).
-                Some specific users can mark submissions as added to flashpoint.
-            </p>
+        <h3>User roles</h3>
+        <p>The site respects your discord roles and grants you appropriate permissions.
+            Users without any roles can upload only one submission and interact only with this one submission. The
+            filesize is limited as well.
+            Trial curators can upload as many submissions as they want, but they can still interact only with their
+            own submissions.
+            Staff members (curators) can interact with all submissions.
+            Curators and testers specifically can test and verify the submissions (and request changes).
+            Some specific users can mark submissions as added to flashpoint.
+        </p>
 
-            <h3>Submission flowchart</h3>
-            <p>It would be nice to have an actual flowchart here, but we ran out of budget.</p>
-            <ul>
-                <li>User A uploads a curation.</li>
-                <li>The bot checks it and posts a comment.</li>
-                <li>If the bot is not happy, user A must upload a corrected version, otherwise the submission will not
-                    move forward.
-                </li>
-                <li>The system searches the database for possible duplicates and posts a pink comment if it finds any
-                    candidates. You should check the found submissions and verify that you are not submitting a
-                    duplicate.
-                </li>
-                <li>User B assigns the submission for testing.</li>
-                <li>User B downloads the (newest) submission file and tests it.</li>
-                <li>User B approves the submission, or requests changes. If changes are requested, user A should upload
-                    a fixed version.
-                </li>
-                <li>User C assigns the submission for verification.</li>
-                <li>User C double-checks everything and confirms that the playable entity in question is working on
-                    their
-                    copy of Flashpoint (or core) as well.
-                </li>
-                <li>User C verifies or requests changes. If changes are requested, user A should upload a fixed
-                    version.
-                </li>
-                <li>User D downloads the curation and adds it to the Flashpoint master copy.</li>
-                <li>User D marks the submission as added to Flashpoint. From this point onwards, the submission is
-                    considered closed. Any further changes should be dealt with via bug reports and pending fixes.
-                </li>
-            </ul>
+        <h3>Submission flowchart</h3>
+        <p>It would be nice to have an actual flowchart here, but we ran out of budget.</p>
+        <ul>
+            <li>User A uploads a curation.</li>
+            <li>The bot checks it and posts a comment.</li>
+            <li>If the bot is not happy, user A must upload a corrected version, otherwise the submission will not
+                move forward.
+            </li>
+            <li>The system searches the database for possible duplicates and posts a pink comment if it finds any
+                candidates. You should check the found submissions and verify that you are not submitting a
+                duplicate.
+            </li>
+            <li>User B assigns the submission for testing.</li>
+            <li>User B downloads the (newest) submission file and tests it.</li>
+            <li>User B approves the submission, or requests changes. If changes are requested, user A should upload
+                a fixed version.
+            </li>
+            <li>User C assigns the submission for verification.</li>
+            <li>User C double-checks everything and confirms that the playable entity in question is working on
+                their
+                copy of Flashpoint (or core) as well.
+            </li>
+            <li>User C verifies or requests changes. If changes are requested, user A should upload a fixed
+                version.
+            </li>
+            <li>User D downloads the curation and adds it to the Flashpoint master copy.</li>
+            <li>User D marks the submission as added to Flashpoint. From this point onwards, the submission is
+                considered closed. Any further changes should be dealt with via bug reports and pending fixes.
+            </li>
+        </ul>
 
-            <h3>Notifications</h3>
-            <p>You will receive notifications in the discord notification channel. You can configure the type
-                of notification on your profile page on this site. You also receive notifications only on the
-                submissions that you're subscribed to. By default, you are subscribed to every submission where you
-                upload a file - aka your own submissions and those where you have uploaded a fixed version. You can
-                subscribe/unsubscribe to a submission using a button on the submission's page.
-                You will also receive notifications in a channel that logs every file uploaded to
-                the site, I recommend simply muting this channel, it's really just a log, and it pings people to link
-                the message to them.
-            </p>
+        <h3>Notifications</h3>
+        <p>You will receive notifications in the discord notification channel. You can configure the type
+            of notification on your profile page on this site. You also receive notifications only on the
+            submissions that you're subscribed to. By default, you are subscribed to every submission where you
+            upload a file - aka your own submissions and those where you have uploaded a fixed version. You can
+            subscribe/unsubscribe to a submission using a button on the submission's page.
+            You will also receive notifications in a channel that logs every file uploaded to
+            the site, I recommend simply muting this channel, it's really just a log, and it pings people to link
+            the message to them.
+        </p>
 
-            <h3>Bug reports and pending fixes for curations</h3>
-            <p>Not implemented, use discord.</p>
+        <h3>Bug reports and pending fixes for curations</h3>
+        <p>Not implemented, use discord.</p>
 
-            <h3>Suggestions and bug reports for the site</h3>
-            <p><a href="https://github.com/Dri0m/flashpoint-submission-system/issues">Use GitHub.</a></p>
-        </div>
+        <h3>Suggestions and bug reports for the site</h3>
+        <p><a href="https://github.com/Dri0m/flashpoint-submission-system/issues">Use GitHub.</a></p>
     </div>
 {{end}}
