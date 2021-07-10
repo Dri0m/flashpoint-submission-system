@@ -98,7 +98,7 @@
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
-                        <td>{{if not $isLegacy}}{{capString 100 .OriginalFilename}}{{end}}</td>
+                        <td class="submission-table-original-filename">{{if not $isLegacy}}{{capString 100 .OriginalFilename}}{{end}}</td>
                     </tr>
                 {{end}}
                 </tbody>

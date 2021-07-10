@@ -526,12 +526,15 @@ function setSiteMaxWidth() {
     document.getElementById("main").style.maxWidth = maxWidth
 }
 
-function wrapLongWordsInTitles() {
-    let titles = document.getElementsByClassName("submission-table-title")
+function wrapLongWordsInTable() {
+    wrapLongWords(document.getElementsByClassName("submission-table-title"))
+    wrapLongWords(document.getElementsByClassName("submission-table-original-filename"))
+}
 
-    for (let i = 0; i < titles.length; i++) {
+function wrapLongWords(list) {
+    for (let i = 0; i < list.length; i++) {
         let longestWord = 0
-        let title = titles[i].innerHTML
+        let title = list[i].innerHTML
 
         let currentWord = 0
         for (let j = 0; j < title.length; j++) {
@@ -547,7 +550,7 @@ function wrapLongWordsInTitles() {
 
         console.log(`longest word in '${title}' is ${longestWord}`)
         if (longestWord > 35) {
-            titles[i].style.wordBreak = "break-all"
+            list[i].style.wordBreak = "break-all"
         }
     }
 }
