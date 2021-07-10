@@ -545,6 +545,7 @@ function wrapLongWordsInTitles() {
             }
         }
 
+        console.log(`longest word in '${title}' is ${longestWord}`)
         if (longestWord > 35) {
             titles[i].style.wordBreak = "break-all"
         }
