@@ -307,6 +307,7 @@ window.onload = function () {
     }
 
     updateBatchSize()
+    wrapLongWordsInTitles()
 };
 
 function updateBatchSize(event) {
@@ -523,4 +524,29 @@ function setSiteMaxWidth() {
         announcement.style.maxWidth = maxWidth
     }
     document.getElementById("main").style.maxWidth = maxWidth
+}
+
+function wrapLongWordsInTitles() {
+    let titles = document.getElementsByClassName("submission-table-title")
+
+    for (let i = 0; i < titles.length; i++) {
+        let longestWord = 0
+        let title = titles[i].innerHTML
+
+        let currentWord = 0
+        for (let j = 0; j < title.length; j++) {
+            if (!/\s/.test(title[j])) {
+                currentWord++
+            } else {
+                currentWord = 0
+            }
+            if (currentWord > longestWord) {
+                longestWord = currentWord
+            }
+        }
+
+        if (longestWord > 35) {
+            titles[i].style.wordBreak = "break-all"
+        }
+    }
 }
