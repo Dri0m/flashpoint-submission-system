@@ -307,7 +307,7 @@ window.onload = function () {
     }
 
     updateBatchSize()
-    wrapLongWordsInTitles()
+    wrapLongWordsInTable()
 };
 
 function updateBatchSize(event) {
