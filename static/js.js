@@ -297,7 +297,11 @@ window.onload = function () {
     // blur pics
     const images = document.getElementsByClassName('blur-img');
     for (let i = 0; i < images.length; i++) {
-        images[i].addEventListener('click', () => this.classList.toggle('blur-img'));
+        images[i].addEventListener('click', toggleBlur);
+    }
+
+    function toggleBlur() {
+        this.classList.toggle('blur-img');
     }
 
     let checkboxes = document.getElementsByClassName("submission-checkbox")
