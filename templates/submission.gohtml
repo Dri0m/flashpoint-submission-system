@@ -275,6 +275,8 @@
                                     <i class="default-comment">Is now verifying this.</i>
                                 {{else if eq .Action "unassign-verification"}}
                                     <i class="default-comment">Is not verifying this anymore.</i>
+                                {{else if eq .Action "verify"}}
+                                    <i class="default-comment">Verified the submission.</i>
                                 {{end}}
                             {{end}}
                         </div>
