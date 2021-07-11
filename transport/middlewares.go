@@ -285,7 +285,7 @@ func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
 	isAdder := canDo([]string{constants.ActionMarkAdded}, constants.AdderRoles())
 	isDecider := canDo([]string{constants.ActionApprove, constants.ActionRequestChanges,
 		constants.ActionVerify, constants.ActionAssignTesting, constants.ActionUnassignTesting,
-		constants.ActionAssignVerification, constants.ActionUnassignVerification}, constants.DeciderRoles())
+		constants.ActionAssignVerification, constants.ActionUnassignVerification, constants.ActionReject}, constants.DeciderRoles())
 
 	return canComment || isAdder || isDecider, nil
 }

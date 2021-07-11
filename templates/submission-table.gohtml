@@ -93,8 +93,8 @@
                             {{if not $isLegacy}}<b>{{len .VerifiedUserIDs}}</b>{{end}}
                         </td>
                         <td>
-                            <div class="center-image dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else}}comment{{end}}"
-                                 title="{{if (has "mark-added" .DistinctActions)}}Marked as added to Flashpoint.{{else}}Not marked as added to Flashpoint.{{end}}"></div>
+                            <div class="center-image dot-{{if (has "mark-added" .DistinctActions)}}mark-added{{else if (has "reject" .DistinctActions)}}reject{{else}}comment{{end}}"
+                                 title="{{if (has "mark-added" .DistinctActions)}}Marked as added to Flashpoint.{{else if (has "reject" .DistinctActions)}}Rejected.{{else}}Not marked as added to Flashpoint.{{end}}"></div>
                         </td>
                         <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
                         <td>{{.UpdatedAt.Format "2006-01-02 15:04:05 -0700"}}</td>

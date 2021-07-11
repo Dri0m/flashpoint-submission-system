@@ -273,6 +273,24 @@ func Test_isActionValidForSubmission(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "user cannot reject submission that's marked as added to flashpoint",
+			args: args{
+				uid:        commenterID,
+				formAction: constants.ActionReject,
+				submission: &types.ExtendedSubmission{DistinctActions: []string{constants.ActionMarkAdded}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "user cannot reject submission that's already rejected",
+			args: args{
+				uid:        commenterID,
+				formAction: constants.ActionReject,
+				submission: &types.ExtendedSubmission{DistinctActions: []string{constants.ActionReject}},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

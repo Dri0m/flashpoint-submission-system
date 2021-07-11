@@ -59,6 +59,9 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 	if formAction == constants.ActionRequestChanges && len(sids) > 1 {
 		return perr(fmt.Sprintf("cannot request changes on multiple submissions at once"), http.StatusBadRequest)
 	}
+	if formAction == constants.ActionReject && len(sids) > 1 {
+		return perr(fmt.Sprintf("cannot reject multiple submissions at once"), http.StatusBadRequest)
+	}
 
 	utils.LogCtx(ctx).Debugf("searching submissions for comment batch")
 	foundSubmissions, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionIDs: sids})

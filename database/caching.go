@@ -209,6 +209,7 @@ func getDistinctActions(dbs DBSession, sid int64) (result *string, err error) {
 			FROM comment
 				LEFT JOIN submission on submission.id = comment.fk_submission_id
 			WHERE fk_submission_id = ?
+				AND comment.deleted_at IS NULL
 			GROUP BY submission.id`,
 		sid)
 

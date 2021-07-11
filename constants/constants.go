@@ -18,6 +18,7 @@ const (
 	ActionAssignVerification   = "assign-verification"
 	ActionUnassignVerification = "unassign-verification"
 	ActionSystem               = "system"
+	ActionReject               = "reject"
 )
 
 const (
@@ -38,6 +39,7 @@ func GetAllowedActions() []string {
 		ActionUnassignTesting,
 		ActionAssignVerification,
 		ActionUnassignVerification,
+		ActionReject,
 	}
 }
 
@@ -45,6 +47,7 @@ func GetActionsWithMandatoryMessage() []string {
 	return []string{
 		ActionComment,
 		ActionRequestChanges,
+		ActionReject,
 	}
 }
 

@@ -100,6 +100,16 @@
                         {{end}}
                     {{end}}
                 {{end}}
+                {{if isDecider .UserRoles}}
+                    {{if not (has "mark-added" $submission.DistinctActions)}}
+                        {{if not (has "reject" $submission.DistinctActions)}}
+                            <button type="button" class="pure-button pure-button button-reject"
+                                    onclick="batchComment('submission-checkbox', 'sid', 'reject')">
+                                Reject
+                            </button>
+                        {{end}}
+                    {{end}}
+                {{end}}
             </div>
         {{else}}
             <div class="right">
