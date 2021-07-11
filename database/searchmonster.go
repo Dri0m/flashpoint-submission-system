@@ -261,6 +261,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				currentSortOrder = "DESC"
 			}
 		}
+		if filter.SubscribedMe != nil {
+			if *filter.SubscribedMe == "yes" {
+				filters = append(filters, "(sns.fk_user_id = ?)")
+			}
+			data = append(data, uid)
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
 	}
 
 	and := ""
@@ -384,6 +391,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
 				)
 		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
+		LEFT JOIN submission_notification_subscription AS sns ON sns.fk_submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		UNION

@@ -373,6 +373,10 @@
                                        id="last-uploader-not-me"
                                        {{if eq "yes" (unpointify .Filter.LastUploaderNotMe)}}checked{{end}}>
                                 Exclude my submissions</label>
+                            <label>
+                                <input type="checkbox" name="subscribed-me" value="yes"
+                                       {{if eq "yes" (unpointify .Filter.SubscribedMe)}}checked{{end}}>
+                                I am subscribed</label>
                         </fieldset>
                         <fieldset>
                             <legend>Order Results</legend>

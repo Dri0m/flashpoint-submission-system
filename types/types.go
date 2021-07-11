@@ -156,6 +156,7 @@ type SubmissionsFilter struct {
 	LastUploaderNotMe            *string  `schema:"last-uploader-not-me"`
 	OrderBy                      *string  `schema:"order-by"`
 	AscDesc                      *string  `schema:"asc-desc"`
+	SubscribedMe                 *string  `schema:"subscribed-me"`
 }
 
 func (sf *SubmissionsFilter) Validate() error {
@@ -246,6 +247,9 @@ func (sf *SubmissionsFilter) Validate() error {
 	}
 	if sf.AscDesc != nil && *sf.AscDesc != "asc" && *sf.AscDesc != "desc" {
 		return fmt.Errorf("invalid asc-desc")
+	}
+	if sf.SubscribedMe != nil && *sf.SubscribedMe != "no" && *sf.SubscribedMe != "yes" {
+		return fmt.Errorf("invalid subscribed-me")
 	}
 	return nil
 }
