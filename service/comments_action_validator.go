@@ -165,5 +165,21 @@ func isActionValidForSubmission(uid int64, formAction string, submission *types.
 		}
 	}
 
+	// cannot reject if marked as added
+	if formAction == constants.ActionReject {
+		if markedAdded {
+			return perr(fmt.Sprintf("submission %d is alrady marked as added so you cannot reject it", sid), http.StatusBadRequest)
+		}
+	}
+
+	// cannot double reject
+	if formAction == constants.ActionReject {
+		for _, distinctAction := range submission.DistinctActions {
+			if constants.ActionReject == distinctAction {
+				return perr(fmt.Sprintf("submission %d is alrady rejected so you cannot reject it", sid), http.StatusBadRequest)
+			}
+		}
+	}
+
 	return nil
 }
