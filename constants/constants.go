@@ -58,6 +58,7 @@ func GetActionsWithNotification() []string {
 		ActionRequestChanges,
 		ActionMarkAdded,
 		ActionUpload,
+		ActionReject,
 	}
 }
 

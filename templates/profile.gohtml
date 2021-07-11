@@ -29,6 +29,9 @@
                 <label for="notification-action">File upload
                     <input type="checkbox" class="notification-action" value="upload-file"
                            {{if has "upload-file" .NotificationActions}}checked{{end}}></label>
+                <label for="notification-action">Reject
+                    <input type="checkbox" class="notification-action" value="reject"
+                           {{if has "reject" .NotificationActions}}checked{{end}}></label>
                 <button type="button" onclick="updateNotificationSettings()" class="pure-button pure-button-primary">
                     Update
                 </button>

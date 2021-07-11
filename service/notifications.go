@@ -37,15 +37,17 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 	b.WriteString(fmt.Sprintf("<https://fpfss.unstable.life/web/submission/%d>\n", sid))
 
 	if action == constants.ActionComment {
-		b.WriteString(fmt.Sprintf("There is a new comment on the submission."))
+		b.WriteString("There is a new comment on the submission.")
 	} else if action == constants.ActionApprove {
-		b.WriteString(fmt.Sprintf("The submission has been approved."))
+		b.WriteString("The submission has been approved.")
 	} else if action == constants.ActionRequestChanges {
-		b.WriteString(fmt.Sprintf("User has requested changes on the submission."))
+		b.WriteString("User has requested changes on the submission.")
 	} else if action == constants.ActionMarkAdded {
-		b.WriteString(fmt.Sprintf("The submission has been marked as added to Flashpoint."))
+		b.WriteString("The submission has been marked as added to Flashpoint.")
 	} else if action == constants.ActionUpload {
 		b.WriteString(fmt.Sprintf("A new version has been uploaded by <@%d>", authorID))
+	} else if action == constants.ActionReject {
+		b.WriteString("The submission has been rejected.")
 	}
 	b.WriteString("\n")
 
