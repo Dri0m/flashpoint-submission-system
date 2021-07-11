@@ -409,6 +409,7 @@ function filterReadyForTesting() {
     document.getElementById("asc-desc-asc").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
+    document.getElementById("distinct-action-not-reject").checked = true
     submitAdvancedFilterForm()
 }
 
@@ -431,6 +432,7 @@ function filterReadyForVerification() {
     document.getElementById("asc-desc-asc").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
+    document.getElementById("distinct-action-not-reject").checked = true
     submitAdvancedFilterForm()
 }
 
@@ -448,6 +450,7 @@ function filterReadyForFlashpoint() {
     document.getElementById("asc-desc-asc").checked = true
 
     document.getElementById("distinct-action-not-mark-added").checked = true
+    document.getElementById("distinct-action-not-reject").checked = true
     submitAdvancedFilterForm()
 }
 

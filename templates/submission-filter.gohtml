@@ -185,6 +185,11 @@
                                                id="distinct-action-mark-added"
                                                {{if has "mark-added" .Filter.DistinctActions}}checked{{end}}>
                                         Mark as Added</label>
+                                    <label>
+                                        <input type="checkbox" name="distinct-action" value="reject"
+                                               id="distinct-action-reject"
+                                               {{if has "reject" .Filter.DistinctActions}}checked{{end}}>
+                                        Rejected</label>
                                 </fieldset>
                             </div>
                             <div class="pure-u-1-2">
@@ -212,6 +217,11 @@
                                                id="distinct-action-not-mark-added"
                                                {{if has "mark-added" .Filter.DistinctActionsNot}}checked{{end}}>
                                         Mark as Added</label>
+                                    <label>
+                                        <input type="checkbox" name="distinct-action-not" value="reject"
+                                               id="distinct-action-not-reject"
+                                               {{if has "reject" .Filter.DistinctActionsNot}}checked{{end}}>
+                                        Rejected</label>
                                 </fieldset>
                             </div>
                         </div>
