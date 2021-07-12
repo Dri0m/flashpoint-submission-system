@@ -228,7 +228,7 @@ func capString(maxLen int, s *string) string {
 	}
 	str := *s
 	if len(str) <= 3 {
-		return "..."
+		return *s
 	}
 	if len(str) <= maxLen {
 		return str
