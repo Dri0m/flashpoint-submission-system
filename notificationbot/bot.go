@@ -28,7 +28,7 @@ func NewBot(botSession *discordgo.Session, flashpointServerID, notificationChann
 
 // ConnectBot connects bot or panics
 func ConnectBot(l *logrus.Entry, token string) *discordgo.Session {
-	l.Infoln("connecting thr discord notification bot...")
+	l.Infoln("connecting the discord notification bot...")
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		l.Fatal(err)
