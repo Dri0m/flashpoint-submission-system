@@ -12,10 +12,15 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
 	"github.com/Dri0m/flashpoint-submission-system/transport"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	log := logging.InitLogger()
 	l := log.WithField("commit", config.EnvString("GIT_COMMIT")).WithField("runID", utils.NewRealRandomStringProvider().RandomString(8))
 	l.Infoln("hi")

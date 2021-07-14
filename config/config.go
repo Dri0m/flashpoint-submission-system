@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"os"
@@ -67,10 +66,6 @@ func EnvBool(name string) bool {
 
 func GetConfig(l *logrus.Entry) *Config {
 	l.Infoln("loading config...")
-	err := godotenv.Load()
-	if err != nil {
-		l.Fatal(err)
-	}
 
 	const ScopeIdentify = "identify"
 

@@ -9,6 +9,7 @@ require (
 	github.com/agnivade/levenshtein v1.1.1
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/felixge/httpsnoop v1.0.2
+	github.com/gemnasium/logrus-graylog-hook/v3 v3.0.3
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-migrate/migrate v3.5.4+incompatible

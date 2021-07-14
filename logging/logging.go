@@ -3,6 +3,7 @@ package logging
 import (
 	"context"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/gemnasium/logrus-graylog-hook/v3"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -25,6 +27,12 @@ func InitLogger() *logrus.Logger {
 		Compress:   true,
 	})
 	l := logrus.New()
+	if config.EnvBool("GRAYLOG_ENABLED") {
+		host := config.EnvString("GRAYLOG_HOST")
+		env := config.EnvString("GRAYLOG_ENV")
+		hook := graylog.NewGraylogHook(host, map[string]interface{}{"env": env})
+		l.AddHook(hook)
+	}
 	l.SetFormatter(&logrus.TextFormatter{
 		DisableColors:   true,
 		FullTimestamp:   true,
