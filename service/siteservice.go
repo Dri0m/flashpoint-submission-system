@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/kofalt/go-memoize"
 	"io/ioutil"
 	"math"
 	"mime/multipart"
@@ -503,18 +504,52 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteRe
 	return nil
 }
 
+var discordRoleCache = memoize.NewMemoizer(2*time.Minute, 60*time.Minute)
+
 func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
-	// get discord roles
-	serverRoles, err := s.authBot.GetFlashpointRoles() // TODO changes in roles need to be refreshed sometimes
+	getServerRoles := func() (interface{}, error) {
+		return s.authBot.GetFlashpointRoles()
+	}
+	const getServerRolesKey = "getServerRoles"
+
+	// get discord server roles
+	sr, err, cached := discordRoleCache.Memoize(getServerRolesKey, getServerRoles)
+
+	if cached {
+		utils.LogCtx(ctx).Debug("using cached server roles")
+	} else {
+		utils.LogCtx(ctx).Debug("reading fresh server roles from discord")
+	}
+
 	if err != nil {
+		discordRoleCache.Storage.Delete(getServerRolesKey)
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
-	userRoleIDs, err := s.authBot.GetFlashpointRoleIDsForUser(discordUser.ID)
+
+	serverRoles := sr.([]types.DiscordRole)
+
+	getUserRoles := func() (interface{}, error) {
+		return s.authBot.GetFlashpointRoleIDsForUser(discordUser.ID)
+	}
+	const getUserRolesKey = "getUserRoles"
+
+	// get discord user roles
+	urid, err, cached := discordRoleCache.Memoize(getUserRolesKey, getUserRoles)
+
+	if cached {
+		utils.LogCtx(ctx).Debug("using cached user roles")
+	} else {
+		utils.LogCtx(ctx).Debug("reading fresh user roles from discord")
+	}
+
 	if err != nil {
+		discordRoleCache.Storage.Delete(getUserRolesKey)
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
+
+	userRoleIDs := urid.([]string)
 
 	// start session
 	dbs, err := s.dal.NewSession(ctx)
