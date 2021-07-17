@@ -21,7 +21,7 @@ var Cookies = cookies{
 }
 
 // SetSecureCookie sets cookie
-func (cc *CookieCutter) SetSecureCookie(w http.ResponseWriter, name string, value map[string]string) error {
+func (cc *CookieCutter) SetSecureCookie(w http.ResponseWriter, name string, value map[string]string, maxAge int) error {
 	encoded, err := securecookie.EncodeMulti(name, value, cc.Current)
 	if err != nil {
 		return err
@@ -32,6 +32,7 @@ func (cc *CookieCutter) SetSecureCookie(w http.ResponseWriter, name string, valu
 		Path:     "/",
 		Secure:   true,
 		HttpOnly: true,
+		MaxAge:   maxAge,
 	}
 	http.SetCookie(w, cookie)
 	return nil

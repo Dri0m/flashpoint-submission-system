@@ -144,7 +144,7 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.CC.SetSecureCookie(w, utils.Cookies.Login, service.MapAuthToken(authToken)); err != nil {
+	if err := a.CC.SetSecureCookie(w, utils.Cookies.Login, service.MapAuthToken(authToken), (int)(a.Conf.SessionExpirationSeconds)); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, perr("failed to set cookie", http.StatusInternalServerError))
 		return
