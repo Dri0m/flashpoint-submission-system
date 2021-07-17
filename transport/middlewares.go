@@ -51,20 +51,17 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 
 		}
 
-		secret, err := a.GetSecretFromCookie(r)
+		secret, err := a.GetSecretFromCookie(ctx, r)
 		if err != nil {
-			utils.LogCtx(ctx).Error(err)
 			handleAuthErr()
 			return
 		}
 		uid, ok, err := a.Service.GetUIDFromSession(ctx, secret)
 		if err != nil {
-			utils.LogCtx(ctx).Error(err)
 			handleAuthErr()
 			return
 		}
 		if !ok {
-			utils.LogCtx(ctx).Error(err)
 			handleAuthErr()
 			return
 		}
