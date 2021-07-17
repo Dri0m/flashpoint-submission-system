@@ -19,7 +19,7 @@ import (
 	"github.com/kofalt/go-memoize"
 )
 
-var cache = memoize.NewMemoizer(10*time.Minute, 60*time.Minute)
+var templateCache = memoize.NewMemoizer(10*time.Minute, 60*time.Minute)
 
 // RenderTemplates is a helper for rendering templates
 func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *http.Request, data interface{}, filenames ...string) {
@@ -56,7 +56,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 	if a.Conf.IsDev {
 		result, err = parse()
 	} else {
-		result, err, cached = cache.Memoize(strings.Join(templates, ","), parse)
+		result, err, cached = templateCache.Memoize(strings.Join(templates, ","), parse)
 	}
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
