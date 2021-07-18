@@ -7,11 +7,13 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/kofalt/go-memoize"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"strconv"
 	"testing"
+	"time"
 )
 
 const b64Example = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==" // some red dot PNG
@@ -48,6 +50,7 @@ func NewTestSiteService() *testService {
 			randomStringProvider:     &fakeRandomStringProvider{},
 			authTokenProvider:        authTokenProvider,
 			sessionExpirationSeconds: 0,
+			discordRoleCache:         memoize.NewMemoizer(2*time.Minute, 60*time.Minute),
 		},
 		authBot:              authBot,
 		notificationBot:      notificationBot,

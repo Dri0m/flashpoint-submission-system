@@ -123,6 +123,7 @@ type SiteService struct {
 	notificationQueueNotEmpty chan bool
 	isDev                     bool
 	submissionReceiverMutex   sync.Mutex
+	discordRoleCache          *memoize.Memoizer
 }
 
 func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
@@ -141,6 +142,7 @@ func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBot
 		submissionImagesDir:       submissionImagesDir,
 		notificationQueueNotEmpty: make(chan bool, 1),
 		isDev:                     isDev,
+		discordRoleCache:          memoize.NewMemoizer(2*time.Minute, 60*time.Minute),
 	}
 }
 
@@ -504,8 +506,6 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteRe
 	return nil
 }
 
-var discordRoleCache = memoize.NewMemoizer(2*time.Minute, 60*time.Minute)
-
 func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
 	getServerRoles := func() (interface{}, error) {
 		return s.authBot.GetFlashpointRoles()
@@ -513,7 +513,7 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	const getServerRolesKey = "getServerRoles"
 
 	// get discord server roles
-	sr, err, cached := discordRoleCache.Memoize(getServerRolesKey, getServerRoles)
+	sr, err, cached := s.discordRoleCache.Memoize(getServerRolesKey, getServerRoles)
 
 	if cached {
 		utils.LogCtx(ctx).Debug("using cached server roles")
@@ -522,7 +522,7 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 
 	if err != nil {
-		discordRoleCache.Storage.Delete(getServerRolesKey)
+		s.discordRoleCache.Storage.Delete(getServerRolesKey)
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
@@ -535,7 +535,7 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	const getUserRolesKey = "getUserRoles"
 
 	// get discord user roles
-	urid, err, cached := discordRoleCache.Memoize(getUserRolesKey, getUserRoles)
+	urid, err, cached := s.discordRoleCache.Memoize(getUserRolesKey, getUserRoles)
 
 	if cached {
 		utils.LogCtx(ctx).Debug("using cached user roles")
@@ -544,7 +544,7 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 
 	if err != nil {
-		discordRoleCache.Storage.Delete(getUserRolesKey)
+		s.discordRoleCache.Storage.Delete(getUserRolesKey)
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
