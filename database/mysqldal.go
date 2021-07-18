@@ -592,7 +592,7 @@ func (d *mysqlDAL) IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (
 		return false, err
 	}
 
-	return count == 1, nil
+	return count > 0, nil
 }
 
 // StoreNotification stores a notification message in the database which acts as a queue for the notification service

@@ -111,6 +111,29 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 			c.Message = nil
 		}
 
+		// subscribe the commenter
+		if formAction == constants.ActionAssignTesting ||
+			formAction == constants.ActionUnassignTesting ||
+			formAction == constants.ActionAssignVerification ||
+			formAction == constants.ActionUnassignVerification ||
+			formAction == constants.ActionApprove ||
+			formAction == constants.ActionRequestChanges ||
+			formAction == constants.ActionVerify ||
+			formAction == constants.ActionReject {
+
+			subscribed, err := s.dal.IsUserSubscribedToSubmission(dbs, uid, sid)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return dberr(err)
+			}
+			if !subscribed {
+				if err := s.dal.SubscribeUserToSubmission(dbs, uid, sid); err != nil {
+					utils.LogCtx(ctx).Error(err)
+					return dberr(err)
+				}
+			}
+		}
+
 		if err := s.dal.StoreComment(dbs, c); err != nil {
 			utils.LogCtx(ctx).Error(err)
 			return dberr(err)
