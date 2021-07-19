@@ -82,6 +82,8 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		}
 	}
 
+	commentCounter := 0
+
 	// TODO optimize batch operation even more
 	for _, submission := range foundSubmissions {
 		sid := submission.SubmissionID
@@ -177,12 +179,16 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 			utils.LogCtx(ctx).Error(err)
 			return dberr(err)
 		}
+
+		commentCounter++
 	}
 
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
 	}
+
+	utils.LogCtx(ctx).WithField("amount", commentCounter).Debug("comments received")
 
 	s.announceNotification()
 
