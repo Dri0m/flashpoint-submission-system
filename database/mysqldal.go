@@ -40,6 +40,12 @@ func OpenDB(l *logrus.Entry, conf *config.Config) *sql.DB {
 		l.Fatal(err)
 	}
 
+	// init cache
+	err = searchSubmissionsCache.SetTTL(time.Hour)
+	if err != nil {
+		l.Fatal(err)
+	}
+
 	return db
 }
 

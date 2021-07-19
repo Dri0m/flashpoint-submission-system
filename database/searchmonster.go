@@ -1,16 +1,36 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/ReneKroon/ttlcache/v2"
 	"strconv"
 	"strings"
 	"time"
 )
 
+var searchSubmissionsCache = ttlcache.NewCache()
+
 // SearchSubmissions returns extended submissions based on given filter
 func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+	cacheKey := "nil"
+	if filter != nil {
+		j, err := json.Marshal(filter)
+		if err != nil {
+			return nil, err
+		}
+		cacheKey = string(j)
+	}
+
+	if data, err := searchSubmissionsCache.Get(cacheKey); err != ttlcache.ErrNotFound {
+		utils.LogCtx(dbs.Ctx()).Debug("using cached submission search")
+		return data.([]*types.ExtendedSubmission), nil
+	}
+
+	utils.LogCtx(dbs.Ctx()).Debug("querying fresh submission search")
+
 	filters := make([]string, 0)
 	masterFilters := make([]string, 0)
 	data := make([]interface{}, 0)
@@ -540,6 +560,11 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		}
 
 		result = append(result, s)
+	}
+
+	err = searchSubmissionsCache.Set(cacheKey, result)
+	if err != nil {
+		utils.LogCtx(dbs.Ctx()).Error(err)
 	}
 
 	return result, nil
