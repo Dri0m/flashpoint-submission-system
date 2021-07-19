@@ -15,13 +15,15 @@ var searchSubmissionsCache = ttlcache.NewCache()
 
 // SearchSubmissions returns extended submissions based on given filter
 func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+	uid := utils.UserID(dbs.Ctx()) // TODO this should be passed as param
+
 	cacheKey := "nil"
 	if filter != nil {
 		j, err := json.Marshal(filter)
 		if err != nil {
 			return nil, err
 		}
-		cacheKey = string(j)
+		cacheKey = fmt.Sprintf("%d-%s", uid, j)
 	}
 
 	if data, err := searchSubmissionsCache.Get(cacheKey); err != ttlcache.ErrNotFound {
@@ -36,7 +38,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	data := make([]interface{}, 0)
 	masterData := make([]interface{}, 0)
 
-	uid := utils.UserID(dbs.Ctx()) // TODO this should be passed as param
 	data = append(data, uid, uid)
 
 	const defaultLimit int64 = 100
