@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 // App is App
@@ -70,6 +71,11 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, n
 		a.Service.RunNotificationConsumer(l, ctx, wg)
 	}()
 
+	l.Infoln("starting the memstats printer...")
+
+	wg.Add(1)
+	go memstatsPrinter(l, ctx, wg)
+
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-term
@@ -91,4 +97,23 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, n
 	}
 
 	l.Infoln("goodbye")
+}
+
+func memstatsPrinter(l *logrus.Entry, ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer l.Infoln("memstats printer stopped")
+
+	bucket, ticker := utils.NewBucketLimiter(60*time.Second, 1)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			l.Infoln("context cancelled, stopping memstats printer")
+			return
+		case <-bucket:
+			m := utils.GetMemStats()
+			l.WithFields(logrus.Fields{"alloc": m.Alloc, "sys": m.Sys, "num_gc": m.NumGC, "heap_objects": m.HeapObjects, "gc_cpu_fraction": fmt.Sprintf("%.6f", m.GCCPUFraction)}).Debug("memstats")
+		}
+	}
 }

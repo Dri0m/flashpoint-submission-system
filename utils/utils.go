@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -257,4 +258,10 @@ func GetURL(url string) ([]byte, error) {
 	}
 
 	return result.Bytes(), nil
+}
+
+func GetMemStats() *runtime.MemStats {
+	m := &runtime.MemStats{}
+	runtime.ReadMemStats(m)
+	return m
 }
