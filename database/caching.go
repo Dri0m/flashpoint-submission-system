@@ -79,7 +79,7 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	}
 
 	duration := time.Since(start)
-	l.WithField("duration", duration).Debug("submission cache table update finished successfully")
+	l.WithField("duration_ns", duration.Nanoseconds()).Debug("submission cache table update finished successfully")
 	return err
 }
 

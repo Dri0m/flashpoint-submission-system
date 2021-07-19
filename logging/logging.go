@@ -83,7 +83,7 @@ func LogRequestHandler(l *logrus.Entry, h http.Handler) http.Handler {
 		ri.code = m.Code
 		ri.size = m.Written
 		ri.duration = m.Duration
-		utils.LogCtx(r.Context()).WithFields(logrus.Fields{"method": ri.method, "ip": ri.ipaddr, "uri": ri.uri, "statusCode": ri.code, "size": ri.size, "duration": fmt.Sprintf("%.6fms", float64(ri.duration.Nanoseconds())/1000000.0), "userAgent": ri.userAgent}).Debug("request captured")
+		utils.LogCtx(r.Context()).WithFields(logrus.Fields{"method": ri.method, "ip": ri.ipaddr, "uri": ri.uri, "statusCode": ri.code, "size": ri.size, "duration_ns": fmt.Sprintf("%d", ri.duration.Nanoseconds()), "userAgent": ri.userAgent}).Debug("request captured")
 	})
 }
 
