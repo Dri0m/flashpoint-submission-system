@@ -47,7 +47,7 @@ func (c *curationValidator) GetTags(ctx context.Context) ([]types.Tag, error) {
 		return nil, err
 	}
 
-	utils.LogCtx(ctx).WithField("cached", utils.BoolToInt(cached)).Debug("getting tags from validator")
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("getting tags from validator")
 
 	tags := resp.([]types.Tag)
 	return tags, nil

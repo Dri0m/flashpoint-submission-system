@@ -266,9 +266,9 @@ func GetMemStats() *runtime.MemStats {
 	return m
 }
 
-func BoolToInt(b bool) int {
+func BoolToString(b bool) string {
 	if b {
-		return 1
+		return "yes"
 	}
-	return 0
+	return "no"
 }
