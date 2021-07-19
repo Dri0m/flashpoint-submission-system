@@ -27,11 +27,11 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	}
 
 	if data, err := searchSubmissionsCache.Get(cacheKey); err != ttlcache.ErrNotFound {
-		utils.LogCtx(dbs.Ctx()).WithField("cached", 1).Debug("searching submissions")
+		utils.LogCtx(dbs.Ctx()).WithField("cached", "yes").Debug("searching submissions")
 		return data.([]*types.ExtendedSubmission), nil
 	}
 
-	utils.LogCtx(dbs.Ctx()).WithField("cached", 0).Debug("searching submissions")
+	utils.LogCtx(dbs.Ctx()).WithField("cached", "no").Debug("searching submissions")
 
 	filters := make([]string, 0)
 	masterFilters := make([]string, 0)
