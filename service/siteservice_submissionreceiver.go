@@ -105,6 +105,8 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 
 	s.announceNotification()
 
+	utils.LogCtx(ctx).WithField("amount", len(fileProviders)).Debug("submissions received")
+
 	return submissionIDs, nil
 }
 
