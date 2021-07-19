@@ -892,6 +892,7 @@ func (s *SiteService) UpdateMasterDB(ctx context.Context) error {
 
 func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch float64, title, launchCommand *string) ([]*types.SimilarityAttributes, []*types.SimilarityAttributes, error) {
 	ctx := dbs.Ctx()
+	start := time.Now()
 
 	sas, err := s.dal.GetAllSimilarityAttributes(dbs)
 	if err != nil {
@@ -927,12 +928,7 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 		nlc = normalize(*title)
 	}
 
-	for i, sa := range sas {
-		if len(sas) > 10 {
-			if (i % (len(sas) / 10)) == 0 {
-				utils.LogCtx(ctx).Debugf("levenshtein: scored %.1f%% (%d) strings", (float64(i)/float64(len(sas)))*100, i)
-			}
-		}
+	for _, sa := range sas {
 		if title != nil && sa.Title != nil {
 			nc := normalize(*sa.Title)
 			distance := levenshtein.ComputeDistance(nt, nc)
@@ -962,6 +958,9 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 	sort.Slice(byLaunchCommand, func(i, j int) bool {
 		return byLaunchCommand[i].LaunchCommandRatio > byLaunchCommand[j].LaunchCommandRatio
 	})
+
+	duration := time.Since(start)
+	utils.LogCtx(ctx).WithField("duration_ns", duration.Nanoseconds()).Debug("similarity scores calculated")
 
 	return byTitle, byLaunchCommand, nil
 }
