@@ -113,7 +113,7 @@ func memstatsPrinter(l *logrus.Entry, ctx context.Context, wg *sync.WaitGroup) {
 			return
 		case <-bucket:
 			m := utils.GetMemStats()
-			l.WithFields(logrus.Fields{"alloc": m.Alloc, "sys": m.Sys, "num_gc": m.NumGC, "heap_objects": m.HeapObjects, "gc_cpu_fraction": fmt.Sprintf("%.6f", m.GCCPUFraction)}).Debug("memstats")
+			l.WithFields(logrus.Fields{"alloc": m.Alloc, "sys": m.Sys, "num_gc": m.NumGC, "heap_objects": m.HeapObjects, "gc_cpu_fraction": m.GCCPUFraction}).Debug("memstats")
 		}
 	}
 }
