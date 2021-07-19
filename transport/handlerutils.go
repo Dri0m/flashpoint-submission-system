@@ -64,7 +64,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		return
 	}
 
-	utils.LogCtx(ctx).WithField("cached", cached).WithField("request_url", r.URL).Debug("executing template files")
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToInt(cached)).Debug("executing template files")
 
 	tmpl := result.(*template.Template)
 

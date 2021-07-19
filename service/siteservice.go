@@ -514,12 +514,7 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 
 	// get discord server roles
 	sr, err, cached := s.discordRoleCache.Memoize(getServerRolesKey, getServerRoles)
-
-	if cached {
-		utils.LogCtx(ctx).Debug("using cached server roles")
-	} else {
-		utils.LogCtx(ctx).Debug("reading fresh server roles from discord")
-	}
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToInt(cached)).Debug("reading server roles from discord")
 
 	if err != nil {
 		s.discordRoleCache.Storage.Delete(getServerRolesKey)
@@ -536,12 +531,7 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 
 	// get discord user roles
 	urid, err, cached := s.discordRoleCache.Memoize(getUserRolesKey, getUserRoles)
-
-	if cached {
-		utils.LogCtx(ctx).Debug("using cached user roles")
-	} else {
-		utils.LogCtx(ctx).Debug("reading fresh user roles from discord")
-	}
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToInt(cached)).Debug("reading user roles from discord")
 
 	if err != nil {
 		s.discordRoleCache.Storage.Delete(getUserRolesKey)

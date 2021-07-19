@@ -265,3 +265,10 @@ func GetMemStats() *runtime.MemStats {
 	runtime.ReadMemStats(m)
 	return m
 }
+
+func BoolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}

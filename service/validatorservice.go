@@ -46,16 +46,14 @@ func (c *curationValidator) GetTags(ctx context.Context) ([]types.Tag, error) {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
-	if cached {
-		utils.LogCtx(ctx).Debug("using cached tags from validator")
-	}
+
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToInt(cached)).Debug("getting tags from validator")
 
 	tags := resp.([]types.Tag)
 	return tags, nil
 }
 
 func (c *curationValidator) getTags(ctx context.Context) ([]types.Tag, error) {
-	utils.LogCtx(ctx).Debug("getting fresh tags from validator")
 	resp, err := utils.GetURL(c.validatorServerURL + "/tags")
 	if err != nil {
 		return nil, err
