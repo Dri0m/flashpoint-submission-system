@@ -89,7 +89,7 @@ func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusNoContent)
+	writeResponse(ctx, w, nil, http.StatusNoContent)
 }
 
 func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +118,7 @@ func (a *App) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusNoContent)
+	writeResponse(ctx, w, nil, http.StatusNoContent)
 }
 
 func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +147,7 @@ func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusNoContent)
+	writeResponse(ctx, w, nil, http.StatusNoContent)
 }
 
 func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {

@@ -142,8 +142,8 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 	switch requestType {
 	case constants.RequestJSON, constants.RequestData, constants.RequestWeb:
 		w.WriteHeader(status)
-		w.Header().Set("Content-Type", "application/json")
 		if data != nil {
+			w.Header().Set("Content-Type", "application/json")
 			err := json.NewEncoder(w).Encode(data)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
