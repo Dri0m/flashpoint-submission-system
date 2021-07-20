@@ -924,8 +924,8 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 	}
 
 	var nlc string
-	if title != nil {
-		nlc = normalize(*title)
+	if launchCommand != nil {
+		nlc = normalize(*launchCommand)
 	}
 
 	for _, sa := range sas {
