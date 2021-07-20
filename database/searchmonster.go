@@ -18,12 +18,25 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	uid := utils.UserID(dbs.Ctx()) // TODO this should be passed as param
 
 	cacheKey := "nil"
+
 	if filter != nil {
 		j, err := json.Marshal(filter)
 		if err != nil {
 			return nil, err
 		}
-		cacheKey = fmt.Sprintf("%d-%s", uid, j)
+		// uid-dependent queries ruining my caching reeee
+		if len(filter.ActionsAfterMyLastComment) != 0 ||
+			filter.AssignedStatusTestingMe != nil ||
+			filter.AssignedStatusVerificationMe != nil ||
+			filter.RequestedChangedStatusMe != nil ||
+			filter.ApprovalsStatusMe != nil ||
+			filter.VerificationStatusMe != nil ||
+			filter.LastUploaderNotMe != nil ||
+			filter.SubscribedMe != nil {
+			cacheKey = fmt.Sprintf("%d-%s", uid, j)
+		} else {
+			cacheKey = fmt.Sprintf("%s", j)
+		}
 	}
 
 	if data, err := searchSubmissionsCache.Get(cacheKey); err != ttlcache.ErrNotFound {
@@ -38,7 +51,9 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	data := make([]interface{}, 0)
 	masterData := make([]interface{}, 0)
 
-	data = append(data, uid, uid)
+	if filter != nil && len(filter.ActionsAfterMyLastComment) != 0 {
+		data = append(data, uid, uid)
+	}
 
 	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
@@ -348,8 +363,9 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		) AS submission_file_count ON submission_file_count.fk_submission_id = submission.id
 		LEFT JOIN discord_user uploader ON oldest_file.fk_user_id = uploader.id
 		LEFT JOIN discord_user updater ON newest_comment.fk_user_id = updater.id
-		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id
-		LEFT JOIN (
+		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id`
+
+	const actionsAfterMyLastCommentQuery = ` LEFT JOIN (
 			SELECT *,
 				SUBSTRING(
 					full_substring
@@ -411,8 +427,13 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 					),
 					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
 				)
-		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id
-		LEFT JOIN submission_notification_subscription AS sns ON sns.fk_submission_id = submission.id
+		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id`
+
+	if len(filter.ActionsAfterMyLastComment) != 0 {
+		finalQuery += actionsAfterMyLastCommentQuery
+	}
+
+	rest := ` LEFT JOIN submission_notification_subscription AS sns ON sns.fk_submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `
 		GROUP BY submission.id
 		UNION
@@ -450,6 +471,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		ORDER BY ` + currentOrderBy + ` ` + currentSortOrder + `
 		LIMIT ? OFFSET ?
 		`
+	finalQuery += rest
 
 	finalData := make([]interface{}, 0)
 	finalData = append(finalData, data...)
