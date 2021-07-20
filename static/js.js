@@ -511,7 +511,7 @@ function updateLocalSettings() {
     const maxWidthInput = document.getElementById("site-max-width")
     let parsed = parseInt(maxWidthInput.value, 10)
     if (isNaN(parsed)) {
-        parsed = 1300
+        return
     }
     localStorage.setItem("site-max-width", parsed.toString())
     setSiteMaxWidth()
