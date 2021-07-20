@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/Dri0m/flashpoint-submission-system/service"
@@ -31,29 +32,59 @@ type StateKeeper struct {
 	expirationSeconds uint64
 }
 
-func (sk *StateKeeper) Generate() (string, error) {
+type State struct {
+	Nonce string `json:"nonce"`
+	Dest  string `json:"dest"`
+}
+
+// Generate generates state and returns base64-encoded form
+func (sk *StateKeeper) Generate(dest string) (string, error) {
 	sk.Clean()
 	u, err := uuid.NewV4()
 	if err != nil {
 		return "", err
 	}
-	s := u.String()
+	s := &State{
+		Nonce: u.String(),
+		Dest:  dest,
+	}
 	sk.Lock()
-	sk.states[s] = time.Now()
+	sk.states[s.Nonce] = time.Now()
 	sk.Unlock()
-	return s, nil
+
+	j, err := json.Marshal(s)
+	if err != nil {
+		return "", err
+	}
+
+	b := base64.URLEncoding.EncodeToString(j)
+
+	return b, nil
 }
 
-func (sk *StateKeeper) Consume(s string) bool {
+// Consume consumes base64-encoded state and returns destination URL
+func (sk *StateKeeper) Consume(b string) (string, bool) {
 	sk.Clean()
 	sk.Lock()
 	defer sk.Unlock()
 
-	_, ok := sk.states[s]
-	if ok {
-		delete(sk.states, s)
+	j, err := base64.URLEncoding.DecodeString(b)
+	if err != nil {
+		return "", false
 	}
-	return ok
+
+	s := &State{}
+
+	err = json.Unmarshal(j, s)
+	if err != nil {
+		return "", false
+	}
+
+	_, ok := sk.states[s.Nonce]
+	if ok {
+		delete(sk.states, s.Nonce)
+	}
+	return s.Dest, ok
 }
 
 func (sk *StateKeeper) Clean() {
@@ -74,7 +105,9 @@ var stateKeeper = StateKeeper{
 func (a *App) HandleDiscordAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	state, err := stateKeeper.Generate()
+	dest := r.FormValue("dest")
+
+	state, err := stateKeeper.Generate(dest)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, perr("failed to generate state", http.StatusInternalServerError))
@@ -88,7 +121,9 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// verify state
-	if !stateKeeper.Consume(r.FormValue("state")) {
+
+	dest, ok := stateKeeper.Consume(r.FormValue("state"))
+	if !ok {
 		writeError(ctx, w, perr("state does not match", http.StatusBadRequest))
 		return
 	}
@@ -150,7 +185,12 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/web/profile", http.StatusFound)
+	if len(dest) == 0 || !isReturnURLValid(dest) {
+		http.Redirect(w, r, "/web/profile", http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, dest, http.StatusFound)
 }
 
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {

@@ -230,3 +230,7 @@ func capString(maxLen int, s *string) string {
 	}
 	return str[:maxLen-3] + "..."
 }
+
+func isReturnURLValid(s string) bool {
+	return len(s) > 0 && strings.HasPrefix(s, "/") && !strings.HasPrefix(s, "//")
+}

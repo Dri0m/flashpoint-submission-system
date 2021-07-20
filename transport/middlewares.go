@@ -8,6 +8,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/gorilla/mux"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -42,7 +43,15 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 
 			switch rt {
 			case constants.RequestWeb:
-				http.Redirect(w, r, "/web", http.StatusFound)
+				returnURL := r.URL.Path
+				if len(r.URL.RawQuery) > 0 {
+					returnURL += "?" + r.URL.RawQuery
+				}
+				if len(r.URL.RawFragment) > 0 {
+					returnURL += "#" + r.URL.RawFragment
+				}
+				returnURL = url.QueryEscape(returnURL)
+				http.Redirect(w, r, fmt.Sprintf("/auth?dest=%s", returnURL), http.StatusFound)
 			case constants.RequestData, constants.RequestJSON:
 				writeError(ctx, w, perr("failed to parse cookie, please clear your cookies and try again", http.StatusUnauthorized))
 			default:
