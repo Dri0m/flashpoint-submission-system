@@ -75,9 +75,6 @@ func isActionValidForSubmission(uid int64, formAction string, submission *types.
 		if markedAdded {
 			return perr(fmt.Sprintf("submission %d is alrady marked as added so you cannot request changes on it, please submit a bug report or a pending fix if there is a problem with the submission", sid), http.StatusBadRequest)
 		}
-		if uidIn(uid, submission.RequestedChangesUserIDs) {
-			return perr(fmt.Sprintf("you have already requested changes on submission %d", sid), http.StatusBadRequest)
-		}
 	} else if formAction == constants.ActionVerify {
 		if uidIn(uid, submission.VerifiedUserIDs) {
 			return perr(fmt.Sprintf("you have already verified submission %d", sid), http.StatusBadRequest)

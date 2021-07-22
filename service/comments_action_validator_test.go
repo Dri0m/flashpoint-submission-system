@@ -112,13 +112,13 @@ func Test_isActionValidForSubmission(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "user cannot double request changes",
+			name: "user can double request changes",
 			args: args{
 				uid:        commenterID,
 				formAction: constants.ActionRequestChanges,
 				submission: &types.ExtendedSubmission{RequestedChangesUserIDs: []int64{commenterID}},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "user cannot assign for testing that's marked as added",
