@@ -12,23 +12,35 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	l.Debug("updating submission cache table")
 	start := time.Now()
 
-	assignedTestingIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-testing"`, `= "unassign-testing"`, sid)
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE submission_cache
+		SET fk_newest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
+		    fk_oldest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at LIMIT 1),
+		    fk_newest_comment_id = (SELECT id FROM comment WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)
+		
+		WHERE fk_submission_id = ?`,
+		sid, sid, sid, sid)
+	if err != nil {
+		return err
+	}
+
+	assignedTestingIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-testing"`, `= "unassign-testing"`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	assignedVerificationIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-verification"`, `= "unassign-verification"`, sid)
+	assignedVerificationIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-verification"`, `= "unassign-verification"`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	requestedChangesIDseq, err := getUserCountWithEnabledAction(dbs, `= "request-changes"`, `IN("approve", "verify")`, sid)
+	requestedChangesIDseq, err := getUserCountWithEnabledAction(dbs, `= "request-changes"`, `IN("approve", "verify")`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	approvedIDseq, err := getUserCountWithEnabledAction(dbs, `= "approve"`, `= "request-changes"`, sid)
+	approvedIDseq, err := getUserCountWithEnabledAction(dbs, `= "approve"`, `= "request-changes"`, sid, true)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	verifiedIDseq, err := getUserCountWithEnabledAction(dbs, `= "verify"`, `= "request-changes"`, sid)
+	verifiedIDseq, err := getUserCountWithEnabledAction(dbs, `= "verify"`, `= "request-changes"`, sid, true)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -50,11 +62,7 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
 		UPDATE submission_cache
-		SET fk_newest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
-		    fk_oldest_file_id = (SELECT id FROM submission_file WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at LIMIT 1),
-		    fk_newest_comment_id = (SELECT id FROM comment WHERE fk_submission_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
-		    
-		    active_assigned_testing_ids = ?,
+		SET active_assigned_testing_ids = ?,
 		    active_assigned_verification_ids = ?,
 		    active_requested_changes_ids = ?,
 		    active_approved_ids = ?,
@@ -69,7 +77,6 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 		    distinct_actions = ?
 		
 		WHERE fk_submission_id = ?`,
-		sid, sid, sid,
 		assignedTestingIDseq, assignedVerificationIDseq, requestedChangesIDseq, approvedIDseq, verifiedIDseq,
 		ofs, cfs, md5s, sha256s,
 		botAction, distinctActionsSeq,
@@ -89,7 +96,16 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	return err
 }
 
-func getUserCountWithEnabledAction(dbs DBSession, enablerChunk, disablerChunk string, sid int64) (*string, error) {
+func getUserCountWithEnabledAction(dbs DBSession, enablerChunk, disablerChunk string, sid int64, onlyFromLastFileVersion bool) (*string, error) {
+
+	lastFileJoinQuery := ` `
+	lastFileVersionQuery := ` `
+
+	if onlyFromLastFileVersion {
+		lastFileJoinQuery = `LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_newest_file_id`
+		lastFileVersionQuery = `AND ranked_comment.created_at > last_file.created_at`
+	}
+
 	q := fmt.Sprintf(`
 		SELECT GROUP_CONCAT(latest_enabler.author_id) AS user_ids_with_enabled_action
 		FROM submission
@@ -117,9 +133,9 @@ func getUserCountWithEnabledAction(dbs DBSession, enablerChunk, disablerChunk st
 					ranked_comment.created_at
 				FROM ranked_comment
 					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id = %d) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
-					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_newest_file_id
+					`+lastFileJoinQuery+`
 				WHERE rn = 1
-					AND ranked_comment.created_at > last_file.created_at
+					`+lastFileVersionQuery+`
 			) AS latest_enabler ON latest_enabler.submission_id = submission.id
 			LEFT JOIN (
 				WITH ranked_comment AS (
@@ -144,9 +160,9 @@ func getUserCountWithEnabledAction(dbs DBSession, enablerChunk, disablerChunk st
 					ranked_comment.created_at
 				FROM ranked_comment
 					LEFT JOIN (SELECT * FROM submission_cache WHERE fk_submission_id = %d) AS submission_cache ON submission_cache.fk_submission_id = ranked_comment.fk_submission_id
-					LEFT JOIN submission_file AS last_file ON last_file.id = submission_cache.fk_newest_file_id
+					`+lastFileJoinQuery+`
 				WHERE rn = 1
-					AND ranked_comment.created_at > last_file.created_at
+					`+lastFileVersionQuery+`
 			) AS latest_disabler ON latest_disabler.submission_id = submission.id
 			AND latest_disabler.author_id = latest_enabler.author_id
 		WHERE (
