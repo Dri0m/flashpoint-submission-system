@@ -3,31 +3,32 @@
     {{$canViewSubmissionsOfOthers := not (or (isInAudit .UserRoles) (isTrialCurator .UserRoles))}}
     {{$submissionID := (index .Submissions 0).SubmissionID}}
     {{$isExtreme := eq "Yes" (unpointify .CurationMeta.Extreme)}}
-        <div class="content">
-            <h1>View Submission</h1>
+    {{$UserCanModify := or (isStaff .UserRoles) (eq .UserID (index .Submissions 0).SubmitterID)}}
+    <div class="content">
+        <h1>View Submission</h1>
 
-            {{template "view-submission-nav" .}}
+        {{template "view-submission-nav" .}}
 
 
-            <h3>Table data</h3>
-            {{template "submission-table" .}}
+        <h3>Table data</h3>
+        {{template "submission-table" .}}
 
-            <div class="pure-g">
-                <div class="pure-u-1-2">
-                    <h3>Download submission</h3>
+        <div class="pure-g">
+            <div class="pure-u-1-2">
+                <h3>Download submission</h3>
+                <a class="pure-button pure-button-primary"
+                   href="/data/submission/{{(index .Submissions 0).SubmissionID}}/file/{{(index .Submissions 0).FileID}}">
+                    Download latest version
+                </a>
+
+                {{if gt (index .Submissions 0).FileCount 1}}
                     <a class="pure-button pure-button-primary"
-                       href="/data/submission/{{(index .Submissions 0).SubmissionID}}/file/{{(index .Submissions 0).FileID}}">
-                        Download latest version
+                       href="/web/submission/{{(index .Submissions 0).SubmissionID}}/files">
+                        Browse submission versions
                     </a>
-
-                    {{if gt (index .Submissions 0).FileCount 1}}
-                        <a class="pure-button pure-button-primary"
-                           href="/web/submission/{{(index .Submissions 0).SubmissionID}}/files">
-                            Browse submission versions
-                        </a>
-                    {{end}}
-                </div>
-
+                {{end}}
+            </div>
+            {{if $UserCanModify}}
                 <div class="pure-u-1-2">
                     <h3>Upload a fixed version</h3>
                     <input type="file" name="files" id="file-input">
@@ -36,259 +37,264 @@
                     <div id="progress-bars-container"></div>
                     <script>bindFancierUpload("/api/submission-receiver/{{$submissionID}}")</script>
                 </div>
-            </div>
-
-            {{if $canDelete}}
-                <h3>Delete submission and all its related data</h3>
-                <button class="pure-button button-delete"
-                        onclick="deleteSubmission({{$submissionID}})">Delete
-                </button>
             {{end}}
+        </div>
 
-            <h3>Curation images</h3>
-            {{range .CurationImageIDs}}
-                <img src="/data/submission/{{$submissionID}}/curation-image/{{.}}.png"
-                     class="curation-image {{if $isExtreme}}blur-img{{end}}" alt="curation image">
-            {{end}}
+        {{if $canDelete}}
+            <h3>Delete submission and all its related data</h3>
+            <button class="pure-button button-delete"
+                    onclick="deleteSubmission({{$submissionID}})">Delete
+            </button>
+        {{end}}
 
-            <h3>Curation meta</h3>
-            {{if .CurationMeta}}
-                <table class="pure-table pure-table-bordered meta-table">
-                    <tbody>
-                    <tr>
-                        <td class="meta-property">Title</td>
-                        <td class="break-all">{{if not .CurationMeta.Title}}<i>No Title</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Title) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Alternate Titles</td>
-                        <td class="break-all">{{if not .CurationMeta.AlternateTitles}}<i>No Alternate Titles</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.AlternateTitles) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Library</td>
-                        <td class="break-all">{{if not .CurationMeta.Library}}<i>No Library</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Library) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Series</td>
-                        <td class="break-all">{{if not .CurationMeta.Series}}<i>No Series</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Series) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Developer</td>
-                        <td class="break-all">{{if not .CurationMeta.Developer}}<i>No Developer</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Developer) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Publisher</td>
-                        <td class="break-all">{{if not .CurationMeta.Publisher}}<i>No Publisher</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Publisher) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Tags</td>
-                        <td class="break-all">{{if not .CurationMeta.Tags}}<i>No Tags</i>{{else}}
-                                {{range $i, $tag := (parseMetaTags .CurationMeta.Tags .TagList)}}{{if gt $i 0}};{{end}}
-                                <span title="{{$tag.Description}}" class="{{if not (eq "Unknown tag." $tag.Description)}}underline{{end}}">{{$tag.Name}}</span>
-                                {{end}}
-                            {{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Play Mode</td>
-                        <td class="break-all">{{if not .CurationMeta.PlayMode}}<i>No Play Mode</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.PlayMode) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Status</td>
-                        <td class="break-all">{{if not .CurationMeta.Status}}<i>No Status</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Status) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Version</td>
-                        <td class="break-all">{{if not .CurationMeta.Version}}<i>No Version</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Version) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Release Date</td>
-                        <td class="break-all">{{if not .CurationMeta.ReleaseDate}}<i>No Release Date</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.ReleaseDate) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Language</td>
-                        <td class="break-all">{{if not .CurationMeta.Languages}}<i>No Language</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Languages) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Source</td>
-                        <td class="break-all">{{if not .CurationMeta.Source}}<i>No Source</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Source) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Platform</td>
-                        <td class="break-all">{{if not .CurationMeta.Platform}}<i>No Platform</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Platform) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Application Path</td>
-                        <td class="break-all">{{if not .CurationMeta.ApplicationPath}}<i>No Application Path</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.ApplicationPath) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Launch Command</td>
-                        <td class="break-all">{{if not .CurationMeta.LaunchCommand}}<i>No Launch Command</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.LaunchCommand) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Mount Parameters</td>
-                        <td class="break-all">{{if not .CurationMeta.MountParameters}}<i>No Mount Parameters</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.MountParameters) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Notes</td>
-                        <td class="break-all">{{if not .CurationMeta.GameNotes}}<i>No Notes</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.GameNotes) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Original Description</td>
-                        <td class="break-all">{{if not .CurationMeta.OriginalDescription}}<i>No Original Description</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.OriginalDescription) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Curation Notes</td>
-                        <td class="break-all">{{if not .CurationMeta.CurationNotes}}<i>No Curation Notes</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.CurationNotes) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Extreme</td>
-                        <td class="break-all">{{if not .CurationMeta.Extreme}}<i>No Extreme</i>{{else}}
-                                {{range $i, $line := (splitMultilineText .CurationMeta.Extreme)}}{{if gt $i 1}}
-                                    <br>{{end}}{{$line}}
-                                {{end}}{{end}}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Additional Applications</td>
-                        <td class="break-all">--Not Implemented--</td>
-                    </tr>
-                    </tbody>
-                </table>
-            {{else}}
-                Curation meta not available.
-            {{end}}
+        <h3>Curation images</h3>
+        {{range .CurationImageIDs}}
+            <img src="/data/submission/{{$submissionID}}/curation-image/{{.}}.png"
+                 class="curation-image {{if $isExtreme}}blur-img{{end}}" alt="curation image">
+        {{end}}
 
-            <h3>Subscription</h3>
-            {{if .IsUserSubscribed}}
-                <p>You're currently receiving notifications about this subscription.</p>
-                <button class="pure-button pure-button-primary"
-                        onclick="updateSubscriptionSettings('{{$submissionID}}', false)">Unsubscribe
-                </button>
-            {{else}}
-                <p>Subscribe to receive notifications about this submission.</p>
-                <button class="pure-button pure-button-primary"
-                        onclick="updateSubscriptionSettings('{{$submissionID}}', true)">Subscribe
-                </button>
-            {{end}}
-
-            <h3>Comments</h3>
-            {{range .Comments}}
-                <div class="pure-g comment">
-                    <div class="pure-u-1-6 bgr-{{.Action}}">
-                        <div class="comment-header">
-                            <div class="comment-header-user">
-                                <img src="{{default "/static/zuma.png" .AvatarURL}}" class="comment-avatar"
-                                     alt="avatar"
-                                     title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
-                                <b>{{.Username}}</b>
-                            </div>
-
-                            {{if $canDelete}}
-                                <button class="micro-button" title="delete comment"
-                                        onclick="deleteComment({{$submissionID}}, {{.CommentID}})">D
-                                </button>
+        <h3>Curation meta</h3>
+        {{if .CurationMeta}}
+            <table class="pure-table pure-table-bordered meta-table">
+                <tbody>
+                <tr>
+                    <td class="meta-property">Title</td>
+                    <td class="break-all">{{if not .CurationMeta.Title}}<i>No Title</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Title) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Alternate Titles</td>
+                    <td class="break-all">{{if not .CurationMeta.AlternateTitles}}<i>No Alternate Titles</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.AlternateTitles) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Library</td>
+                    <td class="break-all">{{if not .CurationMeta.Library}}<i>No Library</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Library) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Series</td>
+                    <td class="break-all">{{if not .CurationMeta.Series}}<i>No Series</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Series) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Developer</td>
+                    <td class="break-all">{{if not .CurationMeta.Developer}}<i>No Developer</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Developer) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Publisher</td>
+                    <td class="break-all">{{if not .CurationMeta.Publisher}}<i>No Publisher</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Publisher) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Tags</td>
+                    <td class="break-all">{{if not .CurationMeta.Tags}}<i>No Tags</i>{{else}}
+                            {{range $i, $tag := (parseMetaTags .CurationMeta.Tags .TagList)}}{{if gt $i 0}};{{end}}
+                            <span title="{{$tag.Description}}"
+                                  class="{{if not (eq "Unknown tag." $tag.Description)}}underline{{end}}">{{$tag.Name}}</span>
                             {{end}}
-                            {{if $canViewSubmissionsOfOthers}}
-                                <button class="micro-button" title="show user's submissions"
-                                        onclick="location.href='/web/submissions?submitter-id={{.AuthorID}}'">S
-                                </button>
-                            {{end}}
-                            <br>
-                            <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
+                        {{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Play Mode</td>
+                    <td class="break-all">{{if not .CurationMeta.PlayMode}}<i>No Play Mode</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.PlayMode) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Status</td>
+                    <td class="break-all">{{if not .CurationMeta.Status}}<i>No Status</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Status) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Version</td>
+                    <td class="break-all">{{if not .CurationMeta.Version}}<i>No Version</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Version) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Release Date</td>
+                    <td class="break-all">{{if not .CurationMeta.ReleaseDate}}<i>No Release Date</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.ReleaseDate) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Language</td>
+                    <td class="break-all">{{if not .CurationMeta.Languages}}<i>No Language</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Languages) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Source</td>
+                    <td class="break-all">{{if not .CurationMeta.Source}}<i>No Source</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Source) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Platform</td>
+                    <td class="break-all">{{if not .CurationMeta.Platform}}<i>No Platform</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Platform) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Application Path</td>
+                    <td class="break-all">{{if not .CurationMeta.ApplicationPath}}<i>No Application Path</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.ApplicationPath) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Launch Command</td>
+                    <td class="break-all">{{if not .CurationMeta.LaunchCommand}}<i>No Launch Command</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.LaunchCommand) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Mount Parameters</td>
+                    <td class="break-all">{{if not .CurationMeta.MountParameters}}<i>No Mount Parameters</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.MountParameters) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Notes</td>
+                    <td class="break-all">{{if not .CurationMeta.GameNotes}}<i>No Notes</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.GameNotes) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Original Description</td>
+                    <td class="break-all">{{if not .CurationMeta.OriginalDescription}}<i>No Original
+                            Description</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.OriginalDescription) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Curation Notes</td>
+                    <td class="break-all">{{if not .CurationMeta.CurationNotes}}<i>No Curation Notes</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.CurationNotes) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Extreme</td>
+                    <td class="break-all">{{if not .CurationMeta.Extreme}}<i>No Extreme</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .CurationMeta.Extreme)}}{{if gt $i 1}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Additional Applications</td>
+                    <td class="break-all">--Not Implemented--</td>
+                </tr>
+                </tbody>
+            </table>
+        {{else}}
+            Curation meta not available.
+        {{end}}
+
+        <h3>Subscription</h3>
+        {{if .IsUserSubscribed}}
+            <p>You're currently receiving notifications about this subscription.</p>
+            <button class="pure-button pure-button-primary"
+                    onclick="updateSubscriptionSettings('{{$submissionID}}', false)">Unsubscribe
+            </button>
+        {{else}}
+            <p>Subscribe to receive notifications about this submission.</p>
+            <button class="pure-button pure-button-primary"
+                    onclick="updateSubscriptionSettings('{{$submissionID}}', true)">Subscribe
+            </button>
+        {{end}}
+
+        <h3>Comments</h3>
+        {{range .Comments}}
+            <div class="pure-g comment">
+                <div class="pure-u-1-6 bgr-{{.Action}}">
+                    <div class="comment-header">
+                        <div class="comment-header-user">
+                            <img src="{{default "/static/zuma.png" .AvatarURL}}" class="comment-avatar"
+                                 alt="avatar"
+                                 title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
+                            <b>{{.Username}}</b>
                         </div>
-                    </div>
-                    <div class="pure-u-5-6">
-                        <div class="comment-body">
-                            {{if .Message}}
-                                {{range $i, $line := (splitMultilineText .Message) }}{{if gt $i 0}}
-                                    <br>{{end}}{{$line}}{{end}}
-                            {{else}}
-                                {{if eq .Action "approve"}}
-                                    <i class="default-comment">Approved the submission.</i>
-                                {{else if eq .Action "accept"}}
-                                    <i class="default-comment">Accepted the submission.</i>
-                                {{else if eq .Action "mark-added"}}
-                                    <i class="default-comment">Marked the submission as added to Flashpoint.</i>
-                                {{else if eq .Action "upload-file"}}
-                                    <i class="default-comment">Uploaded a new file.</i>
-                                {{else if eq .Action "assign-testing"}}
-                                    <i class="default-comment">Is now testing this.</i>
-                                {{else if eq .Action "unassign-testing"}}
-                                    <i class="default-comment">Is not testing this anymore.</i>
-                                {{else if eq .Action "assign-verification"}}
-                                    <i class="default-comment">Is now verifying this.</i>
-                                {{else if eq .Action "unassign-verification"}}
-                                    <i class="default-comment">Is not verifying this anymore.</i>
-                                {{else if eq .Action "verify"}}
-                                    <i class="default-comment">Verified the submission.</i>
-                                {{end}}
-                            {{end}}
-                        </div>
+
+                        {{if $canDelete}}
+                            <button class="micro-button" title="delete comment"
+                                    onclick="deleteComment({{$submissionID}}, {{.CommentID}})">D
+                            </button>
+                        {{end}}
+                        {{if $canViewSubmissionsOfOthers}}
+                            <button class="micro-button" title="show user's submissions"
+                                    onclick="location.href='/web/submissions?submitter-id={{.AuthorID}}'">S
+                            </button>
+                        {{end}}
+                        <br>
+                        <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
                     </div>
                 </div>
-            {{end}}
+                <div class="pure-u-5-6">
+                    <div class="comment-body">
+                        {{if .Message}}
+                            {{range $i, $line := (splitMultilineText .Message) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}{{end}}
+                        {{else}}
+                            {{if eq .Action "approve"}}
+                                <i class="default-comment">Approved the submission.</i>
+                            {{else if eq .Action "accept"}}
+                                <i class="default-comment">Accepted the submission.</i>
+                            {{else if eq .Action "mark-added"}}
+                                <i class="default-comment">Marked the submission as added to Flashpoint.</i>
+                            {{else if eq .Action "upload-file"}}
+                                <i class="default-comment">Uploaded a new file.</i>
+                            {{else if eq .Action "assign-testing"}}
+                                <i class="default-comment">Is now testing this.</i>
+                            {{else if eq .Action "unassign-testing"}}
+                                <i class="default-comment">Is not testing this anymore.</i>
+                            {{else if eq .Action "assign-verification"}}
+                                <i class="default-comment">Is now verifying this.</i>
+                            {{else if eq .Action "unassign-verification"}}
+                                <i class="default-comment">Is not verifying this anymore.</i>
+                            {{else if eq .Action "verify"}}
+                                <i class="default-comment">Verified the submission.</i>
+                            {{end}}
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        {{end}}
 
-            <br>
+        <br>
 
-            {{template "view-submission-nav" .}}
+        {{template "view-submission-nav" .}}
 
+        {{if $UserCanModify}}
             {{template "comment-form" .}}
+        {{end}}
 
-        </div>
+    </div>
 {{end}}
