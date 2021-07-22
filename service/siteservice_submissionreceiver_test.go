@@ -375,6 +375,9 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 
 	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
 
+	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
+	ts.dbs.On("Ctx").Return(ctx)
+
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
@@ -446,6 +449,8 @@ func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testi
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
+	ts.dbs.On("Ctx").Return(ctx)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(errors.New(""))
@@ -530,6 +535,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
+	ts.dbs.On("Ctx").Return(ctx)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -623,6 +630,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
+	ts.dbs.On("Ctx").Return(ctx)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -765,6 +774,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
+	ts.dbs.On("Ctx").Return(ctx)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -872,6 +883,8 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreNotification(t *testing.T) {
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
+	ts.dbs.On("Ctx").Return(ctx)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -1259,28 +1272,7 @@ func Test_siteService_ReceiveSubmissions_Fail_GetAllSimilarityAttributes(t *test
 	var fid int64 = 3
 
 	userRoles := []string{}
-	submissionLevel := constants.SubmissionLevelAudition
-
 	extreme := "No"
-
-	sf := &types.SubmissionFile{
-		SubmissionID:     sid,
-		SubmitterID:      uid,
-		OriginalFilename: filename,
-		CurrentFilename:  destinationFilename,
-		Size:             size,
-		UploadedAt:       ts.s.clock.Now(),
-		MD5Sum:           "d41d8cd98f00b204e9800998ecf8427e",                                 // empty file hash
-		SHA256Sum:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // empty file hash
-	}
-
-	c := &types.Comment{
-		AuthorID:     uid,
-		SubmissionID: sid,
-		Message:      nil,
-		Action:       constants.ActionUpload,
-		CreatedAt:    ts.s.clock.Now(),
-	}
 
 	meta := types.CurationMeta{
 		SubmissionID:     sid,
@@ -1310,15 +1302,6 @@ func Test_siteService_ReceiveSubmissions_Fail_GetAllSimilarityAttributes(t *test
 	ts.multipartFileWrapper.On("Size").Return(size)
 
 	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
-
-	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
-	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
-	ts.dal.On("StoreSubmissionFile", sf).Return(fid, nil)
-	ts.dal.On("StoreComment", c).Return(nil)
-
-	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
-	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
-
 	ts.dbs.On("Ctx").Return(ctx)
 	ts.dal.On("GetAllSimilarityAttributes").Return(([]*types.SimilarityAttributes)(nil), errors.New(""))
 

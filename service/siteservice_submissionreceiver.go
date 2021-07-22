@@ -183,6 +183,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	})
 
 	var vr *types.ValidatorResponse
+	var msg *string
 
 	errs.Go(func() error {
 		utils.LogCtx(ectx).Debug("sending the submission for validation in goroutine...")
@@ -198,6 +199,13 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		if err != nil {
 			utils.LogCtx(ectx).Error(err)
 			return perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
+		}
+
+		utils.LogCtx(ectx).Debug("computing similarity in goroutine...")
+		msg, err = s.computeSimilarityComment(dbs, sid, &vr.Meta)
+		if err != nil {
+			utils.LogCtx(ectx).Error(err)
+			return err
 		}
 
 		return nil
@@ -342,20 +350,6 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return nil
 	})
 
-	var sc *types.Comment
-
-	errs.Go(func() error {
-		utils.LogCtx(ectx).Debug("computing similarity in goroutine")
-		var err error
-		sc, err = s.computeSimilarityComment(dbs, submissionID, &vr.Meta)
-		if err != nil {
-			utils.LogCtx(ectx).Error(err)
-			return err
-		}
-
-		return nil
-	})
-
 	if err := errs.Wait(); err != nil {
 		return &destinationFilePath, imageFilePaths, 0, err
 	}
@@ -365,6 +359,20 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 			utils.LogCtx(ectx).Error(err)
 			return &destinationFilePath, imageFilePaths, 0, dberr(err)
 		}
+	}
+
+	var sc *types.Comment
+
+	if len(*msg) > 0 {
+		sc = &types.Comment{
+			AuthorID:     constants.SystemID,
+			SubmissionID: submissionID,
+			Message:      msg,
+			Action:       constants.ActionSystem,
+			CreatedAt:    s.clock.Now().Add(time.Second * 2),
+		}
+	} else {
+		utils.LogCtx(dbs.Ctx()).Debug("no similar curations found")
 	}
 
 	if sc != nil {
@@ -426,7 +434,7 @@ func (s *SiteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 	return c
 }
 
-func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64, meta *types.CurationMeta) (*types.Comment, error) {
+func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid *int64, meta *types.CurationMeta) (*string, error) {
 	TitleSimilarities, LaunchCommandSimilarities, err := s.getSimilarityScores(dbs, 0.9, meta.Title, meta.LaunchCommand)
 	if err != nil {
 		utils.LogCtx(dbs.Ctx()).Error(err)
@@ -437,13 +445,16 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64
 
 	if len(TitleSimilarities) > 1 || len(LaunchCommandSimilarities) > 1 {
 
-		strID := strconv.FormatInt(sid, 10)
+		strID := ""
+		if sid != nil {
+			strID = strconv.FormatInt(*sid, 10)
+		}
 
 		if len(TitleSimilarities) > 1 {
 			sb.Write([]byte("Curations with similar titles have been found:\n"))
 
 			for _, ts := range TitleSimilarities {
-				if ts.ID == strID {
+				if sid != nil && ts.ID == strID {
 					continue
 				}
 				sb.Write([]byte(fmt.Sprintf("(%.1f%%) ID %s - Title - '%s'\n", ts.TitleRatio*100, ts.ID, *ts.Title)))
@@ -455,7 +466,7 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64
 			sb.Write([]byte("Curations with similar launch commands have been found:\n"))
 
 			for _, ts := range LaunchCommandSimilarities {
-				if ts.ID == strID {
+				if sid != nil && ts.ID == strID {
 					continue
 				}
 				sb.Write([]byte(fmt.Sprintf("(%.1f%%) ID %s - Launch Command - '%s'\n", ts.LaunchCommandRatio*100, ts.ID, *ts.LaunchCommand)))
@@ -467,19 +478,10 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid int64
 	}
 
 	msg := sb.String()
-	var sc *types.Comment
 
-	if len(msg) > 0 {
-		sc = &types.Comment{
-			AuthorID:     constants.SystemID,
-			SubmissionID: sid,
-			Message:      &msg,
-			Action:       constants.ActionSystem,
-			CreatedAt:    s.clock.Now().Add(time.Second * 2),
-		}
-	} else {
+	if len(msg) == 0 {
 		utils.LogCtx(dbs.Ctx()).Debug("no similar curations found")
 	}
 
-	return sc, nil
+	return &msg, nil
 }
