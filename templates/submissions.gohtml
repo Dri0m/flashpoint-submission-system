@@ -20,10 +20,13 @@
                     onclick="batchDownloadFiles('submission-checkbox', 'fid')">
                 Download selected
             </button>
-            <span id="submission-batch-size"></span>
-            <h2>Batch comment on submissions</h2>
 
-            {{template "comment-form" .}}
+            {{if not (isInAudit .UserRoles)}}
+                <span id="submission-batch-size"></span>
+                <h2>Batch comment on submissions</h2>
+
+                {{template "comment-form" .}}
+            {{end}}
 
         {{end}}
     </div>
