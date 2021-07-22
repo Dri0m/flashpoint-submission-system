@@ -12,6 +12,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/go-sql-driver/mysql"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -116,11 +117,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
 
-	file, err := fileHeader.Open()
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	defer file.Close()
+	var err error
 
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", fileHeader.Filename(), fileHeader.Size())
 
@@ -139,6 +136,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	var destinationFilename string
 	var destinationFilePath string
+
 	for {
 		destinationFilename = s.randomStringProvider.RandomString(64) + ext
 		destinationFilePath = fmt.Sprintf("%s/%s", s.submissionsDir, destinationFilename)
@@ -147,31 +145,66 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		}
 	}
 
-	destination, err := os.Create(destinationFilePath)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	defer destination.Close()
-
-	utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
+	errs, ectx := errgroup.WithContext(ctx)
 
 	md5sum := md5.New()
 	sha256sum := sha256.New()
-	multiWriter := io.MultiWriter(destination, sha256sum, md5sum)
 
-	nBytes, err := io.Copy(multiWriter, file)
-	if err != nil {
+	errs.Go(func() error {
+		utils.LogCtx(ectx).Debug("processing submission file in goroutine...")
+
+		var err error
+
+		file, err := fileHeader.Open()
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		destination, err := os.Create(destinationFilePath)
+		if err != nil {
+			return err
+		}
+		defer destination.Close()
+
+		utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
+
+		multiWriter := io.MultiWriter(destination, sha256sum, md5sum)
+
+		nBytes, err := io.Copy(multiWriter, file)
+		if err != nil {
+			return err
+		}
+		if nBytes != fileHeader.Size() {
+			return fmt.Errorf("incorrect number of bytes copied to destination")
+		}
+
+		return nil
+	})
+
+	var vr *types.ValidatorResponse
+
+	errs.Go(func() error {
+		utils.LogCtx(ectx).Debug("sending the submission for validation in goroutine...")
+
+		var err error
+
+		file, err := fileHeader.Open()
+		if err != nil {
+			return err
+		}
+
+		vr, err = s.validator.Validate(ectx, file, destinationFilename, destinationFilePath)
+		if err != nil {
+			utils.LogCtx(ectx).Error(err)
+			return perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
+		}
+
+		return nil
+	})
+
+	if err := errs.Wait(); err != nil {
 		return &destinationFilePath, nil, 0, err
-	}
-	if nBytes != fileHeader.Size() {
-		return &destinationFilePath, nil, 0, fmt.Errorf("incorrect number of bytes copied to destination")
-	}
-
-	utils.LogCtx(ctx).Debug("sending the submission for validation...")
-	vr, err := s.validator.Validate(ctx, destinationFilePath)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, nil, 0, perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
 	}
 
 	// FIXME remove this lazy solution to prevent database deadlocks and fix it properly
@@ -267,38 +300,76 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
+	errs, ectx = errgroup.WithContext(ctx)
+
 	// save images
 	imageFilePaths := make([]string, 0, len(vr.Images))
-	for _, image := range vr.Images {
-		imageData, err := base64.StdEncoding.DecodeString(image.Data)
-		if err != nil {
-			return &destinationFilePath, imageFilePaths, 0, err
-		}
+	cis := make([]*types.CurationImage, 0, len(vr.Images))
 
-		var imageFilename string
-		var imageFilenameFilePath string
-		for {
-			imageFilename = s.randomStringProvider.RandomString(64)
-			imageFilenameFilePath = fmt.Sprintf("%s/%s", s.submissionImagesDir, imageFilename)
-			if !utils.FileExists(imageFilenameFilePath) {
-				break
+	errs.Go(func() error {
+		utils.LogCtx(ectx).Debug("processing meta images in goroutine")
+		for _, image := range vr.Images {
+			imageData, err := base64.StdEncoding.DecodeString(image.Data)
+			if err != nil {
+				return err
 			}
+
+			var imageFilename string
+			var imageFilenameFilePath string
+			for {
+				imageFilename = s.randomStringProvider.RandomString(64)
+				imageFilenameFilePath = fmt.Sprintf("%s/%s", s.submissionImagesDir, imageFilename)
+				if !utils.FileExists(imageFilenameFilePath) {
+					break
+				}
+			}
+
+			imageFilePaths = append(imageFilePaths, imageFilenameFilePath)
+
+			if err := ioutil.WriteFile(imageFilenameFilePath, imageData, 0644); err != nil {
+				return err
+			}
+
+			ci := &types.CurationImage{
+				SubmissionFileID: fid,
+				Type:             image.Type,
+				Filename:         imageFilename,
+			}
+
+			cis = append(cis, ci)
+		}
+		utils.LogCtx(ectx).Debug("meta images processed in goroutine")
+		return nil
+	})
+
+	var sc *types.Comment
+
+	errs.Go(func() error {
+		utils.LogCtx(ectx).Debug("computing similarity in goroutine")
+		var err error
+		sc, err = s.computeSimilarityComment(dbs, submissionID, &vr.Meta)
+		if err != nil {
+			utils.LogCtx(ectx).Error(err)
+			return err
 		}
 
-		imageFilePaths = append(imageFilePaths, imageFilenameFilePath)
+		return nil
+	})
 
-		if err := ioutil.WriteFile(imageFilenameFilePath, imageData, 0644); err != nil {
-			return &destinationFilePath, imageFilePaths, 0, err
-		}
+	if err := errs.Wait(); err != nil {
+		return &destinationFilePath, imageFilePaths, 0, err
+	}
 
-		ci := &types.CurationImage{
-			SubmissionFileID: fid,
-			Type:             image.Type,
-			Filename:         imageFilename,
-		}
-
+	for _, ci := range cis {
 		if _, err := s.dal.StoreCurationImage(dbs, ci); err != nil {
-			utils.LogCtx(ctx).Error(err)
+			utils.LogCtx(ectx).Error(err)
+			return &destinationFilePath, imageFilePaths, 0, dberr(err)
+		}
+	}
+
+	if sc != nil {
+		if err := s.dal.StoreComment(dbs, sc); err != nil {
+			utils.LogCtx(ectx).Error(err)
 			return &destinationFilePath, imageFilePaths, 0, dberr(err)
 		}
 	}
@@ -309,21 +380,6 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	if err := s.dal.StoreComment(dbs, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, imageFilePaths, 0, dberr(err)
-	}
-
-	utils.LogCtx(ctx).Debug("computing curation similarity comment...")
-
-	sc, err := s.computeSimilarityComment(dbs, submissionID, &vr.Meta)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, imageFilePaths, 0, err
-	}
-
-	if sc != nil {
-		if err := s.dal.StoreComment(dbs, sc); err != nil {
-			utils.LogCtx(ctx).Error(err)
-			return &destinationFilePath, imageFilePaths, 0, dberr(err)
-		}
 	}
 
 	if err := s.dal.UpdateSubmissionCacheTable(dbs, submissionID); err != nil {

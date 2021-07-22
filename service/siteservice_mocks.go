@@ -275,8 +275,8 @@ type mockValidator struct {
 	mock.Mock
 }
 
-func (m *mockValidator) Validate(_ context.Context, filePath string) (*types.ValidatorResponse, error) {
-	args := m.Called(filePath)
+func (m *mockValidator) Validate(_ context.Context, file multipart.File, filename, filepath string) (*types.ValidatorResponse, error) {
+	args := m.Called(file, filename, filepath)
 	return args.Get(0).(*types.ValidatorResponse), args.Error(1)
 }
 
