@@ -1212,6 +1212,8 @@ func Test_siteService_ReceiveSubmissions_Fail_UpdateSubmissionCacheTable(t *test
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
 	ts.dal.On("StoreComment", bc).Return(nil)
+	ts.dbs.On("Ctx").Return(ctx)
+	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
 	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
@@ -1320,7 +1322,6 @@ func Test_siteService_ReceiveSubmissions_Fail_GetAllSimilarityAttributes(t *test
 	ts.dal.On("StoreCurationMeta", &meta).Return(nil)
 	ts.dal.On("StoreNotification", mock.AnythingOfType("string"), constants.NotificationCurationFeed).Return(nil)
 	ts.dal.On("StoreComment", bc).Return(nil)
-	ts.dal.On("UpdateSubmissionCacheTable", sid).Return(nil)
 
 	ts.dbs.On("Ctx").Return(ctx)
 	ts.dal.On("GetAllSimilarityAttributes").Return(([]*types.SimilarityAttributes)(nil), errors.New(""))

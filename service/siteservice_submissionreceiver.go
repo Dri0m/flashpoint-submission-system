@@ -311,11 +311,6 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, imageFilePaths, 0, dberr(err)
 	}
 
-	if err := s.dal.UpdateSubmissionCacheTable(dbs, submissionID); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return &destinationFilePath, imageFilePaths, 0, dberr(err)
-	}
-
 	utils.LogCtx(ctx).Debug("computing curation similarity comment...")
 
 	sc, err := s.computeSimilarityComment(dbs, submissionID, &vr.Meta)
@@ -329,6 +324,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 			utils.LogCtx(ctx).Error(err)
 			return &destinationFilePath, imageFilePaths, 0, dberr(err)
 		}
+	}
+
+	if err := s.dal.UpdateSubmissionCacheTable(dbs, submissionID); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, imageFilePaths, 0, dberr(err)
 	}
 
 	return &destinationFilePath, imageFilePaths, submissionID, nil
