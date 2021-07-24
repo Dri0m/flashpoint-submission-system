@@ -5,6 +5,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, resumableParams *types.ResumableParams, chunk []byte) (*int64, error) {
@@ -18,7 +19,7 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 		"resumableCurrentChunkSize": resumableParams.ResumableCurrentChunkSize,
 	})
 
-	l.Debug("storing chunk")
+	l.Debug("storing chunk...")
 	err := s.resumableUploadService.PutChunk(resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
 	if err != nil {
 		l.Error(err)
@@ -32,7 +33,9 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 	}
 
 	if isComplete {
+		l.Debug("resumable upload finished")
 		var intos int64 = -1337
+		time.Sleep(1 * time.Second)
 		return &intos, nil
 	}
 
@@ -55,6 +58,12 @@ func (s *SiteService) IsSubmissionChunkReceived(ctx context.Context, resumablePa
 	if err != nil {
 		l.Error(err)
 		return false, err
+	}
+
+	if isReceived {
+		l.Debug("chunk already received")
+	} else {
+		l.Debug("chunk not received yet")
 	}
 
 	return isReceived, nil
