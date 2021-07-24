@@ -305,8 +305,8 @@ type ValidatorResponse struct {
 }
 
 type ReceiveSubmissionsResp struct {
-	Message       string  `json:"message"`
-	SubmissionIDs []int64 `json:"submission_ids"`
+	Message      string `json:"message"`
+	SubmissionID *int64 `json:"submission_id"`
 }
 
 type SimilarityAttributes struct {
@@ -324,4 +324,14 @@ type Tag struct {
 
 type ValidatorTagResponse struct {
 	Tags []Tag `json:"tags"`
+}
+
+type ResumableParams struct {
+	ResumableChunkNumber      uint64 `schema:"resumableChunkNumber"`
+	ResumableChunkSize        uint64 `schema:"resumableChunkSize"`
+	ResumableTotalSize        uint64 `schema:"resumableTotalSize"`
+	ResumableIdentifier       string `schema:"resumableIdentifier"`
+	ResumableFilename         string `schema:"resumableFilename"`
+	ResumableRelativePath     string `schema:"resumableRelativePath"`
+	ResumableCurrentChunkSize int    `schema:"resumableCurrentChunkSize"`
 }

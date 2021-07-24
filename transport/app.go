@@ -7,6 +7,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
+	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/bwmarrin/discordgo"
@@ -30,7 +31,7 @@ type App struct {
 	decoder *schema.Decoder
 }
 
-func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session) {
+func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, rsu *resumableuploadservice.ResumableUploadService) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
@@ -50,7 +51,7 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, n
 		},
 		Service: service.NewSiteService(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
-			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.IsDev),
+			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.IsDev, rsu),
 		decoder: decoder,
 	}
 

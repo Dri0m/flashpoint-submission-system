@@ -7,9 +7,11 @@ package main
 import (
 	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
+	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/Dri0m/flashpoint-submission-system/transport"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/joho/godotenv"
@@ -31,5 +33,11 @@ func main() {
 	authBot := authbot.ConnectBot(l, conf.AuthBotToken)
 	notificationBot := notificationbot.ConnectBot(l, conf.NotificationBotToken)
 
-	transport.InitApp(l, conf, db, authBot, notificationBot)
+	l.Infoln("connecting to the resumable upload service")
+	rsu, err := resumableuploadservice.Connect(constants.ResumableDbName)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	transport.InitApp(l, conf, db, authBot, notificationBot, rsu)
 }

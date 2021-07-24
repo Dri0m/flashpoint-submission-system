@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/kofalt/go-memoize"
 	"io/ioutil"
 	"math"
@@ -124,11 +125,13 @@ type SiteService struct {
 	isDev                     bool
 	submissionReceiverMutex   sync.Mutex
 	discordRoleCache          *memoize.Memoizer
+	resumableUploadService    *resumableuploadservice.ResumableUploadService
 }
 
 func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
-	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string, isDev bool) *SiteService {
+	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService) *SiteService {
+
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
 		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, curationFeedChannelID, l.WithField("botName", "notificationBot"), isDev),
@@ -143,6 +146,7 @@ func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBot
 		notificationQueueNotEmpty: make(chan bool, 1),
 		isDev:                     isDev,
 		discordRoleCache:          memoize.NewMemoizer(2*time.Minute, 60*time.Minute),
+		resumableUploadService:    rsu,
 	}
 }
 
