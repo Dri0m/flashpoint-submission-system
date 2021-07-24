@@ -22,3 +22,5 @@ db.db*
 files/*
 backups/*
 *.log.gz
+
+resumableuploadservice.db*
