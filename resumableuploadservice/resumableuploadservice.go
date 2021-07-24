@@ -58,13 +58,12 @@ func (rsu *ResumableUploadService) TestChunk(fileID string, chunkNumber uint64) 
 
 	fileBucketName := getFileBucketName(fileID)
 	chunkDataKey := getChunkDataKey(fileID, chunkNumber)
-
 	isReceived := false
 
-	err := rsu.db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists(fileBucketName)
-		if err != nil {
-			return err
+	err := rsu.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(fileBucketName)
+		if b == nil {
+			return nil
 		}
 
 		if chunk := b.Get(chunkDataKey); chunk != nil {
