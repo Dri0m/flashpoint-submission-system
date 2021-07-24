@@ -38,6 +38,7 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
+	defer rsu.Close()
 
 	transport.InitApp(l, conf, db, authBot, notificationBot, rsu)
 }

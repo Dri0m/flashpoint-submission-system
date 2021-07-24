@@ -23,6 +23,11 @@ func Connect(dbName string) (*ResumableUploadService, error) {
 	return rsu, nil
 }
 
+// Close stops what needs to be stopped
+func (rsu *ResumableUploadService) Close() {
+	rsu.db.Close()
+}
+
 // PutChunk stores chunk, overwrites if exists.
 func (rsu *ResumableUploadService) PutChunk(fileID string, chunkNumber uint64, chunk []byte) error {
 	if len(fileID) == 0 || chunkNumber == 0 || len(chunk) == 0 {
