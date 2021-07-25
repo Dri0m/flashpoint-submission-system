@@ -217,8 +217,8 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiverResumableTestChunk, muxAny(
 				isStaff,
-				isTrialCurator,
-				muxAll(isInAudit, userHasNoSubmissions)))))).
+				muxAll(isTrialCurator, userOwnsSubmission),
+				muxAll(isInAudit, userOwnsSubmission)))))).
 		Methods("GET")
 
 	router.Handle(
