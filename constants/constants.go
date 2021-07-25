@@ -4,7 +4,7 @@ const ValidatorID = 810112564787675166
 const SystemID = 844246603102945333
 const SubmissionsDir = "files/submissions"
 const SubmissionImagesDir = "files/submissions-images"
-const UserInAuditSumbissionMaxFilesize = 200000000
+const UserInAuditSumbissionMaxFilesize = 500000000
 const ResumableDbName = "resumableuploadservice.db"
 
 const (

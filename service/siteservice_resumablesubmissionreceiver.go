@@ -91,7 +91,7 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, si
 	}
 
 	if constants.IsInAudit(userRoles) && resumableParams.ResumableTotalSize > constants.UserInAuditSumbissionMaxFilesize {
-		return nil, perr("submission filesize limited to 200MB for users in audit", http.StatusForbidden)
+		return nil, perr("submission filesize limited to 500MB for users in audit", http.StatusForbidden)
 	}
 
 	var submissionLevel string

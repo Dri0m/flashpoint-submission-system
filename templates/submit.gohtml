@@ -5,7 +5,7 @@
             <h1>Submit curation(s) - Legacy uploader</h1>
 
             {{if isInAudit .UserRoles}}
-                <p>Max filesize is 200MB. You are not able to submit more than one submission.</p>
+                <p>Max filesize is 500MB. You are not able to submit more than one submission.</p>
                 <input type="file" name="files" id="file-input">
             {{else}}
                 <p>
@@ -32,7 +32,7 @@
             <h1>Submit curation(s)</h1>
 
             {{if isInAudit .UserRoles}}
-                <p>Max filesize is 200MB. You are not able to submit more than one submission.</p>
+                <p>Max filesize is 500MB. You are not able to submit more than one submission.</p>
             {{else}}
                 <p>
                     Max filesize is 50GB. Note that it may take a long time to process large files after the upload step
