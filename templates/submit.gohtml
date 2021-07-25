@@ -23,7 +23,7 @@
                 <input type="file" name="files" id="file-input" multiple="multiple">
             {{end}}
 
-            <input class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
+            <input type="button" class="pure-button pure-button button-upload-file" id="upload-button" value="Upload">
             Parallel upload queues: <input type="number" min="1" max="20" value="2" id="upload-queues"><br>
             <div id="progress-bars-container"></div>
         </div>
@@ -51,9 +51,9 @@
 
             <br><br>
 
-            <input class="pure-button pure-button button-upload-file" value="Start" onclick="startUpload()">
-            <input class="pure-button pure-button button-pause" value="Pause" onclick="pauseUpload()">
-            <input class="pure-button pure-button button-cancel" value="Cancel" onclick="cancelUpload()">
+            <input type="button" class="pure-button pure-button button-upload-file" value="Start" onclick="startUpload()">
+            <input type="button" class="pure-button pure-button button-pause" value="Pause" onclick="pauseUpload()">
+            <input type="button" class="pure-button pure-button button-cancel" value="Cancel" onclick="cancelUpload()">
 
             <br><br>
 
