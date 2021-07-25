@@ -95,11 +95,11 @@ func Test_siteService_ReceiveSubmissions_OK(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -225,11 +225,11 @@ func Test_siteService_ReceiveSubmissions_OK_WithSubmissionImage(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -369,11 +369,11 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmission(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
 	ts.dbs.On("Ctx").Return(ctx)
@@ -444,11 +444,11 @@ func Test_siteService_ReceiveSubmissions_Fail_SubscribeUserToSubmission(t *testi
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
 	ts.dbs.On("Ctx").Return(ctx)
 
@@ -530,11 +530,11 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreSubmissionFile(t *testing.T) 
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
 	ts.dbs.On("Ctx").Return(ctx)
 
@@ -625,11 +625,11 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreUploadComment(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
 	ts.dbs.On("Ctx").Return(ctx)
 
@@ -680,11 +680,11 @@ func Test_siteService_ReceiveSubmissions_Fail_Validate(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return((*types.ValidatorResponse)(nil), errors.New(""))
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return((*types.ValidatorResponse)(nil), errors.New(""))
 
 	ts.dbs.On("Rollback").Return(nil)
 
@@ -769,11 +769,11 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationMeta(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
 	ts.dbs.On("Ctx").Return(ctx)
 
@@ -878,11 +878,11 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreNotification(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 	ts.dal.On("GetAllSimilarityAttributes").Return([]*types.SimilarityAttributes{}, nil)
 	ts.dbs.On("Ctx").Return(ctx)
 
@@ -996,11 +996,11 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreCurationImage(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -1106,11 +1106,11 @@ func Test_siteService_ReceiveSubmissions_Fail_StoreBotComment(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -1217,11 +1217,11 @@ func Test_siteService_ReceiveSubmissions_Fail_UpdateSubmissionCacheTable(t *test
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
@@ -1297,11 +1297,11 @@ func Test_siteService_ReceiveSubmissions_Fail_GetAllSimilarityAttributes(t *test
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 	ts.dbs.On("Ctx").Return(ctx)
 	ts.dal.On("GetAllSimilarityAttributes").Return(([]*types.SimilarityAttributes)(nil), errors.New(""))
 
@@ -1397,11 +1397,11 @@ func Test_siteService_ReceiveSubmissions_Fail_Commit(t *testing.T) {
 
 	ts.dal.On("GetDiscordUserRoles", uid).Return(userRoles, nil)
 
-	ts.multipartFileWrapper.On("Open").Return(tmpFile, nil)
+	ts.multipartFileWrapper.On("Open").Return(&fakeMultipartFile{}, nil)
 	ts.multipartFileWrapper.On("Filename").Return(filename)
 	ts.multipartFileWrapper.On("Size").Return(size)
 
-	ts.validator.On("Validate", tmpFile, destinationFilename, destinationFilePath).Return(vr, nil)
+	ts.validator.On("Validate", &fakeMultipartFile{}, destinationFilename, destinationFilePath).Return(vr, nil)
 
 	ts.dal.On("StoreSubmission", submissionLevel).Return(sid, nil)
 	ts.dal.On("SubscribeUserToSubmission", uid, sid).Return(nil)
