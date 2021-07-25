@@ -130,6 +130,8 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, si
 		return nil, dberr(err)
 	}
 
+	s.announceNotification()
+
 	return &submissionID, nil
 }
 
