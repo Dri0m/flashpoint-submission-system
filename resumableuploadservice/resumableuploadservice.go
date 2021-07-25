@@ -30,14 +30,14 @@ func (rsu *ResumableUploadService) Close() {
 }
 
 // PutChunk stores chunk, overwrites if exists.
-func (rsu *ResumableUploadService) PutChunk(fileID string, chunkNumber uint64, chunk []byte) error {
+func (rsu *ResumableUploadService) PutChunk(uid int64, fileID string, chunkNumber uint64, chunk []byte) error {
 	if len(fileID) == 0 || chunkNumber == 0 || len(chunk) == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(fileID)
-	chunkDataKey := getChunkDataKey(fileID, chunkNumber)
-	chunkSizeKey := getChunkSizeKey(fileID, chunkNumber)
+	fileBucketName := getFileBucketName(uid, fileID)
+	chunkDataKey := getChunkDataKey(uid, fileID, chunkNumber)
+	chunkSizeKey := getChunkSizeKey(uid, fileID, chunkNumber)
 
 	return rsu.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(fileBucketName)
@@ -57,13 +57,13 @@ func (rsu *ResumableUploadService) PutChunk(fileID string, chunkNumber uint64, c
 }
 
 // TestChunk returns true if the chunk is already received
-func (rsu *ResumableUploadService) TestChunk(fileID string, chunkNumber uint64) (bool, error) {
+func (rsu *ResumableUploadService) TestChunk(uid int64, fileID string, chunkNumber uint64) (bool, error) {
 	if len(fileID) == 0 || chunkNumber == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(fileID)
-	chunkDataKey := getChunkDataKey(fileID, chunkNumber)
+	fileBucketName := getFileBucketName(uid, fileID)
+	chunkDataKey := getChunkDataKey(uid, fileID, chunkNumber)
 	isReceived := false
 
 	err := rsu.db.View(func(tx *bolt.Tx) error {
@@ -83,12 +83,12 @@ func (rsu *ResumableUploadService) TestChunk(fileID string, chunkNumber uint64) 
 }
 
 // IsUploadFinished compares the total size of stored chunks a to provided size
-func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize int64) (bool, error) {
+func (rsu *ResumableUploadService) IsUploadFinished(uid int64, fileID string, expectedSize int64) (bool, error) {
 	if len(fileID) == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(fileID)
+	fileBucketName := getFileBucketName(uid, fileID)
 
 	var actualSize uint64
 
@@ -99,7 +99,7 @@ func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize 
 		}
 
 		c := b.Cursor()
-		prefix := getFileSizePrefix(fileID)
+		prefix := getFileSizePrefix(uid, fileID)
 
 		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 			actualSize += btoi(v)
@@ -116,12 +116,12 @@ func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize 
 }
 
 // DeleteFile deletes the whole file bucket
-func (rsu *ResumableUploadService) DeleteFile(fileID string) error {
+func (rsu *ResumableUploadService) DeleteFile(uid int64, fileID string) error {
 	if len(fileID) == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(fileID)
+	fileBucketName := getFileBucketName(uid, fileID)
 
 	return rsu.db.Update(func(tx *bolt.Tx) error {
 		return tx.DeleteBucket(fileBucketName)
@@ -129,6 +129,7 @@ func (rsu *ResumableUploadService) DeleteFile(fileID string) error {
 }
 
 type fileReadCloser struct {
+	uid                int64
 	fileID             string
 	rsu                *ResumableUploadService
 	currentChunkNumber uint64
@@ -138,13 +139,18 @@ type fileReadCloser struct {
 }
 
 // NewFileReader returns a reader that reconstructs the file from the chunks on the fly. It does not check if the file is complete.
-func (rsu *ResumableUploadService) NewFileReader(fileID string) (io.ReadCloser, error) {
-	chunkCount, err := rsu.getChunkCount(fileID)
+func (rsu *ResumableUploadService) NewFileReader(uid int64, fileID string) (io.ReadCloser, error) {
+	if uid == 0 || len(fileID) == 0 {
+		panic("invalid arguments provided")
+	}
+
+	chunkCount, err := rsu.getChunkCount(uid, fileID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &fileReadCloser{
+		uid:                uid,
 		fileID:             fileID,
 		rsu:                rsu,
 		currentChunkNumber: 0,
@@ -158,7 +164,7 @@ func (fr *fileReadCloser) Read(buf []byte) (n int, err error) {
 	// case 0: init the reader
 	if fr.currentChunkNumber == 0 {
 		fr.currentChunkNumber++
-		fr.currentChunkData, err = fr.rsu.getChunk(fr.fileID, fr.currentChunkNumber)
+		fr.currentChunkData, err = fr.rsu.getChunk(fr.uid, fr.fileID, fr.currentChunkNumber)
 		if err != nil {
 			return
 		}
@@ -196,7 +202,7 @@ func (fr *fileReadCloser) Read(buf []byte) (n int, err error) {
 			// fetch new chunk
 			fr.currentChunkNumber++
 			fr.currentChunkOffset = 0
-			fr.currentChunkData, err = fr.rsu.getChunk(fr.fileID, fr.currentChunkNumber)
+			fr.currentChunkData, err = fr.rsu.getChunk(fr.uid, fr.fileID, fr.currentChunkNumber)
 			if err != nil {
 				return
 			}
@@ -214,12 +220,12 @@ func (fr *fileReadCloser) Close() error {
 	return nil
 }
 
-func (rsu *ResumableUploadService) getChunkCount(fileID string) (uint64, error) {
+func (rsu *ResumableUploadService) getChunkCount(uid int64, fileID string) (uint64, error) {
 	if len(fileID) == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(fileID)
+	fileBucketName := getFileBucketName(uid, fileID)
 
 	var chunkCount uint64 = 0
 
@@ -230,7 +236,7 @@ func (rsu *ResumableUploadService) getChunkCount(fileID string) (uint64, error) 
 		}
 
 		c := b.Cursor()
-		prefix := getFileDataPrefix(fileID)
+		prefix := getFileDataPrefix(uid, fileID)
 
 		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
 			chunkCount++
@@ -247,13 +253,13 @@ func (rsu *ResumableUploadService) getChunkCount(fileID string) (uint64, error) 
 }
 
 // getChunk returns chunk
-func (rsu *ResumableUploadService) getChunk(fileID string, chunkNumber uint64) ([]byte, error) {
+func (rsu *ResumableUploadService) getChunk(uid int64, fileID string, chunkNumber uint64) ([]byte, error) {
 	if len(fileID) == 0 || chunkNumber == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(fileID)
-	chunkDataKey := getChunkDataKey(fileID, chunkNumber)
+	fileBucketName := getFileBucketName(uid, fileID)
+	chunkDataKey := getChunkDataKey(uid, fileID, chunkNumber)
 
 	var result []byte
 

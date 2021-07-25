@@ -15,22 +15,22 @@ func btoi(b []byte) uint64 {
 	return binary.BigEndian.Uint64(b)
 }
 
-func getFileBucketName(fileID string) []byte {
-	return []byte(fileID)
+func getFileBucketName(uid int64, fileID string) []byte {
+	return []byte(fmt.Sprintf("%d-%s", uid, fileID))
 }
 
-func getChunkDataKey(fileID string, chunkNumber uint64) []byte {
-	return []byte(fmt.Sprintf("data-%s-%d", fileID, chunkNumber))
+func getChunkDataKey(uid int64, fileID string, chunkNumber uint64) []byte {
+	return []byte(fmt.Sprintf("data-%d-%s-%d", uid, fileID, chunkNumber))
 }
 
-func getChunkSizeKey(fileID string, chunkNumber uint64) []byte {
-	return []byte(fmt.Sprintf("size-%s-%d", fileID, chunkNumber))
+func getChunkSizeKey(uid int64, fileID string, chunkNumber uint64) []byte {
+	return []byte(fmt.Sprintf("size-%d-%s-%d", uid, fileID, chunkNumber))
 }
 
-func getFileSizePrefix(fileID string) []byte {
-	return []byte(fmt.Sprintf("size-%s", fileID))
+func getFileSizePrefix(uid int64, fileID string) []byte {
+	return []byte(fmt.Sprintf("size-%d-%s", uid, fileID))
 }
 
-func getFileDataPrefix(fileID string) []byte {
-	return []byte(fmt.Sprintf("data-%s", fileID))
+func getFileDataPrefix(uid int64, fileID string) []byte {
+	return []byte(fmt.Sprintf("data-%d-%s", uid, fileID))
 }

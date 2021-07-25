@@ -23,14 +23,19 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 		"resumableCurrentChunkSize": resumableParams.ResumableCurrentChunkSize,
 	})
 
+	uid := utils.UserID(ctx)
+	if uid == 0 {
+		l.Panic("no user associated with request")
+	}
+
 	l.Debug("storing chunk...")
-	err := s.resumableUploadService.PutChunk(resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
+	err := s.resumableUploadService.PutChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
 	if err != nil {
 		l.Error(err)
 		return nil, err
 	}
 
-	isComplete, err := s.resumableUploadService.IsUploadFinished(resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
+	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
 	if err != nil {
 		l.Error(err)
 		return nil, err
@@ -45,12 +50,13 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 }
 
 type resumableUpload struct {
+	uid    int64
 	fileID string
 	rsu    *resumableuploadservice.ResumableUploadService
 }
 
 func (ru resumableUpload) GetReadCloser() (io.ReadCloser, error) {
-	return ru.rsu.NewFileReader(ru.fileID)
+	return ru.rsu.NewFileReader(ru.uid, ru.fileID)
 }
 
 func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, sid *int64, resumableParams *types.ResumableParams) (*int64, error) {
@@ -105,13 +111,14 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, si
 	}
 
 	ru := &resumableUpload{
+		uid:    uid,
 		fileID: resumableParams.ResumableIdentifier,
 		rsu:    s.resumableUploadService,
 	}
 	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel)
 
 	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-	if e := s.resumableUploadService.DeleteFile(resumableParams.ResumableIdentifier); e != nil {
+	if e := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier); e != nil {
 		utils.LogCtx(ctx).Error(e)
 	}
 
@@ -147,7 +154,12 @@ func (s *SiteService) IsSubmissionChunkReceived(ctx context.Context, sid *int64,
 		"resumableCurrentChunkSize": resumableParams.ResumableCurrentChunkSize,
 	})
 
-	isComplete, err := s.resumableUploadService.IsUploadFinished(resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
+	uid := utils.UserID(ctx)
+	if uid == 0 {
+		l.Panic("no user associated with request")
+	}
+
+	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
 	if err != nil {
 		l.Error(err)
 		return false, err
@@ -158,7 +170,7 @@ func (s *SiteService) IsSubmissionChunkReceived(ctx context.Context, sid *int64,
 	}
 
 	l.Debug("testing chunk")
-	isReceived, err := s.resumableUploadService.TestChunk(resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber)
+	isReceived, err := s.resumableUploadService.TestChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber)
 	if err != nil {
 		l.Error(err)
 		return false, err
