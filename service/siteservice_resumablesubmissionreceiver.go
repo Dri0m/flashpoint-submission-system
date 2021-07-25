@@ -110,18 +110,16 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, si
 	}
 	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel)
 
+	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+	if e := s.resumableUploadService.DeleteFile(resumableParams.ResumableIdentifier); e != nil {
+		utils.LogCtx(ctx).Error(e)
+	}
+
 	for _, imageFilePath := range ifp {
 		imageFilePaths = append(imageFilePaths, imageFilePath)
 	}
 
 	if err != nil {
-		cleanup()
-		return nil, err
-	}
-
-	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-	if err := s.resumableUploadService.DeleteFile(resumableParams.ResumableIdentifier); err != nil {
-		utils.LogCtx(ctx).Error(err)
 		cleanup()
 		return nil, err
 	}
