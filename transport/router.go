@@ -179,8 +179,8 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	router.Handle(
 		fmt.Sprintf("/api/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
-			a.HandleSubmissionReceiver,
-			muxAny(isStaff,
+			a.HandleSubmissionReceiver, muxAny(
+				isStaff,
 				muxAll(isTrialCurator, userOwnsSubmission),
 				muxAll(isInAudit, userOwnsSubmission)))))).
 		Methods("POST")
@@ -199,8 +199,8 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiverResumable, muxAny(
 				isStaff,
-				isTrialCurator,
-				muxAll(isInAudit, userHasNoSubmissions)))))).
+				muxAll(isTrialCurator, userOwnsSubmission),
+				muxAll(isInAudit, userOwnsSubmission)))))).
 		Methods("POST")
 
 	router.Handle(
