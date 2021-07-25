@@ -56,7 +56,7 @@
                     <script>bindFancierUpload("/api/submission-receiver")</script>
                     <script src="/static/resumable/resumable.js"></script>
                     <script src="/static/resumable/uploader.js"></script>
-                    <script>initResumableUploader("/api/submission-receiver-resumable/{{$submissionID}}", 1)</script>
+                    <script>initResumableUploader("/api/submission-receiver-resumable/{{$submissionID}}", 1, [".7z", ".zip"])</script>
                 </div>
             {{end}}
         </div>

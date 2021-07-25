@@ -4,7 +4,7 @@ function getFilename(file) {
 
 let r = undefined
 
-function initResumableUploader(target, maxFiles) {
+function initResumableUploader(target, maxFiles, allowedExtensions) {
     r = new Resumable({
         target: target,
         chunkSize: 1000 * 1000,
@@ -56,7 +56,7 @@ function initResumableUploader(target, maxFiles) {
     }
 
     function updateFileProgress(file) {
-        if(file.uploadStartTime === null) {
+        if (file.uploadStartTime === null) {
             file.uploadStartTime = performance.now()
         }
         let percent_complete = file.progress() * 100
@@ -88,8 +88,19 @@ function initResumableUploader(target, maxFiles) {
     r.on("fileProgress", updateFileProgress);
     r.on("filesAdded", function (array) {
         for (let i = 0; i < array.length; i++) {
-            if (!(getFilename(array[i]).endsWith(".7z") || getFilename(array[i]).endsWith(".zip"))) {
-                alert('Error : Incorrect file type, only .7z and .zip are supported.')
+            let goodExtension = false
+            if (allowedExtensions.length === 0) {
+                goodExtension = true
+            } else {
+                for (let j = 0; j < allowedExtensions.length; j++) {
+                    if (getFilename(array[i]).endsWith(allowedExtensions[j])) {
+                        goodExtension = true
+                        break
+                    }
+                }
+            }
+            if (!goodExtension) {
+                alert('Error : Incorrect file type.')
                 return
             }
         }
