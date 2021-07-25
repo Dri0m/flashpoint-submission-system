@@ -6,12 +6,20 @@
     display: inline-block;
     text-align: center;
     font-size: 40px;
-    background: rgba(0,0,0,0.1);
-    color: rgba(0,0,0,0.2);
     cursor: pointer;
 }
 
 #resumable-drop span {
     display: inline-block;
     vertical-align: middle;
+}
+
+.gray-drop {
+    background: rgba(0,0,0,0.1);
+    color: rgba(0,0,0,0.2);
+}
+
+.blue-drop {
+    background: rgba(0, 0, 255, 0.4);
+    color: rgba(0, 0, 255, 0.6);
 }
