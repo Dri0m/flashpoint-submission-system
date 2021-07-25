@@ -30,3 +30,7 @@ func getChunkSizeKey(fileID string, chunkNumber uint64) []byte {
 func getFileSizePrefix(fileID string) []byte {
 	return []byte(fmt.Sprintf("size-%s", fileID))
 }
+
+func getFileDataPrefix(fileID string) []byte {
+	return []byte(fmt.Sprintf("data-%s", fileID))
+}

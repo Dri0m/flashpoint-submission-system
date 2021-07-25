@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"io"
 	"time"
 )
 
@@ -112,4 +113,148 @@ func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize 
 	}
 
 	return actualSize == expectedSize, err
+}
+
+type fileReader struct {
+	fileID             string
+	rsu                *ResumableUploadService
+	currentChunkNumber uint64
+	currentChunkData   []byte
+	currentChunkOffset int
+	chunkCount         uint64
+}
+
+// NewFileReader returns a reader that reconstructs the file from the chunks on the fly. It does not check if the file is complete.
+func (rsu *ResumableUploadService) NewFileReader(fileID string) (io.Reader, error) {
+	chunkCount, err := rsu.getChunkCount(fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &fileReader{
+		fileID:             fileID,
+		rsu:                rsu,
+		currentChunkNumber: 0,
+		currentChunkData:   nil,
+		currentChunkOffset: 0,
+		chunkCount:         chunkCount,
+	}, nil
+}
+
+func (fr *fileReader) Read(buf []byte) (n int, err error) {
+	// case 0: init the reader
+	if fr.currentChunkNumber == 0 {
+		fr.currentChunkNumber++
+		fr.currentChunkData, err = fr.rsu.getChunk(fr.fileID, fr.currentChunkNumber)
+		if err != nil {
+			return
+		}
+	}
+
+	for {
+		// buffer full
+		if len(buf[n:]) == 0 {
+			return
+		}
+
+		remainingChunkBytes := len(fr.currentChunkData) - fr.currentChunkOffset
+
+		// case 1: reader has more data available than the caller wants
+		if remainingChunkBytes >= len(buf[n:]) {
+			low := fr.currentChunkOffset
+			high := fr.currentChunkOffset + len(buf[n:])
+			copy(buf[n:], fr.currentChunkData[low:high])
+			fr.currentChunkOffset = high
+			n += high - low
+			return
+		}
+
+		// case 2: caller wants more data than the reader currently has
+		if remainingChunkBytes < len(buf[n:]) {
+			// use up the rest of the chunk
+			if remainingChunkBytes > 0 {
+				low := fr.currentChunkOffset
+				high := len(fr.currentChunkData)
+				copy(buf[n:], fr.currentChunkData[low:high])
+				fr.currentChunkOffset = high
+				n += high - low
+			}
+
+			// fetch new chunk
+			fr.currentChunkNumber++
+			fr.currentChunkOffset = 0
+			fr.currentChunkData, err = fr.rsu.getChunk(fr.fileID, fr.currentChunkNumber)
+			if err != nil {
+				return
+			}
+
+			// no more chunks, terminate
+			if fr.currentChunkData == nil {
+				return n, io.EOF
+			}
+		}
+	}
+}
+
+func (rsu *ResumableUploadService) getChunkCount(fileID string) (uint64, error) {
+	if len(fileID) == 0 {
+		panic("invalid arguments provided")
+	}
+
+	fileBucketName := getFileBucketName(fileID)
+
+	var chunkCount uint64 = 0
+
+	err := rsu.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(fileBucketName)
+		if b == nil {
+			return fmt.Errorf("bucket does not exist")
+		}
+
+		c := b.Cursor()
+		prefix := getFileDataPrefix(fileID)
+
+		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+			chunkCount++
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, nil
+	}
+
+	return chunkCount, err
+}
+
+// getChunk returns chunk
+func (rsu *ResumableUploadService) getChunk(fileID string, chunkNumber uint64) ([]byte, error) {
+	if len(fileID) == 0 || chunkNumber == 0 {
+		panic("invalid arguments provided")
+	}
+
+	fileBucketName := getFileBucketName(fileID)
+	chunkDataKey := getChunkDataKey(fileID, chunkNumber)
+
+	var result []byte
+
+	err := rsu.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(fileBucketName)
+		if b == nil {
+			return nil
+		}
+
+		chunk := b.Get(chunkDataKey)
+		if chunk == nil {
+			return nil
+		}
+
+		result = make([]byte, len(chunk))
+		copy(result, chunk)
+
+		return nil
+	})
+
+	return result, err
 }
