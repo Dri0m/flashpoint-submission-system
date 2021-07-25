@@ -130,6 +130,7 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, si
 		return nil, dberr(err)
 	}
 
+	utils.LogCtx(ctx).WithField("amount", 1).Debug("submissions received")
 	s.announceNotification()
 
 	return &submissionID, nil
