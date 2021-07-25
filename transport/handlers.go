@@ -281,6 +281,20 @@ func (a *App) HandleSubmissionReceiverResumable(w http.ResponseWriter, r *http.R
 
 func (a *App) HandleSubmissionReceiverResumableTestChunk(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionID := params[constants.ResourceKeySubmissionID]
+
+	// get submission ID
+	var sid *int64
+	if submissionID != "" {
+		sidParsed, err := strconv.ParseInt(submissionID, 10, 64)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
+			return
+		}
+		sid = &sidParsed
+	}
 
 	// parse resumable params
 	resumableParams := &types.ResumableParams{}
@@ -292,7 +306,7 @@ func (a *App) HandleSubmissionReceiverResumableTestChunk(w http.ResponseWriter, 
 	}
 
 	// then a magic happens
-	alreadyReceived, err := a.Service.IsSubmissionChunkReceived(ctx, resumableParams)
+	alreadyReceived, err := a.Service.IsSubmissionChunkReceived(ctx, sid, resumableParams)
 	if err != nil {
 		writeError(ctx, w, err)
 		return

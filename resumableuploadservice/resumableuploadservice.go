@@ -83,7 +83,7 @@ func (rsu *ResumableUploadService) TestChunk(fileID string, chunkNumber uint64) 
 }
 
 // IsUploadFinished compares the total size of stored chunks a to provided size
-func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize uint64) (bool, error) {
+func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize int64) (bool, error) {
 	if len(fileID) == 0 {
 		panic("invalid arguments provided")
 	}
@@ -112,10 +112,10 @@ func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize 
 		return false, nil
 	}
 
-	return actualSize == expectedSize, err
+	return actualSize == uint64(expectedSize), err
 }
 
-type fileReader struct {
+type fileReadCloser struct {
 	fileID             string
 	rsu                *ResumableUploadService
 	currentChunkNumber uint64
@@ -125,13 +125,13 @@ type fileReader struct {
 }
 
 // NewFileReader returns a reader that reconstructs the file from the chunks on the fly. It does not check if the file is complete.
-func (rsu *ResumableUploadService) NewFileReader(fileID string) (io.Reader, error) {
+func (rsu *ResumableUploadService) NewFileReader(fileID string) (io.ReadCloser, error) {
 	chunkCount, err := rsu.getChunkCount(fileID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &fileReader{
+	return &fileReadCloser{
 		fileID:             fileID,
 		rsu:                rsu,
 		currentChunkNumber: 0,
@@ -141,7 +141,7 @@ func (rsu *ResumableUploadService) NewFileReader(fileID string) (io.Reader, erro
 	}, nil
 }
 
-func (fr *fileReader) Read(buf []byte) (n int, err error) {
+func (fr *fileReadCloser) Read(buf []byte) (n int, err error) {
 	// case 0: init the reader
 	if fr.currentChunkNumber == 0 {
 		fr.currentChunkNumber++
@@ -194,6 +194,11 @@ func (fr *fileReader) Read(buf []byte) (n int, err error) {
 			}
 		}
 	}
+}
+
+// Close is just a dummy close in case it's needed later
+func (fr *fileReadCloser) Close() error {
+	return nil
 }
 
 func (rsu *ResumableUploadService) getChunkCount(fileID string) (uint64, error) {

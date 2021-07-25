@@ -81,7 +81,8 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 	var submissionIDs = make([]int64, 0)
 
 	for _, fileProvider := range fileProviders {
-		destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, fileProvider, sid, submissionLevel)
+		lu := &legacyUpload{fileProvider}
+		destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, lu, fileProvider.Filename(), fileProvider.Size(), sid, submissionLevel)
 
 		if destinationFilename != nil {
 			destinationFilenames = append(destinationFilenames, *destinationFilename)
@@ -111,7 +112,15 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 	return submissionIDs, nil
 }
 
-func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileHeader MultipartFileProvider, sid *int64, submissionLevel string) (*string, []string, int64, error) {
+type legacyUpload struct {
+	MultipartFileProvider
+}
+
+func (lu *legacyUpload) GetReadCloser() (io.ReadCloser, error) {
+	return lu.Open()
+}
+
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64, sid *int64, submissionLevel string) (*string, []string, int64, error) {
 	uid := utils.UserID(ctx)
 	if uid == 0 {
 		utils.LogCtx(ctx).Panic("no user associated with request")
@@ -119,7 +128,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	var err error
 
-	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", fileHeader.Filename(), fileHeader.Size())
+	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", filename, filesize)
 
 	if err := os.MkdirAll(s.submissionsDir, os.ModeDir); err != nil {
 		return nil, nil, 0, err
@@ -128,7 +137,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return nil, nil, 0, err
 	}
 
-	ext := filepath.Ext(fileHeader.Filename())
+	ext := filepath.Ext(filename)
 
 	if ext != ".7z" && ext != ".zip" {
 		return nil, nil, 0, perr("unsupported file extension", http.StatusBadRequest)
@@ -155,11 +164,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 		var err error
 
-		file, err := fileHeader.Open()
+		readCloser, err := fileReadCloserProvider.GetReadCloser()
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer readCloser.Close()
 
 		destination, err := os.Create(destinationFilePath)
 		if err != nil {
@@ -171,11 +180,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 		multiWriter := io.MultiWriter(destination, sha256sum, md5sum)
 
-		nBytes, err := io.Copy(multiWriter, file)
+		nBytes, err := io.Copy(multiWriter, readCloser)
 		if err != nil {
 			return err
 		}
-		if nBytes != fileHeader.Size() {
+		if nBytes != filesize {
 			return fmt.Errorf("incorrect number of bytes copied to destination")
 		}
 
@@ -190,12 +199,13 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 		var err error
 
-		file, err := fileHeader.Open()
+		readCloser, err := fileReadCloserProvider.GetReadCloser()
 		if err != nil {
 			return err
 		}
+		defer readCloser.Close()
 
-		vr, err = s.validator.Validate(ectx, file, destinationFilename, destinationFilePath)
+		vr, err = s.validator.Validate(ectx, readCloser, destinationFilename, destinationFilePath)
 		if err != nil {
 			utils.LogCtx(ectx).Error(err)
 			return perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
@@ -249,9 +259,9 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	sf := &types.SubmissionFile{
 		SubmissionID:     submissionID,
 		SubmitterID:      uid,
-		OriginalFilename: fileHeader.Filename(),
+		OriginalFilename: filename,
 		CurrentFilename:  destinationFilename,
-		Size:             fileHeader.Size(),
+		Size:             filesize,
 		UploadedAt:       s.clock.Now(),
 		MD5Sum:           hex.EncodeToString(md5sum.Sum(nil)),
 		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
@@ -262,7 +272,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		me, ok := err.(*mysql.MySQLError)
 		if ok {
 			if me.Number == 1062 {
-				return &destinationFilePath, nil, 0, perr(fmt.Sprintf("file '%s' with checksums md5:%s sha256:%s already present in the DB", fileHeader.Filename(), sf.MD5Sum, sf.SHA256Sum), http.StatusConflict)
+				return &destinationFilePath, nil, 0, perr(fmt.Sprintf("file '%s' with checksums md5:%s sha256:%s already present in the DB", filename, sf.MD5Sum, sf.SHA256Sum), http.StatusConflict)
 			}
 		}
 		utils.LogCtx(ctx).Error(err)

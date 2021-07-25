@@ -329,7 +329,7 @@ type ValidatorTagResponse struct {
 type ResumableParams struct {
 	ResumableChunkNumber      uint64 `schema:"resumableChunkNumber"`
 	ResumableChunkSize        uint64 `schema:"resumableChunkSize"`
-	ResumableTotalSize        uint64 `schema:"resumableTotalSize"`
+	ResumableTotalSize        int64  `schema:"resumableTotalSize"`
 	ResumableIdentifier       string `schema:"resumableIdentifier"`
 	ResumableFilename         string `schema:"resumableFilename"`
 	ResumableRelativePath     string `schema:"resumableRelativePath"`

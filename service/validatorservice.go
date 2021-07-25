@@ -27,7 +27,7 @@ func NewValidator(validatorServerURL string) *curationValidator {
 	}
 }
 
-func (c *curationValidator) Validate(ctx context.Context, file multipart.File, filename, filepath string) (*types.ValidatorResponse, error) {
+func (c *curationValidator) Validate(ctx context.Context, file io.Reader, filename, filepath string) (*types.ValidatorResponse, error) {
 	resp, err := uploadFile(ctx, c.validatorServerURL+"/upload", file, filename, filepath)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (c *curationValidator) getTags(ctx context.Context) ([]types.Tag, error) {
 }
 
 // uploadFile POSTs a given file to a given URL via multipart writer and returns the response body if OK
-func uploadFile(ctx context.Context, url string, f multipart.File, filename, filePath string) ([]byte, error) {
+func uploadFile(ctx context.Context, url string, f io.Reader, filename, filePath string) ([]byte, error) {
 	client := http.Client{}
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
