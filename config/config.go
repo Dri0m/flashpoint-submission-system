@@ -30,6 +30,7 @@ type Config struct {
 	NotificationChannelID        string
 	CurationFeedChannelID        string
 	IsDev                        bool
+	ResumableUploadDBFullPath    string
 }
 
 func EnvString(name string) string {
@@ -99,5 +100,6 @@ func GetConfig(l *logrus.Entry) *Config {
 		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
 		CurationFeedChannelID:        EnvString("CURATION_FEED_CHANNEL_ID"),
 		IsDev:                        EnvBool("IS_DEV"),
+		ResumableUploadDBFullPath:    EnvString("RESUMABLE_UPLOAD_DB_FULL_PATH"),
 	}
 }

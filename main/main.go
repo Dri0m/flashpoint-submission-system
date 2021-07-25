@@ -7,7 +7,6 @@ package main
 import (
 	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
-	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/notificationbot"
@@ -34,7 +33,7 @@ func main() {
 	notificationBot := notificationbot.ConnectBot(l, conf.NotificationBotToken)
 
 	l.Infoln("connecting to the resumable upload service")
-	rsu, err := resumableuploadservice.Connect(constants.ResumableDbName)
+	rsu, err := resumableuploadservice.Connect(conf.ResumableUploadDBFullPath)
 	if err != nil {
 		l.Fatal(err)
 	}
