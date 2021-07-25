@@ -136,7 +136,9 @@ textarea {
 .button-unassign-testing,
 .button-assign-verification,
 .button-system,
-.button-unassign-verification {
+.button-unassign-verification,
+.button-pause,
+.button-cancel {
     color: white;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
@@ -215,6 +217,14 @@ textarea {
 
 .button-delete {
     background: rgb(255, 0, 0) !important;
+}
+
+.button-pause {
+    background: rgb(175, 129, 14) !important;
+}
+
+.button-cancel {
+    background: rgb(175, 14, 14) !important;
 }
 
 

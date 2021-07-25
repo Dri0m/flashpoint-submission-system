@@ -49,7 +49,13 @@
                 <span>Click or drag files here</span>
             </div>
 
-            <input class="pure-button pure-button button-upload-file" value="Upload" onclick="startUpload()">
+            <br><br>
+
+            <input class="pure-button pure-button button-upload-file" value="Start" onclick="startUpload()">
+            <input class="pure-button pure-button button-pause" value="Pause" onclick="pauseUpload()">
+            <input class="pure-button pure-button button-cancel" value="Cancel" onclick="cancelUpload()">
+
+            <br><br>
 
             <div id="progress-bars-container-resumable"></div>
         </div>
@@ -57,10 +63,9 @@
     </div>
 
     <link rel="stylesheet" href="/static/resumable/css.css">
-
     <script src="/static/legacy-uploader.js"></script>
     <script>bindFancierUpload("/api/submission-receiver")</script>
     <script src="/static/resumable/resumable.js"></script>
     <script src="/static/resumable/uploader.js"></script>
-    <script>initResumableUploader({{if isInAudit .UserRoles}}1{{else}}undefined{{end}})</script>
+    <script>initResumableUploader("/api/submission-receiver-resumable", {{if isInAudit .UserRoles}}1{{else}}undefined{{end}})</script>
 {{end}}

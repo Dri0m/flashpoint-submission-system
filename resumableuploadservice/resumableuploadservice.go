@@ -115,6 +115,19 @@ func (rsu *ResumableUploadService) IsUploadFinished(fileID string, expectedSize 
 	return actualSize == uint64(expectedSize), err
 }
 
+// DeleteFile deletes the whole file bucket
+func (rsu *ResumableUploadService) DeleteFile(fileID string) error {
+	if len(fileID) == 0 {
+		panic("invalid arguments provided")
+	}
+
+	fileBucketName := getFileBucketName(fileID)
+
+	return rsu.db.Update(func(tx *bolt.Tx) error {
+		return tx.DeleteBucket(fileBucketName)
+	})
+}
+
 type fileReadCloser struct {
 	fileID             string
 	rsu                *ResumableUploadService

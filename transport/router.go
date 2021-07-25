@@ -171,7 +171,25 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		Methods("POST")
 
 	router.Handle(
+		fmt.Sprintf("/api/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
+			a.HandleSubmissionReceiver,
+			muxAny(isStaff,
+				muxAll(isTrialCurator, userOwnsSubmission),
+				muxAll(isInAudit, userOwnsSubmission)))))).
+		Methods("POST")
+
+	router.Handle(
 		"/api/submission-receiver-resumable",
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
+			a.HandleSubmissionReceiverResumable, muxAny(
+				isStaff,
+				isTrialCurator,
+				muxAll(isInAudit, userHasNoSubmissions)))))).
+		Methods("POST")
+
+	router.Handle(
+		fmt.Sprintf("/api/submission-receiver-resumable/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiverResumable, muxAny(
 				isStaff,
@@ -189,13 +207,13 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		Methods("GET")
 
 	router.Handle(
-		fmt.Sprintf("/api/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
+		fmt.Sprintf("/api/submission-receiver-resumable/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
-			a.HandleSubmissionReceiver,
-			muxAny(isStaff,
-				muxAll(isTrialCurator, userOwnsSubmission),
-				muxAll(isInAudit, userOwnsSubmission)))))).
-		Methods("POST")
+			a.HandleSubmissionReceiverResumableTestChunk, muxAny(
+				isStaff,
+				isTrialCurator,
+				muxAll(isInAudit, userHasNoSubmissions)))))).
+		Methods("GET")
 
 	router.Handle(
 		fmt.Sprintf("/api/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs),

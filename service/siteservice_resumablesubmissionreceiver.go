@@ -119,6 +119,13 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, si
 		return nil, err
 	}
 
+	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+	if err := s.resumableUploadService.DeleteFile(resumableParams.ResumableIdentifier); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		cleanup()
+		return nil, err
+	}
+
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		cleanup()

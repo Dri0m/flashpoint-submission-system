@@ -4,11 +4,11 @@ function getFilename(file) {
 
 let r = undefined
 
-function initResumableUploader(maxFiles) {
+function initResumableUploader(target, maxFiles) {
     r = new Resumable({
-        target: "/api/submission-receiver-resumable",
+        target: target,
         chunkSize: 1000 * 1000,
-        simultaneousUploads: 3,
+        simultaneousUploads: 5,
         query: {},
         generateUniqueIdentifier: function (file, event) {
             let relativePath = getFilename(file)
@@ -88,6 +88,12 @@ function initResumableUploader(maxFiles) {
     r.on("fileProgress", updateFileProgress);
     r.on("filesAdded", function (array) {
         for (let i = 0; i < array.length; i++) {
+            if (!(getFilename(array[i]).endsWith(".7z") || getFilename(array[i]).endsWith(".zip"))) {
+                alert('Error : Incorrect file type, only .7z and .zip are supported.')
+                return
+            }
+        }
+        for (let i = 0; i < array.length; i++) {
             addFile(array[i])
         }
     });
@@ -117,4 +123,13 @@ function initResumableUploader(maxFiles) {
 
 function startUpload() {
     r.upload()
+}
+
+function pauseUpload() {
+    r.pause()
+}
+
+function cancelUpload() {
+    document.getElementById("progress-bars-container-resumable").innerHTML = ""
+    r.cancel()
 }
