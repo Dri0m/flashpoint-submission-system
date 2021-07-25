@@ -54,7 +54,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusOK)
+	writeResponse(ctx, w, presp("success", http.StatusOK), http.StatusOK)
 }
 
 func (a *App) HandleSoftDeleteSubmissionFile(w http.ResponseWriter, r *http.Request) {
@@ -527,7 +527,7 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusOK)
+	writeResponse(ctx, w, presp("success", http.StatusOK), http.StatusOK)
 }
 
 func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
@@ -557,7 +557,7 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusOK)
+	writeResponse(ctx, w, presp("success", http.StatusOK), http.StatusOK)
 }
 
 func (a *App) HandleInternalPage(w http.ResponseWriter, r *http.Request) {
@@ -582,7 +582,7 @@ func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeResponse(ctx, w, presp("success"), http.StatusOK)
+	writeResponse(ctx, w, presp("success", http.StatusOK), http.StatusOK)
 }
 
 func (a *App) HandleHelpPage(w http.ResponseWriter, r *http.Request) {

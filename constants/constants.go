@@ -84,5 +84,6 @@ const (
 )
 
 type PublicResponse struct {
-	Msg *string `json:"message"`
+	Msg    *string `json:"message"`
+	Status int     `json:"status"`
 }

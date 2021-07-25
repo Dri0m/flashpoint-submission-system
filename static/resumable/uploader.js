@@ -68,8 +68,19 @@ function initResumableUploader(maxFiles) {
         file.progressBar.value = file.progress()
     }
 
-    function updateFileSuccess(file) {
-        file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. Processing and validating file, please wait...`
+    function fileError(file, message) {
+        const obj = JSON.parse(message);
+        if (obj["status"] === 409) {
+            file.progressText.style.color = "orange"
+        } else {
+            file.progressText.style.color = "red"
+        }
+        file.progressText.innerHTML = `${getFilename(file)}<br>Upload failed!<br>Request status: ${obj["status"]} - ${friendlyHttpStatus[obj["status"]]}<br>Server response: ${obj["message"]}`
+    }
+
+    function updateFileSuccess(file, message) {
+        const obj = JSON.parse(message);
+        file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. <a href="/web/submission/${obj["submission_id"]}">View Submission</a>`
         file.progressBar.value = 1
     }
 
@@ -83,9 +94,7 @@ function initResumableUploader(maxFiles) {
     r.on("fileRetry", function (file) {
         console.debug("fileRetry", file);
     });
-    r.on("fileError", function (file, message) {
-        console.debug("fileError", file, message);
-    });
+    r.on("fileError", fileError);
     r.on("uploadStart", function () {
         console.debug("upload started");
     });
@@ -96,7 +105,7 @@ function initResumableUploader(maxFiles) {
     //     console.debug("progress");
     // });
     // r.on("error", function (message, file) {
-    //     console.debug("error", message, file);
+    //     fileError(file, message)
     // });
     r.on("pause", function () {
         console.debug("upload paused");

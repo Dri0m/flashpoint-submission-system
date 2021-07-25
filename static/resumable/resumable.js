@@ -64,7 +64,7 @@
       getTarget:null,
       maxChunkRetries:100,
       chunkRetryInterval:undefined,
-      permanentErrors:[400, 404, 415, 500, 501],
+      permanentErrors:[400, 404, 409, 415, 500, 501],
       maxFiles:undefined,
       withCredentials:false,
       xhrTimeout:0,
@@ -460,7 +460,7 @@
           }
           break;
         case 'retry':
-          $.resumableObj.fire('fileRetry', $);
+          $.resumableObj.fire('fileRetry', $, event, message);
           break;
         }
       };

@@ -157,10 +157,10 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 func writeError(ctx context.Context, w http.ResponseWriter, err error) {
 	ufe := &constants.PublicError{}
 	if errors.As(err, ufe) {
-		writeResponse(ctx, w, presp(ufe.Msg), ufe.Status)
+		writeResponse(ctx, w, presp(ufe.Msg, ufe.Status), ufe.Status)
 	} else {
 		msg := http.StatusText(http.StatusInternalServerError)
-		writeResponse(ctx, w, presp(msg), http.StatusInternalServerError)
+		writeResponse(ctx, w, presp(msg, http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
@@ -172,8 +172,8 @@ func dberr(err error) error {
 	return constants.DatabaseError{Err: err}
 }
 
-func presp(msg string) constants.PublicResponse {
-	return constants.PublicResponse{Msg: &msg}
+func presp(msg string, status int) constants.PublicResponse {
+	return constants.PublicResponse{Msg: &msg, Status: status}
 }
 
 func parseMetaTags(rawTags string, tagList []types.Tag) []types.Tag {

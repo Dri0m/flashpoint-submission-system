@@ -139,6 +139,16 @@ func (s *SiteService) IsSubmissionChunkReceived(ctx context.Context, sid *int64,
 		"resumableCurrentChunkSize": resumableParams.ResumableCurrentChunkSize,
 	})
 
+	isComplete, err := s.resumableUploadService.IsUploadFinished(resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
+	if err != nil {
+		l.Error(err)
+		return false, err
+	}
+
+	if isComplete {
+		return false, perr("file already fully received", http.StatusConflict)
+	}
+
 	l.Debug("testing chunk")
 	isReceived, err := s.resumableUploadService.TestChunk(resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber)
 	if err != nil {
