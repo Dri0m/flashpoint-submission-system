@@ -82,6 +82,12 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(a.HandleHelpPage))).
 		Methods("GET")
 
+	router.Handle(
+		"/web/bluepload",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleBlueploadPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("GET")
+
 	////////////////////////
 
 	f := a.UserAuthMux(a.HandleProfilePage)

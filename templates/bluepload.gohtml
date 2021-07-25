@@ -1,0 +1,39 @@
+{{define "main"}}
+    <div class="content">
+
+        <div id="content-legacy" hidden>
+            <h1>Bluepload</h1>
+            Your browser does not support all the stuff that's required.
+        </div>
+
+        <div id="content-resumable" hidden>
+            <h1>Bluepload</h1>
+
+            {{if isInAudit .UserRoles}}
+                <p>Max filesize is 500MB.</p>
+            {{else}}
+                <p>Max filesize is 50GB.</p>
+            {{end}}
+
+            <div id="resumable-drop" class="blue-drop">
+                <span>Click or drag files here</span>
+            </div>
+
+            <br><br>
+
+            <input type="button" class="pure-button pure-button button-upload-file" value="Start" onclick="startUpload()">
+            <input type="button" class="pure-button pure-button button-pause" value="Pause" onclick="pauseUpload()">
+            <input type="button" class="pure-button pure-button button-cancel" value="Cancel" onclick="cancelUpload()">
+
+            <br><br>
+
+            <div id="progress-bars-container-resumable"></div>
+        </div>
+
+    </div>
+
+    <link rel="stylesheet" href="/static/resumable/css.css">
+    <script src="/static/resumable/resumable.js"></script>
+    <script src="/static/resumable/uploader.js"></script>
+    <script>initResumableUploader("/api/bluepload-receiver-resumable", {{if isInAudit .UserRoles}}1{{else}}undefined{{end}})</script>
+{{end}}

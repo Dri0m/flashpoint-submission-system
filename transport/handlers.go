@@ -371,6 +371,18 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submit.gohtml")
 }
 
+func (a *App) HandleBlueploadPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/bluepload.gohtml")
+}
+
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
