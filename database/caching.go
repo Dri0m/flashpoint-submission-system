@@ -85,12 +85,6 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 		return err
 	}
 
-	l.Debug("purging submission search cache")
-	err = searchSubmissionsCache.Purge()
-	if err != nil {
-		return err
-	}
-
 	duration := time.Since(start)
 	l.WithField("duration_ns", duration.Nanoseconds()).Debug("submission cache table update finished successfully")
 	return err

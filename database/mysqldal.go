@@ -40,12 +40,6 @@ func OpenDB(l *logrus.Entry, conf *config.Config) *sql.DB {
 		l.Fatal(err)
 	}
 
-	// init cache
-	err = searchSubmissionsCache.SetTTL(time.Hour)
-	if err != nil {
-		l.Fatal(err)
-	}
-
 	return db
 }
 
@@ -284,7 +278,7 @@ func (d *mysqlDAL) GetSubmissionFiles(dbs DBSession, sfids []int64) ([]*types.Su
 	}
 
 	if len(result) != len(sfids) {
-		return nil, fmt.Errorf("%s files were not found", len(result)-len(sfids))
+		return nil, fmt.Errorf("%d files were not found", len(result)-len(sfids))
 	}
 
 	return result, nil

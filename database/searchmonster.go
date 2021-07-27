@@ -1,50 +1,17 @@
 package database
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
-	"github.com/ReneKroon/ttlcache/v2"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var searchSubmissionsCache = ttlcache.NewCache()
-
 // SearchSubmissions returns extended submissions based on given filter
 func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
 	uid := utils.UserID(dbs.Ctx()) // TODO this should be passed as param
-
-	cacheKey := "nil"
-
-	if filter != nil {
-		j, err := json.Marshal(filter)
-		if err != nil {
-			return nil, err
-		}
-		// uid-dependent queries ruining my caching reeee
-		if len(filter.ActionsAfterMyLastComment) != 0 ||
-			filter.AssignedStatusTestingMe != nil ||
-			filter.AssignedStatusVerificationMe != nil ||
-			filter.RequestedChangedStatusMe != nil ||
-			filter.ApprovalsStatusMe != nil ||
-			filter.VerificationStatusMe != nil ||
-			filter.LastUploaderNotMe != nil ||
-			filter.SubscribedMe != nil {
-			cacheKey = fmt.Sprintf("%d-%s", uid, j)
-		} else {
-			cacheKey = fmt.Sprintf("%s", j)
-		}
-	}
-
-	if data, err := searchSubmissionsCache.Get(cacheKey); err != ttlcache.ErrNotFound {
-		utils.LogCtx(dbs.Ctx()).WithField("cached", utils.BoolToString(true)).Debug("searching submissions")
-		return data.([]*types.ExtendedSubmission), nil
-	}
-
-	utils.LogCtx(dbs.Ctx()).WithField("cached", utils.BoolToString(false)).Debug("searching submissions")
 
 	filters := make([]string, 0)
 	masterFilters := make([]string, 0)
@@ -583,11 +550,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		}
 
 		result = append(result, s)
-	}
-
-	err = searchSubmissionsCache.Set(cacheKey, result)
-	if err != nil {
-		utils.LogCtx(dbs.Ctx()).Error(err)
 	}
 
 	return result, nil
