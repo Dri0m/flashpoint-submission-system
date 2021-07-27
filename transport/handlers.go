@@ -371,7 +371,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submit.gohtml")
 }
 
-func (a *App) HandleBlueploadPage(w http.ResponseWriter, r *http.Request) {
+func (a *App) HandleFlashfreezePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	pageData, err := a.Service.GetBasePageData(ctx)
@@ -380,7 +380,7 @@ func (a *App) HandleBlueploadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/bluepload.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData, "templates/flashfreeze.gohtml")
 }
 
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {

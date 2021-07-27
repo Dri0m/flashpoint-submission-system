@@ -83,9 +83,9 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		Methods("GET")
 
 	router.Handle(
-		"/web/bluepload",
+		"/web/flashfreeze",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
-			a.HandleBlueploadPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
+			a.HandleFlashfreezePage, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
 	////////////////////////
