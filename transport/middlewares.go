@@ -31,8 +31,6 @@ func (a *App) RequestData(next func(http.ResponseWriter, *http.Request)) func(ht
 	}
 }
 
-// TODO optimize database access in middleware
-
 // UserAuthMux takes many authorization middlewares and accepts if any of them does not return error
 func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authorizers ...func(*http.Request, int64) (bool, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
