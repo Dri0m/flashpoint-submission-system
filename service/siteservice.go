@@ -2,15 +2,21 @@ package service
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
+	"github.com/go-sql-driver/mysql"
 	"github.com/kofalt/go-memoize"
+	"io"
 	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -121,6 +127,7 @@ type SiteService struct {
 	sessionExpirationSeconds  int64
 	submissionsDir            string
 	submissionImagesDir       string
+	flashfreezeDir            string
 	notificationQueueNotEmpty chan bool
 	isDev                     bool
 	submissionReceiverMutex   sync.Mutex
@@ -130,7 +137,7 @@ type SiteService struct {
 
 func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
-	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService) *SiteService {
+	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService) *SiteService {
 
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
@@ -143,6 +150,7 @@ func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBot
 		sessionExpirationSeconds:  sessionExpirationSeconds,
 		submissionsDir:            submissionsDir,
 		submissionImagesDir:       submissionImagesDir,
+		flashfreezeDir:            flashfreezeDir,
 		notificationQueueNotEmpty: make(chan bool, 1),
 		isDev:                     isDev,
 		discordRoleCache:          memoize.NewMemoizer(2*time.Minute, 60*time.Minute),
@@ -967,4 +975,84 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 	utils.LogCtx(ctx).WithField("duration_ns", duration.Nanoseconds()).Debug("similarity scores calculated")
 
 	return byTitle, byLaunchCommand, nil
+}
+
+func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs database.DBSession, uid int64, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64) (*string, *int64, error) {
+	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", filename, filesize)
+
+	if err := os.MkdirAll(s.flashfreezeDir, os.ModeDir); err != nil {
+		return nil, nil, err
+	}
+
+	ext := filepath.Ext(filename)
+
+	var destinationFilename string
+	var destinationFilePath string
+
+	for {
+		destinationFilename = s.randomStringProvider.RandomString(64) + ext
+		destinationFilePath = fmt.Sprintf("%s/%s", s.flashfreezeDir, destinationFilename)
+		if !utils.FileExists(destinationFilePath) {
+			break
+		}
+	}
+
+	utils.LogCtx(ctx).Debug("processing submission file in goroutine...")
+
+	var err error
+
+	readCloser, err := fileReadCloserProvider.GetReadCloser()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, err
+	}
+	defer readCloser.Close()
+
+	destination, err := os.Create(destinationFilePath)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, err
+	}
+	defer destination.Close()
+
+	utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
+
+	md5sum := md5.New()
+	sha256sum := sha256.New()
+	multiWriter := io.MultiWriter(destination, sha256sum, md5sum)
+
+	nBytes, err := io.Copy(multiWriter, readCloser)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, err
+	}
+	if nBytes != filesize {
+		err := fmt.Errorf("incorrect number of bytes copied to destination")
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, err
+	}
+
+	sf := &types.FlashfreezeFile{
+		UserID:           uid,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             filesize,
+		UploadedAt:       s.clock.Now(),
+		MD5Sum:           hex.EncodeToString(md5sum.Sum(nil)),
+		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
+	}
+
+	fid, err := s.dal.StoreFlashfreezeFile(dbs, sf)
+	if err != nil {
+		me, ok := err.(*mysql.MySQLError)
+		if ok {
+			if me.Number == 1062 {
+				return &destinationFilePath, nil, perr(fmt.Sprintf("file '%s' with checksums md5:%s sha256:%s already present in the DB", filename, sf.MD5Sum, sf.SHA256Sum), http.StatusConflict)
+			}
+		}
+		utils.LogCtx(ctx).Error(err)
+		return &destinationFilePath, nil, dberr(err)
+	}
+
+	return &destinationFilePath, &fid, nil
 }

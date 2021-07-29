@@ -46,7 +46,7 @@ func (s *SiteService) ReceiveSubmissions(ctx context.Context, sid *int64, filePr
 		return nil, perr("cannot upload more than one submission at once when user is in audit", http.StatusForbidden)
 	}
 
-	if constants.IsInAudit(userRoles) && fileProviders[0].Size() > constants.UserInAuditSumbissionMaxFilesize {
+	if constants.IsInAudit(userRoles) && fileProviders[0].Size() > constants.UserInAuditSubmissionMaxFilesize {
 		return nil, perr("submission filesize limited to 500MB for users in audit", http.StatusForbidden)
 	}
 

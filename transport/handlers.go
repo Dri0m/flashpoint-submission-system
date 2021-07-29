@@ -194,9 +194,9 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := types.ReceiveSubmissionsResp{
-		Message:      "success",
-		SubmissionID: &sids[0],
+	resp := types.ReceiveFileResp{
+		Message: "success",
+		URL:     fmt.Sprintf("/submission/%d", sids[0]),
 	}
 
 	writeResponse(ctx, w, resp, http.StatusOK)
@@ -219,48 +219,9 @@ func (a *App) HandleSubmissionReceiverResumable(w http.ResponseWriter, r *http.R
 		sid = &sidParsed
 	}
 
-	// parse resumable params
-	resumableParams := &types.ResumableParams{}
-
-	if err := a.decoder.Decode(resumableParams, r.URL.Query()); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		writeError(ctx, w, perr("failed to decode resumable query params", http.StatusInternalServerError))
-		return
-	}
-
-	// get chunk data
-	if err := r.ParseMultipartForm(10 * 1000 * 1000); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		writeError(ctx, w, perr("failed to parse form", http.StatusInternalServerError))
-		return
-	}
-
-	fileHeaders := r.MultipartForm.File["file"]
-
-	if len(fileHeaders) == 0 {
-		err := fmt.Errorf("no files received")
-		utils.LogCtx(ctx).Error(err)
-		writeError(ctx, w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
-		return
-	}
-
-	file, err := fileHeaders[0].Open()
+	chunk, resumableParams, err := a.parseResumableRequest(ctx, r)
 	if err != nil {
-		writeError(ctx, w, perr("failed to open received file", http.StatusInternalServerError))
-		return
-	}
-	defer file.Close()
-
-	utils.LogCtx(ctx).Debug("reading received chunk")
-
-	chunk := make([]byte, resumableParams.ResumableCurrentChunkSize)
-	n, err := file.Read(chunk)
-	if err != nil {
-		writeError(ctx, w, perr("failed to read received file", http.StatusInternalServerError))
-		return
-	}
-	if n != resumableParams.ResumableCurrentChunkSize {
-		writeError(ctx, w, perr("failed to read received file", http.StatusInternalServerError))
+		writeError(ctx, w, err)
 		return
 	}
 
@@ -271,30 +232,16 @@ func (a *App) HandleSubmissionReceiverResumable(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	resp := types.ReceiveSubmissionsResp{
-		Message:      "success",
-		SubmissionID: sid,
+	resp := types.ReceiveFileResp{
+		Message: "success",
+		URL:     fmt.Sprintf("/submission/%d", *sid),
 	}
 
 	writeResponse(ctx, w, resp, http.StatusOK)
 }
 
-func (a *App) HandleSubmissionReceiverResumableTestChunk(w http.ResponseWriter, r *http.Request) {
+func (a *App) HandleReceiverResumableTestChunk(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	params := mux.Vars(r)
-	submissionID := params[constants.ResourceKeySubmissionID]
-
-	// get submission ID
-	var sid *int64
-	if submissionID != "" {
-		sidParsed, err := strconv.ParseInt(submissionID, 10, 64)
-		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
-			return
-		}
-		sid = &sidParsed
-	}
 
 	// parse resumable params
 	resumableParams := &types.ResumableParams{}
@@ -306,7 +253,7 @@ func (a *App) HandleSubmissionReceiverResumableTestChunk(w http.ResponseWriter, 
 	}
 
 	// then a magic happens
-	alreadyReceived, err := a.Service.IsSubmissionChunkReceived(ctx, sid, resumableParams)
+	alreadyReceived, err := a.Service.IsChunkReceived(ctx, resumableParams)
 	if err != nil {
 		writeError(ctx, w, err)
 		return
@@ -617,4 +564,68 @@ func (a *App) HandleHelpPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/help.gohtml")
+}
+
+func (a *App) parseResumableRequest(ctx context.Context, r *http.Request) ([]byte, *types.ResumableParams, error) {
+	// parse resumable params
+	resumableParams := &types.ResumableParams{}
+
+	if err := a.decoder.Decode(resumableParams, r.URL.Query()); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, perr("failed to decode resumable query params", http.StatusInternalServerError)
+	}
+
+	// get chunk data
+	if err := r.ParseMultipartForm(10 * 1000 * 1000); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, perr("failed to parse form", http.StatusInternalServerError)
+	}
+
+	fileHeaders := r.MultipartForm.File["file"]
+
+	if len(fileHeaders) == 0 {
+		err := fmt.Errorf("no files received")
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, perr(err.Error(), http.StatusBadRequest)
+	}
+
+	file, err := fileHeaders[0].Open()
+	if err != nil {
+		return nil, nil, perr("failed to open received file", http.StatusInternalServerError)
+	}
+	defer file.Close()
+
+	utils.LogCtx(ctx).Debug("reading received chunk")
+
+	chunk := make([]byte, resumableParams.ResumableCurrentChunkSize)
+	n, err := file.Read(chunk)
+	if err != nil || n != resumableParams.ResumableCurrentChunkSize {
+		return nil, nil, perr("failed to read received file", http.StatusInternalServerError)
+	}
+
+	return chunk, resumableParams, nil
+}
+
+func (a *App) HandleFlashfreezeReceiverResumable(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	chunk, resumableParams, err := a.parseResumableRequest(ctx, r)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	// then a magic happens
+	fid, err := a.Service.ReceiveFlashfreezeChunk(ctx, resumableParams, chunk)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	resp := types.ReceiveFileResp{
+		Message: "success",
+		URL:     fmt.Sprintf("/flasfhreeze-file/%d", *fid),
+	}
+
+	writeResponse(ctx, w, resp, http.StatusOK)
 }

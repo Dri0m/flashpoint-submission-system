@@ -818,3 +818,19 @@ func (d *mysqlDAL) GetAllSimilarityAttributes(dbs DBSession) ([]*types.Similarit
 
 	return result, nil
 }
+
+// StoreFlashfreezeFile stores flashfreeze file
+func (d *mysqlDAL) StoreFlashfreezeFile(dbs DBSession, s *types.FlashfreezeFile) (int64, error) {
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO flashfreeze_file (fk_user_id, original_filename, current_filename, size, created_at, md5sum, sha256sum) 
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		s.UserID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix(), s.MD5Sum, s.SHA256Sum)
+	if err != nil {
+		return 0, err
+	}
+	fid, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return fid, nil
+}

@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/gorilla/securecookie"
+	"github.com/kofalt/go-memoize"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -25,10 +26,11 @@ import (
 
 // App is App
 type App struct {
-	Conf    *config.Config
-	CC      utils.CookieCutter
-	Service *service.SiteService
-	decoder *schema.Decoder
+	Conf                *config.Config
+	CC                  utils.CookieCutter
+	Service             *service.SiteService
+	decoder             *schema.Decoder
+	authMiddlewareCache *memoize.Memoizer
 }
 
 func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, rsu *resumableuploadservice.ResumableUploadService) {
@@ -51,8 +53,9 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, n
 		},
 		Service: service.NewSiteService(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
-			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.IsDev, rsu),
-		decoder: decoder,
+			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.FlashfreezeDirFullPath, conf.IsDev, rsu),
+		decoder:             decoder,
+		authMiddlewareCache: memoize.NewMemoizer(5*time.Second, 60*time.Minute),
 	}
 
 	l.WithField("port", conf.Port).Infoln("starting the server...")

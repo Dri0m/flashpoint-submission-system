@@ -304,9 +304,9 @@ type ValidatorResponse struct {
 	Images           []ValidatorResponseImage `json:"images"`
 }
 
-type ReceiveSubmissionsResp struct {
-	Message      string `json:"message"`
-	SubmissionID *int64 `json:"submission_id"`
+type ReceiveFileResp struct {
+	Message string `json:"message"`
+	URL     string `json:"url"`
 }
 
 type SimilarityAttributes struct {
@@ -334,4 +334,14 @@ type ResumableParams struct {
 	ResumableFilename         string `schema:"resumableFilename"`
 	ResumableRelativePath     string `schema:"resumableRelativePath"`
 	ResumableCurrentChunkSize int    `schema:"resumableCurrentChunkSize"`
+}
+
+type FlashfreezeFile struct {
+	UserID           int64
+	OriginalFilename string
+	CurrentFilename  string
+	Size             int64
+	UploadedAt       time.Time
+	MD5Sum           string
+	SHA256Sum        string
 }

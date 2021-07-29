@@ -47,6 +47,7 @@ type DAL interface {
 	ClearMasterDBGames(dbs DBSession) error
 	StoreMasterDBGames(dbs DBSession, games []*types.MasterDatabaseGame) error
 	GetAllSimilarityAttributes(dbs DBSession) ([]*types.SimilarityAttributes, error)
+	StoreFlashfreezeFile(dbs DBSession, s *types.FlashfreezeFile) (int64, error)
 }
 
 type DBSession interface {

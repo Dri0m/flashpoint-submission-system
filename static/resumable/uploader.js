@@ -80,7 +80,7 @@ function initResumableUploader(target, maxFiles, allowedExtensions) {
 
     function updateFileSuccess(file, message) {
         const obj = JSON.parse(message);
-        file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. <a href="/web/submission/${obj["submission_id"]}">View Submission</a>`
+        file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. <a href="/web${obj["url"]}">View</a>`
         file.progressBar.value = 1
     }
 

@@ -167,6 +167,9 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	// receivers
+
+	////////////////////////
+
 	router.Handle(
 		"/api/submission-receiver",
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
@@ -185,6 +188,8 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 				muxAll(isInAudit, userOwnsSubmission)))))).
 		Methods("POST")
 
+	////////////////////////
+
 	router.Handle(
 		"/api/submission-receiver-resumable",
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
@@ -206,7 +211,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	router.Handle(
 		"/api/submission-receiver-resumable",
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
-			a.HandleSubmissionReceiverResumableTestChunk, muxAny(
+			a.HandleReceiverResumableTestChunk, muxAny(
 				isStaff,
 				isTrialCurator,
 				muxAll(isInAudit, userHasNoSubmissions)))))).
@@ -215,11 +220,31 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	router.Handle(
 		fmt.Sprintf("/api/submission-receiver-resumable/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
-			a.HandleSubmissionReceiverResumableTestChunk, muxAny(
+			a.HandleReceiverResumableTestChunk, muxAny(
 				isStaff,
 				muxAll(isTrialCurator, userOwnsSubmission),
 				muxAll(isInAudit, userOwnsSubmission)))))).
 		Methods("GET")
+
+	////////////////////////
+
+	router.Handle(
+		"/api/flashfreeze-receiver-resumable",
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
+			a.HandleFlashfreezeReceiverResumable, muxAny(
+				isStaff,
+				isTrialCurator))))).
+		Methods("POST")
+
+	router.Handle(
+		"/api/flashfreeze-receiver-resumable",
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
+			a.HandleReceiverResumableTestChunk, muxAny(
+				isStaff,
+				isTrialCurator))))).
+		Methods("GET")
+
+	////////////////////////
 
 	router.Handle(
 		fmt.Sprintf("/api/submission-batch/{%s}/comment", constants.ResourceKeySubmissionIDs),

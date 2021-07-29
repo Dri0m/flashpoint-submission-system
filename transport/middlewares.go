@@ -109,15 +109,23 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 }
 
 // UserHasAllRoles accepts user that has at least all requiredRoles
-func (a *App) UserHasAllRoles(ctx context.Context, uid int64, requiredRoles []string) (bool, error) {
-	userRoles, err := a.Service.GetUserRoles(ctx, uid)
-	if err != nil {
-		return false, fmt.Errorf("failed to get user roles")
+func (a *App) UserHasAllRoles(r *http.Request, uid int64, requiredRoles []string) (bool, error) {
+	ctx := r.Context()
+
+	getUserRoles := func() (interface{}, error) {
+		return a.Service.GetUserRoles(ctx, uid)
 	}
+
+	userRoles, err, cached := a.authMiddlewareCache.Memoize(fmt.Sprintf("getUserRoles-%d", uid), getUserRoles)
+	if err != nil {
+		return false, err
+	}
+
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("getting user roles")
 
 	isAuthorized := true
 
-	for _, role := range userRoles {
+	for _, role := range userRoles.([]string) {
 		foundRole := false
 		for _, requiredRole := range requiredRoles {
 			if role == requiredRole {
@@ -140,12 +148,20 @@ func (a *App) UserHasAllRoles(ctx context.Context, uid int64, requiredRoles []st
 
 // UserHasAnyRole accepts user that has at least one of requiredRoles
 func (a *App) UserHasAnyRole(r *http.Request, uid int64, roles []string) (bool, error) {
-	userRoles, err := a.Service.GetUserRoles(r.Context(), uid)
+	ctx := r.Context()
+
+	getUserRoles := func() (interface{}, error) {
+		return a.Service.GetUserRoles(ctx, uid)
+	}
+
+	userRoles, err, cached := a.authMiddlewareCache.Memoize(fmt.Sprintf("getUserRoles-%d", uid), getUserRoles)
 	if err != nil {
 		return false, err
 	}
 
-	isAuthorized := constants.HasAnyRole(userRoles, roles)
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("getting user roles")
+
+	isAuthorized := constants.HasAnyRole(userRoles.([]string), roles)
 	if !isAuthorized {
 		return false, nil
 	}
@@ -157,6 +173,18 @@ func (a *App) UserHasAnyRole(r *http.Request, uid int64, roles []string) (bool, 
 func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (bool, error) {
 	ctx := r.Context()
 
+	searchSubmissionBySID := func(sid int64) func() (interface{}, error) {
+		return func() (interface{}, error) {
+			return a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
+		}
+	}
+
+	getSubmissionFileByFID := func(fid int64) func() (interface{}, error) {
+		return func() (interface{}, error) {
+			return a.Service.GetSubmissionFiles(ctx, []int64{fid})
+		}
+	}
+
 	if resourceKey == constants.ResourceKeySubmissionID {
 		params := mux.Vars(r)
 		submissionID := params[constants.ResourceKeySubmissionID]
@@ -165,16 +193,17 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 			return false, fmt.Errorf("invalid submission id")
 		}
 
-		submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
+		submissions, err, cached := a.authMiddlewareCache.Memoize(fmt.Sprintf("searchSubmissionBySID-%d", sid), searchSubmissionBySID(sid))
 		if err != nil {
 			return false, err
 		}
+		utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("searching submission by submission id")
 
-		if len(submissions) == 0 {
+		if len(submissions.([]*types.ExtendedSubmission)) == 0 {
 			return false, fmt.Errorf("submission with id %d not found", sid)
 		}
 
-		s := submissions[0]
+		s := submissions.([]*types.ExtendedSubmission)[0]
 		if s.SubmitterID != uid {
 			return false, nil
 		}
@@ -192,17 +221,17 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 		}
 
 		for _, sid := range sids {
-			// TODO optimize search query
-			submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
+			submissions, err, cached := a.authMiddlewareCache.Memoize(fmt.Sprintf("searchSubmissionBySID-%d", sid), searchSubmissionBySID(sid))
 			if err != nil {
-				return false, fmt.Errorf("failed to load submission with id %d", sid)
+				return false, err
 			}
+			utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("searching submission by submission id")
 
-			if len(submissions) == 0 {
+			if len(submissions.([]*types.ExtendedSubmission)) == 0 {
 				return false, fmt.Errorf("submission with id %d not found", sid)
 			}
 
-			submission := submissions[0]
+			submission := submissions.([]*types.ExtendedSubmission)[0]
 
 			if submission.SubmitterID != uid {
 				return false, nil
@@ -217,12 +246,13 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 			return false, nil
 		}
 
-		submissionFiles, err := a.Service.GetSubmissionFiles(ctx, []int64{fid})
+		submissionFiles, err, cached := a.authMiddlewareCache.Memoize(fmt.Sprintf("getSubmissionFileByFID-%d", fid), getSubmissionFileByFID(fid))
 		if err != nil {
 			return false, err
 		}
+		utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("searching submission file by submission file id")
 
-		sf := submissionFiles[0]
+		sf := submissionFiles.([]*types.SubmissionFile)[0]
 		if sf.SubmitterID != uid {
 			return false, nil
 		}
@@ -259,17 +289,25 @@ func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
 		return false, err
 	}
 
-	userRoles, err := a.Service.GetUserRoles(r.Context(), uid)
+	ctx := r.Context()
+
+	getUserRoles := func() (interface{}, error) {
+		return a.Service.GetUserRoles(ctx, uid)
+	}
+
+	userRoles, err, cached := a.authMiddlewareCache.Memoize(fmt.Sprintf("getUserRoles-%d", uid), getUserRoles)
 	if err != nil {
 		return false, err
 	}
+
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("getting user roles")
 
 	formAction := r.FormValue("action")
 
 	canDo := func(actions, roles []string) bool {
 		for _, action := range actions {
 			if action == formAction {
-				for _, userRole := range userRoles {
+				for _, userRole := range userRoles.([]string) {
 					hasRole := false
 					for _, role := range roles {
 						if role == userRole {
