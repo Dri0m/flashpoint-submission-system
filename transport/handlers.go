@@ -194,9 +194,11 @@ func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	url := fmt.Sprintf("/submission/%d", sids[0])
+
 	resp := types.ReceiveFileResp{
 		Message: "success",
-		URL:     fmt.Sprintf("/submission/%d", sids[0]),
+		URL:     &url,
 	}
 
 	writeResponse(ctx, w, resp, http.StatusOK)
@@ -232,9 +234,15 @@ func (a *App) HandleSubmissionReceiverResumable(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	var url *string
+	if sid != nil {
+		x := fmt.Sprintf("/submission/%d", *sid)
+		url = &x
+	}
+
 	resp := types.ReceiveFileResp{
 		Message: "success",
-		URL:     fmt.Sprintf("/submission/%d", *sid),
+		URL:     url,
 	}
 
 	writeResponse(ctx, w, resp, http.StatusOK)
@@ -318,7 +326,7 @@ func (a *App) HandleSubmitPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/submit.gohtml")
 }
 
-func (a *App) HandleFlashfreezePage(w http.ResponseWriter, r *http.Request) {
+func (a *App) HandleFlashfreezeSubmitPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	pageData, err := a.Service.GetBasePageData(ctx)
@@ -622,10 +630,15 @@ func (a *App) HandleFlashfreezeReceiverResumable(w http.ResponseWriter, r *http.
 		return
 	}
 
-	resp := types.ReceiveFileResp{
-		Message: "success",
-		URL:     fmt.Sprintf("/flasfhreeze-file/%d", *fid),
+	var url *string
+	if fid != nil {
+		x := fmt.Sprintf("/flashfreeze/file/%d", *fid)
+		url = &x
 	}
 
+	resp := types.ReceiveFileResp{
+		Message: "success",
+		URL:     url,
+	}
 	writeResponse(ctx, w, resp, http.StatusOK)
 }

@@ -305,8 +305,8 @@ type ValidatorResponse struct {
 }
 
 type ReceiveFileResp struct {
-	Message string `json:"message"`
-	URL     string `json:"url"`
+	Message string  `json:"message"`
+	URL     *string `json:"url"`
 }
 
 type SimilarityAttributes struct {
