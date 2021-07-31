@@ -834,3 +834,21 @@ func (d *mysqlDAL) StoreFlashfreezeFile(dbs DBSession, s *types.FlashfreezeFile)
 
 	return fid, nil
 }
+
+// StoreFlashfreezeFileContents stores data about indexed flashfreeze uploads
+func (d *mysqlDAL) StoreFlashfreezeFileContents(dbs DBSession, fid int64, entries []*types.IndexedFileEntry) error {
+	if len(entries) == 0 {
+		return nil
+	}
+	data := make([]interface{}, 0, len(entries)*7)
+	for _, ife := range entries {
+		data = append(data, fid, ife.Name, ife.SizeCompressed, ife.SizeUncompressed, ife.MD5, ife.SHA256, ife.FileUtilOutput)
+	}
+
+	const valuePlaceholder = `(?, ?, ?, ?, ?, ?, ?)`
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(),
+		`INSERT INTO flashfreeze_file_contents (fk_flashfreeze_file_id, filename, size_compressed, size_uncompressed, md5sum, sha256sum, description) VALUES 
+		`+valuePlaceholder+strings.Repeat(`,`+valuePlaceholder, len(entries)-1),
+		data...)
+	return err
+}
