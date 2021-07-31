@@ -10,7 +10,7 @@ networks:
 
 services:
   database:
-    container_name: fpfssdb
+    container_name: ${DB_CONTAINER_NAME}
     restart: unless-stopped
     image: mysql:8.0.25
     environment:
