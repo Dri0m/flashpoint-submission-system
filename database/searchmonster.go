@@ -609,3 +609,142 @@ func addMultifilter(tableName string, masterTableName *string, filterContents st
 
 	return filters, masterFilters, data, masterData
 }
+
+// SearchFlashfreezeFiles returns extended flashfreeze files based on given filter
+func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.FlashfreezeFilter) ([]*types.ExtendedFlashfreezeFile, error) {
+	filters := make([]string, 0)
+	data := make([]interface{}, 0)
+
+	const defaultLimit int64 = 100
+	const defaultOffset int64 = 0
+	const defaultOrderBy string = "uploaded_at"
+	const defaultSortOrder string = "DESC"
+
+	currentLimit := defaultLimit
+	currentOffset := defaultOffset
+	currentOrderBy := defaultOrderBy
+	currentSortOrder := defaultSortOrder
+
+	if filter != nil {
+		if len(filter.FileIDs) > 0 {
+			filters = append(filters, `(file.id IN(?`+strings.Repeat(`,?`, len(filter.FileIDs)-1)+`))`)
+			for _, sid := range filter.FileIDs {
+				data = append(data, sid)
+			}
+		}
+		if filter.SubmitterID != nil {
+			filters = append(filters, "(uploader.id = ?)")
+			data = append(data, *filter.SubmitterID)
+		}
+		if filter.SubmitterUsernamePartial != nil {
+			tableName := `uploader.username`
+			filters, _, data, _ = addMultifilter(
+				tableName, nil, *filter.SubmitterUsernamePartial, filters, []string{}, data, []interface{}{})
+		}
+		if filter.CurrentFilenamePartial != nil {
+			filters = append(filters, "(file.current_filename LIKE ?)")
+			data = append(data, utils.FormatLike(*filter.CurrentFilenamePartial))
+		}
+		if filter.MD5SumPartial != nil {
+			filters = append(filters, "(file.md5sum LIKE ?)")
+			data = append(data, utils.FormatLike(*filter.MD5SumPartial))
+		}
+		if filter.SHA256SumPartial != nil {
+			filters = append(filters, "(file.sha256sum LIKE ?)")
+			data = append(data, utils.FormatLike(*filter.MD5SumPartial))
+		}
+
+		// TODO NameFulltext, DescriptionFulltext, SizeMin, SizeMax, SearchFiles, SearchFilesRecursively
+
+		if filter.ResultsPerPage != nil {
+			currentLimit = *filter.ResultsPerPage
+		} else {
+			currentLimit = defaultLimit
+		}
+		if filter.Page != nil {
+			currentOffset = (*filter.Page - 1) * currentLimit
+		} else {
+			currentOffset = defaultOffset
+		}
+	}
+
+	and := ""
+	if len(filters) > 0 {
+		and = " AND "
+	}
+
+	finalQuery := `
+		SELECT 
+       		file.id AS file_id,
+			file.fk_user_id AS uploader_id,
+			uploader.username AS uploader_username,
+			file.original_filename AS original_filename,
+			file.current_filename AS current_filename,
+			file.md5sum AS md5sum,
+			file.sha256sum AS sha256sum,
+			file.size AS size,
+			file.created_at AS uploaded_at,
+			NULL as description,
+			True as is_root_file
+		FROM flashfreeze_file file
+			LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id `
+
+	selector := ` WHERE file.deleted_at IS NULL ` + and + strings.Join(filters, " AND ") + `GROUP BY file.id`
+
+	finalQuery += selector
+
+	unionQuery := ` UNION
+			SELECT
+			entry.fk_flashfreeze_file_id AS file_id,
+				(SELECT file.fk_user_id FROM flashfreeze_file file WHERE file.id = entry.fk_flashfreeze_file_id) AS uploader_id,
+				(SELECT uploader.username FROM flashfreeze_file file LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id WHERE file.id = entry.fk_flashfreeze_file_id) AS uploader_username,
+				entry.filename AS original_filename,
+				NULL AS current_filename,
+				entry.md5sum AS md5sum,
+				entry.sha256sum AS sha256sum,
+				entry.size_uncompressed AS size,
+				NULL AS uploaded_at,
+				entry.description as description,
+				False as is_root_file
+			FROM flashfreeze_file_contents entry `
+
+	finalQuery += unionQuery
+
+	rest := `
+		ORDER BY ` + currentOrderBy + ` ` + currentSortOrder + `
+		LIMIT ? OFFSET ?
+		`
+
+	finalQuery += rest
+
+	finalData := make([]interface{}, 0)
+	finalData = append(finalData, data...)
+	finalData = append(finalData, currentLimit, currentOffset)
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, finalData...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]*types.ExtendedFlashfreezeFile, 0)
+
+	var uploadedAt *int64
+
+	for rows.Next() {
+		f := &types.ExtendedFlashfreezeFile{}
+		if err := rows.Scan(&f.FileID, &f.SubmitterID, &f.SubmitterUsername,
+			&f.OriginalFilename, &f.CurrentFilename, &f.MD5Sum, &f.SHA256Sum, &f.Size,
+			&uploadedAt, &f.Description, &f.IsRootFile); err != nil {
+			return nil, err
+		}
+
+		if uploadedAt != nil {
+			t := time.Unix(*uploadedAt, 0)
+			f.UploadedAt = &t
+		}
+
+		result = append(result, f)
+	}
+
+	return result, nil
+}

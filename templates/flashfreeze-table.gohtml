@@ -1,0 +1,36 @@
+{{define "flashfreeze-table"}}
+    <div id="table-wrapper">
+        <i>tip: use shift+mousewheel to scroll horizontally</i>
+        <div id="table-scroll">
+            <table class="pure-table pure-table-striped submissions-table">
+                <thead>
+                <tr>
+                    <th class="center">Get</th>
+                    <th>Original Filename</th>
+                    <th>Size</th>
+                    <th>Description</th>
+                    <th>Uploaded by</th>
+                    <th>Uploaded at</th>
+                    <th>MD5</th>
+                    <th>SHA256</th>
+                    <th>Current Filename</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .FlashfreezeFiles}}
+                <tr>
+                    <td class="center"><a href="/data/flashfreeze/{{.FileID}}">Get</a></td>
+                    <td class="wrap-me">{{.OriginalFilename}}</td>
+                    <td title="{{.Size}}B">{{sizeToString .Size}}</td>
+                    <td>{{.Description}}</td>
+                    <td>{{.SubmitterUsername}}</td>
+                    <td>{{if .UploadedAt}}{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}{{else}}.UploadedAt{{end}}</td>
+                    <td class="wrap-me">{{.MD5Sum}}</td>
+                    <td class="wrap-me">{{.SHA256Sum}}</td>
+                    <td class="wrap-me">{{.CurrentFilename}}</td>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{{end}}

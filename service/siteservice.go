@@ -1062,3 +1062,31 @@ func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs da
 
 	return &destinationFilePath, &fid, nil
 }
+
+func (s *SiteService) GetSearchFlashfreezeData(ctx context.Context, filter *types.FlashfreezeFilter) (*types.SearchFlashfreezePageData, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	flashfreezeFiles, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	pageData := &types.SearchFlashfreezePageData{
+		BasePageData:     *bpd,
+		FlashfreezeFiles: flashfreezeFiles,
+		Filter:           *filter,
+	}
+
+	return pageData, nil
+}

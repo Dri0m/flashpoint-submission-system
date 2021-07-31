@@ -166,6 +166,22 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.UserAuthMux(
+		a.HandleSearchFlasfhreezePage,
+		muxAny(isStaff, isTrialCurator, isInAudit))
+
+	router.Handle(
+		"/web/flashfreeze/files",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/flashfreeze/files",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
 	// receivers
 
 	////////////////////////

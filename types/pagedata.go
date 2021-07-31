@@ -35,3 +35,9 @@ type SubmissionsFilesPageData struct {
 	BasePageData
 	SubmissionFiles []*ExtendedSubmissionFile
 }
+
+type SearchFlashfreezePageData struct {
+	BasePageData
+	FlashfreezeFiles []*ExtendedFlashfreezeFile
+	Filter           FlashfreezeFilter
+}

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS flashfreeze_file
     sha256sum         CHAR(64) UNIQUE     NOT NULL,
     deleted_at        BIGINT       DEFAULT NULL,
     deleted_reason    VARCHAR(255) DEFAULT NULL,
+    FULLTEXT (original_filename) WITH PARSER NGRAM,
     FOREIGN KEY (fk_user_id) REFERENCES discord_user (id)
 );
 CREATE INDEX idx_flashfreeze_file_created_at ON flashfreeze_file (created_at);

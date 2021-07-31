@@ -1,0 +1,16 @@
+{{define "flashfreeze-pagenav"}}
+    <div class="submission-pagenav">
+        {{if submissionsShowPreviousButton .Filter.Page}}
+            <button class="pure-button pure-button-primary"
+                    onclick="changePage(-1)">
+                Previous page
+            </button>
+        {{end}}
+        {{if submissionsShowNextButton (len .FlashfreezeFiles) .Filter.ResultsPerPage}}
+            <button class="pure-button pure-button-primary"
+                    onclick="changePage(+1)">
+                Next page
+            </button>
+        {{end}}
+    </div>
+{{end}}

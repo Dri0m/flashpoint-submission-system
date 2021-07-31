@@ -642,3 +642,37 @@ func (a *App) HandleFlashfreezeReceiverResumable(w http.ResponseWriter, r *http.
 	}
 	writeResponse(ctx, w, resp, http.StatusOK)
 }
+
+func (a *App) HandleSearchFlasfhreezePage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	filter := &types.FlashfreezeFilter{}
+
+	if err := a.decoder.Decode(filter, r.URL.Query()); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
+		return
+	}
+
+	if err := filter.Validate(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	pageData, err := a.Service.GetSearchFlashfreezeData(ctx, filter)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/flashfreeze-files.gohtml",
+		"templates/flashfreeze-table.gohtml",
+		"templates/flashfreeze-pagenav.gohtml")
+}

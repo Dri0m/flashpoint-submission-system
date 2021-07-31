@@ -49,6 +49,7 @@ type DAL interface {
 	GetAllSimilarityAttributes(dbs DBSession) ([]*types.SimilarityAttributes, error)
 	StoreFlashfreezeFile(dbs DBSession, s *types.FlashfreezeFile) (int64, error)
 	StoreFlashfreezeFileContents(dbs DBSession, fid int64, entries []*types.IndexedFileEntry) error
+	SearchFlashfreezeFiles(dbs DBSession, filter *types.FlashfreezeFilter) ([]*types.ExtendedFlashfreezeFile, error)
 }
 
 type DBSession interface {

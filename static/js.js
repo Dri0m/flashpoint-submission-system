@@ -435,6 +435,7 @@ function setSiteMaxWidth() {
 function wrapLongWordsInTable() {
     wrapLongWords(document.getElementsByClassName("submission-table-title"))
     wrapLongWords(document.getElementsByClassName("submission-table-original-filename"))
+    wrapLongWords(document.getElementsByClassName("wrap-me"))
 }
 
 function wrapLongWords(list) {
@@ -455,7 +456,7 @@ function wrapLongWords(list) {
         }
 
         console.log(`longest word in '${title}' is ${longestWord}`)
-        if (longestWord > 35) {
+        if (longestWord >= 32) {
             list[i].style.wordBreak = "break-all"
         }
     }
