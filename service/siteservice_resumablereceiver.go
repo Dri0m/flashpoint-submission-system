@@ -112,15 +112,15 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 		return nil, err
 	}
 
-	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier); err != nil {
-		utils.LogCtx(ctx).Error(err)
-	}
-
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		cleanup()
 		return nil, dberr(err)
+	}
+
+	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier); err != nil {
+		utils.LogCtx(ctx).Error(err)
 	}
 
 	utils.LogCtx(ctx).WithField("amount", 1).Debug("submissions received")
@@ -221,18 +221,18 @@ func (s *SiteService) processReceivedResumableFlashfreeze(ctx context.Context, u
 		return nil, err
 	}
 
-	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier); err != nil {
-		utils.LogCtx(ctx).Error(err)
-	}
-
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		cleanup()
 		return nil, dberr(err)
 	}
 
-	utils.LogCtx(ctx).WithField("amount", 1).Debug("flashfreeze item received")
+	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier); err != nil {
+		utils.LogCtx(ctx).Error(err)
+	}
+
+	utils.LogCtx(ctx).WithField("amount", 1).Debug("flashfreeze items received")
 
 	return fid, nil
 }
