@@ -776,7 +776,7 @@ func (d *mysqlDAL) StoreMasterDBGames(dbs DBSession, games []*types.MasterDataba
 	if len(games) == 0 {
 		return nil
 	}
-	data := make([]interface{}, 0, len(games)*3)
+	data := make([]interface{}, 0, len(games)*21)
 	for _, g := range games {
 		data = append(data, g.UUID, g.Title, g.AlternateTitles, g.Series, g.Developer, g.Publisher, g.Platform,
 			g.Extreme, g.PlayMode, g.Status, g.GameNotes, g.Source, g.LaunchCommand, g.ReleaseDate,
