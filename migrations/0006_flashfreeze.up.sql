@@ -12,5 +12,5 @@ CREATE TABLE IF NOT EXISTS flashfreeze_file
     deleted_reason    VARCHAR(255) DEFAULT NULL,
     FOREIGN KEY (fk_user_id) REFERENCES discord_user (id)
 );
-CREATE INDEX idx_bluepload_file_created_at ON flashfreeze_file (created_at);
-CREATE INDEX idx_bluepload_file_deleted_at ON flashfreeze_file (deleted_at);
+CREATE INDEX idx_flashfreeze_file_created_at ON flashfreeze_file (created_at);
+CREATE INDEX idx_flashfreeze_file_deleted_at ON flashfreeze_file (deleted_at);
