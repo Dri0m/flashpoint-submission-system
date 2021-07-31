@@ -345,3 +345,17 @@ type FlashfreezeFile struct {
 	MD5Sum           string
 	SHA256Sum        string
 }
+
+type IndexerResp struct {
+	ArchiveFilename string              `json:"archive_filename"`
+	Files           []*IndexedFileEntry `json:"files"`
+}
+
+type IndexedFileEntry struct {
+	Name             string `json:"name"`
+	SizeCompressed   int64  `json:"size_compressed"`
+	SizeUncompressed int64  `json:"size_uncompressed"`
+	FileUtilOutput   string `json:"file_util_output"`
+	SHA256           string `json:"sha256"`
+	MD5              string `json:"md5"`
+}

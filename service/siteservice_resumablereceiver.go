@@ -1,14 +1,21 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/sirupsen/logrus"
 	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, resumableParams *types.ResumableParams, chunk []byte) (*int64, error) {
@@ -234,5 +241,115 @@ func (s *SiteService) processReceivedResumableFlashfreeze(ctx context.Context, u
 
 	utils.LogCtx(ctx).WithField("amount", 1).Debug("flashfreeze items received")
 
+	l := utils.LogCtx(ctx).WithFields(logrus.Fields{"flashfreezeFileID": *fid, "destinationFilename": destinationFilename})
+	go s.indexReceivedFlashfreezeFile(l, *fid, *destinationFilename)
+
 	return fid, nil
+}
+
+func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, filePath string) {
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
+	utils.LogCtx(ctx).Debug("indexing flashfreeze file")
+
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+	defer dbs.Rollback()
+
+	files, err := uploadArchiveForIndexing(ctx, filePath, s.archiveIndexerServerURL+"/upload")
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+
+	batch := make([]*types.IndexedFileEntry, 0, 1000)
+
+	for i, g := range files {
+		batch = append(batch, g)
+
+		if i%1000 == 0 || i == len(files)-1 {
+			utils.LogCtx(ctx).Debug("inserting flashfreeze file contents batch into fpfssdb")
+			err = s.dal.StoreFlashfreezeFileContents(dbs, fid, batch)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return
+			}
+			batch = make([]*types.IndexedFileEntry, 0, 1000)
+		}
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+
+	utils.LogCtx(ctx).Debug("flashfreeze file indexed")
+}
+
+func uploadArchiveForIndexing(ctx context.Context, filePath string, url string) ([]*types.IndexedFileEntry, error) {
+	client := http.Client{}
+	// Prepare a form that you will submit to that URL.
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+
+	ss := strings.Split(filePath, "/")
+	filename := ss[len(ss)-1]
+
+	fw, err := w.CreateFormFile("file", filename)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	utils.LogCtx(ctx).WithField("filepath", filePath).Debug("copying file into multipart writer")
+	if _, err := io.Copy(fw, f); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+	w.Close()
+
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	utils.LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("uploading file")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusInternalServerError {
+			return nil, fmt.Errorf("The archive indexer has exploded, please send the following stack trace to @Dri0m on discord: %s", string(bodyBytes))
+		}
+		return nil, fmt.Errorf("unexpected response: %s", resp.Status)
+	}
+
+	utils.LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("response OK")
+
+	var ir types.IndexerResp
+	err = json.Unmarshal(bodyBytes, &ir)
+	if err != nil {
+		return nil, err
+	}
+
+	return ir.Files, nil
 }
