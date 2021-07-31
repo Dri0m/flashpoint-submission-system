@@ -133,11 +133,12 @@ type SiteService struct {
 	submissionReceiverMutex   sync.Mutex
 	discordRoleCache          *memoize.Memoizer
 	resumableUploadService    *resumableuploadservice.ResumableUploadService
+	archiveIndexerServerURL   string
 }
 
 func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
-	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService) *SiteService {
+	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL string) *SiteService {
 
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
@@ -155,6 +156,7 @@ func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBot
 		isDev:                     isDev,
 		discordRoleCache:          memoize.NewMemoizer(2*time.Minute, 60*time.Minute),
 		resumableUploadService:    rsu,
+		archiveIndexerServerURL:   archiveIndexerServerURL,
 	}
 }
 

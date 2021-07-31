@@ -53,7 +53,7 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, n
 		},
 		Service: service.NewSiteService(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
-			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.FlashfreezeDirFullPath, conf.IsDev, rsu),
+			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.FlashfreezeDirFullPath, conf.IsDev, rsu, conf.ArchiveIndexerServerURL),
 		decoder:             decoder,
 		authMiddlewareCache: memoize.NewMemoizer(5*time.Second, 60*time.Minute),
 	}

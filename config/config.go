@@ -32,6 +32,7 @@ type Config struct {
 	IsDev                        bool
 	ResumableUploadDBFullPath    string
 	FlashfreezeDirFullPath       string
+	ArchiveIndexerServerURL      string
 }
 
 func EnvString(name string) string {
@@ -103,5 +104,6 @@ func GetConfig(l *logrus.Entry) *Config {
 		IsDev:                        EnvBool("IS_DEV"),
 		ResumableUploadDBFullPath:    EnvString("RESUMABLE_UPLOAD_DB_FULL_PATH"),
 		FlashfreezeDirFullPath:       EnvString("FLASHFREEZE_DIR_FULL_PATH"),
+		ArchiveIndexerServerURL:      EnvString("ARCHIVE_INDEXER_SERVER_URL"),
 	}
 }
