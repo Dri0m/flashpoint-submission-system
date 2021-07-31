@@ -26,7 +26,6 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 		l.Panic("no user associated with request")
 	}
 
-	l.Debug("storing chunk...")
 	err := s.resumableUploadService.PutChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
 	if err != nil {
 		l.Error(err)
@@ -154,17 +153,10 @@ func (s *SiteService) IsChunkReceived(ctx context.Context, resumableParams *type
 		return false, perr("file already fully received", http.StatusConflict)
 	}
 
-	l.Debug("testing chunk")
 	isReceived, err := s.resumableUploadService.TestChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber)
 	if err != nil {
 		l.Error(err)
 		return false, err
-	}
-
-	if isReceived {
-		l.Debug("chunk already received")
-	} else {
-		l.Debug("chunk not received yet")
 	}
 
 	return isReceived, nil
@@ -178,7 +170,6 @@ func (s *SiteService) ReceiveFlashfreezeChunk(ctx context.Context, resumablePara
 		l.Panic("no user associated with request")
 	}
 
-	l.Debug("storing chunk...")
 	err := s.resumableUploadService.PutChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
 	if err != nil {
 		l.Error(err)
