@@ -6,7 +6,7 @@ export $(shell sed 's/=.*//' .env)
 
 db:
 	docker-compose -p fpfssdb -f dc-db.yml down -v
-	docker-compose -p fpfssdb -f dc-db.yml up
+	docker-compose -p fpfssdb -f dc-db.yml up -d
 
 migrate:
 	docker run --rm -v $(shell pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "mysql://${DB_USER}:${DB_PASSWORD}@tcp(${DB_IP}:${DB_PORT})/${DB_NAME}" up
