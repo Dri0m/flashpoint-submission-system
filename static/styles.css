@@ -482,3 +482,7 @@ form [type="radio"] {
 .underline {
     text-decoration: underline;
 }
+
+video {
+    background: transparent;
+}
