@@ -744,7 +744,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		    description,
 		    is_root_file,
 		    is_deep_file,
-		    indexing_time_seconds
+		    indexing_time_seconds,
+		    file_count
 		FROM (
 		SELECT 
        		file.id AS file_id,
@@ -758,7 +759,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 			NULL AS description,
 			True AS is_root_file,
 			False AS is_deep_file,
-		    (CASE WHEN file.indexed_at IS NOT NULL THEN (file.indexed_at - file.created_at) END) AS indexing_time_seconds
+		    (CASE WHEN file.indexed_at IS NOT NULL THEN (file.indexed_at - file.created_at) END) AS indexing_time_seconds,
+			(SELECT COUNT(*) FROM flashfreeze_file_contents WHERE fk_flashfreeze_file_id = file.id) AS file_count
 		FROM flashfreeze_file file
 			LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id `
 
@@ -783,7 +785,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 				description,
 				is_root_file,
 				is_deep_file,
-				indexing_time_seconds
+				indexing_time_seconds,
+				file_count
 			FROM (
 			SELECT
 			entry.fk_flashfreeze_file_id AS file_id,
@@ -797,7 +800,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 				entry.description as description,
 				False as is_root_file,
 				True as is_deep_file,
-				NULL AS indexing_time_seconds
+				NULL AS indexing_time_seconds,
+				NULL AS file_count
 			FROM flashfreeze_file_contents entry `
 	finalQuery += entryQuery
 
@@ -833,7 +837,7 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		f := &types.ExtendedFlashfreezeFile{}
 		if err := rows.Scan(&f.FileID, &f.SubmitterID, &f.SubmitterUsername,
 			&f.OriginalFilename, &f.MD5Sum, &f.SHA256Sum, &f.Size,
-			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile, &indexingTime); err != nil {
+			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile, &indexingTime, &f.FileCount); err != nil {
 			return nil, err
 		}
 
