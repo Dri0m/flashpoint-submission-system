@@ -1048,7 +1048,7 @@ func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs da
 		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
 	}
 
-	fid, err := s.dal.StoreFlashfreezeFile(dbs, sf)
+	fid, err := s.dal.StoreFlashfreezeRootFile(dbs, sf)
 	if err != nil {
 		me, ok := err.(*mysql.MySQLError)
 		if ok {

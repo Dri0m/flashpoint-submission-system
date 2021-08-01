@@ -262,7 +262,7 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 
 		if i%1000 == 0 || i == len(files)-1 {
 			utils.LogCtx(ctx).Debug("inserting flashfreeze file contents batch into fpfssdb")
-			err = s.dal.StoreFlashfreezeFileContents(dbs, fid, batch)
+			err = s.dal.StoreFlashfreezeDeepFile(dbs, fid, batch)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
 				return
@@ -272,7 +272,7 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 	}
 
 	t := s.clock.Now()
-	err = s.dal.UpdateFlashfreezeFileIndexedState(dbs, fid, &t)
+	err = s.dal.UpdateFlashfreezeRootFileIndexedState(dbs, fid, &t)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return

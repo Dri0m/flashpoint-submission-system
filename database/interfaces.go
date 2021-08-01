@@ -48,10 +48,10 @@ type DAL interface {
 	ClearMasterDBGames(dbs DBSession) error
 	StoreMasterDBGames(dbs DBSession, games []*types.MasterDatabaseGame) error
 	GetAllSimilarityAttributes(dbs DBSession) ([]*types.SimilarityAttributes, error)
-	StoreFlashfreezeFile(dbs DBSession, s *types.FlashfreezeFile) (int64, error)
-	StoreFlashfreezeFileContents(dbs DBSession, fid int64, entries []*types.IndexedFileEntry) error
+	StoreFlashfreezeRootFile(dbs DBSession, s *types.FlashfreezeFile) (int64, error)
+	StoreFlashfreezeDeepFile(dbs DBSession, fid int64, entries []*types.IndexedFileEntry) error
 	SearchFlashfreezeFiles(dbs DBSession, filter *types.FlashfreezeFilter) ([]*types.ExtendedFlashfreezeFile, error)
-	UpdateFlashfreezeFileIndexedState(dbs DBSession, fid int64, indexedAt *time.Time) error
+	UpdateFlashfreezeRootFileIndexedState(dbs DBSession, fid int64, indexedAt *time.Time) error
 	GetFlashfreezeRootFile(dbs DBSession, fid int64) (*types.FlashfreezeFile, error)
 }
 
