@@ -2,6 +2,8 @@
     <div class="content">
         <h1>Browse Flashfreeze</h1>
 
+        {{template "flashfreeze-filter" .}}
+
         {{if  eq (len .FlashfreezeFiles) 0}}
             <p>No files found.</p>
         {{else}}

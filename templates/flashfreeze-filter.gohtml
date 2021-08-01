@@ -1,0 +1,103 @@
+{{define "flashfreeze-filter"}}
+
+    <div class="submission-filter-wrapper">
+        <form class="pure-form pure-form-stacked" id="filter-form-advanced" method="GET">
+            <div class="pure-g">
+                <div class="pure-u-6-24">
+                    <div class="form-column">
+                        <div class="form-column-text">
+                            <fieldset>
+                                <legend>File Filters</legend>
+                                <label for="file-id">File ID</label>
+                                <input type="number" name="file-id" min="1"
+                                       value="{{coalesce .Filter.FileIDs ""}}">
+                                <label for="submitter-id">Submitter ID</label>
+                                <input type="number" name="submitter-id" min="1"
+                                       value="{{default "" .Filter.SubmitterID}}">
+                                <label for="submitter-username-partial"
+                                       title="Type comma-separated usernames (substrings) to search, prepend with '!' to exclude a substring. For example, write '!dri0m, !bluemaxima' to exclude submissions from these users. The search is case-insensitive.">Submitter
+                                    Username (hover for help)</label>
+                                <input type="text" name="submitter-username-partial"
+                                       value="{{default "" .Filter.SubmitterUsernamePartial}}">
+                            </fieldset>
+                        </div>
+                        <fieldset>
+                            <legend>File type</legend>
+                            <label>
+                                <input type="checkbox" name="search-files"
+                                       {{if .Filter.SearchFiles}}checked{{end}}>
+                                Search root files</label>
+                            <label>
+                                <input type="checkbox" name="search-files-recursively"
+                                       {{if .Filter.SearchFilesRecursively}}checked{{end}}>
+                                Perform recursive search</label>
+                        </fieldset>
+                    </div>
+                </div>
+                <div class="pure-u-12-24">
+                    <div class="form-column">
+                        <fieldset>
+                            <legend>Meta Filters</legend>
+                            <div class="form-column-text">
+                                <label for="name-fulltext">Original Filename (boolean ngram fulltext)</label>
+                                <input type="text" name="name-fulltext"
+                                       value="{{default "" .Filter.NameFulltext}}">
+                                <label for="name-fulltext">File Description (boolean ngram fulltext)</label>
+                                <input type="text" name="description-fulltext"
+                                       value="{{default "" .Filter.DescriptionFulltext}}">
+                                <label for="current-filename-partial">Current Filename (partial)</label>
+                                <input type="text" name="current-filename-partial"
+                                       value="{{default "" .Filter.CurrentFilenamePartial}}">
+                                <label for="md5sum-partial-any">File MD5 Checksum (partial)</label>
+                                <input type="text" name="md5sum-partial"
+                                       value="{{default "" .Filter.MD5SumPartial}}">
+                                <label for="sha256sum-partial">File SHA256 Checksum (partial)</label>
+                                <input type="text" name="sha256sum-partial-any"
+                                       value="{{default "" .Filter.SHA256SumPartial}}">
+                                <label for="size-min">Min Size (B)</label>
+                                <input type="number" name="size-min" min="0"
+                                       value="{{coalesce .Filter.SizeMin ""}}">
+                                <label for="size-max">Max Size (B)</label>
+                                <input type="number" name="size-max" min="0"
+                                       value="{{coalesce .Filter.SizeMin ""}}">
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+                <div class="pure-u-6-24">
+                    <div class="form-column">
+                        <div class="form-column-text">
+                            <fieldset>
+                                <legend>Personal Filters</legend>
+                                <label for="results-per-page">Results Per Page (default 100)</label>
+                                <input type="number" name="results-per-page" min="1"
+                                       value="{{default "" .Filter.ResultsPerPage}}">
+                                <label for="page">Page</label>
+                                <input type="number" name="page" min="1" value="{{default "" .Filter.Page}}">
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="right">
+                <button type="button" class="pure-button pure-button-primary" id="reset-button"
+                        onclick="resetFilterForm()">Reset
+                </button>
+                <button type="submit" class="pure-button pure-button-primary"
+                        id="search-button">Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let radios = document.getElementsByTagName('input');
+        for (i = 0; i < radios.length; i++) {
+            radios[i].onclick = function (e) {
+                if (e.ctrlKey || e.metaKey) {
+                    this.checked = false;
+                }
+            }
+        }
+    </script>
+{{end}}

@@ -674,5 +674,6 @@ func (a *App) HandleSearchFlasfhreezePage(w http.ResponseWriter, r *http.Request
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/flashfreeze-files.gohtml",
 		"templates/flashfreeze-table.gohtml",
+		"templates/flashfreeze-filter.gohtml",
 		"templates/flashfreeze-pagenav.gohtml")
 }
