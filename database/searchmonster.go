@@ -610,10 +610,19 @@ func addMultifilter(tableName string, masterTableName *string, filterContents st
 	return filters, masterFilters, data, masterData
 }
 
+func magicAnd(a []string) string {
+	if len(a) > 0 {
+		return " AND "
+	}
+	return ""
+}
+
 // SearchFlashfreezeFiles returns extended flashfreeze files based on given filter
 func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.FlashfreezeFilter) ([]*types.ExtendedFlashfreezeFile, error) {
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
+	entryFilters := make([]string, 0)
+	entryData := make([]interface{}, 0)
 
 	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
@@ -625,36 +634,89 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 	currentOrderBy := defaultOrderBy
 	currentSortOrder := defaultSortOrder
 
+	filtersFulltext := make([]string, 0)
+	dataFulltext := make([]interface{}, 0)
+	entryFiltersFulltext := make([]string, 0)
+	entryDataFulltext := make([]interface{}, 0)
+
 	if filter != nil {
 		if len(filter.FileIDs) > 0 {
-			filters = append(filters, `(file.id IN(?`+strings.Repeat(`,?`, len(filter.FileIDs)-1)+`))`)
+			filters = append(filters, `(file_id IN(?`+strings.Repeat(`,?`, len(filter.FileIDs)-1)+`))`)
 			for _, sid := range filter.FileIDs {
 				data = append(data, sid)
 			}
+
+			entryFilters = append(entryFilters, `(file_id IN(?`+strings.Repeat(`,?`, len(filter.FileIDs)-1)+`))`)
+			for _, sid := range filter.FileIDs {
+				entryData = append(entryData, sid)
+			}
 		}
 		if filter.SubmitterID != nil {
-			filters = append(filters, "(uploader.id = ?)")
+			filters = append(filters, "(uploader_id = ?)")
 			data = append(data, *filter.SubmitterID)
+			entryFilters = append(entryFilters, "(uploader_id= ?)")
+			entryData = append(entryData, *filter.SubmitterID)
 		}
 		if filter.SubmitterUsernamePartial != nil {
-			tableName := `uploader.username`
-			filters, _, data, _ = addMultifilter(
-				tableName, nil, *filter.SubmitterUsernamePartial, filters, []string{}, data, []interface{}{})
-		}
-		if filter.CurrentFilenamePartial != nil {
-			filters = append(filters, "(file.current_filename LIKE ?)")
-			data = append(data, utils.FormatLike(*filter.CurrentFilenamePartial))
+			tableName := `uploader_username`
+			entryTableName := `uploader_username`
+			filters, entryFilters, data, entryData = addMultifilter(
+				tableName, &entryTableName, *filter.SubmitterUsernamePartial, filters, entryFilters, data, entryData)
 		}
 		if filter.MD5SumPartial != nil {
-			filters = append(filters, "(file.md5sum LIKE ?)")
+			filters = append(filters, "(md5sum LIKE ?)")
 			data = append(data, utils.FormatLike(*filter.MD5SumPartial))
+			entryFilters = append(entryFilters, "(md5sum LIKE ?)")
+			entryData = append(entryData, utils.FormatLike(*filter.MD5SumPartial))
 		}
 		if filter.SHA256SumPartial != nil {
-			filters = append(filters, "(file.sha256sum LIKE ?)")
-			data = append(data, utils.FormatLike(*filter.MD5SumPartial))
+			filters = append(filters, "(sha256sum LIKE ?)")
+			data = append(data, utils.FormatLike(*filter.SHA256SumPartial))
+			entryFilters = append(entryFilters, "(sha256sum LIKE ?)")
+			entryData = append(entryData, utils.FormatLike(*filter.SHA256SumPartial))
 		}
 
-		// TODO NameFulltext, DescriptionFulltext, SizeMin, SizeMax, SearchFiles, SearchFilesRecursively
+		if filter.NameFulltext != nil {
+			filtersFulltext = append(filtersFulltext, "(MATCH(file.original_filename) AGAINST(? IN BOOLEAN MODE))")
+			dataFulltext = append(dataFulltext, utils.FormatLike(*filter.NameFulltext))
+			entryFiltersFulltext = append(entryFiltersFulltext, "(MATCH(entry.filename) AGAINST(? IN BOOLEAN MODE))")
+			entryDataFulltext = append(entryDataFulltext, utils.FormatLike(*filter.NameFulltext))
+		}
+		if filter.DescriptionFulltext != nil {
+			filters = append(filters, "(1 = 0)") // exclude root files
+
+			entryFiltersFulltext = append(entryFiltersFulltext, "(MATCH(entry.description) AGAINST(? IN BOOLEAN MODE))")
+			entryDataFulltext = append(entryDataFulltext, utils.FormatLike(*filter.DescriptionFulltext))
+		}
+
+		if filter.SizeMin != nil {
+			filters = append(filters, "(size >= ?)")
+			data = append(data, *filter.SizeMin)
+			entryFilters = append(entryFilters, "(size >= ?)")
+			entryData = append(entryData, *filter.SizeMin)
+		}
+		if filter.SizeMax != nil {
+			filters = append(filters, "(size <= ?)")
+			data = append(data, *filter.SizeMax)
+			entryFilters = append(entryFilters, "(size <= ?)")
+			entryData = append(entryData, *filter.SizeMax)
+		}
+		if filter.SearchFiles != nil || filter.SearchFilesRecursively != nil {
+			searchRoot := false
+			searchDeep := false
+
+			if filter.SearchFiles != nil {
+				searchRoot = *filter.SearchFiles
+			}
+			if filter.SearchFilesRecursively != nil {
+				searchDeep = *filter.SearchFilesRecursively
+			}
+
+			filters = append(filters, "(is_root_file = ?)")
+			data = append(data, searchRoot)
+			entryFilters = append(entryFilters, "(is_deep_file = ?)")
+			entryData = append(entryData, searchDeep)
+		}
 
 		if filter.ResultsPerPage != nil {
 			currentLimit = *filter.ResultsPerPage
@@ -668,47 +730,79 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		}
 	}
 
-	and := ""
-	if len(filters) > 0 {
-		and = " AND "
-	}
-
+	finalData := make([]interface{}, 0)
 	finalQuery := `
+		SELECT 
+			file_id,
+		    uploader_id,
+		    uploader_username,
+		    original_filename,
+		    md5sum,
+		    sha256sum,
+		    size,
+		    uploaded_at,
+		    description,
+		    is_root_file,
+		    is_deep_file
+		FROM (
 		SELECT 
        		file.id AS file_id,
 			file.fk_user_id AS uploader_id,
 			uploader.username AS uploader_username,
 			file.original_filename AS original_filename,
-			file.current_filename AS current_filename,
 			file.md5sum AS md5sum,
 			file.sha256sum AS sha256sum,
 			file.size AS size,
 			file.created_at AS uploaded_at,
 			NULL as description,
-			True as is_root_file
+			True as is_root_file,
+			False as is_deep_file
 		FROM flashfreeze_file file
 			LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id `
 
-	selector := ` WHERE file.deleted_at IS NULL ` + and + strings.Join(filters, " AND ") + `GROUP BY file.id`
+	fulltextQuery := `WHERE file.deleted_at IS NULL ` + magicAnd(filtersFulltext) + strings.Join(filtersFulltext, " AND ") + `) AS root`
+	finalQuery += fulltextQuery
+	finalData = append(finalData, dataFulltext...)
 
+	selector := ` WHERE 1=1 ` + magicAnd(filters) + strings.Join(filters, " AND ") + ` GROUP BY file_id`
 	finalQuery += selector
 
-	unionQuery := ` UNION
+	entryQuery := `
+		UNION
+			SELECT
+				file_id,
+				uploader_id,
+				uploader_username,
+				original_filename,
+				md5sum,
+				sha256sum,
+				size,
+				uploaded_at,
+				description,
+				is_root_file,
+				is_deep_file
+			FROM (
 			SELECT
 			entry.fk_flashfreeze_file_id AS file_id,
 				(SELECT file.fk_user_id FROM flashfreeze_file file WHERE file.id = entry.fk_flashfreeze_file_id) AS uploader_id,
 				(SELECT uploader.username FROM flashfreeze_file file LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id WHERE file.id = entry.fk_flashfreeze_file_id) AS uploader_username,
 				entry.filename AS original_filename,
-				NULL AS current_filename,
 				entry.md5sum AS md5sum,
 				entry.sha256sum AS sha256sum,
 				entry.size_uncompressed AS size,
 				NULL AS uploaded_at,
 				entry.description as description,
-				False as is_root_file
+				False as is_root_file,
+				True as is_deep_file
 			FROM flashfreeze_file_contents entry `
+	finalQuery += entryQuery
 
-	finalQuery += unionQuery
+	entryFulltextQuery := ` WHERE 1=1 ` + magicAnd(entryFiltersFulltext) + strings.Join(entryFiltersFulltext, " AND ") + `) AS deep `
+	finalQuery += entryFulltextQuery
+	finalData = append(finalData, entryDataFulltext...)
+
+	entrySelector := ` WHERE 1=1 ` + magicAnd(entryFilters) + strings.Join(entryFilters, " AND ")
+	finalQuery += entrySelector
 
 	rest := `
 		ORDER BY ` + currentOrderBy + ` ` + currentSortOrder + `
@@ -717,8 +811,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 
 	finalQuery += rest
 
-	finalData := make([]interface{}, 0)
 	finalData = append(finalData, data...)
+	finalData = append(finalData, entryData...)
 	finalData = append(finalData, currentLimit, currentOffset)
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, finalData...)
 	if err != nil {
@@ -733,8 +827,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 	for rows.Next() {
 		f := &types.ExtendedFlashfreezeFile{}
 		if err := rows.Scan(&f.FileID, &f.SubmitterID, &f.SubmitterUsername,
-			&f.OriginalFilename, &f.CurrentFilename, &f.MD5Sum, &f.SHA256Sum, &f.Size,
-			&uploadedAt, &f.Description, &f.IsRootFile); err != nil {
+			&f.OriginalFilename, &f.MD5Sum, &f.SHA256Sum, &f.Size,
+			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile); err != nil {
 			return nil, err
 		}
 

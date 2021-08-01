@@ -365,13 +365,13 @@ type ExtendedFlashfreezeFile struct {
 	SubmitterID       int64
 	SubmitterUsername string
 	OriginalFilename  string
-	CurrentFilename   *string
 	MD5Sum            string
 	SHA256Sum         string
 	Size              int64
 	UploadedAt        *time.Time // only for root files
 	Description       *string    // only for inner files
 	IsRootFile        bool
+	IsDeepFile        bool
 }
 
 type FlashfreezeFilter struct {
@@ -379,13 +379,12 @@ type FlashfreezeFilter struct {
 	SubmitterID *int64  `schema:"submitter-id"`
 
 	NameFulltext        *string `schema:"name-fulltext"`
-	DescriptionFulltext *string `schema:"description-fulltext"`
+	DescriptionFulltext *string `schema:"description-fulltext"` // only for inner files
 
 	SizeMin *int64 `schema:"size-min"`
 	SizeMax *int64 `schema:"size-max"`
 
 	SubmitterUsernamePartial *string `schema:"submitter-username-partial"`
-	CurrentFilenamePartial   *string `schema:"current-filename-partial"`
 	MD5SumPartial            *string `schema:"md5sum-partial"`
 	SHA256SumPartial         *string `schema:"sha256sum-partial"`
 

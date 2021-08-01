@@ -10,7 +10,7 @@
                                 <legend>File Filters</legend>
                                 <label for="file-id">File ID</label>
                                 <input type="number" name="file-id" min="1"
-                                       value="{{coalesce .Filter.FileIDs ""}}">
+                                       value="{{if .Filter.FileIDs}}{{coalesce (index .Filter.FileIDs 0) ""}}{{end}}">
                                 <label for="submitter-id">Submitter ID</label>
                                 <input type="number" name="submitter-id" min="1"
                                        value="{{default "" .Filter.SubmitterID}}">
@@ -45,21 +45,18 @@
                                 <label for="name-fulltext">File Description (boolean ngram fulltext)</label>
                                 <input type="text" name="description-fulltext"
                                        value="{{default "" .Filter.DescriptionFulltext}}">
-                                <label for="current-filename-partial">Current Filename (partial)</label>
-                                <input type="text" name="current-filename-partial"
-                                       value="{{default "" .Filter.CurrentFilenamePartial}}">
                                 <label for="md5sum-partial-any">File MD5 Checksum (partial)</label>
                                 <input type="text" name="md5sum-partial"
                                        value="{{default "" .Filter.MD5SumPartial}}">
                                 <label for="sha256sum-partial">File SHA256 Checksum (partial)</label>
-                                <input type="text" name="sha256sum-partial-any"
+                                <input type="text" name="sha256sum-partial"
                                        value="{{default "" .Filter.SHA256SumPartial}}">
                                 <label for="size-min">Min Size (B)</label>
                                 <input type="number" name="size-min" min="0"
                                        value="{{coalesce .Filter.SizeMin ""}}">
                                 <label for="size-max">Max Size (B)</label>
                                 <input type="number" name="size-max" min="0"
-                                       value="{{coalesce .Filter.SizeMin ""}}">
+                                       value="{{coalesce .Filter.SizeMax ""}}">
                             </div>
                         </fieldset>
                     </div>

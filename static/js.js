@@ -282,8 +282,12 @@ function resetFilterForm() {
         }
     }
 
-    r(formSimple.getElementsByTagName("input"))
-    r(formAdvanced.getElementsByTagName("input"))
+    if(formSimple !== null) {
+        r(formSimple.getElementsByTagName("input"))
+    }
+    if(formAdvanced !== null) {
+        r(formAdvanced.getElementsByTagName("input"))
+    }
 }
 
 function submitAdvancedFilterForm() {

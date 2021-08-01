@@ -13,7 +13,6 @@
                     <th>Uploaded at</th>
                     <th>MD5</th>
                     <th>SHA256</th>
-                    <th>Current Filename</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -27,7 +26,6 @@
                     <td>{{if .UploadedAt}}{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}{{else}}{{.UploadedAt}}{{end}}</td>
                     <td class="wrap-me">{{.MD5Sum}}</td>
                     <td class="wrap-me">{{.SHA256Sum}}</td>
-                    <td class="wrap-me">{{.CurrentFilename}}</td>
                     {{end}}
                 </tbody>
             </table>
