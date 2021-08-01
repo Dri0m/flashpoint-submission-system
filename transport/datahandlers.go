@@ -152,7 +152,7 @@ func (a *App) HandleDownloadFlashfreezeRootFile(w http.ResponseWriter, r *http.R
 	}
 	defer f.Close()
 
-	filename := fmt.Sprintf("flashfreeze-%d-%s", fid, ci.CurrentFilename)
+	filename := fmt.Sprintf("flashfreeze-%d-%s", fid, ci.SHA256Sum)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	w.Header().Set("Content-Type", "application/octet-stream")
 	http.ServeContent(w, r, filename, fi.ModTime(), f)
