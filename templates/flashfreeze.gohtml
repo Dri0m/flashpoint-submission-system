@@ -10,10 +10,15 @@
             <h1>Flashfreeze</h1>
 
             <p>
-                Max filesize is 50GB. <b>Note that this uploader is intended to be used only for Flashpoint-related
-                    data collections and webgame archival in general. Using it as a personal file storage will
-                    result in a ban.</b> Only .7z, .zip, .rar, .tar, .warc, .arc, .warc.gz, .arc.gz files are allowed. They are searchable and viewable by any user
-                    of this system, and their contents are indexed.
+                Max filesize is 50GB. Only .7z, .zip, .rar, .tar, .warc, .arc, .warc.gz, .arc.gz files are allowed. They
+                are searchable and viewable by any user of this system, and their contents are indexed.<br>
+                <br>
+                <b>This uploader is intended to be used only for Flashpoint-related data collections and webgame
+                    archival in general.</b><br>
+                <br>
+                <b>Using this system as a personal file storage will result in a loss of upload permissions.</b><br>
+                <br>
+                <b>Intentionally uploading a zip bomb will be rewarded with a permanent IP ban.</b><br>
             </p>
 
             <div id="resumable-drop" class="blue-drop">
@@ -38,5 +43,6 @@
     <script src="/static/resumable/resumable.js"></script>
     <script src="/static/resumable/uploader.js"></script>
     <script>initResumableUploader("/api/flashfreeze-receiver-resumable", {{if isInAudit .UserRoles}}1
-        {{else}}undefined{{end}}, [".7z", ".zip", ".rar", ".tar", ".warc", ".arc", ".warc.gz", ".arc.gz"])</script>
+        {{else}}undefined{{end}}, [".7z", ".zip", ".rar", ".tar", ".warc", ".arc", ".warc.gz", ".arc.gz"]
+        )</script>
 {{end}}

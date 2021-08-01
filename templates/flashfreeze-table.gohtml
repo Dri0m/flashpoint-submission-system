@@ -6,6 +6,8 @@
                 <thead>
                 <tr>
                     <th class="center">Get</th>
+                    <th>Root ID</th>
+                    <th>File Type</th>
                     <th>Original Filename</th>
                     <th>Size</th>
                     <th>Description</th>
@@ -19,6 +21,8 @@
                 {{range .FlashfreezeFiles}}
                 <tr>
                     <td class="center"><a href="/data/flashfreeze/{{.FileID}}">Get</a></td>
+                    <td>{{.FileID}}</td>
+                    <td>{{if .IsRootFile}}Root{{else}}Deep{{end}}</td>
                     <td class="wrap-me">{{.OriginalFilename}}</td>
                     <td title="{{.Size}}B">{{sizeToString .Size}}</td>
                     <td>{{.Description}}</td>
