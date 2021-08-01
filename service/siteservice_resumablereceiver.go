@@ -232,7 +232,7 @@ func (s *SiteService) processReceivedResumableFlashfreeze(ctx context.Context, u
 
 	utils.LogCtx(ctx).WithField("amount", 1).Debug("flashfreeze items received")
 
-	l := utils.LogCtx(ctx).WithFields(logrus.Fields{"flashfreezeFileID": *fid, "destinationFilename": destinationFilename})
+	l := utils.LogCtx(ctx).WithFields(logrus.Fields{"flashfreezeFileID": *fid, "destinationFilename": *destinationFilename})
 	go s.indexReceivedFlashfreezeFile(l, *fid, *destinationFilename)
 
 	return fid, nil

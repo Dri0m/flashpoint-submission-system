@@ -988,7 +988,14 @@ func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs da
 
 	ext := filepath.Ext(filename)
 
-	if ext != ".7z" && ext != ".zip" && ext != ".tar" && ext != ".rar" && ext != ".arc" && ext != ".warc" && ext != ".gz" {
+	extless := filename[:len(filename)-len(ext)]
+	ext2 := filepath.Ext(extless)
+
+	if ext2 == ".warc" {
+		ext = ext2 + ext
+	}
+
+	if ext != ".7z" && ext != ".zip" && ext != ".tar" && ext != ".rar" && ext != ".arc" && ext != ".warc" && ext != ".warc.gz" && ext != ".arc.gz" {
 		return nil, nil, perr("unsupported file extension", http.StatusBadRequest)
 	}
 
