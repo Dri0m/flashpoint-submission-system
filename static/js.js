@@ -211,7 +211,7 @@ window.onload = function () {
 
     updateBatchSize()
     wrapLongWordsInTable()
-};
+}
 
 function updateBatchSize(event) {
     let sizeSpan = document.getElementById("submission-batch-size")
@@ -282,10 +282,10 @@ function resetFilterForm() {
         }
     }
 
-    if(formSimple !== null) {
+    if (formSimple !== null) {
         r(formSimple.getElementsByTagName("input"))
     }
-    if(formAdvanced !== null) {
+    if (formAdvanced !== null) {
         r(formAdvanced.getElementsByTagName("input"))
     }
 }
