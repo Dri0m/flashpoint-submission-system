@@ -743,7 +743,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		    uploaded_at,
 		    description,
 		    is_root_file,
-		    is_deep_file
+		    is_deep_file,
+		    indexing_time_seconds
 		FROM (
 		SELECT 
        		file.id AS file_id,
@@ -754,9 +755,10 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 			file.sha256sum AS sha256sum,
 			file.size AS size,
 			file.created_at AS uploaded_at,
-			NULL as description,
-			True as is_root_file,
-			False as is_deep_file
+			NULL AS description,
+			True AS is_root_file,
+			False AS is_deep_file,
+		    (CASE WHEN file.indexed_at IS NOT NULL THEN (file.indexed_at - file.created_at) END) AS indexing_time_seconds
 		FROM flashfreeze_file file
 			LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id `
 
@@ -780,7 +782,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 				uploaded_at,
 				description,
 				is_root_file,
-				is_deep_file
+				is_deep_file,
+				indexing_time_seconds
 			FROM (
 			SELECT
 			entry.fk_flashfreeze_file_id AS file_id,
@@ -793,7 +796,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 				NULL AS uploaded_at,
 				entry.description as description,
 				False as is_root_file,
-				True as is_deep_file
+				True as is_deep_file,
+				NULL AS indexing_time_seconds
 			FROM flashfreeze_file_contents entry `
 	finalQuery += entryQuery
 
@@ -823,18 +827,23 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 	result := make([]*types.ExtendedFlashfreezeFile, 0)
 
 	var uploadedAt *int64
+	var indexingTime *int64
 
 	for rows.Next() {
 		f := &types.ExtendedFlashfreezeFile{}
 		if err := rows.Scan(&f.FileID, &f.SubmitterID, &f.SubmitterUsername,
 			&f.OriginalFilename, &f.MD5Sum, &f.SHA256Sum, &f.Size,
-			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile); err != nil {
+			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile, &indexingTime); err != nil {
 			return nil, err
 		}
 
 		if uploadedAt != nil {
 			t := time.Unix(*uploadedAt, 0)
 			f.UploadedAt = &t
+		}
+		if indexingTime != nil {
+			t := time.Duration(*indexingTime) * time.Second
+			f.IndexingTime = &t
 		}
 
 		result = append(result, f)

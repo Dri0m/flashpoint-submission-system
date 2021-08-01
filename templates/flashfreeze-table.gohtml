@@ -13,6 +13,7 @@
                     <th>Description</th>
                     <th>Uploaded by</th>
                     <th>Uploaded at</th>
+                    <th>Indexing time</th>
                     <th>MD5</th>
                     <th>SHA256</th>
                 </tr>
@@ -20,7 +21,8 @@
                 <tbody>
                 {{range .FlashfreezeFiles}}
                 <tr>
-                    <td class="center"><a href="/data/flashfreeze/{{.FileID}}">Get</a></td>
+                    <!-- <td class="center"><a href="/data/flashfreeze/{{.FileID}}">Get</a></td> -->
+                    <td>TODO</td>
                     <td>{{.FileID}}</td>
                     <td>{{if .IsRootFile}}Root{{else}}Deep{{end}}</td>
                     <td class="wrap-me">{{.OriginalFilename}}</td>
@@ -28,6 +30,7 @@
                     <td>{{.Description}}</td>
                     <td>{{.SubmitterUsername}}</td>
                     <td>{{if .UploadedAt}}{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}{{else}}{{.UploadedAt}}{{end}}</td>
+                    <td>{{.IndexingTime}}</td>
                     <td class="wrap-me">{{.MD5Sum}}</td>
                     <td class="wrap-me">{{.SHA256Sum}}</td>
                     {{end}}

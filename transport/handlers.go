@@ -632,7 +632,7 @@ func (a *App) HandleFlashfreezeReceiverResumable(w http.ResponseWriter, r *http.
 
 	var url *string
 	if fid != nil {
-		x := fmt.Sprintf("/flashfreeze/file/%d", *fid)
+		x := fmt.Sprintf("/flashfreeze/files?file-id=%d", *fid)
 		url = &x
 	}
 

@@ -271,6 +271,13 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 		}
 	}
 
+	t := s.clock.Now()
+	err = s.dal.UpdateFlashfreezeFileIndexedState(dbs, fid, &t)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return

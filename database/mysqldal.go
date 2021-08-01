@@ -852,3 +852,19 @@ func (d *mysqlDAL) StoreFlashfreezeFileContents(dbs DBSession, fid int64, entrie
 		data...)
 	return err
 }
+
+// UpdateFlashfreezeFileIndexedState marks submission file as deleted
+func (d *mysqlDAL) UpdateFlashfreezeFileIndexedState(dbs DBSession, fid int64, indexedAt *time.Time) error {
+
+	if indexedAt != nil {
+		_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE flashfreeze_file SET indexed_at = ? WHERE id = ?`,
+			indexedAt.Unix(), fid)
+		return err
+	}
+
+	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		UPDATE flashfreeze_file SET indexed_at = NULL WHERE id = ?`,
+		fid)
+	return err
+}

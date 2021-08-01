@@ -372,6 +372,7 @@ type ExtendedFlashfreezeFile struct {
 	Description       *string    // only for inner files
 	IsRootFile        bool
 	IsDeepFile        bool
+	IndexingTime      *time.Duration // only for root files
 }
 
 type FlashfreezeFilter struct {

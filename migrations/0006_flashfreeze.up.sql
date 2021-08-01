@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS flashfreeze_file
     created_at        BIGINT              NOT NULL,
     md5sum            CHAR(32) UNIQUE     NOT NULL,
     sha256sum         CHAR(64) UNIQUE     NOT NULL,
+    indexed_at        BIGINT       DEFAULT NULL,
     deleted_at        BIGINT       DEFAULT NULL,
     deleted_reason    VARCHAR(255) DEFAULT NULL,
     FULLTEXT (original_filename) WITH PARSER NGRAM,
