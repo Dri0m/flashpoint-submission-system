@@ -52,6 +52,7 @@ type DAL interface {
 	StoreFlashfreezeFileContents(dbs DBSession, fid int64, entries []*types.IndexedFileEntry) error
 	SearchFlashfreezeFiles(dbs DBSession, filter *types.FlashfreezeFilter) ([]*types.ExtendedFlashfreezeFile, error)
 	UpdateFlashfreezeFileIndexedState(dbs DBSession, fid int64, indexedAt *time.Time) error
+	GetFlashfreezeRootFile(dbs DBSession, fid int64) (*types.FlashfreezeFile, error)
 }
 
 type DBSession interface {

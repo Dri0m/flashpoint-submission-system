@@ -301,6 +301,13 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 			muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
+	router.Handle(
+		fmt.Sprintf("/data/flashfreeze/file/{%s}", constants.ResourceKeyFlashfreezeRootFileID),
+		http.HandlerFunc(a.RequestData(a.UserAuthMux(
+			a.HandleDownloadFlashfreezeRootFile,
+			muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("GET")
+
 	// soft delete
 	router.Handle(
 		fmt.Sprintf("/api/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),

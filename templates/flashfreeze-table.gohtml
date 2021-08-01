@@ -21,9 +21,8 @@
                 <tbody>
                 {{range .FlashfreezeFiles}}
                 <tr>
-                    <!-- <td class="center"><a href="/data/flashfreeze/{{.FileID}}">Get</a></td> -->
-                    <td>TODO</td>
-                    <td>{{.FileID}}</td>
+                    <td>{{if .IsRootFile}}<a href="/data/flashfreeze/file/{{.FileID}}">Get</a>{{else}}TODO{{end}}</td>
+                    <td><a href="/web/flashfreeze/files?file-id={{.FileID}}">{{.FileID}}</a></td>
                     <td>{{if .IsRootFile}}Root{{else}}Deep{{end}}</td>
                     <td class="wrap-me">{{.OriginalFilename}}</td>
                     <td title="{{.Size}}B">{{sizeToString .Size}}</td>

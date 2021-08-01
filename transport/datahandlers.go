@@ -118,3 +118,40 @@ func (a *App) HandleDownloadCurationImage(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "image")
 	http.ServeContent(w, r, ci.Filename, fi.ModTime(), f)
 }
+
+func (a *App) HandleDownloadFlashfreezeRootFile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	fileID := params[constants.ResourceKeyFlashfreezeRootFileID]
+
+	fid, err := strconv.ParseInt(fileID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("invalid root file id", http.StatusBadRequest))
+		return
+	}
+
+	ci, err := a.Service.GetFlashfreezeRootFile(ctx, fid)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	f, err := os.Open(fmt.Sprintf("%s/%s", a.Conf.FlashfreezeDirFullPath, ci.CurrentFilename))
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to read file", http.StatusInternalServerError))
+		return
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to read file", http.StatusInternalServerError))
+		return
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	http.ServeContent(w, r, fmt.Sprintf("flashfreeze-%d-%s", fid, ci.CurrentFilename), fi.ModTime(), f)
+}

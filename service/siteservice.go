@@ -1090,3 +1090,19 @@ func (s *SiteService) GetSearchFlashfreezeData(ctx context.Context, filter *type
 
 	return pageData, nil
 }
+
+func (s *SiteService) GetFlashfreezeRootFile(ctx context.Context, fid int64) (*types.FlashfreezeFile, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	ci, err := s.dal.GetFlashfreezeRootFile(dbs, fid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	return ci, nil
+}

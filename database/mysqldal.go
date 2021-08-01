@@ -868,3 +868,25 @@ func (d *mysqlDAL) UpdateFlashfreezeFileIndexedState(dbs DBSession, fid int64, i
 		fid)
 	return err
 }
+
+// GetFlashfreezeRootFile returns flashfreeze root file
+func (d *mysqlDAL) GetFlashfreezeRootFile(dbs DBSession, fid int64) (*types.FlashfreezeFile, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT fk_user_id, original_filename, current_filename, size, created_at, md5sum, sha256sum
+		FROM flashfreeze_file
+		WHERE id = ?`,
+		fid)
+
+	ff := &types.FlashfreezeFile{ID: fid}
+
+	var uploadedAt int64
+
+	err := row.Scan(&ff.UserID, &ff.OriginalFilename, &ff.CurrentFilename, &ff.Size, &uploadedAt, &ff.MD5Sum, &ff.SHA256Sum)
+	if err != nil {
+		return nil, err
+	}
+
+	ff.UploadedAt = time.Unix(uploadedAt, 0)
+
+	return ff, nil
+}

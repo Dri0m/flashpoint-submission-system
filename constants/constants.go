@@ -63,12 +63,13 @@ func GetActionsWithNotification() []string {
 }
 
 const (
-	ResourceKeySubmissionID    = "submission-id"
-	ResourceKeySubmissionIDs   = "submission-ids"
-	ResourceKeyFileID          = "file-id"
-	ResourceKeyFileIDs         = "file-ids"
-	ResourceKeyCommentID       = "comment-id"
-	ResourceKeyCurationImageID = "curation-image-id"
+	ResourceKeySubmissionID          = "submission-id"
+	ResourceKeySubmissionIDs         = "submission-ids"
+	ResourceKeyFileID                = "file-id"
+	ResourceKeyFileIDs               = "file-ids"
+	ResourceKeyCommentID             = "comment-id"
+	ResourceKeyCurationImageID       = "curation-image-id"
+	ResourceKeyFlashfreezeRootFileID = "flashfreeze-root-file-id"
 )
 
 const (

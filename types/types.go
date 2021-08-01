@@ -337,6 +337,7 @@ type ResumableParams struct {
 }
 
 type FlashfreezeFile struct {
+	ID               int64
 	UserID           int64
 	OriginalFilename string
 	CurrentFilename  string
