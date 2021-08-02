@@ -45,10 +45,15 @@ func (rsu *ResumableUploadService) PutChunk(uid int64, fileID string, chunkNumbe
 	}
 
 	chunkFilename := rsu.getChunkFilename(uid, fileID, chunkNumber)
-	err := os.WriteFile(chunkFilename, chunk, 0644)
-	if err != nil {
+	chunkFilenameTmp := chunkFilename + ".part"
+
+	if err := os.WriteFile(chunkFilenameTmp, chunk, 0644); err != nil {
 		return err
 	}
+	if err := os.Rename(chunkFilenameTmp, chunkFilename); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -188,6 +193,11 @@ func (fr *fileReadCloser) Read(buf []byte) (n int, err error) {
 
 			// fetch new chunk
 			fr.currentChunkNumber++
+
+			if fr.currentChunkNumber > fr.chunkCount {
+				return n, io.EOF
+			}
+
 			fr.currentChunkOffset = 0
 			fr.currentChunkData, err = fr.rsu.getChunk(fr.uid, fr.fileID, fr.currentChunkNumber)
 			if err != nil {
@@ -216,7 +226,7 @@ func (rsu *ResumableUploadService) getChunk(uid int64, fileID string, chunkNumbe
 	chunkFilename := rsu.getChunkFilename(uid, fileID, chunkNumber)
 
 	if !utils.FileExists(chunkFilename) {
-		return nil, fmt.Errorf("file does not exist")
+		return nil, fmt.Errorf("file %s does not exist", chunkFilename)
 	}
 
 	chunk, err := ioutil.ReadFile(chunkFilename)
