@@ -607,7 +607,7 @@ func (a *App) parseResumableRequest(ctx context.Context, r *http.Request) ([]byt
 
 	chunk := make([]byte, resumableParams.ResumableCurrentChunkSize)
 	n, err := file.Read(chunk)
-	if err != nil || n != resumableParams.ResumableCurrentChunkSize {
+	if err != nil || int64(n) != resumableParams.ResumableCurrentChunkSize {
 		return nil, nil, perr("failed to read received file", http.StatusInternalServerError)
 	}
 

@@ -30,7 +30,7 @@ type Config struct {
 	NotificationChannelID        string
 	CurationFeedChannelID        string
 	IsDev                        bool
-	ResumableUploadDBFullPath    string
+	ResumableUploadDirFullPath   string
 	FlashfreezeDirFullPath       string
 	ArchiveIndexerServerURL      string
 }
@@ -102,7 +102,7 @@ func GetConfig(l *logrus.Entry) *Config {
 		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
 		CurationFeedChannelID:        EnvString("CURATION_FEED_CHANNEL_ID"),
 		IsDev:                        EnvBool("IS_DEV"),
-		ResumableUploadDBFullPath:    EnvString("RESUMABLE_UPLOAD_DB_FULL_PATH"),
+		ResumableUploadDirFullPath:   EnvString("RESUMABLE_UPLOAD_DIR_FULL_PATH"),
 		FlashfreezeDirFullPath:       EnvString("FLASHFREEZE_DIR_FULL_PATH"),
 		ArchiveIndexerServerURL:      EnvString("ARCHIVE_INDEXER_SERVER_URL"),
 	}

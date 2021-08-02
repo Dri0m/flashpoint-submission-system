@@ -1,152 +1,139 @@
 package resumableuploadservice
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/boltdb/bolt"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"io"
-	"time"
+	"io/ioutil"
+	"os"
 )
 
 type ResumableUploadService struct {
-	db *bolt.DB
+	path string
 }
 
-func Connect(dbName string) (*ResumableUploadService, error) {
-	db, err := bolt.Open(dbName, 0600, &bolt.Options{Timeout: 5 * time.Second})
+func (rsu *ResumableUploadService) getChunkFilename(uid int64, fileID string, chunkNumber int) string {
+
+	if len(fileID) > 64 {
+		fileID = fileID[:64]
+	}
+
+	return fmt.Sprintf("%s/data-%d-%s-%d", rsu.path, uid, fileID, chunkNumber)
+}
+
+func New(path string) (*ResumableUploadService, error) {
+	err := os.MkdirAll(path, os.ModeDir)
 	if err != nil {
 		return nil, err
 	}
 
 	rsu := &ResumableUploadService{
-		db: db,
+		path: path,
 	}
 	return rsu, nil
 }
 
 // Close stops what needs to be stopped
 func (rsu *ResumableUploadService) Close() {
-	rsu.db.Close()
+	return
 }
 
 // PutChunk stores chunk, overwrites if exists.
-func (rsu *ResumableUploadService) PutChunk(uid int64, fileID string, chunkNumber uint64, chunk []byte) error {
-	if len(fileID) == 0 || chunkNumber == 0 || len(chunk) == 0 {
+func (rsu *ResumableUploadService) PutChunk(uid int64, fileID string, chunkNumber int, chunk []byte) error {
+	if uid == 0 || len(fileID) == 0 || chunkNumber == 0 || len(chunk) == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(uid, fileID)
-	chunkDataKey := getChunkDataKey(uid, fileID, chunkNumber)
-	chunkSizeKey := getChunkSizeKey(uid, fileID, chunkNumber)
-
-	return rsu.db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists(fileBucketName)
-		if err != nil {
-			return err
-		}
-
-		if err := b.Put(chunkDataKey, chunk); err != nil {
-			return err
-		}
-		if err := b.Put(chunkSizeKey, itob(uint64(len(chunk)))); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	chunkFilename := rsu.getChunkFilename(uid, fileID, chunkNumber)
+	err := os.WriteFile(chunkFilename, chunk, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // TestChunk returns true if the chunk is already received
-func (rsu *ResumableUploadService) TestChunk(uid int64, fileID string, chunkNumber uint64) (bool, error) {
-	if len(fileID) == 0 || chunkNumber == 0 {
+func (rsu *ResumableUploadService) TestChunk(uid int64, fileID string, chunkNumber int, chunkSize int64) (bool, error) {
+	if uid == 0 || len(fileID) == 0 || chunkNumber == 0 || chunkSize == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(uid, fileID)
-	chunkDataKey := getChunkDataKey(uid, fileID, chunkNumber)
-	isReceived := false
+	chunkFilename := rsu.getChunkFilename(uid, fileID, chunkNumber)
 
-	err := rsu.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(fileBucketName)
-		if b == nil {
-			return nil
-		}
-
-		if chunk := b.Get(chunkDataKey); chunk != nil {
-			isReceived = true
-		}
-
-		return nil
-	})
-
-	return isReceived, err
-}
-
-// IsUploadFinished compares the total size of stored chunks a to provided size
-func (rsu *ResumableUploadService) IsUploadFinished(uid int64, fileID string, expectedSize int64) (bool, error) {
-	if len(fileID) == 0 {
-		panic("invalid arguments provided")
-	}
-
-	fileBucketName := getFileBucketName(uid, fileID)
-
-	var actualSize uint64
-
-	err := rsu.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(fileBucketName)
-		if b == nil {
-			return fmt.Errorf("bucket does not exist")
-		}
-
-		c := b.Cursor()
-		prefix := getFileSizePrefix(uid, fileID)
-
-		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
-			actualSize += btoi(v)
-		}
-
-		return nil
-	})
-
-	if err != nil {
+	if !utils.FileExists(chunkFilename) {
 		return false, nil
 	}
 
-	return actualSize == uint64(expectedSize), err
+	fi, err := os.Stat(chunkFilename)
+	if err != nil {
+		return false, err
+	}
+
+	if fi.Size() != chunkSize {
+		return false, nil
+	}
+
+	return true, nil
 }
 
-// DeleteFile deletes the whole file bucket
-func (rsu *ResumableUploadService) DeleteFile(uid int64, fileID string) error {
-	if len(fileID) == 0 {
+// IsUploadFinished compares the total size of stored chunks a to provided size
+func (rsu *ResumableUploadService) IsUploadFinished(uid int64, fileID string, chunkCount int, expectedSize int64) (bool, error) {
+	if uid == 0 || len(fileID) == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(uid, fileID)
+	var totalSize int64
 
-	return rsu.db.Update(func(tx *bolt.Tx) error {
-		return tx.DeleteBucket(fileBucketName)
-	})
+	for i := 1; i <= chunkCount; i++ {
+		chunkFilename := rsu.getChunkFilename(uid, fileID, i)
+
+		if !utils.FileExists(chunkFilename) {
+			return false, nil
+		}
+
+		fi, err := os.Stat(chunkFilename)
+		if err != nil {
+			return false, err
+		}
+
+		totalSize += fi.Size()
+	}
+
+	return totalSize == expectedSize, nil
+}
+
+// DeleteFile deletes the whole file bucket
+func (rsu *ResumableUploadService) DeleteFile(uid int64, fileID string, chunkCount int) error {
+	if uid == 0 || len(fileID) == 0 {
+		panic("invalid arguments provided")
+	}
+
+	for i := 1; i <= chunkCount; i++ {
+		chunkFilename := rsu.getChunkFilename(uid, fileID, i)
+
+		err := os.Remove(chunkFilename)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type fileReadCloser struct {
 	uid                int64
 	fileID             string
 	rsu                *ResumableUploadService
-	currentChunkNumber uint64
+	currentChunkNumber int
 	currentChunkData   []byte
 	currentChunkOffset int
-	chunkCount         uint64
+	chunkCount         int
 }
 
 // NewFileReader returns a reader that reconstructs the file from the chunks on the fly. It does not check if the file is complete.
-func (rsu *ResumableUploadService) NewFileReader(uid int64, fileID string) (io.ReadCloser, error) {
+func (rsu *ResumableUploadService) NewFileReader(uid int64, fileID string, chunkCount int) (io.ReadCloser, error) {
 	if uid == 0 || len(fileID) == 0 {
 		panic("invalid arguments provided")
-	}
-
-	chunkCount, err := rsu.getChunkCount(uid, fileID)
-	if err != nil {
-		return nil, err
 	}
 
 	return &fileReadCloser{
@@ -220,65 +207,22 @@ func (fr *fileReadCloser) Close() error {
 	return nil
 }
 
-func (rsu *ResumableUploadService) getChunkCount(uid int64, fileID string) (uint64, error) {
-	if len(fileID) == 0 {
-		panic("invalid arguments provided")
-	}
-
-	fileBucketName := getFileBucketName(uid, fileID)
-
-	var chunkCount uint64 = 0
-
-	err := rsu.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(fileBucketName)
-		if b == nil {
-			return fmt.Errorf("bucket does not exist")
-		}
-
-		c := b.Cursor()
-		prefix := getFileDataPrefix(uid, fileID)
-
-		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
-			chunkCount++
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return 0, nil
-	}
-
-	return chunkCount, err
-}
-
 // getChunk returns chunk
-func (rsu *ResumableUploadService) getChunk(uid int64, fileID string, chunkNumber uint64) ([]byte, error) {
-	if len(fileID) == 0 || chunkNumber == 0 {
+func (rsu *ResumableUploadService) getChunk(uid int64, fileID string, chunkNumber int) ([]byte, error) {
+	if uid == 0 || len(fileID) == 0 || chunkNumber == 0 {
 		panic("invalid arguments provided")
 	}
 
-	fileBucketName := getFileBucketName(uid, fileID)
-	chunkDataKey := getChunkDataKey(uid, fileID, chunkNumber)
+	chunkFilename := rsu.getChunkFilename(uid, fileID, chunkNumber)
 
-	var result []byte
+	if !utils.FileExists(chunkFilename) {
+		return nil, fmt.Errorf("file does not exist")
+	}
 
-	err := rsu.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(fileBucketName)
-		if b == nil {
-			return nil
-		}
+	chunk, err := ioutil.ReadFile(chunkFilename)
+	if err != nil {
+		return nil, err
+	}
 
-		chunk := b.Get(chunkDataKey)
-		if chunk == nil {
-			return nil
-		}
-
-		result = make([]byte, len(chunk))
-		copy(result, chunk)
-
-		return nil
-	})
-
-	return result, err
+	return chunk, nil
 }

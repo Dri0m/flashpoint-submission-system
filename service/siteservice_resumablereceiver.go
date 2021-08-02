@@ -32,7 +32,7 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 		return nil, err
 	}
 
-	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
+	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, resumableParams.ResumableTotalSize)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
@@ -47,13 +47,23 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 }
 
 type resumableUpload struct {
-	uid    int64
-	fileID string
-	rsu    *resumableuploadservice.ResumableUploadService
+	uid        int64
+	fileID     string
+	chunkCount int
+	rsu        *resumableuploadservice.ResumableUploadService
+}
+
+func newResumableUpload(uid int64, fileID string, chunkCount int, rsu *resumableuploadservice.ResumableUploadService) *resumableUpload {
+	return &resumableUpload{
+		uid:        uid,
+		fileID:     fileID,
+		chunkCount: chunkCount,
+		rsu:        rsu,
+	}
 }
 
 func (ru resumableUpload) GetReadCloser() (io.ReadCloser, error) {
-	return ru.rsu.NewFileReader(ru.uid, ru.fileID)
+	return ru.rsu.NewFileReader(ru.uid, ru.fileID, ru.chunkCount)
 }
 
 func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, uid int64, sid *int64, resumableParams *types.ResumableParams) (*int64, error) {
@@ -102,11 +112,7 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 		submissionLevel = constants.SubmissionLevelStaff
 	}
 
-	ru := &resumableUpload{
-		uid:    uid,
-		fileID: resumableParams.ResumableIdentifier,
-		rsu:    s.resumableUploadService,
-	}
+	ru := newResumableUpload(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, s.resumableUploadService)
 	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel)
 
 	for _, imageFilePath := range ifp {
@@ -125,7 +131,7 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	}
 
 	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier); err != nil {
+	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
 		utils.LogCtx(ctx).Error(err)
 	}
 
@@ -143,7 +149,7 @@ func (s *SiteService) IsChunkReceived(ctx context.Context, resumableParams *type
 		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
 
-	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
+	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, resumableParams.ResumableTotalSize)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return false, err
@@ -153,7 +159,7 @@ func (s *SiteService) IsChunkReceived(ctx context.Context, resumableParams *type
 		return false, perr("file already fully received", http.StatusConflict)
 	}
 
-	isReceived, err := s.resumableUploadService.TestChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber)
+	isReceived, err := s.resumableUploadService.TestChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, resumableParams.ResumableCurrentChunkSize)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return false, err
@@ -176,7 +182,7 @@ func (s *SiteService) ReceiveFlashfreezeChunk(ctx context.Context, resumablePara
 		return nil, err
 	}
 
-	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
+	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, resumableParams.ResumableTotalSize)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
@@ -209,11 +215,7 @@ func (s *SiteService) processReceivedResumableFlashfreeze(ctx context.Context, u
 	}
 	defer dbs.Rollback()
 
-	ru := &resumableUpload{
-		uid:    uid,
-		fileID: resumableParams.ResumableIdentifier,
-		rsu:    s.resumableUploadService,
-	}
+	ru := newResumableUpload(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, s.resumableUploadService)
 	destinationFilename, fid, err := s.processReceivedFlashfreezeItem(ctx, dbs, uid, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize)
 	if err != nil {
 		return nil, err
@@ -226,7 +228,7 @@ func (s *SiteService) processReceivedResumableFlashfreeze(ctx context.Context, u
 	}
 
 	utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier); err != nil {
+	if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
 		utils.LogCtx(ctx).Error(err)
 	}
 

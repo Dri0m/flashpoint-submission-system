@@ -327,13 +327,13 @@ type ValidatorTagResponse struct {
 }
 
 type ResumableParams struct {
-	ResumableChunkNumber      uint64 `schema:"resumableChunkNumber"`
+	ResumableChunkNumber      int    `schema:"resumableChunkNumber"`
 	ResumableChunkSize        uint64 `schema:"resumableChunkSize"`
 	ResumableTotalSize        int64  `schema:"resumableTotalSize"`
 	ResumableIdentifier       string `schema:"resumableIdentifier"`
 	ResumableFilename         string `schema:"resumableFilename"`
 	ResumableRelativePath     string `schema:"resumableRelativePath"`
-	ResumableCurrentChunkSize int    `schema:"resumableCurrentChunkSize"`
+	ResumableCurrentChunkSize int64  `schema:"resumableCurrentChunkSize"`
 	ResumableTotalChunks      int    `schema:"resumableTotalChunks"`
 }
 

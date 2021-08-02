@@ -8,7 +8,7 @@ function initResumableUploader(target, maxFiles, allowedExtensions) {
     r = new Resumable({
         target: target,
         chunkSize: 3 * 1000 * 1000,
-        simultaneousUploads: 2,
+        simultaneousUploads: 3,
         query: {},
         generateUniqueIdentifier: function (file, event) {
             let relativePath = getFilename(file)

@@ -33,7 +33,7 @@ func main() {
 	notificationBot := notificationbot.ConnectBot(l, conf.NotificationBotToken)
 
 	l.Infoln("connecting to the resumable upload service")
-	rsu, err := resumableuploadservice.Connect(conf.ResumableUploadDBFullPath)
+	rsu, err := resumableuploadservice.New(conf.ResumableUploadDirFullPath)
 	if err != nil {
 		l.Fatal(err)
 	}

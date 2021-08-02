@@ -136,7 +136,7 @@ type SiteService struct {
 	archiveIndexerServerURL   string
 }
 
-func NewSiteService(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
+func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
 	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL string) *SiteService {
 
