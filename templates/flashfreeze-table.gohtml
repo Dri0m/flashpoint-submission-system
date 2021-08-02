@@ -15,6 +15,7 @@
                     <th>Uploaded at</th>
                     <th>Indexing Time</th>
                     <th>File Count</th>
+                    <th>Indexing Errors</th>
                     <th>MD5</th>
                     <th>SHA256</th>
                 </tr>
@@ -32,6 +33,7 @@
                     <td>{{if .UploadedAt}}{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}{{else}}{{.UploadedAt}}{{end}}</td>
                     <td class="right">{{.IndexingTime}}</td>
                     <td class="right">{{.FileCount}}</td>
+                    <td class="right">{{.IndexingErrors}}</td>
                     <td class="wrap-me">{{.MD5Sum}}</td>
                     <td class="wrap-me">{{.SHA256Sum}}</td>
                     {{end}}

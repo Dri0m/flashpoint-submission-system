@@ -819,7 +819,7 @@ func (d *mysqlDAL) GetAllSimilarityAttributes(dbs DBSession) ([]*types.Similarit
 	return result, nil
 }
 
-// StoreFlashfreezeFile stores flashfreeze file
+// StoreFlashfreezeRootFile stores flashfreeze root file
 func (d *mysqlDAL) StoreFlashfreezeRootFile(dbs DBSession, s *types.FlashfreezeFile) (int64, error) {
 	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO flashfreeze_file (fk_user_id, original_filename, current_filename, size, created_at, md5sum, sha256sum) 
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -835,7 +835,7 @@ func (d *mysqlDAL) StoreFlashfreezeRootFile(dbs DBSession, s *types.FlashfreezeF
 	return fid, nil
 }
 
-// StoreFlashfreezeFileContents stores data about indexed flashfreeze uploads
+// StoreFlashfreezeDeepFile stores data about indexed flashfreeze uploads
 func (d *mysqlDAL) StoreFlashfreezeDeepFile(dbs DBSession, fid int64, entries []*types.IndexedFileEntry) error {
 	if len(entries) == 0 {
 		return nil
@@ -853,18 +853,18 @@ func (d *mysqlDAL) StoreFlashfreezeDeepFile(dbs DBSession, fid int64, entries []
 	return err
 }
 
-// UpdateFlashfreezeFileIndexedState marks submission file as deleted
-func (d *mysqlDAL) UpdateFlashfreezeRootFileIndexedState(dbs DBSession, fid int64, indexedAt *time.Time) error {
+// UpdateFlashfreezeRootFileIndexedState marks submission file as deleted
+func (d *mysqlDAL) UpdateFlashfreezeRootFileIndexedState(dbs DBSession, fid int64, indexedAt *time.Time, indexingErrors uint64) error {
 
 	if indexedAt != nil {
 		_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE flashfreeze_file SET indexed_at = ? WHERE id = ?`,
-			indexedAt.Unix(), fid)
+		UPDATE flashfreeze_file SET indexed_at = ?, indexing_errors = ? WHERE id = ?`,
+			indexedAt.Unix(), fid, indexingErrors)
 		return err
 	}
 
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
-		UPDATE flashfreeze_file SET indexed_at = NULL WHERE id = ?`,
+		UPDATE flashfreeze_file SET indexed_at = NULL, indexing_errors = NULL WHERE id = ?`,
 		fid)
 	return err
 }

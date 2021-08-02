@@ -1233,7 +1233,7 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 	}
 	defer dbs.Rollback()
 
-	files, err := uploadArchiveForIndexing(ctx, filePath, s.archiveIndexerServerURL+"/upload")
+	files, indexingErrors, err := uploadArchiveForIndexing(ctx, filePath, s.archiveIndexerServerURL+"/upload")
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return
@@ -1256,7 +1256,7 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 	}
 
 	t := s.clock.Now()
-	err = s.dal.UpdateFlashfreezeRootFileIndexedState(dbs, fid, &t)
+	err = s.dal.UpdateFlashfreezeRootFileIndexedState(dbs, fid, &t, indexingErrors)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return
@@ -1270,10 +1270,10 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 	utils.LogCtx(ctx).Debug("flashfreeze file indexed")
 }
 
-func uploadArchiveForIndexing(ctx context.Context, filePath string, url string) ([]*types.IndexedFileEntry, error) {
+func uploadArchiveForIndexing(ctx context.Context, filePath string, url string) ([]*types.IndexedFileEntry, uint64, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	fn := strings.Split(filePath, "/")
@@ -1284,8 +1284,8 @@ func uploadArchiveForIndexing(ctx context.Context, filePath string, url string) 
 	var ir types.IndexerResp
 	err = json.Unmarshal(bytes, &ir)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return ir.Files, nil
+	return ir.Files, ir.IndexingErrors, nil
 }

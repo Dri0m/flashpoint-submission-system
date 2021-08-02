@@ -351,6 +351,7 @@ type FlashfreezeFile struct {
 type IndexerResp struct {
 	ArchiveFilename string              `json:"archive_filename"`
 	Files           []*IndexedFileEntry `json:"files"`
+	IndexingErrors  uint64              `json:"indexing_errors"`
 }
 
 type IndexedFileEntry struct {
@@ -376,6 +377,7 @@ type ExtendedFlashfreezeFile struct {
 	IsDeepFile        bool
 	IndexingTime      *time.Duration // only for root files
 	FileCount         *int64         // only for root files
+	IndexingErrors    *int64         // only for root files
 }
 
 type FlashfreezeFilter struct {

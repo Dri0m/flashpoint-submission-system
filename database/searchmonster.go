@@ -745,7 +745,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		    is_root_file,
 		    is_deep_file,
 		    indexing_time_seconds,
-		    file_count
+		    file_count,
+			indexing_errors
 		FROM (
 		SELECT 
        		file.id AS file_id,
@@ -760,7 +761,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 			True AS is_root_file,
 			False AS is_deep_file,
 		    (CASE WHEN file.indexed_at IS NOT NULL THEN (file.indexed_at - file.created_at) END) AS indexing_time_seconds,
-			(SELECT COUNT(*) FROM flashfreeze_file_contents WHERE fk_flashfreeze_file_id = file.id) AS file_count
+			(SELECT COUNT(*) FROM flashfreeze_file_contents WHERE fk_flashfreeze_file_id = file.id) AS file_count,
+		    file.indexing_errors as indexing_errors
 		FROM flashfreeze_file file
 			LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id `
 
@@ -801,7 +803,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 				False as is_root_file,
 				True as is_deep_file,
 				NULL AS indexing_time_seconds,
-				NULL AS file_count
+				NULL AS file_count,
+				NULL AS indexing_errors
 			FROM flashfreeze_file_contents entry `
 	finalQuery += entryQuery
 
