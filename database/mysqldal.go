@@ -859,7 +859,7 @@ func (d *mysqlDAL) UpdateFlashfreezeRootFileIndexedState(dbs DBSession, fid int6
 	if indexedAt != nil {
 		_, err := dbs.Tx().ExecContext(dbs.Ctx(), `
 		UPDATE flashfreeze_file SET indexed_at = ?, indexing_errors = ? WHERE id = ?`,
-			indexedAt.Unix(), fid, indexingErrors)
+			indexedAt.Unix(), indexingErrors, fid)
 		return err
 	}
 
