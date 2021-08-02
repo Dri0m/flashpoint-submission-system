@@ -788,7 +788,8 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 				is_root_file,
 				is_deep_file,
 				indexing_time_seconds,
-				file_count
+				file_count,
+				indexing_errors
 			FROM (
 			SELECT
 			entry.fk_flashfreeze_file_id AS file_id,
@@ -840,7 +841,7 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		f := &types.ExtendedFlashfreezeFile{}
 		if err := rows.Scan(&f.FileID, &f.SubmitterID, &f.SubmitterUsername,
 			&f.OriginalFilename, &f.MD5Sum, &f.SHA256Sum, &f.Size,
-			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile, &indexingTime, &f.FileCount); err != nil {
+			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile, &indexingTime, &f.FileCount, &f.IndexingErrors); err != nil {
 			return nil, err
 		}
 
