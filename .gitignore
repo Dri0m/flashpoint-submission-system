@@ -24,3 +24,4 @@ backups/*
 *.log.gz
 
 resumableuploadservice.db*
+resumable-data/*
