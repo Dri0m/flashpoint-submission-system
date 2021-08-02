@@ -998,7 +998,7 @@ func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs da
 	}
 
 	if ext != ".7z" && ext != ".zip" && ext != ".tar" && ext != ".rar" && ext != ".arc" && ext != ".warc" && ext != ".warc.gz" && ext != ".arc.gz" {
-		return nil, nil, perr("unsupported file extension", http.StatusBadRequest)
+		return nil, nil, perr("unsupported file extension", http.StatusUnsupportedMediaType)
 	}
 
 	var destinationFilename string

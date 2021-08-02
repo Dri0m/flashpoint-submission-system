@@ -586,7 +586,7 @@ func (a *App) parseResumableRequest(ctx context.Context, r *http.Request) ([]byt
 	// get chunk data
 	if err := r.ParseMultipartForm(10 * 1000 * 1000); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, nil, perr("failed to parse form", http.StatusTeapot) // TODO what code to return here, must not be 500
+		return nil, nil, perr("failed to parse form", http.StatusUnprocessableEntity)
 	}
 
 	fileHeaders := r.MultipartForm.File["file"]
@@ -608,7 +608,7 @@ func (a *App) parseResumableRequest(ctx context.Context, r *http.Request) ([]byt
 	chunk := make([]byte, resumableParams.ResumableCurrentChunkSize)
 	n, err := file.Read(chunk)
 	if err != nil || int64(n) != resumableParams.ResumableCurrentChunkSize {
-		return nil, nil, perr("failed to read received file", http.StatusTeapot) // TODO what code to return here, must not be 500
+		return nil, nil, perr("failed to read received file", http.StatusUnprocessableEntity)
 	}
 
 	return chunk, resumableParams, nil

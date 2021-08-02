@@ -140,7 +140,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	ext := filepath.Ext(filename)
 
 	if ext != ".7z" && ext != ".zip" {
-		return nil, nil, 0, perr("unsupported file extension", http.StatusBadRequest)
+		return nil, nil, 0, perr("unsupported file extension", http.StatusUnsupportedMediaType)
 	}
 
 	var destinationFilename string
