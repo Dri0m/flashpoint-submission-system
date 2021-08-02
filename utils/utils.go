@@ -3,9 +3,12 @@ package utils
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"runtime"
@@ -205,4 +208,64 @@ func BoolToString(b bool) string {
 		return "yes"
 	}
 	return "no"
+}
+
+func UploadMultipartFile(ctx context.Context, url string, f io.Reader, filename string) ([]byte, error) {
+	body, writer := io.Pipe()
+	client := http.Client{}
+
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	mwriter := multipart.NewWriter(writer)
+	req.Header.Add("Content-Type", mwriter.FormDataContentType())
+
+	errchan := make(chan error)
+
+	LogCtx(ctx).WithField("url", url).Debug("uploading file")
+
+	go func() {
+		defer close(errchan)
+		defer writer.Close()
+		defer mwriter.Close()
+
+		w, err := mwriter.CreateFormFile("file", filename)
+		if err != nil {
+			errchan <- err
+			return
+		}
+
+		if written, err := io.Copy(w, f); err != nil {
+			errchan <- fmt.Errorf("error copying %s (%d bytes written): %v", filename, written, err)
+			return
+		}
+
+		if err := mwriter.Close(); err != nil {
+			errchan <- err
+			return
+		}
+	}()
+
+	resp, err := client.Do(req)
+	merr := <-errchan
+
+	if err != nil || merr != nil {
+		return nil, fmt.Errorf("http error: %v, multipart error: %v", err, merr)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the response
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("upload to remote error: %s", string(bodyBytes))
+	}
+
+	LogCtx(ctx).WithField("url", url).Debug("response OK")
+
+	return bodyBytes, nil
 }

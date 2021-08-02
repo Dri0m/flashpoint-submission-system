@@ -9,7 +9,7 @@ import (
 )
 
 type Validator interface {
-	Validate(ctx context.Context, file io.Reader, filename, filepath string) (*types.ValidatorResponse, error)
+	Validate(ctx context.Context, file io.Reader, filename string) (*types.ValidatorResponse, error)
 	GetTags(ctx context.Context) ([]types.Tag, error)
 }
 

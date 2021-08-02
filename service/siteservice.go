@@ -1,7 +1,6 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5"
 	"crypto/sha256"
@@ -1272,64 +1271,18 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 }
 
 func uploadArchiveForIndexing(ctx context.Context, filePath string, url string) ([]*types.IndexedFileEntry, error) {
-	client := http.Client{}
-	// Prepare a form that you will submit to that URL.
-	var b bytes.Buffer
-	w := multipart.NewWriter(&b)
-
-	ss := strings.Split(filePath, "/")
-	filename := ss[len(ss)-1]
-
-	fw, err := w.CreateFormFile("file", filename)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, err
-	}
-
 	f, err := os.Open(filePath)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
-	utils.LogCtx(ctx).WithField("filepath", filePath).Debug("copying file into multipart writer")
-	if _, err := io.Copy(fw, f); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, err
-	}
-	w.Close()
+	fn := strings.Split(filePath, "/")
+	fakeFilename := fn[len(fn)-1]
 
-	req, err := http.NewRequest("POST", url, &b)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", w.FormDataContentType())
-
-	utils.LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("uploading file")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusInternalServerError {
-			return nil, fmt.Errorf("The archive indexer has exploded, please send the following stack trace to @Dri0m on discord: %s", string(bodyBytes))
-		}
-		return nil, fmt.Errorf("unexpected response: %s", resp.Status)
-	}
-
-	utils.LogCtx(ctx).WithField("url", url).WithField("filepath", filePath).Debug("response OK")
+	bytes, err := utils.UploadMultipartFile(ctx, url, f, fakeFilename)
 
 	var ir types.IndexerResp
-	err = json.Unmarshal(bodyBytes, &ir)
+	err = json.Unmarshal(bytes, &ir)
 	if err != nil {
 		return nil, err
 	}

@@ -205,7 +205,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		}
 		defer readCloser.Close()
 
-		vr, err = s.validator.Validate(ectx, readCloser, destinationFilename, destinationFilePath)
+		vr, err = s.validator.Validate(ectx, readCloser, destinationFilename)
 		if err != nil {
 			utils.LogCtx(ectx).Error(err)
 			return perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)

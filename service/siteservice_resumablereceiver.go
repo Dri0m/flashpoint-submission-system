@@ -56,13 +56,15 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 			return nil, err
 		}
 
-		utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-		if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
-			utils.LogCtx(ctx).Error(err)
-		}
+		if !cached {
+			utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+			if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
+				utils.LogCtx(ctx).Error(err)
+			}
 
-		utils.LogCtx(ctx).WithField("memoizerKey", processReceivedResumableSubmissionKey).Debug("deleting the memoized call")
-		resumableMemoizer.Storage.Delete(processReceivedResumableSubmissionKey)
+			utils.LogCtx(ctx).WithField("memoizerKey", processReceivedResumableSubmissionKey).Debug("deleting the memoized call")
+			resumableMemoizer.Storage.Delete(processReceivedResumableSubmissionKey)
+		}
 
 		return isid.(*int64), nil
 	}
@@ -124,13 +126,15 @@ func (s *SiteService) ReceiveFlashfreezeChunk(ctx context.Context, resumablePara
 			return nil, err
 		}
 
-		utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-		if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
-			utils.LogCtx(ctx).Error(err)
-		}
+		if !cached {
+			utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+			if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
+				utils.LogCtx(ctx).Error(err)
+			}
 
-		utils.LogCtx(ctx).WithField("memoizerKey", processReceivedResumableFlashfreezeKey).Debug("deleting the memoized call")
-		resumableMemoizer.Storage.Delete(processReceivedResumableFlashfreezeKey)
+			utils.LogCtx(ctx).WithField("memoizerKey", processReceivedResumableFlashfreezeKey).Debug("deleting the memoized call")
+			resumableMemoizer.Storage.Delete(processReceivedResumableFlashfreezeKey)
+		}
 
 		return ifid.(*int64), nil
 	}
