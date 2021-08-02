@@ -334,6 +334,7 @@ type ResumableParams struct {
 	ResumableFilename         string `schema:"resumableFilename"`
 	ResumableRelativePath     string `schema:"resumableRelativePath"`
 	ResumableCurrentChunkSize int    `schema:"resumableCurrentChunkSize"`
+	ResumableTotalChunks      int    `schema:"resumableTotalChunks"`
 }
 
 type FlashfreezeFile struct {

@@ -19,22 +19,22 @@ import (
 )
 
 func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, resumableParams *types.ResumableParams, chunk []byte) (*int64, error) {
-	l := resumableLog(ctx, resumableParams)
+	ctx = context.WithValue(ctx, utils.CtxKeys.Log, resumableLog(ctx, resumableParams))
 
 	uid := utils.UserID(ctx)
 	if uid == 0 {
-		l.Panic("no user associated with request")
+		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
 
 	err := s.resumableUploadService.PutChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
 	if err != nil {
-		l.Error(err)
+		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
 	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
 	if err != nil {
-		l.Error(err)
+		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
@@ -136,16 +136,16 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 }
 
 func (s *SiteService) IsChunkReceived(ctx context.Context, resumableParams *types.ResumableParams) (bool, error) {
-	l := resumableLog(ctx, resumableParams)
+	ctx = context.WithValue(ctx, utils.CtxKeys.Log, resumableLog(ctx, resumableParams))
 
 	uid := utils.UserID(ctx)
 	if uid == 0 {
-		l.Panic("no user associated with request")
+		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
 
 	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
 	if err != nil {
-		l.Error(err)
+		utils.LogCtx(ctx).Error(err)
 		return false, err
 	}
 
@@ -155,7 +155,7 @@ func (s *SiteService) IsChunkReceived(ctx context.Context, resumableParams *type
 
 	isReceived, err := s.resumableUploadService.TestChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber)
 	if err != nil {
-		l.Error(err)
+		utils.LogCtx(ctx).Error(err)
 		return false, err
 	}
 
@@ -163,22 +163,22 @@ func (s *SiteService) IsChunkReceived(ctx context.Context, resumableParams *type
 }
 
 func (s *SiteService) ReceiveFlashfreezeChunk(ctx context.Context, resumableParams *types.ResumableParams, chunk []byte) (*int64, error) {
-	l := resumableLog(ctx, resumableParams)
+	ctx = context.WithValue(ctx, utils.CtxKeys.Log, resumableLog(ctx, resumableParams))
 
 	uid := utils.UserID(ctx)
 	if uid == 0 {
-		l.Panic("no user associated with request")
+		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
 
 	err := s.resumableUploadService.PutChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
 	if err != nil {
-		l.Error(err)
+		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
 	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalSize)
 	if err != nil {
-		l.Error(err)
+		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 

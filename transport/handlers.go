@@ -580,7 +580,7 @@ func (a *App) parseResumableRequest(ctx context.Context, r *http.Request) ([]byt
 
 	if err := a.decoder.Decode(resumableParams, r.URL.Query()); err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, nil, perr("failed to decode resumable query params", http.StatusInternalServerError)
+		return nil, nil, perr("failed to decode resumable query params", http.StatusBadRequest)
 	}
 
 	// get chunk data

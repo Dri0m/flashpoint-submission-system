@@ -69,19 +69,27 @@ function initResumableUploader(target, maxFiles, allowedExtensions) {
     }
 
     function fileError(file, message) {
-        const obj = JSON.parse(message);
-        if (obj["status"] === 409) {
-            file.progressText.style.color = "orange"
-        } else {
-            file.progressText.style.color = "red"
+        try {
+            const obj = JSON.parse(message);
+            if (obj["status"] === 409) {
+                file.progressText.style.color = "orange"
+            } else {
+                file.progressText.style.color = "red"
+            }
+            file.progressText.innerHTML = `${getFilename(file)}<br>Upload failed!<br>Request status: ${obj["status"]} - ${friendlyHttpStatus[obj["status"]]}<br>Server response: ${obj["message"]}`
+        } catch (e) {
+            file.progressText.innerHTML = `${getFilename(file)}<br>Upload failed!<br>Server response: ${message}`
         }
-        file.progressText.innerHTML = `${getFilename(file)}<br>Upload failed!<br>Request status: ${obj["status"]} - ${friendlyHttpStatus[obj["status"]]}<br>Server response: ${obj["message"]}`
     }
 
     function updateFileSuccess(file, message) {
-        const obj = JSON.parse(message);
-        file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. <a href="/web${obj["url"]}">View</a>`
-        file.progressBar.value = 1
+        try {
+            const obj = JSON.parse(message);
+            file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. <a href="/web${obj["url"]}">View</a>`
+            file.progressBar.value = 1
+        } catch (e) {
+            file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful.<br>Server response: ${message}`
+        }
     }
 
     r.on("fileSuccess", updateFileSuccess);

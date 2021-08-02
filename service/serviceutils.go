@@ -29,5 +29,6 @@ func resumableLog(ctx context.Context, resumableParams *types.ResumableParams) *
 		"resumableFilename":         resumableParams.ResumableFilename,
 		"resumableRelativePath":     resumableParams.ResumableRelativePath,
 		"resumableCurrentChunkSize": resumableParams.ResumableCurrentChunkSize,
+		"resumableTotalChunks":      resumableParams.ResumableTotalChunks,
 	})
 }
