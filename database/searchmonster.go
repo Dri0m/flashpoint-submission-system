@@ -626,13 +626,9 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 
 	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
-	const defaultOrderBy string = "uploaded_at"
-	const defaultSortOrder string = "DESC"
 
 	currentLimit := defaultLimit
 	currentOffset := defaultOffset
-	currentOrderBy := defaultOrderBy
-	currentSortOrder := defaultSortOrder
 
 	filtersFulltext := make([]string, 0)
 	dataFulltext := make([]interface{}, 0)
@@ -766,11 +762,11 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		FROM flashfreeze_file file
 			LEFT JOIN discord_user AS uploader ON uploader.id = file.fk_user_id `
 
-	fulltextQuery := `WHERE file.deleted_at IS NULL ` + magicAnd(filtersFulltext) + strings.Join(filtersFulltext, " AND ") + `) AS root`
+	fulltextQuery := `WHERE file.deleted_at IS NULL ` + magicAnd(filtersFulltext) + strings.Join(filtersFulltext, " AND ") + ` ORDER BY uploaded_at DESC) AS root`
 	finalQuery += fulltextQuery
 	finalData = append(finalData, dataFulltext...)
 
-	selector := ` WHERE 1=1 ` + magicAnd(filters) + strings.Join(filters, " AND ") + ` GROUP BY file_id`
+	selector := ` WHERE 1=1 ` + magicAnd(filters) + strings.Join(filters, " AND ") + ` GROUP BY file_id `
 	finalQuery += selector
 
 	entryQuery := `
@@ -817,7 +813,6 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 	finalQuery += entrySelector
 
 	rest := `
-		ORDER BY ` + currentOrderBy + ` ` + currentSortOrder + `
 		LIMIT ? OFFSET ?
 		`
 
