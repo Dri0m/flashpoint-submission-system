@@ -39,18 +39,27 @@
                         <fieldset>
                             <legend>Meta Filters</legend>
                             <div class="form-column-text">
-                                <label for="name-fulltext">Item Name (boolean ngram fulltext)</label>
+                                <label for="name-fulltext">Item Name (prefix search)</label>
+                                <input type="text" name="name-prefix"
+                                       value="{{default "" .Filter.NamePrefix}}">
+                                <label for="name-fulltext">File Description (prefix search)</label>
+                                <input type="text" name="description-prefix"
+                                       value="{{default "" .Filter.DescriptionPrefix}}">
+
+                                <label for="name-fulltext">Item Name (fulltext ngram search)</label>
                                 <input type="text" name="name-fulltext"
                                        value="{{default "" .Filter.NameFulltext}}">
-                                <label for="name-fulltext">File Description (boolean ngram fulltext)</label>
+                                <label for="name-fulltext">File Description (fulltext ngram search)</label>
                                 <input type="text" name="description-fulltext"
                                        value="{{default "" .Filter.DescriptionFulltext}}">
+
                                 <label for="md5sum-partial-any">File MD5 Checksum (partial)</label>
                                 <input type="text" name="md5sum-partial"
                                        value="{{default "" .Filter.MD5SumPartial}}">
                                 <label for="sha256sum-partial">File SHA256 Checksum (partial)</label>
                                 <input type="text" name="sha256sum-partial"
                                        value="{{default "" .Filter.SHA256SumPartial}}">
+
                                 <label for="size-min">Min Size (B)</label>
                                 <input type="number" name="size-min" min="0"
                                        value="{{coalesce .Filter.SizeMin ""}}">

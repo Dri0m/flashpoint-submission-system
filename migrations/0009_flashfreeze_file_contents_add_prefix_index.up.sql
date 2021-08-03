@@ -1,0 +1,2 @@
+CREATE INDEX idx_flashfreeze_file_contents_filename_prefix ON flashfreeze_file_contents (filename(700));
+CREATE INDEX idx_flashfreeze_file_contents_description_prefix ON flashfreeze_file_contents (description(700));

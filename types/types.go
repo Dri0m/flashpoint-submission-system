@@ -387,6 +387,9 @@ type FlashfreezeFilter struct {
 	NameFulltext        *string `schema:"name-fulltext"`
 	DescriptionFulltext *string `schema:"description-fulltext"` // only for inner files
 
+	NamePrefix        *string `schema:"name-prefix"`
+	DescriptionPrefix *string `schema:"description-prefix"` // only for inner files
+
 	SizeMin *int64 `schema:"size-min"`
 	SizeMax *int64 `schema:"size-max"`
 

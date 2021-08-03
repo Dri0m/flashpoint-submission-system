@@ -672,6 +672,20 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 			entryData = append(entryData, utils.FormatLike(*filter.SHA256SumPartial))
 		}
 
+		if filter.NamePrefix != nil {
+			filters = append(filters, "(original_filename LIKE ? || '%')")
+			data = append(data, utils.FormatLike(*filter.NamePrefix))
+			entryFilters = append(entryFilters, "(original_filename LIKE ? || '%')")
+			entryData = append(entryData, utils.FormatLike(*filter.NamePrefix))
+		}
+		if filter.DescriptionPrefix != nil {
+			filters = append(filters, "(1 = 0)") // exclude root files
+
+			entryFilters = append(entryFilters, "(description LIKE ? || '%')")
+			entryData = append(entryData, utils.FormatLike(*filter.DescriptionPrefix))
+		}
+
+		// fulltext filters are inside the nested selects, so they are separate from all the other filters
 		if filter.NameFulltext != nil {
 			filtersFulltext = append(filtersFulltext, "(MATCH(file.original_filename) AGAINST(? IN BOOLEAN MODE))")
 			dataFulltext = append(dataFulltext, utils.FormatLike(*filter.NameFulltext))
