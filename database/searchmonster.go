@@ -698,20 +698,22 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 			entryData = append(entryData, *filter.SizeMax)
 		}
 		if filter.SearchFiles != nil || filter.SearchFilesRecursively != nil {
-			searchRoot := false
-			searchDeep := false
+			if !(filter.SearchFiles != nil && filter.SearchFilesRecursively != nil) {
+				searchRoot := false
+				searchDeep := false
 
-			if filter.SearchFiles != nil {
-				searchRoot = *filter.SearchFiles
-			}
-			if filter.SearchFilesRecursively != nil {
-				searchDeep = *filter.SearchFilesRecursively
-			}
+				if filter.SearchFiles != nil {
+					searchRoot = *filter.SearchFiles
+				}
+				if filter.SearchFilesRecursively != nil {
+					searchDeep = *filter.SearchFilesRecursively
+				}
 
-			filters = append(filters, "(is_root_file = ?)")
-			data = append(data, searchRoot)
-			entryFilters = append(entryFilters, "(is_deep_file = ?)")
-			entryData = append(entryData, searchDeep)
+				filters = append(filters, "(is_root_file = ?)")
+				data = append(data, searchRoot)
+				entryFilters = append(entryFilters, "(is_deep_file = ?)")
+				entryData = append(entryData, searchDeep)
+			}
 		}
 
 		if filter.ResultsPerPage != nil {
