@@ -992,11 +992,13 @@ func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs da
 	extless := filename[:len(filename)-len(ext)]
 	ext2 := filepath.Ext(extless)
 
-	if ext2 == ".warc" {
+	if ext2 == ".warc" || ext2 == ".tar" {
 		ext = ext2 + ext
 	}
 
-	if ext != ".7z" && ext != ".zip" && ext != ".tar" && ext != ".rar" && ext != ".arc" && ext != ".warc" && ext != ".warc.gz" && ext != ".arc.gz" {
+	if ext != ".7z" && ext != ".zip" && ext != ".rar" &&
+		ext != ".tar" && ext != ".tar.gz" && ext != ".tar.bz2" && ext != ".tar.xz" && ext != ".tar.zst" && ext != ".tar.zstd" && ext != ".tgz" &&
+		ext != ".arc" && ext != ".warc" && ext != ".warc.gz" && ext != ".arc.gz" {
 		return nil, nil, perr("unsupported file extension", http.StatusUnsupportedMediaType)
 	}
 
