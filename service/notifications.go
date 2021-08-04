@@ -166,6 +166,10 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:BitPlayer:793866776684658708>")
 		} else if strings.Contains(lplat, "o2c") {
 			b.WriteString("<:o2c:864618351538733117>")
+		} else if strings.Contains(lplat, "freehand") {
+			b.WriteString("<:FreeHand:872525868185055263>")
+		} else if strings.Contains(lplat, "hotsauce") {
+			b.WriteString("<:HotSauce:866419306451173416>")
 		} else {
 			b.WriteString("❓")
 		}
