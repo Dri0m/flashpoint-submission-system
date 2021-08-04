@@ -16,6 +16,7 @@ import (
 	"math"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -1235,7 +1236,7 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 	}
 	defer dbs.Rollback()
 
-	files, indexingErrors, err := uploadArchiveForIndexing(ctx, filePath, s.archiveIndexerServerURL+"/upload")
+	files, indexingErrors, err := provideArchiveForIndexing(filePath, s.archiveIndexerServerURL)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return
@@ -1272,7 +1273,7 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 	utils.LogCtx(ctx).Debug("flashfreeze file indexed")
 }
 
-func uploadArchiveForIndexing(ctx context.Context, filePath string, url string) ([]*types.IndexedFileEntry, uint64, error) {
+func uploadArchiveForIndexing(ctx context.Context, filePath string, baseUrl string) ([]*types.IndexedFileEntry, uint64, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, 0, err
@@ -1281,7 +1282,33 @@ func uploadArchiveForIndexing(ctx context.Context, filePath string, url string) 
 	fn := strings.Split(filePath, "/")
 	fakeFilename := fn[len(fn)-1]
 
-	bytes, err := utils.UploadMultipartFile(ctx, url, f, fakeFilename)
+	bytes, err := utils.UploadMultipartFile(ctx, baseUrl+"/upload", f, fakeFilename)
+
+	var ir types.IndexerResp
+	err = json.Unmarshal(bytes, &ir)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return ir.Files, ir.IndexingErrors, nil
+}
+
+func provideArchiveForIndexing(filePath string, baseUrl string) ([]*types.IndexedFileEntry, uint64, error) {
+	client := http.Client{}
+	resp, err := client.Post(fmt.Sprintf("%s/provide-path?path=%s", baseUrl, url.QueryEscape(filePath)), "application/json;charset=utf-8", nil)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Check the response
+	if resp.StatusCode != http.StatusOK {
+		return nil, 0, fmt.Errorf("provide to remote error: %s", string(bytes))
+	}
 
 	var ir types.IndexerResp
 	err = json.Unmarshal(bytes, &ir)
