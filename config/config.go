@@ -33,6 +33,7 @@ type Config struct {
 	ResumableUploadDirFullPath   string
 	FlashfreezeDirFullPath       string
 	ArchiveIndexerServerURL      string
+	FlashfreezeIngestDirFullPath string
 }
 
 func EnvString(name string) string {
@@ -105,5 +106,6 @@ func GetConfig(l *logrus.Entry) *Config {
 		ResumableUploadDirFullPath:   EnvString("RESUMABLE_UPLOAD_DIR_FULL_PATH"),
 		FlashfreezeDirFullPath:       EnvString("FLASHFREEZE_DIR_FULL_PATH"),
 		ArchiveIndexerServerURL:      EnvString("ARCHIVE_INDEXER_SERVER_URL"),
+		FlashfreezeIngestDirFullPath: EnvString("FLASHFREEZE_INGEST_DIR_FULL_PATH"),
 	}
 }

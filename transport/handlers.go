@@ -681,5 +681,11 @@ func (a *App) HandleSearchFlasfhreezePage(w http.ResponseWriter, r *http.Request
 func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	writeResponse(ctx, w, presp("not implemented", http.StatusInternalServerError), http.StatusInternalServerError)
+	err := a.Service.IngestFlashfreezeItems(utils.LogCtx(ctx))
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	writeResponse(ctx, w, presp("indexing in progress", http.StatusOK), http.StatusOK)
 }
