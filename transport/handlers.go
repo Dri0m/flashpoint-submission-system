@@ -677,3 +677,9 @@ func (a *App) HandleSearchFlasfhreezePage(w http.ResponseWriter, r *http.Request
 		"templates/flashfreeze-filter.gohtml",
 		"templates/flashfreeze-pagenav.gohtml")
 }
+
+func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	writeResponse(ctx, w, presp("not implemented", http.StatusInternalServerError), http.StatusInternalServerError)
+}

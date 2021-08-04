@@ -337,6 +337,10 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleUpdateMasterDB, isGod)))).
 		Methods("GET")
 
+	router.Handle("/api/internal/flashfreeze/ingest",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleIngestFlashfreeze, isGod)))).
+		Methods("GET")
+
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)
