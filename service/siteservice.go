@@ -1341,6 +1341,7 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) error {
 		guard <- struct{}{}
 		fileInfo := fileInfo
 		go func() {
+			defer func() { <-guard }()
 			ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l.WithField("filename", fileInfo.Name()))
 			fullFilepath := s.flashfreezeIngestDir + "/" + fileInfo.Name()
 
@@ -1428,7 +1429,6 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) error {
 
 			l := utils.LogCtx(ctx).WithFields(logrus.Fields{"flashfreezeFileID": fid, "destinationFilepath": destinationFilePath})
 			s.indexReceivedFlashfreezeFile(l, fid, destinationFilePath)
-			<-guard
 		}()
 	}
 

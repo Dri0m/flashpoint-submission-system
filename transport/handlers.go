@@ -678,8 +678,20 @@ func (a *App) HandleSearchFlasfhreezePage(w http.ResponseWriter, r *http.Request
 		"templates/flashfreeze-pagenav.gohtml")
 }
 
+var ingestGuard = make(chan struct{}, 1)
+
 func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	select {
+	case ingestGuard <- struct{}{}:
+		utils.LogCtx(ctx).Debug("starting flashfreeze ingestion")
+	default:
+		writeResponse(ctx, w, presp("ingestion already running", http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	defer func() { <-ingestGuard }()
 
 	err := a.Service.IngestFlashfreezeItems(utils.LogCtx(ctx))
 	if err != nil {
@@ -687,5 +699,5 @@ func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeResponse(ctx, w, presp("indexing in progress", http.StatusOK), http.StatusOK)
+	writeResponse(ctx, w, presp("ingestion in progress", http.StatusOK), http.StatusOK)
 }
