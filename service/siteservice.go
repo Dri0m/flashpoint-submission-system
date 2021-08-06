@@ -1347,7 +1347,7 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) error {
 
 			ok, ext := isFlasfhreezeExtensionValid(fileInfo.Name())
 			if !ok {
-				utils.LogCtx(ctx).Error("unsupported file extension")
+				utils.LogCtx(ctx).Warn("unsupported file extension")
 				return
 			}
 
