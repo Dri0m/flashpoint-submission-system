@@ -1330,11 +1330,11 @@ func provideArchiveForIndexing(filePath string, baseUrl string) ([]*types.Indexe
 	return ir.Files, ir.IndexingErrors, nil
 }
 
-func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) error {
+func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 	guard := make(chan struct{}, 1)
 	files, err := ioutil.ReadDir(s.flashfreezeIngestDir)
 	if err != nil {
-		return err
+		l.Error(err)
 	}
 
 	for _, fileInfo := range files {
