@@ -1431,6 +1431,36 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 			s.indexReceivedFlashfreezeFile(l, fid, destinationFilePath)
 		}()
 	}
+}
 
-	return nil
+func (s *SiteService) RecomputeSubmissionCacheAll(l *logrus.Entry) {
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
+
+	submissions, err := s.SearchSubmissions(ctx, nil)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+
+	for _, submission := range submissions {
+		func() {
+			dbs, err := s.dal.NewSession(ctx)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return
+			}
+			defer dbs.Rollback()
+
+			err = s.dal.UpdateSubmissionCacheTable(dbs, submission.SubmissionID)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return
+			}
+
+			if err := dbs.Commit(); err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return
+			}
+		}()
+	}
 }

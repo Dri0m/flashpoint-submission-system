@@ -707,12 +707,30 @@ func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
 	defer func() { <-ingestGuard }()
 
 	go func() {
-		err := a.Service.IngestFlashfreezeItems(utils.LogCtx(ctx))
-		if err != nil {
-			writeError(ctx, w, err)
-			return
-		}
+		a.Service.IngestFlashfreezeItems(utils.LogCtx(ctx))
 	}()
 
 	writeResponse(ctx, w, presp("ingestion in progress", http.StatusOK), http.StatusOK)
+}
+
+var recomputeSubmissionCacheAllGuard = make(chan struct{}, 1)
+
+func (a *App) HandleRecomputeSubmissionCacheAll(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	select {
+	case recomputeSubmissionCacheAllGuard <- struct{}{}:
+		utils.LogCtx(ctx).Debug("starting recompute submission cache all")
+	default:
+		writeResponse(ctx, w, presp("recompute submission cache all already running", http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	defer func() { <-recomputeSubmissionCacheAllGuard }()
+
+	go func() {
+		a.Service.RecomputeSubmissionCacheAll(utils.LogCtx(ctx))
+	}()
+
+	writeResponse(ctx, w, presp("recompute submission cache all in progress", http.StatusOK), http.StatusOK)
 }
