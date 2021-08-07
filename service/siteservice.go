@@ -1333,7 +1333,7 @@ func provideArchiveForIndexing(filePath string, baseUrl string) ([]*types.Indexe
 }
 
 func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
-	guard := make(chan struct{}, 1)
+	guard := make(chan struct{}, 12)
 	files, err := ioutil.ReadDir(s.flashfreezeIngestDir)
 	if err != nil {
 		l.Error(err)
