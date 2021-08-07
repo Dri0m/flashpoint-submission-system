@@ -157,6 +157,7 @@ type SubmissionsFilter struct {
 	OrderBy                      *string  `schema:"order-by"`
 	AscDesc                      *string  `schema:"asc-desc"`
 	SubscribedMe                 *string  `schema:"subscribed-me"`
+	ExcludeLegacy                bool
 }
 
 func (sf *SubmissionsFilter) Validate() error {

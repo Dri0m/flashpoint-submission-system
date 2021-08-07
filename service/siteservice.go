@@ -1438,31 +1438,44 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 func (s *SiteService) RecomputeSubmissionCacheAll(l *logrus.Entry) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
 
-	submissions, _, err := s.SearchSubmissions(ctx, &types.SubmissionsFilter{})
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return
-	}
+	var perPage int64 = 10000
+	var count int64 = 1
+	var recomputedCount int64 = 0
 
-	for _, submission := range submissions {
-		func() {
-			dbs, err := s.dal.NewSession(ctx)
-			if err != nil {
-				utils.LogCtx(ctx).Error(err)
-				return
-			}
-			defer dbs.Rollback()
+	for recomputedCount < count {
+		var submissions []*types.ExtendedSubmission
+		var err error
+		submissions, count, err = s.SearchSubmissions(ctx, &types.SubmissionsFilter{ResultsPerPage: &perPage, ExcludeLegacy: true})
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return
+		}
+		utils.LogCtx(ctx).WithField("perPage", perPage).WithField("recomputedCount", recomputedCount).WithField("totalSubmissions", count).Debug("processing a page of submissions")
 
-			err = s.dal.UpdateSubmissionCacheTable(dbs, submission.SubmissionID)
-			if err != nil {
-				utils.LogCtx(ctx).Error(err)
-				return
-			}
+		for _, submission := range submissions {
+			func() {
+				utils.LogCtx(ctx).WithField("submissionID", submission.SubmissionID).Debug("recomputing cache for submission")
 
-			if err := dbs.Commit(); err != nil {
-				utils.LogCtx(ctx).Error(err)
-				return
-			}
-		}()
+				dbs, err := s.dal.NewSession(ctx)
+				if err != nil {
+					utils.LogCtx(ctx).Error(err)
+					return
+				}
+				defer dbs.Rollback()
+
+				err = s.dal.UpdateSubmissionCacheTable(dbs, submission.SubmissionID)
+				if err != nil {
+					utils.LogCtx(ctx).Error(err)
+					return
+				}
+
+				if err := dbs.Commit(); err != nil {
+					utils.LogCtx(ctx).Error(err)
+					return
+				}
+			}()
+		}
+
+		recomputedCount += count
 	}
 }

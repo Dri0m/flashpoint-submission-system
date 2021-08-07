@@ -271,6 +271,9 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			data = append(data, uid)
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
+		if filter.ExcludeLegacy {
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
 	}
 
 	and := ""
