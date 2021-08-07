@@ -3,7 +3,9 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"strings"
 	"time"
 )
 
@@ -58,6 +60,24 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	distinctActionsSeq, err := getDistinctActions(dbs, sid)
 	if err != nil && err != sql.ErrNoRows {
 		return err
+	}
+
+	if distinctActionsSeq != nil {
+		for _, action := range strings.Split(*distinctActionsSeq, ",") {
+			if action == constants.ActionReject {
+				empty := ""
+				assignedTestingIDseq = &empty
+				assignedVerificationIDseq = &empty
+				requestedChangesIDseq = &empty
+				approvedIDseq = &empty
+				verifiedIDseq = &empty
+
+				reject := constants.ActionReject
+				distinctActionsSeq = &reject
+
+				break
+			}
+		}
 	}
 
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
