@@ -363,7 +363,7 @@ type IndexedFileEntry struct {
 	MD5              string `json:"md5"`
 }
 
-type ExtendedFlashfreezeFile struct {
+type ExtendedFlashfreezeItem struct {
 	FileID            int64
 	SubmitterID       int64
 	SubmitterUsername string

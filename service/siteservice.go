@@ -1097,7 +1097,7 @@ func (s *SiteService) GetSearchFlashfreezeData(ctx context.Context, filter *type
 		return nil, err
 	}
 
-	flashfreezeFiles, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
+	flashfreezeFiles, count, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, dberr(err)
@@ -1106,6 +1106,7 @@ func (s *SiteService) GetSearchFlashfreezeData(ctx context.Context, filter *type
 	pageData := &types.SearchFlashfreezePageData{
 		BasePageData:     *bpd,
 		FlashfreezeFiles: flashfreezeFiles,
+		TotalCount:       count,
 		Filter:           *filter,
 	}
 

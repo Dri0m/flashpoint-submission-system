@@ -630,7 +630,7 @@ func magicAnd(a []string) string {
 }
 
 // SearchFlashfreezeFiles returns extended flashfreeze files based on given filter
-func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.FlashfreezeFilter) ([]*types.ExtendedFlashfreezeFile, error) {
+func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.FlashfreezeFilter) ([]*types.ExtendedFlashfreezeItem, int64, error) {
 	filters := make([]string, 0)
 	data := make([]interface{}, 0)
 	entryFilters := make([]string, 0)
@@ -844,28 +844,29 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		LIMIT ? OFFSET ?
 		`
 
+	unlimitedQuery := finalQuery
 	finalQuery += rest
 
 	finalData = append(finalData, data...)
-	finalData = append(finalData, entryData...)
-	finalData = append(finalData, currentLimit, currentOffset)
+	unlimitedData := append(finalData, entryData...)
+	finalData = append(unlimitedData, currentLimit, currentOffset)
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, finalData...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	result := make([]*types.ExtendedFlashfreezeFile, 0)
+	result := make([]*types.ExtendedFlashfreezeItem, 0)
 
 	var uploadedAt *int64
 	var indexingTime *int64
 
 	for rows.Next() {
-		f := &types.ExtendedFlashfreezeFile{}
+		f := &types.ExtendedFlashfreezeItem{}
 		if err := rows.Scan(&f.FileID, &f.SubmitterID, &f.SubmitterUsername,
 			&f.OriginalFilename, &f.MD5Sum, &f.SHA256Sum, &f.Size,
 			&uploadedAt, &f.Description, &f.IsRootFile, &f.IsDeepFile, &indexingTime, &f.FileCount, &f.IndexingErrors); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		if uploadedAt != nil {
@@ -880,5 +881,16 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 		result = append(result, f)
 	}
 
-	return result, nil
+	rows.Close()
+
+	countingQuery := `SELECT COUNT(*) FROM ( ` + unlimitedQuery + ` ) AS counterino`
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), countingQuery, unlimitedData...)
+
+	var counter int64
+
+	if err := row.Scan(&counter); err != nil {
+		return nil, 0, err
+	}
+
+	return result, counter, nil
 }

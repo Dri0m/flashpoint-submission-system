@@ -14,6 +14,8 @@
                 {{template "submission-pagenav" .}}
             {{end}}
 
+            Found {{.TotalCount}} submissions.
+
             {{template "submission-table" .}}
 
             {{if not (isInAudit .UserRoles)}}

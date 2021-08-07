@@ -39,6 +39,7 @@ type SubmissionsFilesPageData struct {
 
 type SearchFlashfreezePageData struct {
 	BasePageData
-	FlashfreezeFiles []*ExtendedFlashfreezeFile
+	FlashfreezeFiles []*ExtendedFlashfreezeItem
+	TotalCount       int64
 	Filter           FlashfreezeFilter
 }
