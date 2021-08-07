@@ -556,13 +556,14 @@ func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
 
 	defer func() { <-updateMasterDBGuard }()
 
-	err := a.Service.UpdateMasterDB(ctx)
-	if err != nil {
-		writeError(ctx, w, err)
-		return
-	}
+	go func() {
+		err := a.Service.UpdateMasterDB(ctx)
+		if err != nil {
+			return
+		}
+	}()
 
-	writeResponse(ctx, w, presp("success", http.StatusOK), http.StatusOK)
+	writeResponse(ctx, w, presp("update master db started", http.StatusOK), http.StatusOK)
 }
 
 func (a *App) HandleHelpPage(w http.ResponseWriter, r *http.Request) {
