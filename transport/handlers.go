@@ -540,8 +540,20 @@ func (a *App) HandleInternalPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/internal.gohtml")
 }
 
+var updateMasterDBGuard = make(chan struct{}, 1)
+
 func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	select {
+	case updateMasterDBGuard <- struct{}{}:
+		utils.LogCtx(ctx).Debug("starting update master db")
+	default:
+		writeResponse(ctx, w, presp("update master db already running", http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	defer func() { <-updateMasterDBGuard }()
 
 	err := a.Service.UpdateMasterDB(ctx)
 	if err != nil {
