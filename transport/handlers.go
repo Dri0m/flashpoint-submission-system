@@ -706,11 +706,13 @@ func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
 
 	defer func() { <-ingestGuard }()
 
-	err := a.Service.IngestFlashfreezeItems(utils.LogCtx(ctx))
-	if err != nil {
-		writeError(ctx, w, err)
-		return
-	}
+	go func() {
+		err := a.Service.IngestFlashfreezeItems(utils.LogCtx(ctx))
+		if err != nil {
+			writeError(ctx, w, err)
+			return
+		}
+	}()
 
 	writeResponse(ctx, w, presp("ingestion in progress", http.StatusOK), http.StatusOK)
 }
