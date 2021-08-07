@@ -1438,7 +1438,7 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 func (s *SiteService) RecomputeSubmissionCacheAll(l *logrus.Entry) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
 
-	submissions, _, err := s.SearchSubmissions(ctx, nil)
+	submissions, _, err := s.SearchSubmissions(ctx, &types.SubmissionsFilter{})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return
