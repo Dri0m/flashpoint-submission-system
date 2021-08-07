@@ -24,23 +24,23 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 		return err
 	}
 
-	assignedTestingIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-testing"`, `= "unassign-testing"`, sid, false)
+	assignedTestingIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-testing"`, `IN("unassign-testing", "reject")`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	assignedVerificationIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-verification"`, `= "unassign-verification"`, sid, false)
+	assignedVerificationIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-verification"`, `IN("unassign-verification", "reject")`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	requestedChangesIDseq, err := getUserCountWithEnabledAction(dbs, `= "request-changes"`, `IN("approve", "verify")`, sid, false)
+	requestedChangesIDseq, err := getUserCountWithEnabledAction(dbs, `= "request-changes"`, `IN("approve", "verify", "reject")`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	approvedIDseq, err := getUserCountWithEnabledAction(dbs, `= "approve"`, `= "request-changes"`, sid, true)
+	approvedIDseq, err := getUserCountWithEnabledAction(dbs, `= "approve"`, `IN("request-changes", "reject")`, sid, true)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	verifiedIDseq, err := getUserCountWithEnabledAction(dbs, `= "verify"`, `= "request-changes"`, sid, true)
+	verifiedIDseq, err := getUserCountWithEnabledAction(dbs, `= "verify"`, `IN("request-changes", "reject")`, sid, true)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
