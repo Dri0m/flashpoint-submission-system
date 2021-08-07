@@ -396,8 +396,10 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				)
 		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id`
 
-	if len(filter.ActionsAfterMyLastComment) != 0 {
-		finalQuery += actionsAfterMyLastCommentQuery
+	if filter != nil {
+		if len(filter.ActionsAfterMyLastComment) != 0 {
+			finalQuery += actionsAfterMyLastCommentQuery
+		}
 	}
 
 	rest := ` LEFT JOIN submission_notification_subscription AS sns ON sns.fk_submission_id = submission.id
