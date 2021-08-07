@@ -540,6 +540,7 @@ func (a *App) HandleInternalPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/internal.gohtml")
 }
 
+// TODO create a closure function thingy to handle this automatically
 var updateMasterDBGuard = make(chan struct{}, 1)
 
 func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
