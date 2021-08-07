@@ -10,7 +10,7 @@ import (
 )
 
 // SearchSubmissions returns extended submissions based on given filter
-func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, int64, error) {
 	uid := utils.UserID(dbs.Ctx()) // TODO this should be passed as param
 
 	filters := make([]string, 0)
@@ -438,17 +438,17 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			FROM masterdb_game
 			WHERE (SELECT 1) ` + masterAnd + strings.Join(masterFilters, " AND ") + `
 		ORDER BY ` + currentOrderBy + ` ` + currentSortOrder + `
-		LIMIT ? OFFSET ?
 		`
-	finalQuery += rest
+	unlimitedQuery := finalQuery + rest
+	finalQuery = unlimitedQuery + ` LIMIT ? OFFSET ?`
 
 	finalData := make([]interface{}, 0)
 	finalData = append(finalData, data...)
-	finalData = append(finalData, masterData...)
-	finalData = append(finalData, currentLimit, currentOffset)
+	unlimitedData := append(finalData, masterData...)
+	finalData = append(unlimitedData, currentLimit, currentOffset)
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, finalData...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -479,7 +479,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			&s.FileCount,
 			&assignedTestingUserIDs, &assignedVerificationUserIDs, &requestedChangesUserIDs, &approvedUserIDs, &verifiedUserIDs,
 			&distinctActions); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)
 		s.UpdaterAvatarURL = utils.FormatAvatarURL(s.UpdaterID, updaterAvatar)
@@ -492,7 +492,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			for _, userID := range userIDs {
 				uid, err := strconv.ParseInt(userID, 10, 64)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				s.AssignedTestingUserIDs = append(s.AssignedTestingUserIDs, uid)
 			}
@@ -504,7 +504,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			for _, userID := range userIDs {
 				uid, err := strconv.ParseInt(userID, 10, 64)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				s.AssignedVerificationUserIDs = append(s.AssignedVerificationUserIDs, uid)
 			}
@@ -516,7 +516,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			for _, userID := range userIDs {
 				uid, err := strconv.ParseInt(userID, 10, 64)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				s.RequestedChangesUserIDs = append(s.RequestedChangesUserIDs, uid)
 			}
@@ -528,7 +528,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			for _, userID := range userIDs {
 				uid, err := strconv.ParseInt(userID, 10, 64)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				s.ApprovedUserIDs = append(s.ApprovedUserIDs, uid)
 			}
@@ -540,7 +540,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			for _, userID := range userIDs {
 				uid, err := strconv.ParseInt(userID, 10, 64)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				s.VerifiedUserIDs = append(s.VerifiedUserIDs, uid)
 			}
@@ -554,7 +554,17 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		result = append(result, s)
 	}
 
-	return result, nil
+	rows.Close()
+
+	countingQuery := `SELECT COUNT(*) FROM ( ` + unlimitedQuery + ` ) AS counterino`
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), countingQuery, unlimitedData...)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return nil, 0, err
+	}
+
+	return result, count, nil
 }
 
 func addMultifilter(tableName string, masterTableName *string, filterContents string, filters, masterFilters []string, data, masterData []interface{}) ([]string, []string, []interface{}, []interface{}) {

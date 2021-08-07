@@ -1,7 +1,7 @@
 {{define "submission-table"}}
     {{$showLaunchCommand := not ( empty ( default "" .Filter.LaunchCommandFuzzy))}}
     <div id="table-wrapper">
-        <i>tip: use shift+mousewheel to scroll horizontally</i>
+        <i>tip: use shift+mousewheel to scroll horizontally</i><br>
         <div id="table-scroll">
             <table class="pure-table pure-table-striped submissions-table">
                 <thead>

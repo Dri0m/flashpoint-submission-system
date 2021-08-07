@@ -173,7 +173,8 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 
 	searchSubmissionBySID := func(sid int64) func() (interface{}, error) {
 		return func() (interface{}, error) {
-			return a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
+			s, _, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
+			return s, err
 		}
 	}
 
@@ -266,7 +267,7 @@ func (a *App) IsUserWithinResourceLimit(r *http.Request, uid int64, resourceKey 
 	ctx := r.Context()
 
 	if resourceKey == constants.ResourceKeySubmissionID {
-		submissions, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmitterID: &uid})
+		submissions, _, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmitterID: &uid})
 		if err != nil {
 			return false, err
 		}

@@ -16,6 +16,7 @@ type ProfilePageData struct {
 type SubmissionsPageData struct {
 	BasePageData
 	Submissions  []*ExtendedSubmission
+	TotalCount   int64
 	Filter       SubmissionsFilter
 	FilterLayout string
 }

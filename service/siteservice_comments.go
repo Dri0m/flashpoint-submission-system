@@ -64,7 +64,7 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 	}
 
 	utils.LogCtx(ctx).Debugf("searching submissions for comment batch")
-	foundSubmissions, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionIDs: sids})
+	foundSubmissions, _, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionIDs: sids})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)

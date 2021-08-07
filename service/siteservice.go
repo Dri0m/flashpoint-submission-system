@@ -217,7 +217,7 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 		SubmissionIDs: []int64{sid},
 	}
 
-	submissions, err := s.dal.SearchSubmissions(dbs, filter)
+	submissions, _, err := s.dal.SearchSubmissions(dbs, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, dberr(err)
@@ -344,7 +344,7 @@ func (s *SiteService) GetSubmissionsPageData(ctx context.Context, filter *types.
 		return nil, err
 	}
 
-	submissions, err := s.dal.SearchSubmissions(dbs, filter)
+	submissions, count, err := s.dal.SearchSubmissions(dbs, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, dberr(err)
@@ -352,6 +352,7 @@ func (s *SiteService) GetSubmissionsPageData(ctx context.Context, filter *types.
 
 	pageData := &types.SubmissionsPageData{
 		BasePageData: *bpd,
+		TotalCount:   count,
 		Submissions:  submissions,
 		Filter:       *filter,
 	}
@@ -359,20 +360,20 @@ func (s *SiteService) GetSubmissionsPageData(ctx context.Context, filter *types.
 	return pageData, nil
 }
 
-func (s *SiteService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error) {
+func (s *SiteService) SearchSubmissions(ctx context.Context, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, int64, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, dberr(err)
+		return nil, 0, dberr(err)
 	}
 	defer dbs.Rollback()
 
-	submissions, err := s.dal.SearchSubmissions(dbs, filter)
+	submissions, count, err := s.dal.SearchSubmissions(dbs, filter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, dberr(err)
+		return nil, 0, dberr(err)
 	}
-	return submissions, nil
+	return submissions, count, nil
 }
 
 func (s *SiteService) GetSubmissionFiles(ctx context.Context, sfids []int64) ([]*types.SubmissionFile, error) {
@@ -460,7 +461,7 @@ func (s *SiteService) SoftDeleteSubmission(ctx context.Context, sid int64, delet
 	}
 	defer dbs.Rollback()
 
-	submissions, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
+	submissions, _, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{SubmissionIDs: []int64{sid}})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
@@ -1436,7 +1437,7 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 func (s *SiteService) RecomputeSubmissionCacheAll(l *logrus.Entry) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
 
-	submissions, err := s.SearchSubmissions(ctx, nil)
+	submissions, _, err := s.SearchSubmissions(ctx, nil)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return

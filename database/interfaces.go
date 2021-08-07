@@ -21,7 +21,7 @@ type DAL interface {
 	StoreSubmissionFile(dbs DBSession, s *types.SubmissionFile) (int64, error)
 	GetSubmissionFiles(dbs DBSession, sfids []int64) ([]*types.SubmissionFile, error)
 	GetExtendedSubmissionFilesBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedSubmissionFile, error)
-	SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, error)
+	SearchSubmissions(dbs DBSession, filter *types.SubmissionsFilter) ([]*types.ExtendedSubmission, int64, error)
 	StoreCurationMeta(dbs DBSession, cm *types.CurationMeta) error
 	GetCurationMetaBySubmissionFileID(dbs DBSession, sfid int64) (*types.CurationMeta, error)
 	StoreComment(dbs DBSession, c *types.Comment) error
