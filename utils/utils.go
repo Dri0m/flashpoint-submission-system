@@ -61,7 +61,7 @@ func FormatAvatarURL(uid int64, avatar string) string {
 }
 
 func FormatLike(s string) string {
-	return "%" + strings.Replace(strings.Replace(s, "%", `\%`, -1), "_", `\_`, -1) + "%"
+	return "%" + s + "%"
 }
 
 func WriteTarball(w io.Writer, filePaths []string) error {
