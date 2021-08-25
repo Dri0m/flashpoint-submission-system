@@ -93,6 +93,7 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 
 		b.WriteString(" ")
 
+		// TODO save this in map
 		lplat := strings.ToLower(*meta.Platform)
 		if strings.Contains(lplat, "3d groove fx") {
 			b.WriteString("<:3DGroove:569691574276063242>")
@@ -172,6 +173,8 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:HotSauce:866419306451173416>")
 		} else if strings.Contains(lplat, "thingviewer") {
 			b.WriteString("<:ThingViewer:872565939068084254>")
+		} else if strings.Contains(lplat, "dpgraph") {
+			b.WriteString("<:DPGraph:879995725595934720>")
 		} else {
 			b.WriteString("❓")
 		}
