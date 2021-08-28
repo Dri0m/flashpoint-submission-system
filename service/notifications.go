@@ -175,6 +175,8 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:ThingViewer:872565939068084254>")
 		} else if strings.Contains(lplat, "dpgraph") {
 			b.WriteString("<:DPGraph:879995725595934720>")
+		} else if strings.Contains(lplat, "envoy") {
+			b.WriteString("<:Envoy:880973750013673492>")
 		} else {
 			b.WriteString("❓")
 		}
