@@ -459,9 +459,16 @@ function wrapLongWords(list) {
             }
         }
 
-        console.log(`longest word in '${title}' is ${longestWord}`)
         if (longestWord >= 32) {
             list[i].style.wordBreak = "break-all"
         }
+    }
+}
+
+function linkIDsInComments() {
+    let comments = document.getElementsByClassName("comment-body")
+
+    for (let i=0; i<comments.length; i++) {
+        comments[i].innerHTML = comments[i].innerHTML.replaceAll(/(ID (\d+))/g, '<a href="/web/submission/$2">$1</a>')
     }
 }
