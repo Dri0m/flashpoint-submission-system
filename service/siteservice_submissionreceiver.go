@@ -251,9 +251,28 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		}
 	}
 
+	// subscribe the author
 	if err := s.dal.SubscribeUserToSubmission(dbs, uid, submissionID); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, nil, 0, dberr(err)
+	}
+
+	isAudition := submissionLevel == constants.SubmissionLevelAudition
+
+	// also subscribe all those that want to subscribe to new audition uploads
+	if isSubmissionNew && isAudition {
+		auditionSubscribeUserIDs, err := s.dal.GetUsersForUniversalNotification(dbs, uid, constants.ActionAuditionSubscribe)
+		if err != nil {
+			utils.LogCtx(dbs.Ctx()).Error(err)
+			return &destinationFilePath, nil, 0, dberr(err)
+		}
+
+		for _, subUID := range auditionSubscribeUserIDs {
+			if err := s.dal.SubscribeUserToSubmission(dbs, subUID, submissionID); err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return &destinationFilePath, nil, 0, dberr(err)
+			}
+		}
 	}
 
 	sf := &types.SubmissionFile{
@@ -314,7 +333,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	// feed the curation feed
 	isCurationValid := len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0
-	if err := s.createCurationFeedMessage(dbs, uid, submissionID, isSubmissionNew, isCurationValid, &vr.Meta); err != nil {
+	if err := s.createCurationFeedMessage(dbs, uid, submissionID, isSubmissionNew, isCurationValid, &vr.Meta, isAudition); err != nil {
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 

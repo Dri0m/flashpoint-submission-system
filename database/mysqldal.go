@@ -633,6 +633,32 @@ func (d *mysqlDAL) GetUsersForNotification(dbs DBSession, authorID, sid int64, a
 	return result, nil
 }
 
+// GetUsersForUniversalNotification returns a list of users who should be notified by an event not dependent on a submission ID
+func (d *mysqlDAL) GetUsersForUniversalNotification(dbs DBSession, authorID int64, action string) ([]int64, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
+		SELECT DISTINCT fk_user_id
+		FROM notification_settings
+		WHERE fk_action_id = (SELECT id FROM action where name = ?)
+		AND fk_user_id != ?`,
+		action, authorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]int64, 0)
+	var uid int64
+
+	for rows.Next() {
+		if err := rows.Scan(&uid); err != nil {
+			return nil, err
+		}
+		result = append(result, uid)
+	}
+
+	return result, nil
+}
+
 // GetOldestUnsentNotification returns oldest unsent notification
 func (d *mysqlDAL) GetOldestUnsentNotification(dbs DBSession) (*types.Notification, error) {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `

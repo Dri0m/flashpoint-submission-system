@@ -67,7 +67,7 @@ func (s *SiteService) createNotification(dbs database.DBSession, authorID, sid i
 }
 
 // createCurationFeedMessage formats and stores message for the curation feed
-func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID, sid int64, isSubmissionNew, isCurationValid bool, meta *types.CurationMeta) error {
+func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID, sid int64, isSubmissionNew, isCurationValid bool, meta *types.CurationMeta, isAudition bool) error {
 	var b strings.Builder
 
 	if isSubmissionNew {
@@ -192,6 +192,20 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 		b.WriteString(" ")
 
 		b.WriteString(*meta.Title)
+		b.WriteString("\n")
+	}
+
+	// also notify all those that want to know about new audition uploads
+	if isAudition {
+		auditionMentionUserIDs, err := s.dal.GetUsersForUniversalNotification(dbs, authorID, constants.ActionAuditionUpload)
+		if err != nil {
+			utils.LogCtx(dbs.Ctx()).Error(err)
+			return err
+		}
+
+		for _, uid := range auditionMentionUserIDs {
+			b.WriteString(fmt.Sprintf("<@%d> ", uid))
+		}
 		b.WriteString("\n")
 	}
 

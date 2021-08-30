@@ -19,6 +19,8 @@ const (
 	ActionUnassignVerification = "unassign-verification"
 	ActionSystem               = "system"
 	ActionReject               = "reject"
+	ActionAuditionUpload       = "audition-upload"
+	ActionAuditionSubscribe    = "audition-subscribe"
 )
 
 const (
@@ -59,6 +61,8 @@ func GetActionsWithNotification() []string {
 		ActionMarkAdded,
 		ActionUpload,
 		ActionReject,
+		ActionAuditionUpload,
+		ActionAuditionSubscribe,
 	}
 }
 

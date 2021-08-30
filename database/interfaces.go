@@ -37,6 +37,7 @@ type DAL interface {
 	IsUserSubscribedToSubmission(dbs DBSession, uid, sid int64) (bool, error)
 	StoreNotification(dbs DBSession, msg, notificationType string) error
 	GetUsersForNotification(dbs DBSession, authorID, sid int64, action string) ([]int64, error)
+	GetUsersForUniversalNotification(dbs DBSession, authorID int64, action string) ([]int64, error)
 	GetOldestUnsentNotification(dbs DBSession) (*types.Notification, error)
 	MarkNotificationAsSent(dbs DBSession, nid int64) error
 	StoreCurationImage(dbs DBSession, c *types.CurationImage) (int64, error)

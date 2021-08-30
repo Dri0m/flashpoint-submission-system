@@ -11,7 +11,7 @@
             <div class="horizontal-rule"></div>
 
             <h3>Notification preferences</h3>
-            <p>Receive a discord notification when an event (comment) occurs on submissions which you are watching.</p>
+            <p>Receive a discord notification when an event (comment) occurs on submissions to which you are subscribed.</p>
 
             <form class="pure-form pure-form-stacked" id="notification-form">
                 <label for="notification-action">Comment
@@ -32,6 +32,12 @@
                 <label for="notification-action">Reject
                     <input type="checkbox" class="notification-action" value="reject"
                            {{if has "reject" .NotificationActions}}checked{{end}}></label>
+                <label for="notification-action">Get notified about every new audition upload
+                    <input type="checkbox" class="notification-action" value="audition-upload"
+                           {{if has "audition-upload" .NotificationActions}}checked{{end}}></label>
+                <label for="notification-action">Automatically subscribe to every new audition upload
+                    <input type="checkbox" class="notification-action" value="audition-subscribe"
+                           {{if has "audition-subscribe" .NotificationActions}}checked{{end}}></label>
                 <button type="button" onclick="updateNotificationSettings()" class="pure-button pure-button-primary">
                     Update
                 </button>
