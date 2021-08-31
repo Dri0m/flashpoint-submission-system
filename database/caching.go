@@ -46,10 +46,6 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	rejectedIDseq, err := getUserCountWithEnabledAction(dbs, `= "reject"`, `IN("")`, sid, true)
-	if err != nil && err != sql.ErrNoRows {
-		return err
-	}
 
 	ofs, cfs, md5s, sha256s, err := getFileDataSequences(dbs, sid)
 	if err != nil && err != sql.ErrNoRows {
@@ -69,12 +65,11 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 	if distinctActionsSeq != nil {
 		for _, action := range strings.Split(*distinctActionsSeq, ",") {
 			if action == constants.ActionReject {
-				empty := ""
-				assignedTestingIDseq = &empty
-				assignedVerificationIDseq = &empty
-				requestedChangesIDseq = &empty
-				approvedIDseq = &empty
-				verifiedIDseq = &empty
+				assignedTestingIDseq = nil
+				assignedVerificationIDseq = nil
+				requestedChangesIDseq = nil
+				approvedIDseq = nil
+				verifiedIDseq = nil
 
 				reject := constants.ActionReject
 				distinctActionsSeq = &reject
@@ -82,15 +77,6 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 				break
 			}
 		}
-	}
-
-	if rejectedIDseq != nil && len(*rejectedIDseq) > 0 {
-		empty := ""
-		assignedTestingIDseq = &empty
-		assignedVerificationIDseq = &empty
-		requestedChangesIDseq = &empty
-		approvedIDseq = &empty
-		verifiedIDseq = &empty
 	}
 
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
