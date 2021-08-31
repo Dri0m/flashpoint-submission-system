@@ -188,7 +188,7 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 		return dberr(err)
 	}
 
-	utils.LogCtx(ctx).WithField("amount", commentCounter).Debug("comments received")
+	utils.LogCtx(ctx).WithField("amount", commentCounter).WithField("commentAction", formAction).Debug("comments received")
 
 	s.announceNotification()
 
