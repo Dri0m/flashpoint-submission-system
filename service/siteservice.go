@@ -1435,8 +1435,7 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 	}
 }
 
-func (s *SiteService) RecomputeSubmissionCacheAll(l *logrus.Entry) {
-	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
+func (s *SiteService) RecomputeSubmissionCacheAll(ctx context.Context) {
 
 	var perPage int64 = 10000
 	var count int64 = 1

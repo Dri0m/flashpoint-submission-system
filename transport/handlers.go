@@ -540,7 +540,7 @@ func (a *App) HandleInternalPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/internal.gohtml")
 }
 
-// TODO create a closure function thingy to handle this automatically
+// TODO create a closure function thingy to handle this automatically? already 3+ guards like these hang around the code
 var updateMasterDBGuard = make(chan struct{}, 1)
 
 func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
@@ -557,7 +557,7 @@ func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
 	defer func() { <-updateMasterDBGuard }()
 
 	go func() {
-		err := a.Service.UpdateMasterDB(ctx)
+		err := a.Service.UpdateMasterDB(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx)))
 		if err != nil {
 			return
 		}
@@ -708,7 +708,7 @@ func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
 	defer func() { <-ingestGuard }()
 
 	go func() {
-		a.Service.IngestFlashfreezeItems(utils.LogCtx(ctx))
+		a.Service.IngestFlashfreezeItems(utils.LogCtx(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx))))
 	}()
 
 	writeResponse(ctx, w, presp("ingestion in progress", http.StatusOK), http.StatusOK)
@@ -730,7 +730,7 @@ func (a *App) HandleRecomputeSubmissionCacheAll(w http.ResponseWriter, r *http.R
 	defer func() { <-recomputeSubmissionCacheAllGuard }()
 
 	go func() {
-		a.Service.RecomputeSubmissionCacheAll(utils.LogCtx(ctx))
+		a.Service.RecomputeSubmissionCacheAll(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx)))
 	}()
 
 	writeResponse(ctx, w, presp("recompute submission cache all in progress", http.StatusOK), http.StatusOK)
