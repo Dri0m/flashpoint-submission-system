@@ -26,23 +26,27 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 		return err
 	}
 
-	assignedTestingIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-testing"`, `IN("unassign-testing", "reject")`, sid, false)
+	assignedTestingIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-testing"`, `IN("unassign-testing")`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	assignedVerificationIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-verification"`, `IN("unassign-verification", "reject")`, sid, false)
+	assignedVerificationIDseq, err := getUserCountWithEnabledAction(dbs, `= "assign-verification"`, `IN("unassign-verification")`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	requestedChangesIDseq, err := getUserCountWithEnabledAction(dbs, `= "request-changes"`, `IN("approve", "verify", "reject")`, sid, false)
+	requestedChangesIDseq, err := getUserCountWithEnabledAction(dbs, `= "request-changes"`, `IN("approve", "verify")`, sid, false)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	approvedIDseq, err := getUserCountWithEnabledAction(dbs, `= "approve"`, `IN("request-changes", "reject")`, sid, true)
+	approvedIDseq, err := getUserCountWithEnabledAction(dbs, `= "approve"`, `IN("request-changes")`, sid, true)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	verifiedIDseq, err := getUserCountWithEnabledAction(dbs, `= "verify"`, `IN("request-changes", "reject")`, sid, true)
+	verifiedIDseq, err := getUserCountWithEnabledAction(dbs, `= "verify"`, `IN("request-changes")`, sid, true)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	rejectedIDseq, err := getUserCountWithEnabledAction(dbs, `= "reject"`, `IN("")`, sid, true)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -78,6 +82,15 @@ func (d *mysqlDAL) UpdateSubmissionCacheTable(dbs DBSession, sid int64) error {
 				break
 			}
 		}
+	}
+
+	if rejectedIDseq != nil && len(*rejectedIDseq) > 0 {
+		empty := ""
+		assignedTestingIDseq = &empty
+		assignedVerificationIDseq = &empty
+		requestedChangesIDseq = &empty
+		approvedIDseq = &empty
+		verifiedIDseq = &empty
 	}
 
 	_, err = dbs.Tx().ExecContext(dbs.Ctx(), `
