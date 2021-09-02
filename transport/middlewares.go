@@ -267,7 +267,7 @@ func (a *App) IsUserWithinResourceLimit(r *http.Request, uid int64, resourceKey 
 	ctx := r.Context()
 
 	if resourceKey == constants.ResourceKeySubmissionID {
-		submissions, _, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmitterID: &uid})
+		submissions, _, err := a.Service.SearchSubmissions(ctx, &types.SubmissionsFilter{SubmitterID: &uid, DistinctActionsNot: []string{constants.ActionReject}}) // don't count rejected submissions
 		if err != nil {
 			return false, err
 		}
