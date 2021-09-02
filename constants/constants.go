@@ -61,8 +61,6 @@ func GetActionsWithNotification() []string {
 		ActionMarkAdded,
 		ActionUpload,
 		ActionReject,
-		ActionAuditionUpload,
-		ActionAuditionSubscribe,
 	}
 }
 
