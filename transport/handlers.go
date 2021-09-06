@@ -554,16 +554,15 @@ func (a *App) HandleUpdateMasterDB(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func() { <-updateMasterDBGuard }()
-
 	go func() {
 		err := a.Service.UpdateMasterDB(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx)))
 		if err != nil {
-			return
+			utils.LogCtx(ctx).Error(err)
 		}
+		<-updateMasterDBGuard
 	}()
 
-	writeResponse(ctx, w, presp("update master db started", http.StatusOK), http.StatusOK)
+	writeResponse(ctx, w, presp("starting update master db", http.StatusOK), http.StatusOK)
 }
 
 func (a *App) HandleHelpPage(w http.ResponseWriter, r *http.Request) {
@@ -705,13 +704,12 @@ func (a *App) HandleIngestFlashfreeze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func() { <-ingestGuard }()
-
 	go func() {
 		a.Service.IngestFlashfreezeItems(utils.LogCtx(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx))))
+		<-ingestGuard
 	}()
 
-	writeResponse(ctx, w, presp("ingestion in progress", http.StatusOK), http.StatusOK)
+	writeResponse(ctx, w, presp("starting flashfreeze ingestion", http.StatusOK), http.StatusOK)
 }
 
 var recomputeSubmissionCacheAllGuard = make(chan struct{}, 1)
@@ -727,11 +725,10 @@ func (a *App) HandleRecomputeSubmissionCacheAll(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	defer func() { <-recomputeSubmissionCacheAllGuard }()
-
 	go func() {
 		a.Service.RecomputeSubmissionCacheAll(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx)))
+		<-recomputeSubmissionCacheAllGuard
 	}()
 
-	writeResponse(ctx, w, presp("recompute submission cache all in progress", http.StatusOK), http.StatusOK)
+	writeResponse(ctx, w, presp("starting recompute submission cache all", http.StatusOK), http.StatusOK)
 }
