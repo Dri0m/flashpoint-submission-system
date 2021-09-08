@@ -546,7 +546,7 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	getUserRoles := func() (interface{}, error) {
 		return s.authBot.GetFlashpointRoleIDsForUser(discordUser.ID)
 	}
-	const getUserRolesKey = "getUserRoles"
+	getUserRolesKey := fmt.Sprintf("getUserRoles-%d", discordUser.ID)
 
 	// get discord user roles
 	urid, err, cached := s.discordRoleCache.Memoize(getUserRolesKey, getUserRoles)
