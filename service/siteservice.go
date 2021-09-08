@@ -1408,7 +1408,8 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 				SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
 			}
 
-			fid, err := s.dal.StoreFlashfreezeRootFile(dbs, sf)
+			//fid, err := s.dal.StoreFlashfreezeRootFile(dbs, sf)
+			_, err = s.dal.StoreFlashfreezeRootFile(dbs, sf)
 			if err != nil {
 				me, ok := err.(*mysql.MySQLError)
 				if ok {
@@ -1429,8 +1430,8 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 
 			utils.LogCtx(ctx).WithField("amount", 1).Debug("flashfreeze items received")
 
-			l := utils.LogCtx(ctx).WithFields(logrus.Fields{"flashfreezeFileID": fid, "destinationFilepath": destinationFilePath})
-			s.indexReceivedFlashfreezeFile(l, fid, destinationFilePath)
+			// l := utils.LogCtx(ctx).WithFields(logrus.Fields{"flashfreezeFileID": fid, "destinationFilepath": destinationFilePath})
+			// s.indexReceivedFlashfreezeFile(l, fid, destinationFilePath)
 		}()
 	}
 }
