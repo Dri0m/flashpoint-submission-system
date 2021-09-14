@@ -18,14 +18,16 @@
                 {{if isDecider .UserRoles}}
 
                     {{if not (has .UserID $submission.AssignedTestingUserIDs)}}
-                        {{if not (has .UserID $submission.ApprovedUserIDs)}}
-                            {{if not (has .UserID $submission.AssignedVerificationUserIDs)}}
-                                {{if not (has .UserID $submission.VerifiedUserIDs)}}
-                                    {{if not (eq .UserID $submission.LastUploaderID)}}
-                                        <button type="button" class="pure-button pure-button button-assign-testing"
-                                                onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
-                                            Assign Testing
-                                        </button>
+                        {{if not (has "reject" $submission.DistinctActions)}}
+                            {{if not (has .UserID $submission.ApprovedUserIDs)}}
+                                {{if not (has .UserID $submission.AssignedVerificationUserIDs)}}
+                                    {{if not (has .UserID $submission.VerifiedUserIDs)}}
+                                        {{if not (eq .UserID $submission.LastUploaderID)}}
+                                            <button type="button" class="pure-button pure-button button-assign-testing"
+                                                    onclick="batchComment('submission-checkbox', 'sid', 'assign-testing')">
+                                                Assign Testing
+                                            </button>
+                                        {{end}}
                                     {{end}}
                                 {{end}}
                             {{end}}
@@ -38,16 +40,18 @@
                     {{end}}
 
                     {{if not (has .UserID $submission.AssignedVerificationUserIDs)}}
-                        {{if not (has .UserID $submission.ApprovedUserIDs)}}
-                            {{if gt (len $submission.ApprovedUserIDs) 0}}
-                                {{if not (has .UserID $submission.AssignedTestingUserIDs)}}
-                                    {{if not (has .UserID $submission.VerifiedUserIDs)}}
-                                        {{if not (eq .UserID $submission.LastUploaderID)}}
-                                            <button type="button"
-                                                    class="pure-button pure-button button-assign-verification"
-                                                    onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
-                                                Assign Verification
-                                            </button>
+                        {{if not (has "reject" $submission.DistinctActions)}}
+                            {{if not (has .UserID $submission.ApprovedUserIDs)}}
+                                {{if gt (len $submission.ApprovedUserIDs) 0}}
+                                    {{if not (has .UserID $submission.AssignedTestingUserIDs)}}
+                                        {{if not (has .UserID $submission.VerifiedUserIDs)}}
+                                            {{if not (eq .UserID $submission.LastUploaderID)}}
+                                                <button type="button"
+                                                        class="pure-button pure-button button-assign-verification"
+                                                        onclick="batchComment('submission-checkbox', 'sid', 'assign-verification')">
+                                                    Assign Verification
+                                                </button>
+                                            {{end}}
                                         {{end}}
                                     {{end}}
                                 {{end}}
@@ -60,46 +64,58 @@
                         </button>
                     {{end}}
 
-                    {{if or (or (has .UserID $submission.AssignedTestingUserIDs) (has .UserID $submission.ApprovedUserIDs)) (or (has .UserID $submission.AssignedVerificationUserIDs) (has .UserID $submission.VerifiedUserIDs))}}
-                        {{if not (has "mark-added" $submission.DistinctActions)}}
+                    {{if not (has "reject" $submission.DistinctActions)}}
+                        {{if or (or (has .UserID $submission.AssignedTestingUserIDs) (has .UserID $submission.ApprovedUserIDs)) (or (has .UserID $submission.AssignedVerificationUserIDs) (has .UserID $submission.VerifiedUserIDs))}}
+                            {{if not (has "mark-added" $submission.DistinctActions)}}
+                                {{if not (eq .UserID $submission.LastUploaderID)}}
+                                    <button type="button" class="pure-button pure-button button-request-changes"
+                                            onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
+                                        Request Changes
+                                    </button>
+                                {{end}}
+                            {{end}}
+                        {{end}}
+                    {{end}}
+
+                    {{if not (has "reject" $submission.DistinctActions)}}
+                        {{if has .UserID $submission.AssignedTestingUserIDs}}
                             {{if not (eq .UserID $submission.LastUploaderID)}}
-                                <button type="button" class="pure-button pure-button button-request-changes"
-                                        onclick="batchComment('submission-checkbox', 'sid', 'request-changes')">
-                                    Request Changes
+                                <button type="button" class="pure-button pure-button button-approve"
+                                        onclick="batchComment('submission-checkbox', 'sid', 'approve')">
+                                    Approve
                                 </button>
                             {{end}}
                         {{end}}
                     {{end}}
 
-                    {{if has .UserID $submission.AssignedTestingUserIDs}}
-                        {{if not (eq .UserID $submission.LastUploaderID)}}
-                            <button type="button" class="pure-button pure-button button-approve"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'approve')">
-                                Approve
-                            </button>
+                    {{if not (has "reject" $submission.DistinctActions)}}
+                        {{if gt (len $submission.ApprovedUserIDs) 0}}
+                            {{if not (has .UserID $submission.VerifiedUserIDs)}}
+                                {{if has .UserID $submission.AssignedVerificationUserIDs}}
+                                    <button type="button" class="pure-button pure-button button-verify"
+                                            onclick="batchComment('submission-checkbox', 'sid', 'verify')">
+                                        Verify
+                                    </button>
+                                {{end}}
+                            {{end}}
                         {{end}}
                     {{end}}
-                    {{if gt (len $submission.ApprovedUserIDs) 0}}
-                        {{if not (has .UserID $submission.VerifiedUserIDs)}}
-                            {{if has .UserID $submission.AssignedVerificationUserIDs}}
-                                <button type="button" class="pure-button pure-button button-verify"
-                                        onclick="batchComment('submission-checkbox', 'sid', 'verify')">
-                                    Verify
+
+                {{end}}
+
+                {{if isAdder .UserRoles}}
+                    {{if not (has "reject" $submission.DistinctActions)}}
+                        {{if and (gt (len $submission.ApprovedUserIDs) 0) (gt (len $submission.VerifiedUserIDs) 0)}}
+                            {{if not (has "mark-added" $submission.DistinctActions)}}
+                                <button type="button" class="pure-button pure-button button-mark-added"
+                                        onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
+                                    Mark as Added
                                 </button>
                             {{end}}
                         {{end}}
                     {{end}}
                 {{end}}
-                {{if isAdder .UserRoles}}
-                    {{if and (gt (len $submission.ApprovedUserIDs) 0) (gt (len $submission.VerifiedUserIDs) 0)}}
-                        {{if not (has "mark-added" $submission.DistinctActions)}}
-                            <button type="button" class="pure-button pure-button button-mark-added"
-                                    onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
-                                Mark as Added
-                            </button>
-                        {{end}}
-                    {{end}}
-                {{end}}
+
                 {{if isDecider .UserRoles}}
                     {{if not (has "mark-added" $submission.DistinctActions)}}
                         {{if not (has "reject" $submission.DistinctActions)}}
