@@ -505,6 +505,12 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteRe
 		return dberr(err)
 	}
 
+	if c.AuthorID == constants.ValidatorID {
+		err := perr("cannot delete validator's comment", http.StatusForbidden)
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+
 	if err := s.dal.SoftDeleteComment(dbs, cid, deleteReason); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return dberr(err)
