@@ -1343,6 +1343,7 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 	files, err := ioutil.ReadDir(s.flashfreezeIngestDir)
 	if err != nil {
 		l.Error(err)
+		return
 	}
 
 	for _, fileInfo := range files {
@@ -1370,16 +1371,11 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 				}
 			}
 
-			if err := os.Rename(fullFilepath, destinationFilePath); err != nil {
-				utils.LogCtx(ctx).Error(err)
-				return
-			}
-
 			md5sum := md5.New()
 			sha256sum := sha256.New()
 			multiWriter := io.MultiWriter(sha256sum, md5sum)
 
-			f, err := os.Open(destinationFilePath)
+			f, err := os.Open(fullFilepath)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
 				return
@@ -1424,6 +1420,11 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 						return
 					}
 				}
+				utils.LogCtx(ctx).Error(err)
+				return
+			}
+
+			if err := os.Rename(fullFilepath, destinationFilePath); err != nil {
 				utils.LogCtx(ctx).Error(err)
 				return
 			}
