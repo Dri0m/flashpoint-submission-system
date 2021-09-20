@@ -1349,6 +1349,9 @@ func (s *SiteService) ingestGivenFlashfreezeItems(l *logrus.Entry, files []fs.Fi
 		fileInfo := fileInfo
 		go func() {
 			defer func() { <-guard }()
+			if fileInfo.IsDir() {
+				return
+			}
 			ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l.WithField("filename", fileInfo.Name()))
 			fullFilepath := rootDir + "/" + fileInfo.Name()
 
@@ -1476,6 +1479,9 @@ func (s *SiteService) IngestUnknownFlashfreezeItems(l *logrus.Entry) {
 	files := make([]fs.FileInfo, 0, len(allFiles)-len(ingestedFiles))
 
 	for _, candidateFile := range allFiles {
+		if candidateFile.IsDir() {
+			continue
+		}
 		found := false
 		for _, ingestedFile := range ingestedFiles {
 			if candidateFile.Name() == ingestedFile.CurrentFilename {
