@@ -349,6 +349,10 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleIngestUnknownFlashfreeze, isGod)))).
 		Methods("GET")
 
+	router.Handle("/api/internal/flashfreeze/index-unindexed-files",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleIndexUnindexedFlashfreeze, isGod)))).
+		Methods("GET")
+
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)

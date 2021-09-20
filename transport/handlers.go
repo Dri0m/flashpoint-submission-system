@@ -755,3 +755,24 @@ func (a *App) HandleIngestUnknownFlashfreeze(w http.ResponseWriter, r *http.Requ
 
 	writeResponse(ctx, w, presp("starting flashfreeze ingestion of unknown files", http.StatusOK), http.StatusOK)
 }
+
+var indexUnindexedGuard = make(chan struct{}, 1)
+
+func (a *App) HandleIndexUnindexedFlashfreeze(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	select {
+	case indexUnindexedGuard <- struct{}{}:
+		utils.LogCtx(ctx).Debug("starting flashfreeze indexing of unindexed files")
+	default:
+		writeResponse(ctx, w, presp("indexing already running", http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	go func() {
+		a.Service.IndexUnindexedFlashfreezeItems(utils.LogCtx(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx))))
+		<-indexUnindexedGuard
+	}()
+
+	writeResponse(ctx, w, presp("starting flashfreeze indexing of unindexed files", http.StatusOK), http.StatusOK)
+}

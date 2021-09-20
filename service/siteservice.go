@@ -1504,7 +1504,7 @@ func (s *SiteService) IngestUnknownFlashfreezeItems(l *logrus.Entry) {
 		return
 	}
 
-	utils.LogCtx(ctx).WithField("unknownFlashfreezeItems", len(files)).Debug("found unknown flashfreeze items")
+	utils.LogCtx(ctx).WithField("unknownFlashfreezeItems", len(files)).Debug("found some unknown flashfreeze items")
 	s.ingestGivenFlashfreezeItems(l, files, s.flashfreezeDir)
 }
 
@@ -1549,5 +1549,33 @@ func (s *SiteService) RecomputeSubmissionCacheAll(ctx context.Context) {
 		}
 
 		recomputedCount += count
+	}
+}
+
+func (s *SiteService) IndexUnindexedFlashfreezeItems(l *logrus.Entry) {
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
+
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+	defer dbs.Rollback()
+
+	unindexedFiles, err := s.dal.GetAllUnindexedFlashfreezeRootFiles(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+
+	if len(unindexedFiles) == 0 {
+		utils.LogCtx(ctx).Debug("found no unindexed flashfreeze files")
+	}
+
+	utils.LogCtx(ctx).WithField("unindexedFlashfreezeItems", len(unindexedFiles)).Debug("found some unindexed flashfreeze files")
+
+	for _, unindexedFile := range unindexedFiles {
+		destinationFilePath := s.flashfreezeDir + "/" + unindexedFile.CurrentFilename
+		s.indexReceivedFlashfreezeFile(l, unindexedFile.ID, destinationFilePath)
 	}
 }
