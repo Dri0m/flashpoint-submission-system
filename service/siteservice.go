@@ -1445,6 +1445,8 @@ func (s *SiteService) ingestGivenFlashfreezeItems(l *logrus.Entry, files []fs.Fi
 }
 
 func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
+	l.WithField("directory", s.flashfreezeIngestDir).Debug("listing directory")
+
 	files, err := ioutil.ReadDir(s.flashfreezeIngestDir)
 	if err != nil {
 		l.Error(err)
@@ -1456,6 +1458,8 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 
 func (s *SiteService) IngestUnknownFlashfreezeItems(l *logrus.Entry) {
 	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
+
+	utils.LogCtx(ctx).WithField("directory", s.flashfreezeDir).Debug("listing directory")
 
 	allFiles, err := ioutil.ReadDir(s.flashfreezeDir)
 	if err != nil {
