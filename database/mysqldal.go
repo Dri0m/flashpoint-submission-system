@@ -918,11 +918,10 @@ func (d *mysqlDAL) GetFlashfreezeRootFile(dbs DBSession, fid int64) (*types.Flas
 }
 
 // GetAllFlashfreezeRootFiles returns all flashfreeze root files
-func (d *mysqlDAL) GetAllFlashfreezeRootFiles(dbs DBSession, fid int64) ([]*types.FlashfreezeFile, error) {
+func (d *mysqlDAL) GetAllFlashfreezeRootFiles(dbs DBSession) ([]*types.FlashfreezeFile, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
 		SELECT id, fk_user_id, original_filename, current_filename, size, created_at, md5sum, sha256sum
-		FROM flashfreeze_file`,
-		fid)
+		FROM flashfreeze_file`)
 
 	if err != nil {
 		return nil, err
