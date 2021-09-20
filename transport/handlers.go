@@ -732,3 +732,26 @@ func (a *App) HandleRecomputeSubmissionCacheAll(w http.ResponseWriter, r *http.R
 
 	writeResponse(ctx, w, presp("starting recompute submission cache all", http.StatusOK), http.StatusOK)
 }
+
+var ingestUnknownGuard = make(chan struct{}, 1)
+
+// HandleIngestUnknownFlashfreeze ingests flashfreeze files which are in the flashfreeze directory, but not in the database.
+// This should not be needed and such files are a result of a bug or human error.
+func (a *App) HandleIngestUnknownFlashfreeze(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	select {
+	case ingestUnknownGuard <- struct{}{}:
+		utils.LogCtx(ctx).Debug("starting flashfreeze ingestion of unknown files")
+	default:
+		writeResponse(ctx, w, presp("ingestion already running", http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	go func() {
+		a.Service.IngestUnknownFlashfreezeItems(utils.LogCtx(context.WithValue(context.Background(), utils.CtxKeys.Log, utils.LogCtx(ctx))))
+		<-ingestUnknownGuard
+	}()
+
+	writeResponse(ctx, w, presp("starting flashfreeze ingestion of unknown files", http.StatusOK), http.StatusOK)
+}

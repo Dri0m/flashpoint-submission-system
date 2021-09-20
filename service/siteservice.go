@@ -12,6 +12,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/kofalt/go-memoize"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"math"
 	"mime/multipart"
@@ -1338,13 +1339,10 @@ func provideArchiveForIndexing(filePath string, baseUrl string) ([]*types.Indexe
 	return ir.Files, ir.IndexingErrors, nil
 }
 
-func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
+func (s *SiteService) ingestGivenFlashfreezeItems(l *logrus.Entry, files []fs.FileInfo, rootDir string) {
 	guard := make(chan struct{}, 3)
-	files, err := ioutil.ReadDir(s.flashfreezeIngestDir)
-	if err != nil {
-		l.Error(err)
-		return
-	}
+
+	mutex := sync.Mutex{}
 
 	for _, fileInfo := range files {
 		guard <- struct{}{}
@@ -1352,7 +1350,7 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 		go func() {
 			defer func() { <-guard }()
 			ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l.WithField("filename", fileInfo.Name()))
-			fullFilepath := s.flashfreezeIngestDir + "/" + fileInfo.Name()
+			fullFilepath := rootDir + "/" + fileInfo.Name()
 
 			ok, ext := isFlasfhreezeExtensionValid(fileInfo.Name())
 			if !ok {
@@ -1393,6 +1391,8 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 				return
 			}
 
+			mutex.Lock()
+			defer mutex.Unlock()
 			dbs, err := s.dal.NewSession(ctx)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
@@ -1435,11 +1435,61 @@ func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
 			}
 
 			utils.LogCtx(ctx).WithField("amount", 1).Debug("flashfreeze items received")
-
 			l := utils.LogCtx(ctx).WithFields(logrus.Fields{"flashfreezeFileID": fid, "destinationFilepath": destinationFilePath})
 			s.indexReceivedFlashfreezeFile(l, fid, destinationFilePath)
 		}()
 	}
+}
+
+func (s *SiteService) IngestFlashfreezeItems(l *logrus.Entry) {
+	files, err := ioutil.ReadDir(s.flashfreezeIngestDir)
+	if err != nil {
+		l.Error(err)
+		return
+	}
+
+	s.ingestGivenFlashfreezeItems(l, files, s.flashfreezeIngestDir)
+}
+
+func (s *SiteService) IngestUnknownFlashfreezeItems(l *logrus.Entry) {
+	ctx := context.WithValue(context.Background(), utils.CtxKeys.Log, l)
+
+	allFiles, err := ioutil.ReadDir(s.flashfreezeDir)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+	defer dbs.Rollback()
+
+	ingestedFiles, err := s.dal.GetAllFlashfreezeRootFiles(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return
+	}
+
+	files := make([]fs.FileInfo, 0, len(allFiles)-len(ingestedFiles))
+
+	for _, candidateFile := range allFiles {
+		found := false
+		for _, ingestedFile := range ingestedFiles {
+			if candidateFile.Name() == ingestedFile.CurrentFilename {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			files = append(files, candidateFile)
+		}
+	}
+
+	s.ingestGivenFlashfreezeItems(l, files, s.flashfreezeDir)
 }
 
 func (s *SiteService) RecomputeSubmissionCacheAll(ctx context.Context) {
