@@ -1495,6 +1495,12 @@ func (s *SiteService) IngestUnknownFlashfreezeItems(l *logrus.Entry) {
 		}
 	}
 
+	if len(files) == 0 {
+		utils.LogCtx(ctx).Debug("found no unknown flashfreeze items")
+		return
+	}
+
+	utils.LogCtx(ctx).WithField("unknownFlashfreezeItems", len(files)).Debug("found unknown flashfreeze items")
 	s.ingestGivenFlashfreezeItems(l, files, s.flashfreezeDir)
 }
 
