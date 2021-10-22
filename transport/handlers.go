@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
-	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/gorilla/mux"
@@ -148,60 +147,6 @@ func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(ctx, w, nil, http.StatusNoContent)
-}
-
-func (a *App) HandleSubmissionReceiver(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	params := mux.Vars(r)
-	submissionID := params[constants.ResourceKeySubmissionID]
-
-	var sid *int64
-
-	if submissionID != "" {
-		sidParsed, err := strconv.ParseInt(submissionID, 10, 64)
-		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
-			return
-		}
-		sid = &sidParsed
-	}
-
-	// limit RAM usage to 10MB
-	if err := r.ParseMultipartForm(10 * 1000 * 1000); err != nil {
-		utils.LogCtx(ctx).Error(err)
-		writeError(ctx, w, perr("failed to parse form", http.StatusInternalServerError))
-		return
-	}
-
-	fileHeaders := r.MultipartForm.File["files"]
-
-	if len(fileHeaders) == 0 {
-		err := fmt.Errorf("no files received")
-		utils.LogCtx(ctx).Error(err)
-		writeError(ctx, w, constants.PublicError{Msg: err.Error(), Status: http.StatusBadRequest})
-		return
-	}
-
-	fileWrappers := make([]service.MultipartFileProvider, 0, len(fileHeaders))
-	for _, fileHeader := range fileHeaders {
-		fileWrappers = append(fileWrappers, service.NewMutlipartFileWrapper(fileHeader))
-	}
-
-	sids, err := a.Service.ReceiveSubmissions(ctx, sid, fileWrappers)
-	if err != nil {
-		writeError(ctx, w, err)
-		return
-	}
-
-	url := fmt.Sprintf("/submission/%d", sids[0])
-
-	resp := types.ReceiveFileResp{
-		Message: "success",
-		URL:     &url,
-	}
-
-	writeResponse(ctx, w, resp, http.StatusOK)
 }
 
 func (a *App) HandleSubmissionReceiverResumable(w http.ResponseWriter, r *http.Request) {

@@ -187,26 +187,6 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	router.Handle(
-		"/api/submission-receiver",
-		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
-			a.HandleSubmissionReceiver, muxAny(
-				isStaff,
-				isTrialCurator,
-				muxAll(isInAudit, userHasNoSubmissions)))))).
-		Methods("POST")
-
-	router.Handle(
-		fmt.Sprintf("/api/submission-receiver/{%s}", constants.ResourceKeySubmissionID),
-		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
-			a.HandleSubmissionReceiver, muxAny(
-				isStaff,
-				muxAll(isTrialCurator, userOwnsSubmission),
-				muxAll(isInAudit, userOwnsSubmission)))))).
-		Methods("POST")
-
-	////////////////////////
-
-	router.Handle(
 		"/api/submission-receiver-resumable",
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleSubmissionReceiverResumable, muxAny(

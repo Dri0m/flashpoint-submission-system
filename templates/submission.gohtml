@@ -30,14 +30,6 @@
             </div>
             {{if $UserCanModify}}
                 <div class="pure-u-1-2">
-                    <div id="content-legacy" hidden>
-                        <h3>Upload a fixed version - Legacy uploader</h3>
-                        <input type="file" name="files" id="file-input">
-                        <input class="pure-button button-upload-file" id="upload-button" value="Upload">
-                        <input type="number" value="1" id="upload-queues" hidden>
-                        <div id="progress-bars-container"></div>
-                    </div>
-
                     <div id="content-resumable" hidden>
                         <h3>Upload a fixed version</h3>
                         <div id="resumable-drop" class="gray-drop">
@@ -52,8 +44,6 @@
                     </div>
 
                     <link rel="stylesheet" href="/static/resumable/css.css">
-                    <script src="/static/legacy-uploader.js"></script>
-                    <script>bindFancierUpload("/api/submission-receiver")</script>
                     <script src="/static/resumable/resumable.js"></script>
                     <script src="/static/resumable/uploader.js"></script>
                     <script>initResumableUploader("/api/submission-receiver-resumable/{{$submissionID}}", 1, [".7z", ".zip"])</script>
