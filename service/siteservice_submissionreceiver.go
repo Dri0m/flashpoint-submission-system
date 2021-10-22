@@ -367,7 +367,7 @@ func (s *SiteService) convertValidatorResponseToComment(vr *types.ValidatorRespo
 }
 
 func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid *int64, meta *types.CurationMeta) (*string, error) {
-	TitleSimilarities, LaunchCommandSimilarities, err := s.getSimilarityScores(dbs, 0.9, meta.Title, meta.LaunchCommand)
+	titleSimilarities, launchCommandSimilarities, err := s.getSimilarityScores(dbs, 0.9, meta.Title, meta.LaunchCommand)
 	if err != nil {
 		utils.LogCtx(dbs.Ctx()).Error(err)
 		return nil, dberr(err)
@@ -375,17 +375,17 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid *int6
 
 	var sb strings.Builder
 
-	if len(TitleSimilarities) > 1 || len(LaunchCommandSimilarities) > 1 {
+	if len(titleSimilarities) > 1 || len(launchCommandSimilarities) > 1 {
 
 		strID := ""
 		if sid != nil {
 			strID = strconv.FormatInt(*sid, 10)
 		}
 
-		if len(TitleSimilarities) > 1 {
+		if len(titleSimilarities) > 1 {
 			sb.Write([]byte("Curations with similar titles have been found:\n"))
 
-			for _, ts := range TitleSimilarities {
+			for _, ts := range titleSimilarities {
 				if sid != nil && ts.ID == strID {
 					continue
 				}
@@ -393,11 +393,11 @@ func (s *SiteService) computeSimilarityComment(dbs database.DBSession, sid *int6
 			}
 		}
 
-		if len(LaunchCommandSimilarities) > 1 {
+		if len(launchCommandSimilarities) > 1 {
 			sb.Write([]byte("\n"))
 			sb.Write([]byte("Curations with similar launch commands have been found:\n"))
 
-			for _, ts := range LaunchCommandSimilarities {
+			for _, ts := range launchCommandSimilarities {
 				if sid != nil && ts.ID == strID {
 					continue
 				}
