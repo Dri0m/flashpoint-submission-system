@@ -478,3 +478,15 @@ function submitUUID(type) {
     let uuid = document.getElementById("uuid-input").value
     window.location.href = "/web/fixes/submit/" + uuid + "/" + type
 }
+
+function collapseLongComments() {
+    let comments = document.getElementsByClassName("comment-body")
+
+    for (let i=0; i<comments.length; i++) {
+        if(comments[i].innerHTML.length > 2000) {
+            comments[i].parentElement.parentElement.style.height = "600px"
+            comments[i].parentElement.parentElement.style.overflow = "scroll"
+            comments[i].parentElement.parentElement.style.overflowX = "hidden"
+        }
+    }
+}
