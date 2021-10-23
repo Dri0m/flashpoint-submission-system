@@ -71,7 +71,11 @@
         <input type="text" name="platform-partial"
                value="{{default "" .Filter.PlatformPartial}}">
         <label for="library-partial">Library (partial)</label>
-        <input type="text" name="library-partial"
+        <input type="text" list="libraries" name="library-partial"
                value="{{default "" .Filter.LibraryPartial}}">
+        <datalist id="libraries">
+            <option value="Arcade">
+            <option value="Theatre">
+        </datalist>
     </div>
 {{end}}
