@@ -95,7 +95,7 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 
 		// TODO save this in map
 		lplat := strings.ToLower(*meta.Platform)
-		if strings.Contains(lplat, "3d groove fx") {
+		if strings.Contains(lplat, "3d groove") {
 			b.WriteString("<:3DGroove:569691574276063242>")
 		} else if strings.Contains(lplat, "3dvia player") {
 			b.WriteString("<:3DVIA_Player:496151464784166946")
