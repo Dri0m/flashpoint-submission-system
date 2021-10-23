@@ -68,8 +68,52 @@
         <label for="title-partial">Title (partial)</label>
         <input type="text" name="title-partial" value="{{default "" .Filter.TitlePartial}}">
         <label for="platform-partial" title="Type comma-separated platform names (substrings) to search, prepend with '!' to exclude a substring. For example, write '!flash, !unity' to exclude flash and unity platforms. The search is case-insensitive.">Platform (hover for help)</label>
-        <input type="text" name="platform-partial"
+        <input type="text" list="platforms" name="platform-partial"
                value="{{default "" .Filter.PlatformPartial}}">
+        <datalist id="platforms">
+            <option value="3D Groove">
+            <option value="3DVIA">
+            <option value="Alambik">
+            <option value="ActiveX">
+            <option value="Atmosphere">
+            <option value="Flash">
+            <option value="Shockwave">
+            <option value="Authorware">
+            <option value="AXEL">
+            <option value="BitPlayer">
+            <option value="Burster">
+            <option value="Cult3D">
+            <option value="GoBit">
+            <option value="HTML">
+            <option value="Hypercosm">
+            <option value="Hyper-G">
+            <option value="Java">
+            <option value="LiveMath">
+            <option value="Silverlight">
+            <option value="Octree">
+            <option value="Play3D">
+            <option value="DeepV">
+            <option value="PopCap">
+            <option value="ProtoPlay">
+            <option value="Pulse">
+            <option value="REBOL">
+            <option value="ShiVa">
+            <option value="Viscape">
+            <option value="Tcl">
+            <option value="Unity">
+            <option value="Visual">
+            <option value="Vitalize">
+            <option value="VRML">
+            <option value="Xara">
+            <option value="DPGraph">
+            <option value="Envoy">
+            <option value="FreeHand">
+            <option value="HotSauce">
+            <option value="o2c">
+            <option value="Pixound">
+            <option value="Show It">
+            <option value="ThingViewer">
+        </datalist>
         <label for="library-partial">Library (partial)</label>
         <input type="text" list="libraries" name="library-partial"
                value="{{default "" .Filter.LibraryPartial}}">
