@@ -7,11 +7,16 @@
                     <ul class="pure-menu-list">
                         {{if not (empty .Username)}}
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
-                                <li class="pure-menu-item">
-                                    <a href="/web/submit" class="pure-menu-link">Submit</a>
-                                </li>
-                                <li class="pure-menu-item">
-                                    <a href="/web/submissions" class="pure-menu-link">Browse Submissions</a>
+                                <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+                                    <a href="#" class="pure-menu-link">Submissions</a>
+                                    <ul class="pure-menu-children left">
+                                        <li class="pure-menu-item">
+                                            <a href="/web/submit" class="pure-menu-link">Submit</a>
+                                        </li>
+                                        <li class="pure-menu-item">
+                                            <a href="/web/submissions" class="pure-menu-link">Browse</a>
+                                        </li>
+                                    </ul>
                                 </li>
                                 <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
                                     <a href="#" class="pure-menu-link">Flashfreeze</a>
@@ -21,6 +26,17 @@
                                         </li>
                                         <li class="pure-menu-item">
                                             <a href="/web/flashfreeze/files?search-files=on" class="pure-menu-link">Browse</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+                                    <a href="#" class="pure-menu-link">Fixes</a>
+                                    <ul class="pure-menu-children left">
+                                        <li class="pure-menu-item">
+                                            <a href="/web/fixes/submit" class="pure-menu-link">Submit</a>
+                                        </li>
+                                        <li class="pure-menu-item">
+                                            <a href="/web/fixes/browse" class="pure-menu-link">Browse</a>
                                         </li>
                                     </ul>
                                 </li>

@@ -280,7 +280,19 @@ func (a *App) HandleFlashfreezeSubmitPage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	a.RenderTemplates(ctx, w, r, pageData, "templates/flashfreeze.gohtml")
+	a.RenderTemplates(ctx, w, r, pageData, "templates/flashfreeze-submit.gohtml")
+}
+
+func (a *App) HandleFixesSubmitPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/fixes-submit.gohtml")
 }
 
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {

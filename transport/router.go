@@ -88,6 +88,12 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 			a.HandleFlashfreezeSubmitPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
+	router.Handle(
+		"/web/fixes/submit",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleFixesSubmitPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("GET")
+
 	////////////////////////
 
 	f := a.UserAuthMux(a.HandleProfilePage)

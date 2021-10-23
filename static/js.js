@@ -472,3 +472,9 @@ function linkIDsInComments() {
         comments[i].innerHTML = comments[i].innerHTML.replaceAll(/(ID (\d+) )/g, '<a href="/web/submission/$2">$1</a>')
     }
 }
+
+
+function submitUUID(type) {
+    let uuid = document.getElementById("uuid-input").value
+    window.location.href = "/web/fixes/submit/" + uuid + "/" + type
+}
