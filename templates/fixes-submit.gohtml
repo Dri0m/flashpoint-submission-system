@@ -2,31 +2,42 @@
     <div class="content">
         <h1>Submit a fix (WIP)</h1>
 
+        <p>Submit a fix for a game. This system currently does not support the deletion of assets, only addition or update.</p>
+
         <form class="pure-form pure-form-stacked">
-            <label for="uuid">Paste the item's UUID here:</label>
+            <label for="uuid">Paste the entry's UUID here:</label>
             <input type="text" name="uuid" id="uuid-input" minlength="36" maxlength="36" size="36">
 
             <br>
             <br>
 
-            <a type="submit" class="pure-button pure-button-primary" onClick="submitUUID('gamezip')">
+            <a class="pure-button pure-button-primary" onClick="submitUUID('gamezip')">
                 Submit a gamezip
             </a>
             <br>
             <br>
-            <a type="submit" class="pure-button pure-button-primary" onClick="submitUUID('json-meta')">
+            <a class="pure-button pure-button-primary" onClick="submitUUID('json-meta')">
                 Submit a JSON meta fix
             </a>
             <br>
             <br>
-            <a type="submit" class="pure-button pure-button-primary" onClick="submitUUID('logo-ss')">
+            <a class="pure-button pure-button-primary" onClick="submitUUID('logo-ss')">
                 Submit a logo/screenshot(s)
             </a>
             <br>
             <br>
-            <a type="submit" class="pure-button pure-button-primary" onClick="submitUUID('legacy')">
-                Submit a pack of files (for a legacy game)
+            <a class="pure-button pure-button-primary" onClick="submitUUID('legacy')">
+                Submit assets for a legacy game
             </a>
         </form>
+
+        <br>
+
+        <h3>Submit something else (WIP)</h3>
+
+        <p>Submit a fix for flashpoint, not necessarily related to games/animations.</p>
+        <a class="pure-button pure-button-primary" href="/web/fixes/submit/generic">
+            Submit a generic fix
+        </a>
     </div>
 {{end}}

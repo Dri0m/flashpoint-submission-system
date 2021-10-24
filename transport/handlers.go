@@ -295,6 +295,18 @@ func (a *App) HandleFixesSubmitPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/fixes-submit.gohtml")
 }
 
+func (a *App) HandleFixesSubmitGenericPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/fixes-submit-generic.gohtml")
+}
+
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
