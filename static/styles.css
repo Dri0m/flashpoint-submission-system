@@ -15,11 +15,6 @@ body {
     vertical-align: middle;
 }
 
-.pure-u-1-2 {
-    width: auto;
-    min-width: 50%;
-}
-
 .right {
     text-align: right;
 }
@@ -490,52 +485,4 @@ form [type="radio"] {
 
 video {
     background: transparent;
-}
-
-@media only screen and (max-width: 840px) {
-    #navbar .pure-g {
-        letter-spacing: normal;
-    }
-
-    .pure-menu-horizontal {
-        white-space: normal;
-        text-align: left !important;
-    }
-
-    #resumable-drop {
-        font-size: 4vw !important;
-    }
-
-    .meta-property {
-        width: auto !important;
-    }
-}
-
-@media only screen and (max-width: 470px) {
-    .curation-image {
-        margin: auto !important;
-        max-width: 100% !important;
-    }
-}
-
-@media only screen and (max-width: 400px) {
-    .content {
-        padding: 1em 1.5em !important;
-    }
-
-    .pure-button-primary {
-        margin-bottom: 5px;
-    }
-
-    .pure-u-1-6, .pure-u-5-6 {
-        width: 100%;
-    }
-
-    .comment-header br {
-        display: none;
-    }
-
-    .meta-property {
-        font-size: 4vw !important;
-    }
 }
