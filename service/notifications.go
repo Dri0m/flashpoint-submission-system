@@ -181,7 +181,7 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:Pixound:881324002482745425>")
 		} else if strings.Contains(lplat, "show it") {
 			b.WriteString("<:ShowIt:887139518652772442>")
-		} else if strings.Contains(lplat, "mshv") {
+		} else if strings.Contains(lplat, "mhsv") {
 			b.WriteString("<:MHSV:909580737068560445>")
 		} else {
 			b.WriteString("❓")
