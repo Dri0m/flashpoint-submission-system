@@ -753,6 +753,28 @@ func (s *SiteService) UpdateSubscriptionSettings(ctx context.Context, uid, sid i
 	return nil
 }
 
+func (s *SiteService) CreateFixFirstStep(ctx context.Context, uid int64, c *types.CreateFixFirstStep) (int64, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	fid, err := s.dal.StoreFixFirstStep(dbs, uid, c)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+
+	return fid, nil
+}
+
 func (s *SiteService) GetCurationImage(ctx context.Context, ciid int64) (*types.CurationImage, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {

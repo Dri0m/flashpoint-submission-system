@@ -457,8 +457,7 @@ func (a *App) HandleUpdateNotificationSettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err := a.Service.UpdateNotificationSettings(ctx, uid, notificationSettings.NotificationActions)
-	if err != nil {
+	if err := a.Service.UpdateNotificationSettings(ctx, uid, notificationSettings.NotificationActions); err != nil {
 		writeError(ctx, w, err)
 		return
 	}
@@ -487,13 +486,45 @@ func (a *App) HandleUpdateSubscriptionSettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = a.Service.UpdateSubscriptionSettings(ctx, uid, sid, subscriptionSettings.Subscribe)
-	if err != nil {
+	if err := a.Service.UpdateSubscriptionSettings(ctx, uid, sid, subscriptionSettings.Subscribe); err != nil {
 		writeError(ctx, w, err)
 		return
 	}
 
 	writeResponse(ctx, w, presp("success", http.StatusOK), http.StatusOK)
+}
+
+func (a *App) HandleReceiveFixesSubmitGeneric(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	uid := utils.UserID(ctx)
+
+	createFixFirstStep := &types.CreateFixFirstStep{}
+
+	if err := r.ParseForm(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to parse form", http.StatusBadRequest))
+		return
+	}
+
+	if err := a.decoder.Decode(createFixFirstStep, r.PostForm); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
+		return
+	}
+
+	if err := createFixFirstStep.Validate(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	fid, err := a.Service.CreateFixFirstStep(ctx, uid, createFixFirstStep)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/web/fixes/submit/generic/%d", fid), http.StatusFound)
 }
 
 func (a *App) HandleInternalPage(w http.ResponseWriter, r *http.Request) {

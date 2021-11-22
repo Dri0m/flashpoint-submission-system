@@ -1,1 +1,2 @@
-ALTER TABLE `flashfreeze_file` DROP COLUMN `indexing_errors`;
+ALTER TABLE `flashfreeze_file`
+    DROP COLUMN `indexing_errors`;

@@ -1,96 +1,96 @@
 {{define "main"}}
-        <div class="content">
-            <h1>Profile</h1>
+    <div class="content">
+        <h1>Profile</h1>
 
-            Hi, {{.Username}}!<br>
-            <img src="{{default "/static/zuma.png" .AvatarURL}}" alt="avatar"
-                 title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
-            <br>
-            <br>
+        Hi, {{.Username}}!<br>
+        <img src="{{default "/static/zuma.png" .AvatarURL}}" alt="avatar"
+             title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
+        <br>
+        <br>
 
-            <div class="horizontal-rule"></div>
+        <div class="horizontal-rule"></div>
 
-            <h3>Notification preferences</h3>
-            <p>Receive a discord notification when an event (comment) occurs on submissions to which you are subscribed.</p>
+        <h3>Notification preferences</h3>
+        <p>Receive a discord notification when an event (comment) occurs on submissions to which you are subscribed.</p>
 
-            <form class="pure-form pure-form-stacked" id="notification-form">
-                <label for="notification-action">Comment
-                    <input type="checkbox" class="notification-action" value="comment"
-                           {{if has "comment" .NotificationActions}}checked{{end}}></label>
-                <label for="notification-action">Approve
-                    <input type="checkbox" class="notification-action" value="approve"
-                           {{if has "approve" .NotificationActions}}checked{{end}}></label>
-                <label for="notification-action">Request Changes
-                    <input type="checkbox" class="notification-action" value="request-changes"
-                           {{if has "request-changes" .NotificationActions}}checked{{end}}></label>
-                <label for="notification-action">Mark as Added
-                    <input type="checkbox" class="notification-action" value="mark-added"
-                           {{if has "mark-added" .NotificationActions}}checked{{end}}></label>
-                <label for="notification-action">File upload
-                    <input type="checkbox" class="notification-action" value="upload-file"
-                           {{if has "upload-file" .NotificationActions}}checked{{end}}></label>
-                <label for="notification-action">Reject
-                    <input type="checkbox" class="notification-action" value="reject"
-                           {{if has "reject" .NotificationActions}}checked{{end}}></label>
-                <label for="notification-action">Get notified about every new audition upload
-                    <input type="checkbox" class="notification-action" value="audition-upload"
-                           {{if has "audition-upload" .NotificationActions}}checked{{end}}></label>
-                <label for="notification-action">Automatically subscribe to every new audition upload
-                    <input type="checkbox" class="notification-action" value="audition-subscribe"
-                           {{if has "audition-subscribe" .NotificationActions}}checked{{end}}></label>
-                <button type="button" onclick="updateNotificationSettings()" class="pure-button pure-button-primary">
-                    Update
-                </button>
-            </form>
+        <form class="pure-form pure-form-stacked" id="notification-form">
+            <label for="notification-action">Comment
+                <input type="checkbox" class="notification-action" value="comment"
+                       {{if has "comment" .NotificationActions}}checked{{end}}></label>
+            <label for="notification-action">Approve
+                <input type="checkbox" class="notification-action" value="approve"
+                       {{if has "approve" .NotificationActions}}checked{{end}}></label>
+            <label for="notification-action">Request Changes
+                <input type="checkbox" class="notification-action" value="request-changes"
+                       {{if has "request-changes" .NotificationActions}}checked{{end}}></label>
+            <label for="notification-action">Mark as Added
+                <input type="checkbox" class="notification-action" value="mark-added"
+                       {{if has "mark-added" .NotificationActions}}checked{{end}}></label>
+            <label for="notification-action">File upload
+                <input type="checkbox" class="notification-action" value="upload-file"
+                       {{if has "upload-file" .NotificationActions}}checked{{end}}></label>
+            <label for="notification-action">Reject
+                <input type="checkbox" class="notification-action" value="reject"
+                       {{if has "reject" .NotificationActions}}checked{{end}}></label>
+            <label for="notification-action">Get notified about every new audition upload
+                <input type="checkbox" class="notification-action" value="audition-upload"
+                       {{if has "audition-upload" .NotificationActions}}checked{{end}}></label>
+            <label for="notification-action">Automatically subscribe to every new audition upload
+                <input type="checkbox" class="notification-action" value="audition-subscribe"
+                       {{if has "audition-subscribe" .NotificationActions}}checked{{end}}></label>
+            <button type="button" onclick="updateNotificationSettings()" class="pure-button pure-button-primary">
+                Update
+            </button>
+        </form>
 
-            <div class="horizontal-rule"></div>
+        <div class="horizontal-rule"></div>
 
-            <h3>Permissions</h3>
-            {{if or (isTrialCurator .UserRoles) (or (isDecider .UserRoles) (isAdder .UserRoles))}}
-                You have permissions to assign submissions to yourself.<br>
-            {{end}}
-            {{if isInAudit .UserRoles}}
-                You have permissions to submit and interact with only one submission.<br>
-            {{end}}
-            {{if isStaff .UserRoles}}
-                You are a staff member. You can see and interact with any submission.<br>
-            {{end}}
-            {{if isTrialCurator .UserRoles}}
-                You are a Trial Curator. You can interact only with your own submissions.<br>
-            {{end}}
-            {{if isDeleter .UserRoles}}
-                You have permissions to delete submissions, files and comments.<br>
-            {{end}}
-            {{if isDecider .UserRoles}}
-                You have permissions to request changes or approve submissions.<br>
-            {{end}}
-            {{if isAdder .UserRoles}}
-                You have permissions to mark submissions as added to Flashpoint.<br>
-            {{end}}
-            {{if isGod .UserRoles}}
-                <b>You have permissions to access god tools.</b><br>
-            {{end}}
+        <h3>Permissions</h3>
+        {{if or (isTrialCurator .UserRoles) (or (isDecider .UserRoles) (isAdder .UserRoles))}}
+            You have permissions to assign submissions to yourself.<br>
+        {{end}}
+        {{if isInAudit .UserRoles}}
+            You have permissions to submit and interact with only one submission.<br>
+        {{end}}
+        {{if isStaff .UserRoles}}
+            You are a staff member. You can see and interact with any submission.<br>
+        {{end}}
+        {{if isTrialCurator .UserRoles}}
+            You are a Trial Curator. You can interact only with your own submissions.<br>
+        {{end}}
+        {{if isDeleter .UserRoles}}
+            You have permissions to delete submissions, files and comments.<br>
+        {{end}}
+        {{if isDecider .UserRoles}}
+            You have permissions to request changes or approve submissions.<br>
+        {{end}}
+        {{if isAdder .UserRoles}}
+            You have permissions to mark submissions as added to Flashpoint.<br>
+        {{end}}
+        {{if isGod .UserRoles}}
+            <b>You have permissions to access god tools.</b><br>
+        {{end}}
 
-            <div class="horizontal-rule"></div>
+        <div class="horizontal-rule"></div>
 
-            <h3>Local settings</h3>
-            <form class="pure-form pure-form-stacked" id="local-settings-form">
-                <label for="site-max-width">Max site width</label>
-                <input type="text" maxlength="5" id="site-max-width">
-                <button type="button" onclick="updateLocalSettings()" class="pure-button pure-button-primary">
-                    Update
-                </button>
-            </form>
+        <h3>Local settings</h3>
+        <form class="pure-form pure-form-stacked" id="local-settings-form">
+            <label for="site-max-width">Max site width</label>
+            <input type="text" maxlength="5" id="site-max-width">
+            <button type="button" onclick="updateLocalSettings()" class="pure-button pure-button-primary">
+                Update
+            </button>
+        </form>
 
-            <script>
-                let maxWidth = localStorage.getItem("site-max-width")
-                if (maxWidth === null) {
-                    maxWidth = "1300"
-                }
-                document.getElementById("site-max-width").placeholder = maxWidth
-                document.getElementById("site-max-width").value = ""
-            </script>
+        <script>
+            let maxWidth = localStorage.getItem("site-max-width")
+            if (maxWidth === null) {
+                maxWidth = "1300"
+            }
+            document.getElementById("site-max-width").placeholder = maxWidth
+            document.getElementById("site-max-width").value = ""
+        </script>
 
-        </div>
+    </div>
     </div>
 {{end}}

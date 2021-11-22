@@ -160,10 +160,9 @@ type SubmissionsFilter struct {
 	ExcludeLegacy                bool
 }
 
-func (sf *SubmissionsFilter) Validate() error {
-
-	v := reflect.ValueOf(sf).Elem() // fucking schema zeroing out my nil pointers
-	t := reflect.TypeOf(sf).Elem()
+func unzeroNilPointers(x interface{}) {
+	v := reflect.ValueOf(x).Elem() // fucking schema zeroing out my nil pointers
+	t := reflect.TypeOf(x).Elem()
 	for i := 0; i < v.NumField(); i++ {
 		if t.Field(i).Type.Kind() == reflect.Ptr {
 			f := v.Field(i)
@@ -176,6 +175,10 @@ func (sf *SubmissionsFilter) Validate() error {
 			}
 		}
 	}
+}
+
+func (sf *SubmissionsFilter) Validate() error {
+	unzeroNilPointers(sf)
 
 	for _, sid := range sf.SubmissionIDs {
 		if sid < 1 {
@@ -272,6 +275,27 @@ type UpdateNotificationSettings struct {
 
 type UpdateSubscriptionSettings struct {
 	Subscribe bool `schema:"subscribe"`
+}
+
+type CreateFixFirstStep struct {
+	FixType     string  `schema:"fix-type"`
+	Title       string  `schema:"title"`
+	Description string  `schema:"description"`
+	GameUUID    *string `schema:"game-uuid"`
+}
+
+func (c *CreateFixFirstStep) Validate() error {
+	unzeroNilPointers(c)
+
+	if len(c.Title) < 2 {
+		return fmt.Errorf("title must be at least 2 characters long")
+	}
+
+	if len(c.Description) < 2 {
+		return fmt.Errorf("description must be at least 2 characters long")
+	}
+
+	return nil
 }
 
 type Notification struct {

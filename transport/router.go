@@ -272,7 +272,18 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 			a.HandleUpdateSubscriptionSettings, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("PUT")
 
+	router.Handle(
+		"/api/fixes/submit/generic",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleReceiveFixesSubmitGeneric, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("POST")
+
+	////////////////////////
+
 	// providers
+
+	////////////////////////
+
 	router.Handle(
 		fmt.Sprintf("/data/submission/{%s}/file/{%s}", constants.ResourceKeySubmissionID, constants.ResourceKeyFileID),
 		http.HandlerFunc(a.RequestData(a.UserAuthMux(

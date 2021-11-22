@@ -16,7 +16,8 @@
                         closed</b>
                     (the file's name and size must be the same in order to resume).<br>
                     <br>
-                    <b>Intentionally uploading a malicious file or some *very* illegal content will most likely be rewarded with a permanent IP ban.</b><br>
+                    <b>Intentionally uploading a malicious file or some *very* illegal content will most likely be
+                        rewarded with a permanent IP ban.</b><br>
                 </p>
             {{end}}
 
@@ -26,7 +27,8 @@
 
             <br><br>
 
-            <input type="button" class="pure-button pure-button button-upload-file" value="Start" onclick="startUpload()">
+            <input type="button" class="pure-button pure-button button-upload-file" value="Start"
+                   onclick="startUpload()">
             <input type="button" class="pure-button pure-button button-pause" value="Pause" onclick="pauseUpload()">
             <input type="button" class="pure-button pure-button button-cancel" value="Cancel" onclick="cancelUpload()">
 
@@ -40,5 +42,7 @@
     <link rel="stylesheet" href="/static/resumable/css.css">
     <script src="/static/resumable/resumable.js"></script>
     <script src="/static/resumable/uploader.js"></script>
-    <script>initResumableUploader("/api/submission-receiver-resumable", {{if isInAudit .UserRoles}}1{{else}}undefined{{end}}, [".7z", ".zip"])</script>
+    <script>initResumableUploader("/api/submission-receiver-resumable", {{if isInAudit .UserRoles}}1
+        {{else}}undefined{{end}}, [".7z", ".zip"]
+        )</script>
 {{end}}

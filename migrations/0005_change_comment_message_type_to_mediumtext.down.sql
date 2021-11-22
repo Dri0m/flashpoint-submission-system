@@ -1,1 +1,2 @@
-ALTER TABLE `comment` MODIFY `message` TEXT;
+ALTER TABLE `comment`
+    MODIFY `message` TEXT;

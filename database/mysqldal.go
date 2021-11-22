@@ -974,3 +974,19 @@ func (d *mysqlDAL) GetAllUnindexedFlashfreezeRootFiles(dbs DBSession) ([]*types.
 
 	return result, nil
 }
+
+// StoreFixFirstStep creates fix entry in DB with basic info
+func (d *mysqlDAL) StoreFixFirstStep(dbs DBSession, uid int64, c *types.CreateFixFirstStep) (int64, error) {
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO fixes (fk_user_id, fk_fix_type_id, submit_finished, title, description, created_at) 
+                           VALUES (?, (SELECT id FROM fix_type WHERE fix_type.name=?), false, ?, ?, UNIX_TIMESTAMP())`,
+		uid, c.FixType, c.Title, c.Description)
+	if err != nil {
+		return 0, err
+	}
+	fid, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return fid, nil
+}
