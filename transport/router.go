@@ -179,7 +179,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	f = a.UserAuthMux(
-		a.HandleSearchFlasfhreezePage,
+		a.HandleSearchFlashfreezePage,
 		muxAny(isStaff, isTrialCurator, isInAudit))
 
 	router.Handle(

@@ -656,7 +656,7 @@ func (a *App) HandleFlashfreezeReceiverResumable(w http.ResponseWriter, r *http.
 	writeResponse(ctx, w, resp, http.StatusOK)
 }
 
-func (a *App) HandleSearchFlasfhreezePage(w http.ResponseWriter, r *http.Request) {
+func (a *App) HandleSearchFlashfreezePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	filter := &types.FlashfreezeFilter{}
