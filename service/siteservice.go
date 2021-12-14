@@ -1601,3 +1601,19 @@ func (s *SiteService) IndexUnindexedFlashfreezeItems(l *logrus.Entry) {
 		s.indexReceivedFlashfreezeFile(l, unindexedFile.ID, destinationFilePath)
 	}
 }
+
+func (s *SiteService) GetFixByID(ctx context.Context, fid int64) (*types.Fix, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	f, err := s.dal.GetFixByID(dbs, fid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	return f, nil
+}

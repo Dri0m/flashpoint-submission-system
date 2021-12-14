@@ -206,6 +206,7 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 		if s.SubmitterID != uid {
 			return false, nil
 		}
+
 	} else if resourceKey == constants.ResourceKeySubmissionIDs {
 		params := mux.Vars(r)
 		submissionIDs := strings.Split(params["submission-ids"], ",")
@@ -255,6 +256,24 @@ func (a *App) UserOwnsResource(r *http.Request, uid int64, resourceKey string) (
 		if sf.SubmitterID != uid {
 			return false, nil
 		}
+
+	} else if resourceKey == constants.ResourceKeyFixID {
+		params := mux.Vars(r)
+		submissionID := params[constants.ResourceKeyFixID]
+		fid, err := strconv.ParseInt(submissionID, 10, 64)
+		if err != nil {
+			return false, nil
+		}
+
+		fix, err := a.Service.GetFixByID(ctx, fid)
+		if err != nil {
+			return false, nil
+		}
+
+		if fix.AuthorID != uid {
+			return false, nil
+		}
+
 	} else {
 		return false, fmt.Errorf("invalid resource")
 	}

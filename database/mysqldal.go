@@ -990,3 +990,22 @@ func (d *mysqlDAL) StoreFixFirstStep(dbs DBSession, uid int64, c *types.CreateFi
 
 	return fid, nil
 }
+
+// GetFixByID returns a fix
+func (d *mysqlDAL) GetFixByID(dbs DBSession, fid int64) (*types.Fix, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT fk_user_id, (SELECT name FROM fix_type WHERE id=fixes.fk_fix_type_id), submit_finished, title, description, created_at
+		FROM fixes
+		WHERE id = ?`,
+		fid)
+
+	f := &types.Fix{}
+	var createdAt int64
+	if err := row.Scan(&f.AuthorID, &f.FixType, &f.SubmitFinished, &f.Title, &f.Description, &createdAt); err != nil {
+		return nil, err
+	}
+
+	f.CreatedAt = time.Unix(createdAt, 0)
+
+	return f, nil
+}

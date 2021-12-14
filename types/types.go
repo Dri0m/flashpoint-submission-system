@@ -298,6 +298,17 @@ func (c *CreateFixFirstStep) Validate() error {
 	return nil
 }
 
+type Fix struct {
+	ID             int64
+	AuthorID       int64
+	FixType        string
+	SubmitFinished bool
+	Title          string
+	Description    string
+	GameUUID       *string
+	CreatedAt      time.Time
+}
+
 type Notification struct {
 	ID        int64
 	Type      string

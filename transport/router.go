@@ -41,6 +41,9 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	userHasNoSubmissions := func(r *http.Request, uid int64) (bool, error) {
 		return a.IsUserWithinResourceLimit(r, uid, constants.ResourceKeySubmissionID, 1)
 	}
+	userOwnsFix := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserOwnsResource(r, uid, constants.ResourceKeyFixID)
+	}
 
 	// static file server
 	router.PathPrefix("/static/").Handler(
@@ -98,6 +101,12 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		"/web/fixes/submit/generic",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleFixesSubmitGenericPage, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/web/fixes/submit/generic/{%s}", constants.ResourceKeyFixID),
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleFixesSubmitGenericPageUploadFilesPage, muxAll(userOwnsFix, muxAny(isStaff, isTrialCurator, isInAudit)))))).
 		Methods("GET")
 
 	////////////////////////

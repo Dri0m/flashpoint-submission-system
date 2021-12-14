@@ -73,6 +73,7 @@ type DAL interface {
 	GetAllUnindexedFlashfreezeRootFiles(dbs DBSession) ([]*types.FlashfreezeFile, error)
 
 	StoreFixFirstStep(dbs DBSession, uid int64, c *types.CreateFixFirstStep) (int64, error)
+	GetFixByID(dbs DBSession, fid int64) (*types.Fix, error)
 }
 
 type DBSession interface {
