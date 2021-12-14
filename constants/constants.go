@@ -72,6 +72,7 @@ const (
 	ResourceKeyCommentID             = "comment-id"
 	ResourceKeyCurationImageID       = "curation-image-id"
 	ResourceKeyFlashfreezeRootFileID = "flashfreeze-root-file-id"
+	ResourceKeyFixID                 = "fix-id"
 )
 
 const (
