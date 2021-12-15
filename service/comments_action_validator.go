@@ -178,5 +178,14 @@ func isActionValidForSubmission(uid int64, formAction string, submission *types.
 		}
 	}
 
+	// cannot upload if rejected
+	if formAction == constants.ActionUpload {
+		for _, distinctAction := range submission.DistinctActions {
+			if constants.ActionReject == distinctAction {
+				return perr(fmt.Sprintf("submission %d is alrady rejected so you cannot upload a new version", sid), http.StatusBadRequest)
+			}
+		}
+	}
+
 	return nil
 }

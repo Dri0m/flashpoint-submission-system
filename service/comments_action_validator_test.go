@@ -291,6 +291,15 @@ func Test_isActionValidForSubmission(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "user cannot upload a submission that's already rejected",
+			args: args{
+				uid:        commenterID,
+				formAction: constants.ActionUpload,
+				submission: &types.ExtendedSubmission{DistinctActions: []string{constants.ActionReject}},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
