@@ -6,6 +6,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -449,6 +450,20 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	finalData = append(finalData, data...)
 	unlimitedData := append(finalData, masterData...)
 	finalData = append(unlimitedData, currentLimit, currentOffset)
+
+	countingQuery := `SELECT COUNT(*) FROM ( ` + unlimitedQuery + ` ) AS counterino`
+	var counter int64
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		row := d.db.QueryRowContext(dbs.Ctx(), countingQuery, unlimitedData...)
+		if err := row.Scan(&counter); err != nil {
+			counter = -1
+			return
+		}
+	}()
+
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, finalData...)
 	if err != nil {
 		return nil, 0, err
@@ -558,16 +573,9 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	}
 
 	rows.Close()
+	wg.Wait()
 
-	countingQuery := `SELECT COUNT(*) FROM ( ` + unlimitedQuery + ` ) AS counterino`
-	row := dbs.Tx().QueryRowContext(dbs.Ctx(), countingQuery, unlimitedData...)
-
-	var count int64
-	if err := row.Scan(&count); err != nil {
-		return nil, 0, err
-	}
-
-	return result, count, nil
+	return result, counter, nil
 }
 
 func addMultifilter(tableName string, masterTableName *string, filterContents string, filters, masterFilters []string, data, masterData []interface{}) ([]string, []string, []interface{}, []interface{}) {
@@ -853,6 +861,20 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 	finalData = append(finalData, data...)
 	unlimitedData := append(finalData, entryData...)
 	finalData = append(unlimitedData, currentLimit, currentOffset)
+
+	countingQuery := `SELECT COUNT(*) FROM ( ` + unlimitedQuery + ` ) AS counterino`
+	var counter int64
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		row := d.db.QueryRowContext(dbs.Ctx(), countingQuery, unlimitedData...)
+		if err := row.Scan(&counter); err != nil {
+			counter = -1
+			return
+		}
+	}()
+
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), finalQuery, finalData...)
 	if err != nil {
 		return nil, 0, err
@@ -885,15 +907,7 @@ func (d *mysqlDAL) SearchFlashfreezeFiles(dbs DBSession, filter *types.Flashfree
 	}
 
 	rows.Close()
-
-	countingQuery := `SELECT COUNT(*) FROM ( ` + unlimitedQuery + ` ) AS counterino`
-	row := dbs.Tx().QueryRowContext(dbs.Ctx(), countingQuery, unlimitedData...)
-
-	var counter int64
-
-	if err := row.Scan(&counter); err != nil {
-		return nil, 0, err
-	}
+	wg.Wait()
 
 	return result, counter, nil
 }
