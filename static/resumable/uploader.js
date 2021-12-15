@@ -129,9 +129,9 @@ function initResumableUploader(target, maxFiles, allowedExtensions) {
     // r.on("progress", function () {
     //     console.debug("progress");
     // });
-    // r.on("error", function (message, file) {
-    //     fileError(file, message)
-    // });
+    r.on("error", function (message, file) {
+        fileError(file, message)
+    });
     r.on("pause", function () {
         console.debug("upload paused");
     });
