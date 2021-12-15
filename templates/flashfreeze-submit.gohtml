@@ -10,9 +10,9 @@
             <h1>Flashfreeze</h1>
 
             <p>
-                Max filesize is 50GB. Only .7z, .zip, .rar, .tar, .tar.gz, .tar.bz2, .tar.xz, .tar.zst .tar.zstd, .tgz,
-                .warc, .arc, .warc.gz, .arc.gz files are allowed. They
-                are searchable and viewable by any user of this system, and their contents are indexed.<br>
+                There are no filesize restrictions. Only .7z, .zip, .rar, .tar, .tar.gz, .tar.bz2, .tar.xz, .tar.zst
+                .tar.zstd, .tgz, .warc, .arc, .warc.gz, .arc.gz files are allowed. They are searchable and viewable by
+                any user of this system, and their contents are indexed.<br>
                 <br>
                 <b>This uploader is intended to be used only for Flashpoint-related data collections and webgame
                     archival in general.</b><br>
@@ -20,6 +20,12 @@
                 <b>Using this system as a personal file storage will result in a loss of upload permissions.</b><br>
                 <br>
                 <b>Intentionally uploading a zip bomb will be rewarded with a permanent IP ban.</b><br>
+                <br>
+                <b>While 7z and rar is allowed, the indexing time is very slow due to the nature of (default) 7z and rar
+                    archives. Consider using zip or tar.zst</b><br>
+                <br>
+                <b>The upload is resumable. You can stop it at any time and resume later, and it will continue. The
+                    upload is also chunked, so unstable network does not affect it that much.</b><br>
             </p>
 
             <div id="resumable-drop" class="blue-drop">
