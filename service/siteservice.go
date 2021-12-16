@@ -942,6 +942,15 @@ func (s *SiteService) getSimilarityScores(dbs database.DBSession, minimumMatch f
 	ctx := dbs.Ctx()
 	start := time.Now()
 
+	// TODO refactor this into something more proper
+	// change minimum match for some specific launch commands
+	if launchCommand != nil {
+		// itch.io games
+		if strings.Contains(*launchCommand, "ssl.hwcdn.net/html") {
+			minimumMatch = 0.95
+		}
+	}
+
 	sas, err := s.dal.GetAllSimilarityAttributes(dbs)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
