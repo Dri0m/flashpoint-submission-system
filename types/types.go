@@ -500,3 +500,7 @@ func (ff *FlashfreezeFilter) Validate() error {
 
 	return nil
 }
+
+type DeleteUserSessionsRequest struct {
+	DiscordID int64 `schema:"discord-user-id"`
+}

@@ -74,6 +74,8 @@ type DAL interface {
 
 	StoreFixFirstStep(dbs DBSession, uid int64, c *types.CreateFixFirstStep) (int64, error)
 	GetFixByID(dbs DBSession, fid int64) (*types.Fix, error)
+
+	DeleteUserSessions(dbs DBSession, uid int64) (int64, error)
 }
 
 type DBSession interface {

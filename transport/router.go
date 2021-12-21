@@ -365,6 +365,10 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleIndexUnindexedFlashfreeze, isGod)))).
 		Methods("GET")
 
+	router.Handle("/api/internal/delete-user-sessions",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleDeleteUserSessions, isGod)))).
+		Methods("POST")
+
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)

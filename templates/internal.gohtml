@@ -3,7 +3,7 @@
         <h1>God Tools</h1>
         <a class="pure-button pure-button-primary"
            href="/api/internal/update-master-db">
-            Slurp Master Database
+            Pull Master Database From Bluebot Server
         </a>
 
         <br>
@@ -37,5 +37,14 @@
            href="/api/internal/flashfreeze/index-unindexed-files">
             Index Unindexed Flashfreeze Files
         </a>
+
+        <br>
+        <br>
+
+        <form class="pure-form pure-form-stacked" action="/api/internal/delete-user-sessions" method="POST">
+            <label for="discord-user-id">Discord User ID</label>
+            <input type="text" name="discord-user-id" value="" size="32">
+            <button type="submit" class="pure-button button-delete">Delete user's sessions</button>
+        </form>
     </div>
 {{end}}

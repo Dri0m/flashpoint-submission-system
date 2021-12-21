@@ -1626,3 +1626,25 @@ func (s *SiteService) GetFixByID(ctx context.Context, fid int64) (*types.Fix, er
 	}
 	return f, nil
 }
+
+func (s *SiteService) DeleteUserSessions(ctx context.Context, uid int64) (int64, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	count, err := s.dal.DeleteUserSessions(dbs, uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+
+	return count, nil
+}

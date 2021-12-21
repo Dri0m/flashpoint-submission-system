@@ -788,3 +788,29 @@ func (a *App) HandleIndexUnindexedFlashfreeze(w http.ResponseWriter, r *http.Req
 
 	writeResponse(ctx, w, presp("starting flashfreeze indexing of unindexed files", http.StatusOK), http.StatusOK)
 }
+
+func (a *App) HandleDeleteUserSessions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if err := r.ParseForm(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to parse form", http.StatusBadRequest))
+		return
+	}
+
+	req := &types.DeleteUserSessionsRequest{}
+
+	if err := a.decoder.Decode(req, r.PostForm); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
+		return
+	}
+
+	count, err := a.Service.DeleteUserSessions(ctx, req.DiscordID)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	writeResponse(ctx, w, presp(fmt.Sprintf("deleted %d sessions", count), http.StatusOK), http.StatusOK)
+}

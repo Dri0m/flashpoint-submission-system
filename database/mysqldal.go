@@ -1009,3 +1009,20 @@ func (d *mysqlDAL) GetFixByID(dbs DBSession, fid int64) (*types.Fix, error) {
 
 	return f, nil
 }
+
+// DeleteUserSessions deletes all sessions of a given user, including inactive sessions
+func (d *mysqlDAL) DeleteUserSessions(dbs DBSession, uid int64) (int64, error) {
+	r, err := dbs.Tx().ExecContext(dbs.Ctx(), `
+		DELETE FROM session WHERE uid=?`,
+		uid)
+	if err != nil {
+		return 0, err
+	}
+
+	count, err := r.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
