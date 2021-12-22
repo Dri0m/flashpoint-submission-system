@@ -1026,3 +1026,29 @@ func (d *mysqlDAL) DeleteUserSessions(dbs DBSession, uid int64) (int64, error) {
 
 	return count, nil
 }
+
+// GetTotalCommentsCount returns a total number of comments in the system
+func (d *mysqlDAL) GetTotalCommentsCount(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT COUNT(*) FROM comment`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// GetTotalUserCount returns a total number of users in the system
+func (d *mysqlDAL) GetTotalUserCount(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT COUNT(*) FROM discord_user`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}

@@ -203,6 +203,20 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.UserAuthMux(a.HandleStatisticsPage)
+
+	router.Handle(
+		"/web/statistics",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/statistics",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
 	// receivers
 
 	////////////////////////

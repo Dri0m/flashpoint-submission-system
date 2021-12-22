@@ -274,7 +274,7 @@
                             <legend>Filter by Comments After Mine (union)</legend>
                             <div class="pure-g">
                                 <div class="pure-u-1-2">
-                                    <label for="bot-action">
+                                    <label>
                                         <input type="checkbox" name="post-last-action" value="any"
                                                {{if has "any" .Filter.ActionsAfterMyLastComment}}checked{{end}}>
                                         Any</label>
@@ -368,7 +368,7 @@
                         </fieldset>
                         <fieldset>
                             <legend>Filter by my submissions</legend>
-                            <label for="bot-action">
+                            <label>
                                 <input type="checkbox" name="last-uploader-not-me" value="yes"
                                        id="last-uploader-not-me"
                                        {{if eq "yes" (unpointify .Filter.LastUploaderNotMe)}}checked{{end}}>

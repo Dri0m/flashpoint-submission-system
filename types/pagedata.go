@@ -43,3 +43,18 @@ type SearchFlashfreezePageData struct {
 	TotalCount       int64
 	Filter           FlashfreezeFilter
 }
+
+type StatisticsPageData struct {
+	BasePageData
+	SubmissionCount             int64
+	SubmissionCountBotHappy     int64
+	SubmissionCountBotSad       int64
+	SubmissionCountApproved     int64
+	SubmissionCountVerified     int64
+	SubmissionCountRejected     int64
+	SubmissionCountInFlashpoint int64
+	UserCount                   int64
+	CommentCount                int64
+	FlashfreezeCount            int64
+	FlashfreezeFileCount        int64
+}

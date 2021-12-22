@@ -814,3 +814,21 @@ func (a *App) HandleDeleteUserSessions(w http.ResponseWriter, r *http.Request) {
 
 	writeResponse(ctx, w, presp(fmt.Sprintf("deleted %d sessions", count), http.StatusOK), http.StatusOK)
 }
+
+func (a *App) HandleStatisticsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetStatisticsPageData(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/statistics.gohtml")
+}

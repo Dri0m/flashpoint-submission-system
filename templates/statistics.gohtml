@@ -1,0 +1,21 @@
+{{define "main"}}
+    <div class="content">
+        <h1>Site Statistics</h1>
+
+        Number of users: {{.UserCount}} <br>
+        Number of comments: {{.CommentCount}} <br>
+        <br>
+
+        Total number of submissions including legacy: {{.SubmissionCount}} <br>
+        Number of submissions with bot approval: {{.SubmissionCountBotHappy}} <br>
+        Number of submissions with bot disapproval: {{.SubmissionCountBotSad}} <br>
+        Number of approved submissions: {{.SubmissionCountApproved}} <br>
+        Number of verified submissions: {{.SubmissionCountVerified}} <br>
+        Number of rejected submissions: {{.SubmissionCountRejected}} <br>
+        Number of submissions added to Flashpoint: {{.SubmissionCountInFlashpoint}} <br>
+        <br>
+
+        Number of flashfreeze items: {{.FlashfreezeCount}} <br>
+        Number of files indexed in flashfreeze: {{.FlashfreezeFileCount}} <br>
+    </div>
+{{end}}

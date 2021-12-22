@@ -76,6 +76,9 @@ type DAL interface {
 	GetFixByID(dbs DBSession, fid int64) (*types.Fix, error)
 
 	DeleteUserSessions(dbs DBSession, uid int64) (int64, error)
+
+	GetTotalCommentsCount(dbs DBSession) (int64, error)
+	GetTotalUserCount(dbs DBSession) (int64, error)
 }
 
 type DBSession interface {

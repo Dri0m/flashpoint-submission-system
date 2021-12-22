@@ -1648,3 +1648,91 @@ func (s *SiteService) DeleteUserSessions(ctx context.Context, uid int64) (int64,
 
 	return count, nil
 }
+
+func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.StatisticsPageData, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, sc, err := s.dal.SearchSubmissions(dbs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	_, scbh, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"approve"}})
+	if err != nil {
+		return nil, err
+	}
+
+	_, scbs, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"request-changes"}})
+	if err != nil {
+		return nil, err
+	}
+
+	approved := "approved"
+	_, sca, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{ApprovalsStatus: &approved})
+	if err != nil {
+		return nil, err
+	}
+
+	verified := "verified"
+	_, scv, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{VerificationStatus: &verified})
+	if err != nil {
+		return nil, err
+	}
+
+	_, scr, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"reject"}})
+	if err != nil {
+		return nil, err
+	}
+
+	_, scif, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"mark-added"}})
+	if err != nil {
+		return nil, err
+	}
+
+	uc, err := s.dal.GetTotalUserCount(dbs)
+	if err != nil {
+		return nil, err
+	}
+
+	cc, err := s.dal.GetTotalCommentsCount(dbs)
+	if err != nil {
+		return nil, err
+	}
+
+	_, ffc, err := s.dal.SearchFlashfreezeFiles(dbs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	sfr := true
+	_, fffc, err := s.dal.SearchFlashfreezeFiles(dbs, &types.FlashfreezeFilter{SearchFilesRecursively: &sfr})
+	if err != nil {
+		return nil, err
+	}
+
+	pageData := &types.StatisticsPageData{
+		BasePageData:                *bpd,
+		SubmissionCount:             sc,
+		SubmissionCountBotHappy:     scbh,
+		SubmissionCountBotSad:       scbs,
+		SubmissionCountApproved:     sca,
+		SubmissionCountVerified:     scv,
+		SubmissionCountRejected:     scr,
+		SubmissionCountInFlashpoint: scif,
+		UserCount:                   uc,
+		CommentCount:                cc,
+		FlashfreezeCount:            ffc,
+		FlashfreezeFileCount:        fffc,
+	}
+	return pageData, nil
+}
