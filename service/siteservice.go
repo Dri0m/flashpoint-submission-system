@@ -1709,8 +1709,12 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 		return nil, err
 	}
 
-	sf := true
-	_, ffc, err := s.dal.SearchFlashfreezeFiles(dbs, &types.FlashfreezeFilter{SearchFiles: &sf})
+	ffc, err := s.dal.GetTotalFlashfreezeCount(dbs)
+	if err != nil {
+		return nil, err
+	}
+
+	fffc, err := s.dal.GetTotalFlashfreezeFileCount(dbs)
 	if err != nil {
 		return nil, err
 	}
@@ -1727,7 +1731,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 		UserCount:                   uc,
 		CommentCount:                cc,
 		FlashfreezeCount:            ffc,
-		FlashfreezeFileCount:        -1, // TODO
+		FlashfreezeFileCount:        fffc,
 	}
 	return pageData, nil
 }

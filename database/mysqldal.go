@@ -1052,3 +1052,29 @@ func (d *mysqlDAL) GetTotalUserCount(dbs DBSession) (int64, error) {
 
 	return count, nil
 }
+
+// GetTotalFlashfreezeCount returns a total number of indexed flashfreeze files in the system
+func (d *mysqlDAL) GetTotalFlashfreezeCount(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT COUNT(*) FROM flashfreeze_file`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// GetTotalFlashfreezeFileCount returns a total number of indexed flashfreeze files in the system
+func (d *mysqlDAL) GetTotalFlashfreezeFileCount(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT COUNT(*) FROM flashfreeze_file_contents`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
