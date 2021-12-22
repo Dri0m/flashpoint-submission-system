@@ -1710,7 +1710,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	}
 
 	sf := true
-	_, ffc, err := s.dal.SearchFlashfreezeFiles(dbs, types.FlashfreezeFilter{SearchFiles: &sf})
+	_, ffc, err := s.dal.SearchFlashfreezeFiles(dbs, &types.FlashfreezeFilter{SearchFiles: &sf})
 	if err != nil {
 		return nil, err
 	}
