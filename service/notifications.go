@@ -287,6 +287,8 @@ func (s *SiteService) ProduceRemindersAboutRequestedChanges(ctx context.Context)
 		}
 	}
 
+	counter := 0
+
 	for authorID, count := range authors {
 		var b strings.Builder
 		b.WriteString(fmt.Sprintf("(TESTING) You've got mail! <@%d>\n", authorID))
@@ -300,6 +302,8 @@ func (s *SiteService) ProduceRemindersAboutRequestedChanges(ctx context.Context)
 			return 0, dberr(err)
 		}
 
+		counter++
+
 		break
 	}
 
@@ -308,5 +312,5 @@ func (s *SiteService) ProduceRemindersAboutRequestedChanges(ctx context.Context)
 		return 0, dberr(err)
 	}
 
-	return len(authors), nil
+	return counter, nil
 }
