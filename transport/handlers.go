@@ -832,3 +832,15 @@ func (a *App) HandleStatisticsPage(w http.ResponseWriter, r *http.Request) {
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/statistics.gohtml")
 }
+
+func (a *App) HandleSendRemindersAboutRequestedChanges(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	count, err := a.Service.ProduceRemindersAboutRequestedChanges(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	writeResponse(ctx, w, presp(fmt.Sprintf("%d notifications added to the queue", count), http.StatusOK), http.StatusOK)
+}

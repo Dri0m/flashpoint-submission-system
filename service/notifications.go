@@ -1,12 +1,14 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"strings"
+	"time"
 )
 
 // createNotification formats and stores notification
@@ -252,4 +254,59 @@ func (s *SiteService) createDeletionNotification(dbs database.DBSession, authorI
 	}
 
 	return nil
+}
+
+// ProduceRemindersAboutRequestedChanges generates notifications for every user with submissions which are waiting for changes more than a month
+func (s *SiteService) ProduceRemindersAboutRequestedChanges(ctx context.Context) (int, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	ongoing := "ongoing"
+	results, _, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{RequestedChangedStatus: &ongoing, DistinctActionsNot: []string{"mark-added"}})
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+
+	authors := make(map[int64]int)
+	for _, r := range results {
+		if !r.UploadedAt.Before(time.Now().Add(-time.Hour * 24 * 30)) {
+			continue
+		}
+
+		author := r.SubmitterID
+
+		if _, ok := authors[author]; !ok {
+			authors[author] = 1
+		} else {
+			authors[author] += 1
+		}
+	}
+
+	for authorID, count := range authors {
+		var b strings.Builder
+		b.WriteString(fmt.Sprintf("(TESTING) You've got mail! <@%d>\n", authorID))
+		b.WriteString(fmt.Sprintf("(TESTING) You've got %d submissions with changes requested for more than a month\n", count))
+		b.WriteString(fmt.Sprintf("(TESTING) You should visit https://fpfss.unstable.life/web/my-submissions?filter-layout=advanced&requested-changes-status=ongoing&distinct-action-not=mark-added&asc-desc=asc&order-by=updated and decide what to do about them.\n"))
+		b.WriteString("\n----------------------------------------------------------\n")
+		msg := b.String()
+
+		if err := s.dal.StoreNotification(dbs, msg, constants.NotificationDefault); err != nil {
+			utils.LogCtx(dbs.Ctx()).Error(err)
+			return 0, dberr(err)
+		}
+
+		break
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, dberr(err)
+	}
+
+	return len(authors), nil
 }

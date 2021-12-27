@@ -383,6 +383,10 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleDeleteUserSessions, isGod)))).
 		Methods("POST")
 
+	router.Handle("/api/internal/send-reminders-about-requested-changes",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(a.HandleSendRemindersAboutRequestedChanges, isGod)))).
+		Methods("GET")
+
 	err := srv.ListenAndServe()
 	if err != nil {
 		l.Fatal(err)
