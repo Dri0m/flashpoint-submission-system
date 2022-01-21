@@ -473,7 +473,6 @@ function linkIDsInComments() {
     }
 }
 
-
 function submitUUID(type) {
     let uuid = document.getElementById("uuid-input").value
     window.location.href = "/web/fixes/submit/" + uuid + "/" + type
@@ -488,5 +487,32 @@ function collapseLongComments() {
             comments[i].parentElement.parentElement.style.overflow = "scroll"
             comments[i].parentElement.parentElement.style.overflowX = "hidden"
         }
+    }
+}
+
+function enableDarkMode() {
+    document.getElementsByTagName("head")[0].insertAdjacentHTML(
+        "beforeend",
+        '<link id="dark-mode" rel="stylesheet" href="/static/dark.css"/>');
+    document.getElementById("lights").innerText="Lights on"
+    document.getElementById("lights").onclick=disableDarkMode
+    localStorage.setItem("mode", "dark");
+}
+
+function disableDarkMode() {
+    let e = document.getElementById("dark-mode")
+    e.parentNode.removeChild(e)
+    document.getElementById("lights").innerText="Lights off"
+    document.getElementById("lights").onclick=enableDarkMode
+    localStorage.setItem("mode", "light");
+}
+
+function setColors() {
+    const mode = localStorage.getItem("mode");
+    if (mode == null) {
+        return
+    }
+    if (mode === "dark") {
+        enableDarkMode()
     }
 }

@@ -19,6 +19,10 @@
     <div id="layout">
         {{template "navbar" .}}
 
+        <script>
+            setColors()
+        </script>
+
         {{if .IsDevInstance}}
             <div id="system-announcement">
                 <div class="pure-g">

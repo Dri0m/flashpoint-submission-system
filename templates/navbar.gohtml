@@ -85,21 +85,29 @@
                     </li>
                     {{if not (empty .Username)}}
                         <ul class="pure-menu-list">
-                            {{if or (isGod .UserRoles)}}
-                                <li class="pure-menu-item">
-                                    <a href="/web/internal" class="pure-menu-link">God Tools</a>
-                                </li>
-                            {{end}}
                             {{if or (isStaff .UserRoles) (or (isTrialCurator .UserRoles) (isInAudit .UserRoles))}}
                                 <li class="pure-menu-item">
                                     <a href="/web/my-submissions" class="pure-menu-link">My Submissions</a>
                                 </li>
                             {{end}}
                             <li class="pure-menu-item">
-                                <a href="/web/profile" class="pure-menu-link">Profile</a>
+                                <a id="lights" href="#" class="pure-menu-link" onclick="enableDarkMode();">Lights off</a>
                             </li>
-                            <li class="pure-menu-item">
-                                <a href="/api/logout" class="pure-menu-link">Log out</a>
+                            <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+                                <a href="#" class="pure-menu-link">Menu</a>
+                                <ul class="pure-menu-children left">
+                                    <li class="pure-menu-item">
+                                        <a href="/web/profile" class="pure-menu-link">Profile</a>
+                                    </li>
+                                    {{if or (isGod .UserRoles)}}
+                                        <li class="pure-menu-item">
+                                            <a href="/web/internal" class="pure-menu-link">God Tools</a>
+                                        </li>
+                                    {{end}}
+                                    <li class="pure-menu-item">
+                                        <a href="/api/logout" class="pure-menu-link">Log out</a>
+                                    </li>
+                                </ul>
                             </li>
                         </ul>
                     {{else}}
