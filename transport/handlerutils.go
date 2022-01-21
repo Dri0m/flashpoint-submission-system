@@ -147,6 +147,7 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 			err := json.NewEncoder(w).Encode(data)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
+				writeError(ctx, w, err)
 			}
 		}
 	default:
