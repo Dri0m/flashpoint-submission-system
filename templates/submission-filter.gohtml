@@ -69,7 +69,7 @@
               {{if not (eq "advanced" .FilterLayout)}}hidden{{end}}>
             <input type="hidden" name="filter-layout" value="advanced">
             <div class="pure-g">
-                <div class="pure-u-9-24">
+                <div class="pure-u-8-24">
                     <div class="form-column">
                         <div class="form-column-text">
                             <fieldset>
@@ -227,7 +227,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="pure-u-6-24">
+                <div class="pure-u-5-24">
                     <div class="form-column">
                         <fieldset>
                             <legend>Meta and File Filters</legend>
@@ -257,7 +257,7 @@
                         {{template "submission-filter-maturity" .}}
                     </div>
                 </div>
-                <div class="pure-u-9-24">
+                <div class="pure-u-11-24">
                     <div class="form-column">
                         <div class="form-column-text">
                             <fieldset>
@@ -317,7 +317,7 @@
                                                value="unassigned"
                                                id="assigned-status-testing-me-verification"
                                                {{if eq "unassigned" (unpointify .Filter.AssignedStatusVerificationMe)}}checked{{end}}>
-                                        Not assigned to me for verification</label>
+                                        Not assigned to me for veri.</label>
                                     <label title="Select submissions where I have no requested changes.">
                                         <input type="radio" name="requested-changes-status-me" value="none"
                                                id="requested-changes-status-me-none"
@@ -346,7 +346,7 @@
                                                value="assigned"
                                                id="assigned-status-verification-me-assigned"
                                                {{if eq "assigned" (unpointify .Filter.AssignedStatusVerificationMe)}}checked{{end}}>
-                                        Assigned to me for verification</label>
+                                        Assigned to me for veri.</label>
                                     <label title="Select submissions where I have ongoing requested changes.">
                                         <input type="radio" name="requested-changes-status-me" value="ongoing"
                                                title="Select submissions where I have ongoing requested changes."
@@ -363,6 +363,64 @@
                                                id="verification-status-me-yes"
                                                {{if eq "yes" (unpointify .Filter.VerificationStatusMe)}}checked{{end}}>
                                         I have verified</label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Filter by User's Current State</legend>
+                            <label for="submitter-id">User ID</label>
+                            <input type="number" name="assigned-status-user-id" min="1"
+                                   value="{{default "" .Filter.AssignedStatusUserID}}">
+                            <div class="pure-g">
+
+                                <div class="pure-u-1-2">
+                                    <label>
+                                        <input type="radio" name="assigned-status-testing-user" value="unassigned"
+                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatusTestingUser)}}checked{{end}}>
+                                        Not assigned to user for testing</label>
+                                    <label>
+                                        <input type="radio" name="assigned-status-verification-user"
+                                               value="unassigned"
+                                               {{if eq "unassigned" (unpointify .Filter.AssignedStatusVerificationUser)}}checked{{end}}>
+                                        Not assigned to user for veri.</label>
+                                    <label title="Select submissions where user has no requested changes.">
+                                        <input type="radio" name="requested-changes-status-user" value="none"
+                                               title="Select submissions where user has no requested changes."
+                                               {{if eq "none" (unpointify .Filter.RequestedChangedStatusUser)}}checked{{end}}>
+                                        User has not RC</label>
+                                    <label>
+                                        <input type="radio" name="approvals-status-user" value="no"
+                                               {{if eq "no" (unpointify .Filter.ApprovalsStatusUser)}}checked{{end}}>
+                                        User has not approved</label>
+                                    <label>
+                                        <input type="radio" name="verification-status-user" value="no"
+                                               {{if eq "no" (unpointify .Filter.VerificationStatusUser)}}checked{{end}}>
+                                        User has not verified</label>
+                                </div>
+                                <div class="pure-u-1-2">
+                                    <label>
+                                        <input type="radio" name="assigned-status-testing-user" value="assigned"
+                                               {{if eq "assigned" (unpointify .Filter.AssignedStatusTestingUser)}}checked{{end}}>
+                                        Assigned to user for testing</label>
+                                    <label>
+                                        <input type="radio" name="assigned-status-verification-user"
+                                               value="assigned"
+                                               {{if eq "assigned" (unpointify .Filter.AssignedStatusVerificationUser)}}checked{{end}}>
+                                        Assigned to user for veri.</label>
+                                    <label title="Select submissions where user has ongoing requested changes.">
+                                        <input type="radio" name="requested-changes-status-user" value="ongoing"
+                                               title="Select submissions where user has ongoing requested changes."
+                                               {{if eq "ongoing" (unpointify .Filter.RequestedChangedStatusUser)}}checked{{end}}>
+                                        User has RC</label>
+
+                                    <label>
+                                        <input type="radio" name="approvals-status-user" value="yes"
+                                               {{if eq "yes" (unpointify .Filter.ApprovalsStatusUser)}}checked{{end}}>
+                                        User has approved</label>
+                                    <label>
+                                        <input type="radio" name="verification-status-user" value="yes"
+                                               {{if eq "yes" (unpointify .Filter.VerificationStatusUser)}}checked{{end}}>
+                                        User has verified</label>
                                 </div>
                             </div>
                         </fieldset>

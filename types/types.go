@@ -124,40 +124,46 @@ type ExtendedSubmission struct {
 }
 
 type SubmissionsFilter struct {
-	SubmissionIDs                []int64  `schema:"submission-id"`
-	SubmitterID                  *int64   `schema:"submitter-id"`
-	TitlePartial                 *string  `schema:"title-partial"`
-	SubmitterUsernamePartial     *string  `schema:"submitter-username-partial"`
-	PlatformPartial              *string  `schema:"platform-partial"`
-	LibraryPartial               *string  `schema:"library-partial"`
-	OriginalFilenamePartialAny   *string  `schema:"original-filename-partial-any"`
-	CurrentFilenamePartialAny    *string  `schema:"current-filename-partial-any"`
-	MD5SumPartialAny             *string  `schema:"md5sum-partial-any"`
-	SHA256SumPartialAny          *string  `schema:"sha256sum-partial-any"`
-	BotActions                   []string `schema:"bot-action"`
-	ActionsAfterMyLastComment    []string `schema:"post-last-action"`
-	ResultsPerPage               *int64   `schema:"results-per-page"`
-	Page                         *int64   `schema:"page"`
-	AssignedStatusTesting        *string  `schema:"assigned-status-testing"`
-	AssignedStatusVerification   *string  `schema:"assigned-status-verification"`
-	RequestedChangedStatus       *string  `schema:"requested-changes-status"`
-	ApprovalsStatus              *string  `schema:"approvals-status"`
-	VerificationStatus           *string  `schema:"verification-status"`
-	SubmissionLevels             []string `schema:"sumbission-level"`
-	AssignedStatusTestingMe      *string  `schema:"assigned-status-testing-me"`
-	AssignedStatusVerificationMe *string  `schema:"assigned-status-verification-me"`
-	RequestedChangedStatusMe     *string  `schema:"requested-changes-status-me"`
-	ApprovalsStatusMe            *string  `schema:"approvals-status-me"`
-	VerificationStatusMe         *string  `schema:"verification-status-me"`
-	IsExtreme                    *string  `schema:"is-extreme"`
-	DistinctActions              []string `schema:"distinct-action"`
-	DistinctActionsNot           []string `schema:"distinct-action-not"`
-	LaunchCommandFuzzy           *string  `schema:"launch-command-fuzzy"`
-	LastUploaderNotMe            *string  `schema:"last-uploader-not-me"`
-	OrderBy                      *string  `schema:"order-by"`
-	AscDesc                      *string  `schema:"asc-desc"`
-	SubscribedMe                 *string  `schema:"subscribed-me"`
-	ExcludeLegacy                bool
+	SubmissionIDs                  []int64  `schema:"submission-id"`
+	SubmitterID                    *int64   `schema:"submitter-id"`
+	TitlePartial                   *string  `schema:"title-partial"`
+	SubmitterUsernamePartial       *string  `schema:"submitter-username-partial"`
+	PlatformPartial                *string  `schema:"platform-partial"`
+	LibraryPartial                 *string  `schema:"library-partial"`
+	OriginalFilenamePartialAny     *string  `schema:"original-filename-partial-any"`
+	CurrentFilenamePartialAny      *string  `schema:"current-filename-partial-any"`
+	MD5SumPartialAny               *string  `schema:"md5sum-partial-any"`
+	SHA256SumPartialAny            *string  `schema:"sha256sum-partial-any"`
+	BotActions                     []string `schema:"bot-action"`
+	ActionsAfterMyLastComment      []string `schema:"post-last-action"`
+	ResultsPerPage                 *int64   `schema:"results-per-page"`
+	Page                           *int64   `schema:"page"`
+	AssignedStatusTesting          *string  `schema:"assigned-status-testing"`
+	AssignedStatusVerification     *string  `schema:"assigned-status-verification"`
+	RequestedChangedStatus         *string  `schema:"requested-changes-status"`
+	ApprovalsStatus                *string  `schema:"approvals-status"`
+	VerificationStatus             *string  `schema:"verification-status"`
+	SubmissionLevels               []string `schema:"sumbission-level"`
+	AssignedStatusTestingMe        *string  `schema:"assigned-status-testing-me"`
+	AssignedStatusVerificationMe   *string  `schema:"assigned-status-verification-me"`
+	RequestedChangedStatusMe       *string  `schema:"requested-changes-status-me"`
+	ApprovalsStatusMe              *string  `schema:"approvals-status-me"`
+	VerificationStatusMe           *string  `schema:"verification-status-me"`
+	AssignedStatusUserID           *int64   `schema:"assigned-status-user-id"`
+	AssignedStatusTestingUser      *string  `schema:"assigned-status-testing-user"`
+	AssignedStatusVerificationUser *string  `schema:"assigned-status-verification-user"`
+	RequestedChangedStatusUser     *string  `schema:"requested-changes-status-user"`
+	ApprovalsStatusUser            *string  `schema:"approvals-status-user"`
+	VerificationStatusUser         *string  `schema:"verification-status-user"`
+	IsExtreme                      *string  `schema:"is-extreme"`
+	DistinctActions                []string `schema:"distinct-action"`
+	DistinctActionsNot             []string `schema:"distinct-action-not"`
+	LaunchCommandFuzzy             *string  `schema:"launch-command-fuzzy"`
+	LastUploaderNotMe              *string  `schema:"last-uploader-not-me"`
+	OrderBy                        *string  `schema:"order-by"`
+	AscDesc                        *string  `schema:"asc-desc"`
+	SubscribedMe                   *string  `schema:"subscribed-me"`
+	ExcludeLegacy                  bool
 }
 
 func unzeroNilPointers(x interface{}) {
@@ -243,6 +249,37 @@ func (sf *SubmissionsFilter) Validate() error {
 	if sf.VerificationStatusMe != nil && *sf.VerificationStatusMe != "no" && *sf.VerificationStatusMe != "yes" {
 		return fmt.Errorf("invalid verificaton-status-me")
 	}
+
+	if sf.AssignedStatusUserID != nil && *sf.AssignedStatusUserID < 1 {
+		if *sf.AssignedStatusUserID == 0 {
+			sf.AssignedStatusUserID = nil
+		} else {
+			return fmt.Errorf("assigned-status-user-id id must be >= 1")
+		}
+	}
+	if sf.AssignedStatusTestingUser != nil && *sf.AssignedStatusTestingUser != "unassigned" && *sf.AssignedStatusTestingUser != "assigned" {
+		return fmt.Errorf("invalid assigned-status-testing-user")
+	}
+	if sf.AssignedStatusVerificationUser != nil && *sf.AssignedStatusVerificationUser != "unassigned" && *sf.AssignedStatusVerificationUser != "assigned" {
+		return fmt.Errorf("invalid assigned-status-verification-user")
+	}
+	if sf.RequestedChangedStatusUser != nil && *sf.RequestedChangedStatusUser != "none" && *sf.RequestedChangedStatusUser != "ongoing" {
+		return fmt.Errorf("invalid requested-changes-status-user")
+	}
+	if sf.ApprovalsStatusUser != nil && *sf.ApprovalsStatusUser != "no" && *sf.ApprovalsStatusUser != "yes" {
+		return fmt.Errorf("invalid approvals-status-user")
+	}
+	if sf.VerificationStatusUser != nil && *sf.VerificationStatusUser != "no" && *sf.VerificationStatusUser != "yes" {
+		return fmt.Errorf("invalid verificaton-status-user")
+	}
+	if sf.AssignedStatusUserID != nil && !(sf.AssignedStatusTestingUser != nil ||
+		sf.AssignedStatusVerificationUser != nil ||
+		sf.RequestedChangedStatusUser != nil ||
+		sf.ApprovalsStatusUser != nil ||
+		sf.VerificationStatusUser != nil) {
+		return fmt.Errorf("assigned-status-user-id must be set when any of the relevant *user filters are set")
+	}
+
 	if sf.LastUploaderNotMe != nil && *sf.LastUploaderNotMe != "yes" {
 		return fmt.Errorf("last-uploader-not-me")
 	}

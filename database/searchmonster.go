@@ -218,6 +218,52 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
 
+		if filter.AssignedStatusTestingUser != nil {
+			if *filter.AssignedStatusTestingUser == "unassigned" {
+				filters = append(filters, "(submission_cache.active_assigned_testing_ids NOT LIKE ? OR submission_cache.active_assigned_testing_ids IS NULL)")
+			} else if *filter.AssignedStatusTestingUser == "assigned" {
+				filters = append(filters, "(submission_cache.active_assigned_testing_ids LIKE ?)")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", *filter.AssignedStatusUserID)))
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
+		if filter.AssignedStatusVerificationUser != nil {
+			if *filter.AssignedStatusVerificationUser == "unassigned" {
+				filters = append(filters, "(submission_cache.active_assigned_verification_ids NOT LIKE ? OR submission_cache.active_assigned_verification_ids IS NULL)")
+			} else if *filter.AssignedStatusVerificationUser == "assigned" {
+				filters = append(filters, "(submission_cache.active_assigned_verification_ids LIKE ?)")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", *filter.AssignedStatusUserID)))
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
+		if filter.RequestedChangedStatusUser != nil {
+			if *filter.RequestedChangedStatusUser == "none" {
+				filters = append(filters, "(submission_cache.active_requested_changes_ids NOT LIKE ? OR submission_cache.active_requested_changes_ids IS NULL)")
+			} else if *filter.RequestedChangedStatusUser == "ongoing" {
+				filters = append(filters, "(submission_cache.active_requested_changes_ids LIKE ?)")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", *filter.AssignedStatusUserID)))
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
+		if filter.ApprovalsStatusUser != nil {
+			if *filter.ApprovalsStatusUser == "no" {
+				filters = append(filters, "(submission_cache.active_approved_ids NOT LIKE ? OR submission_cache.active_approved_ids IS NULL)")
+			} else if *filter.ApprovalsStatusUser == "yes" {
+				filters = append(filters, "(submission_cache.active_approved_ids LIKE ?)")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", *filter.AssignedStatusUserID)))
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
+		if filter.VerificationStatusUser != nil {
+			if *filter.VerificationStatusUser == "no" {
+				filters = append(filters, "(submission_cache.active_verified_ids NOT LIKE ? OR submission_cache.active_verified_ids IS NULL)")
+			} else if *filter.VerificationStatusUser == "yes" {
+				filters = append(filters, "(submission_cache.active_verified_ids LIKE ?)")
+			}
+			data = append(data, utils.FormatLike(fmt.Sprintf("%d", *filter.AssignedStatusUserID)))
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
+
 		if filter.IsExtreme != nil {
 			filters = append(filters, "(meta.extreme = ?)")
 			data = append(data, *filter.IsExtreme)
