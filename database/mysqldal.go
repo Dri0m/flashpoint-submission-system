@@ -952,6 +952,7 @@ func (d *mysqlDAL) GetAllUnindexedFlashfreezeRootFiles(dbs DBSession) ([]*types.
 		WHERE id NOT IN (
 		    SELECT DISTINCT fk_flashfreeze_file_id 
 		    FROM flashfreeze_file_contents
+		    WHERE current_filename NOT LIKE "%.warc" AND current_filename NOT LIKE "%.warc.gz"
 		    )`)
 
 	if err != nil {
