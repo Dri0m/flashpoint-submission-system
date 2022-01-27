@@ -445,6 +445,11 @@
                                                id="order-by-uploaded"
                                                {{if eq "uploaded" (unpointify .Filter.OrderBy)}}checked{{end}}>
                                         By Uploaded at</label>
+                                    <label for="order-by">
+                                        <input type="radio" name="order-by" value="size"
+                                               id="order-by-size"
+                                               {{if eq "size" (unpointify .Filter.OrderBy)}}checked{{end}}>
+                                        By size</label>
                                     <label for="asc-desc">
                                         <input type="radio" name="asc-desc" value="asc"
                                                id="asc-desc-asc"

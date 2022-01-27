@@ -283,7 +283,7 @@ func (sf *SubmissionsFilter) Validate() error {
 	if sf.LastUploaderNotMe != nil && *sf.LastUploaderNotMe != "yes" {
 		return fmt.Errorf("last-uploader-not-me")
 	}
-	if sf.OrderBy != nil && *sf.OrderBy != "uploaded" && *sf.OrderBy != "updated" {
+	if sf.OrderBy != nil && *sf.OrderBy != "uploaded" && *sf.OrderBy != "updated" && *sf.OrderBy != "size" {
 		return fmt.Errorf("invalid order-by")
 	}
 	if sf.AscDesc != nil && *sf.AscDesc != "asc" && *sf.AscDesc != "desc" {
