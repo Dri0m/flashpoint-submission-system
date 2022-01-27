@@ -1079,3 +1079,29 @@ func (d *mysqlDAL) GetTotalFlashfreezeFileCount(dbs DBSession) (int64, error) {
 
 	return count, nil
 }
+
+// GetTotalSubmissionFilesize returns a total size of all uploaded submissions
+func (d *mysqlDAL) GetTotalSubmissionFilesize(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT SUM(size) FROM submission_file`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// GetTotalFlashfreezeFilesize returns a total size of all uploaded flashfreeze items
+func (d *mysqlDAL) GetTotalFlashfreezeFilesize(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT SUM(size) FROM flashfreeze_file`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}

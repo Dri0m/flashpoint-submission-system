@@ -57,4 +57,6 @@ type StatisticsPageData struct {
 	CommentCount                int64
 	FlashfreezeCount            int64
 	FlashfreezeFileCount        int64
+	TotalSubmissionSize         int64
+	TotalFlashfreezeSize        int64
 }
