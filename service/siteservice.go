@@ -1651,13 +1651,6 @@ func (s *SiteService) DeleteUserSessions(ctx context.Context, uid int64) (int64,
 }
 
 func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.StatisticsPageData, error) {
-	dbs, err := s.dal.NewSession(ctx)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, dberr(err)
-	}
-	defer dbs.Rollback()
-
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
 		return nil, err
@@ -1680,24 +1673,32 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	var tffs int64
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		_, sc, err = s.dal.SearchSubmissions(dbs, nil)
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		_, scbh, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"approve"}})
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		_, scbs, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"request-changes"}})
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		approved := "approved"
 		_, sca, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{ApprovalsStatus: &approved})
@@ -1705,6 +1706,8 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		verified := "verified"
 		_, scv, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{VerificationStatus: &verified})
@@ -1712,48 +1715,64 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		_, scr, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"reject"}})
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		_, scif, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"mark-added"}})
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		uc, err = s.dal.GetTotalUserCount(dbs)
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		cc, err = s.dal.GetTotalCommentsCount(dbs)
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		ffc, err = s.dal.GetTotalFlashfreezeCount(dbs)
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		fffc, err = s.dal.GetTotalFlashfreezeFileCount(dbs)
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		tss, err = s.dal.GetTotalSubmissionFilesize(dbs)
 		return err
 	})
 
 	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
 		var err error
 		tffs, err = s.dal.GetTotalFlashfreezeFilesize(dbs)
 		return err
