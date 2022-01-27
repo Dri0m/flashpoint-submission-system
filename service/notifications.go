@@ -191,6 +191,8 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:PointPlus:917230760337997834>")
 		} else if strings.Contains(lplat, "calendar quick") {
 			b.WriteString("<:Calendar_Quick:917575719536697424>")
+		} else if strings.Contains(lplat, "e-animator") {
+			b.WriteString("<:e_animator:933419945931448421>")
 		} else {
 			b.WriteString("❓")
 		}
