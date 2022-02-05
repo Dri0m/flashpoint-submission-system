@@ -171,7 +171,7 @@ textarea {
 .bgr-assign-testing,
 .dot-assign-testing,
 .button-assign-testing {
-    background: rgb(24, 83, 175) !important;
+    background: rgb(24, 83, 175);
 }
 
 .bgr-unassign-testing,
