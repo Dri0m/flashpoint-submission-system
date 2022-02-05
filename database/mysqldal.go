@@ -952,6 +952,7 @@ func (d *mysqlDAL) GetAllUnindexedFlashfreezeRootFiles(dbs DBSession) ([]*types.
 		WHERE id NOT IN (
 		    SELECT DISTINCT fk_flashfreeze_file_id 
 		    FROM flashfreeze_file_contents
+		    WHERE current_filename NOT LIKE "%.warc" AND current_filename NOT LIKE "%.warc.gz"
 		    )`)
 
 	if err != nil {
@@ -1070,6 +1071,32 @@ func (d *mysqlDAL) GetTotalFlashfreezeCount(dbs DBSession) (int64, error) {
 func (d *mysqlDAL) GetTotalFlashfreezeFileCount(dbs DBSession) (int64, error) {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
 		SELECT COUNT(*) FROM flashfreeze_file_contents`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// GetTotalSubmissionFilesize returns a total size of all uploaded submissions
+func (d *mysqlDAL) GetTotalSubmissionFilesize(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT SUM(size) FROM submission_file`)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// GetTotalFlashfreezeFilesize returns a total size of all uploaded flashfreeze items
+func (d *mysqlDAL) GetTotalFlashfreezeFilesize(dbs DBSession) (int64, error) {
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `
+		SELECT SUM(size) FROM flashfreeze_file`)
 
 	var count int64
 	if err := row.Scan(&count); err != nil {

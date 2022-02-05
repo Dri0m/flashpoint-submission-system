@@ -11,6 +11,7 @@ import (
 	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/go-sql-driver/mysql"
 	"github.com/kofalt/go-memoize"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -1650,72 +1651,134 @@ func (s *SiteService) DeleteUserSessions(ctx context.Context, uid int64) (int64,
 }
 
 func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.StatisticsPageData, error) {
-	dbs, err := s.dal.NewSession(ctx)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, dberr(err)
-	}
-	defer dbs.Rollback()
-
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, sc, err := s.dal.SearchSubmissions(dbs, nil)
-	if err != nil {
-		return nil, err
-	}
+	errs, _ := errgroup.WithContext(ctx)
 
-	_, scbh, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"approve"}})
-	if err != nil {
-		return nil, err
-	}
+	var sc int64
+	var scbh int64
+	var scbs int64
+	var sca int64
+	var scv int64
+	var scr int64
+	var scif int64
+	var uc int64
+	var cc int64
+	var ffc int64
+	var fffc int64
+	var tss int64
+	var tffs int64
 
-	_, scbs, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"request-changes"}})
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		_, sc, err = s.dal.SearchSubmissions(dbs, nil)
+		return err
+	})
 
-	approved := "approved"
-	_, sca, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{ApprovalsStatus: &approved})
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		_, scbh, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"approve"}})
+		return err
+	})
 
-	verified := "verified"
-	_, scv, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{VerificationStatus: &verified})
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		_, scbs, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"request-changes"}})
+		return err
+	})
 
-	_, scr, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"reject"}})
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		approved := "approved"
+		_, sca, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{ApprovalsStatus: &approved})
+		return err
+	})
 
-	_, scif, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"mark-added"}})
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		verified := "verified"
+		_, scv, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{VerificationStatus: &verified})
+		return err
+	})
 
-	uc, err := s.dal.GetTotalUserCount(dbs)
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		_, scr, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"reject"}})
+		return err
+	})
 
-	cc, err := s.dal.GetTotalCommentsCount(dbs)
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		_, scif, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"mark-added"}})
+		return err
+	})
 
-	ffc, err := s.dal.GetTotalFlashfreezeCount(dbs)
-	if err != nil {
-		return nil, err
-	}
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		uc, err = s.dal.GetTotalUserCount(dbs)
+		return err
+	})
 
-	fffc, err := s.dal.GetTotalFlashfreezeFileCount(dbs)
-	if err != nil {
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		cc, err = s.dal.GetTotalCommentsCount(dbs)
+		return err
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		ffc, err = s.dal.GetTotalFlashfreezeCount(dbs)
+		return err
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		fffc, err = s.dal.GetTotalFlashfreezeFileCount(dbs)
+		return err
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		tss, err = s.dal.GetTotalSubmissionFilesize(dbs)
+		return err
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+		tffs, err = s.dal.GetTotalFlashfreezeFilesize(dbs)
+		return err
+	})
+
+	if err := errs.Wait(); err != nil {
 		return nil, err
 	}
 
@@ -1732,6 +1795,8 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 		CommentCount:                cc,
 		FlashfreezeCount:            ffc,
 		FlashfreezeFileCount:        fffc,
+		TotalSubmissionSize:         tss,
+		TotalFlashfreezeSize:        tffs,
 	}
 	return pageData, nil
 }

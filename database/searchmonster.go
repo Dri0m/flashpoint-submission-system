@@ -302,6 +302,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 				currentOrderBy = "created_at"
 			} else if *filter.OrderBy == "updated" {
 				currentOrderBy = "updated_at"
+			} else if *filter.OrderBy == "size" {
+				currentOrderBy = "newest_file_size"
 			}
 		}
 		if filter.AscDesc != nil {

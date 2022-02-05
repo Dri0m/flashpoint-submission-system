@@ -99,6 +99,8 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 		lplat := strings.ToLower(*meta.Platform)
 		if strings.Contains(lplat, "3d groove") {
 			b.WriteString("<:3DGroove:569691574276063242>")
+		} else if strings.Contains(lplat, "eva") {
+			b.WriteString("<:EVA:936449221446492212>")
 		} else if strings.Contains(lplat, "3dvia player") {
 			b.WriteString("<:3DVIA_Player:496151464784166946>")
 		} else if strings.Contains(lplat, "axel player") {
@@ -185,6 +187,16 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:ShowIt:887139518652772442>")
 		} else if strings.Contains(lplat, "mhsv") {
 			b.WriteString("<:MHSV:909580737068560445>")
+		} else if strings.Contains(lplat, "squeak") {
+			b.WriteString("<:Squeak:933419800384925767>")
+		} else if strings.Contains(lplat, "pointplus ") {
+			b.WriteString("<:PointPlus:917230760337997834>")
+		} else if strings.Contains(lplat, "calendar quick") {
+			b.WriteString("<:Calendar_Quick:917575719536697424>")
+		} else if strings.Contains(lplat, "e-animator") {
+			b.WriteString("<:e_animator:933419945931448421>")
+		} else if strings.Contains(lplat, "flatland rover") {
+			b.WriteString("<:Flatland_Rover:936449386005819453>")
 		} else {
 			b.WriteString("❓")
 		}
