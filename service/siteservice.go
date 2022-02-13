@@ -533,6 +533,44 @@ func (s *SiteService) SoftDeleteComment(ctx context.Context, cid int64, deleteRe
 	return nil
 }
 
+func (s *SiteService) OverrideBot(ctx context.Context, sid int64) error {
+	uid := utils.UserID(ctx)
+
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	msg := fmt.Sprintf("Approval override by user %d", uid)
+
+	c := &types.Comment{
+		AuthorID:     constants.ValidatorID,
+		SubmissionID: sid,
+		Message:      &msg,
+		Action:       constants.ActionApprove,
+		CreatedAt:    s.clock.Now(),
+	}
+
+	if err := s.dal.StoreComment(dbs, c); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	if err := s.dal.UpdateSubmissionCacheTable(dbs, sid); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	return nil
+}
+
 func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUser) (*authToken, error) {
 	getServerRoles := func() (interface{}, error) {
 		return s.authBot.GetFlashpointRoles()

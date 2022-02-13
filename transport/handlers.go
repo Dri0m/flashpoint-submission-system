@@ -149,6 +149,27 @@ func (a *App) HandleSoftDeleteComment(w http.ResponseWriter, r *http.Request) {
 	writeResponse(ctx, w, nil, http.StatusNoContent)
 }
 
+func (a *App) HandleOverrideBot(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	params := mux.Vars(r)
+	submissionID := params[constants.ResourceKeySubmissionID]
+
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
+		return
+	}
+
+	if err := a.Service.OverrideBot(ctx, sid); err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	writeResponse(ctx, w, nil, http.StatusNoContent)
+}
+
 func (a *App) HandleSubmissionReceiverResumable(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)

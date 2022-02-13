@@ -148,6 +148,11 @@ textarea {
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
+.button-override {
+    color: black;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
 .bgr-comment,
 .dot-comment,
 .button-comment {
@@ -232,6 +237,9 @@ textarea {
     background: rgb(175, 14, 14) !important;
 }
 
+.button-override {
+    background: rgb(255, 249, 0) !important;
+}
 
 .meta-table {
     font-size: 90%;

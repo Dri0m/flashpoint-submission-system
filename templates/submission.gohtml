@@ -54,12 +54,27 @@
             {{end}}
         </div>
 
-        {{if $canDelete}}
-            <h3>Delete submission and all its related data</h3>
-            <button class="pure-button button-delete"
-                    onclick="deleteSubmission({{$submissionID}})">Delete
-            </button>
-        {{end}}
+        <div class="pure-g">
+            <div class="pure-u-1-2">
+
+                {{if $canDelete}}
+                    <h3>Delete submission and all its related data</h3>
+                    <button class="pure-button button-delete"
+                            onclick="deleteSubmission({{$submissionID}})">Delete
+                    </button>
+                {{end}}
+            </div>
+            <div class="pure-u-1-2">
+
+                {{if isStaff .UserRoles}}
+                    <h3>Override Bot</h3>
+                    <button class="pure-button button-override"
+                            onclick="overrideBot({{$submissionID}})">Override
+                    </button>
+                {{end}}
+
+            </div>
+        </div>
 
         <h3>Curation images</h3>
         {{range .CurationImageIDs}}

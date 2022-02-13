@@ -260,6 +260,13 @@ function deleteSubmission(sid) {
         "Please provide a reason to delete this submission and all its related data:")
 }
 
+function overrideBot(sid) {
+    sendXHR(`/api/submission/${sid}/override`, "POST", null, true,
+        "Failed to override bot decision.",
+        "Override successful.",
+        null)
+}
+
 function deleteComment(sid, cid) {
     sendXHR(`/api/submission/${sid}/comment/${cid}`, "DELETE", null, true,
         "Failed to delete comment.",

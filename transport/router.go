@@ -353,6 +353,14 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 			a.HandleSoftDeleteComment, muxAll(isDeleter))))).
 		Methods("DELETE")
 
+	// bot override
+
+	router.Handle(
+		fmt.Sprintf("/api/submission/{%s}/override", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
+			a.HandleOverrideBot, muxAny(isDeleter, isStaff))))).
+		Methods("POST")
+
 	// god tools
 
 	router.Handle("/web/internal",
