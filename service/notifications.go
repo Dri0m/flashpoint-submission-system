@@ -278,7 +278,7 @@ func (s *SiteService) ProduceRemindersAboutRequestedChanges(ctx context.Context)
 	defer dbs.Rollback()
 
 	ongoing := "ongoing"
-	results, _, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{RequestedChangedStatus: &ongoing, DistinctActionsNot: []string{"mark-added"}})
+	results, _, err := s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{RequestedChangedStatus: &ongoing, DistinctActionsNot: []string{"mark-added", "reject"}})
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return 0, dberr(err)
@@ -286,7 +286,7 @@ func (s *SiteService) ProduceRemindersAboutRequestedChanges(ctx context.Context)
 
 	authors := make(map[int64]int)
 	for _, r := range results {
-		if !r.UploadedAt.Before(time.Now().Add(-time.Hour * 24 * 30)) {
+		if !r.UpdatedAt.Before(time.Now().Add(-time.Hour * 24 * 30)) {
 			continue
 		}
 
