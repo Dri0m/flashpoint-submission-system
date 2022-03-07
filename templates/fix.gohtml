@@ -6,5 +6,12 @@
         <h3>Table data</h3>
         {{template "fixes-table" .}}
 
+        <h3>{{(index .Fixes 0).Title}}</h3>
+        <p>
+            {{range $i, $line := (splitMultilineText (index .Fixes 0).Description) }}{{if gt $i 0}}
+                <br>{{end}}{{$line}}
+            {{end}}
+        </p>
+
     </div>
 {{end}}

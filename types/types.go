@@ -610,6 +610,7 @@ func (ff *FixesFilter) Validate() error {
 type ExtendedFixesItem struct {
 	FixID             int64
 	Title             string
+	Description       string
 	SubmitterID       int64
 	SubmitterUsername string
 	UploadedAt        *time.Time

@@ -1009,6 +1009,7 @@ func (d *mysqlDAL) SearchFixes(dbs DBSession, filter *types.FixesFilter) ([]*typ
 		SELECT 
 			fix_id,
 		    title,
+		    description,
 		    uploader_id,
 		    uploader_username,
 		    uploaded_at
@@ -1016,6 +1017,7 @@ func (d *mysqlDAL) SearchFixes(dbs DBSession, filter *types.FixesFilter) ([]*typ
 		SELECT 
        		fixes.id AS fix_id,
 		    fixes.title AS title,
+		    fixes.description AS description,
 			fixes.fk_user_id AS uploader_id,
 			uploader.username AS uploader_username,
 			fixes.created_at AS uploaded_at
@@ -1065,7 +1067,7 @@ func (d *mysqlDAL) SearchFixes(dbs DBSession, filter *types.FixesFilter) ([]*typ
 
 	for rows.Next() {
 		f := &types.ExtendedFixesItem{}
-		if err := rows.Scan(&f.FixID, &f.Title, &f.SubmitterID, &f.SubmitterUsername, &uploadedAt); err != nil {
+		if err := rows.Scan(&f.FixID, &f.Title, &f.Description, &f.SubmitterID, &f.SubmitterUsername, &uploadedAt); err != nil {
 			return nil, 0, err
 		}
 
