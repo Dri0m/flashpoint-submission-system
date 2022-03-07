@@ -9,7 +9,7 @@
                             <fieldset>
                                 <legend>File Filters</legend>
                                 <label for="file-id">File ID</label>
-                                <input type="number" name="file-id" min="1"
+                                <input type="number" name="fix-id" min="1"
                                        value="{{if .Filter.FileIDs}}{{coalesce (index .Filter.FileIDs 0) ""}}{{end}}">
                                 <label for="submitter-id">Submitter ID</label>
                                 <input type="number" name="submitter-id" min="1"

@@ -960,3 +960,31 @@ func (a *App) HandleSearchFixesPage(w http.ResponseWriter, r *http.Request) {
 		"templates/fixes-filter.gohtml",
 		"templates/fixes-pagenav.gohtml")
 }
+
+func (a *App) HandleViewFixesPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	fixID := params[constants.ResourceKeyFixID]
+
+	fid, err := strconv.ParseInt(fixID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("invalid fix id", http.StatusBadRequest))
+		return
+	}
+
+	pageData, err := a.Service.GetViewFixPageData(ctx, fid)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/fix.gohtml",
+		"templates/fixes-table.gohtml")
+}

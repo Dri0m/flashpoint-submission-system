@@ -975,9 +975,9 @@ func (d *mysqlDAL) SearchFixes(dbs DBSession, filter *types.FixesFilter) ([]*typ
 	dataFulltext := make([]interface{}, 0)
 
 	if filter != nil {
-		if len(filter.FileIDs) > 0 {
-			filters = append(filters, `(fix_id IN(?`+strings.Repeat(`,?`, len(filter.FileIDs)-1)+`))`)
-			for _, sid := range filter.FileIDs {
+		if len(filter.FixIDs) > 0 {
+			filters = append(filters, `(fix_id IN(?`+strings.Repeat(`,?`, len(filter.FixIDs)-1)+`))`)
+			for _, sid := range filter.FixIDs {
 				data = append(data, sid)
 			}
 		}

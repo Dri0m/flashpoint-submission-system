@@ -1,0 +1,10 @@
+{{define "main"}}
+    <div class="content">
+        <script>document.title = "{{(index .Fixes 0).Title}}" + " | FPFSS";</script>
+        <h1>View Fix</h1>
+
+        <h3>Table data</h3>
+        {{template "fixes-table" .}}
+
+    </div>
+{{end}}

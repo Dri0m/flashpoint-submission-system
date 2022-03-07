@@ -233,6 +233,22 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.UserAuthMux(
+		a.HandleViewFixesPage,
+		muxAny(isStaff, isTrialCurator, isInAudit))
+
+	router.Handle(
+		fmt.Sprintf("/web/fix/{%s}", constants.ResourceKeyFixID),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/fix/{%s}", constants.ResourceKeyFixID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
 	// receivers
 
 	////////////////////////

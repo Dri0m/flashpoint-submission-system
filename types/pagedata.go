@@ -72,3 +72,7 @@ type SearchFixesPageData struct {
 	TotalCount int64
 	Filter     FixesFilter
 }
+
+type ViewFixPageData struct {
+	SearchFixesPageData
+}

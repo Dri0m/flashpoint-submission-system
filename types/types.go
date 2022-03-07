@@ -555,7 +555,7 @@ type FixesFile struct {
 }
 
 type FixesFilter struct {
-	FileIDs     []int64 `schema:"file-id"`
+	FixIDs      []int64 `schema:"fix-id"`
 	SubmitterID *int64  `schema:"submitter-id"`
 
 	SubmitterUsernamePartial *string `schema:"submitter-username-partial"`

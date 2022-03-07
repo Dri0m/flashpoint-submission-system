@@ -1976,3 +1976,40 @@ func (s *SiteService) GetSearchFixesData(ctx context.Context, filter *types.Fixe
 
 	return pageData, nil
 }
+
+func (s *SiteService) GetViewFixPageData(ctx context.Context, sid int64) (*types.ViewFixPageData, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := &types.FixesFilter{
+		FixIDs: []int64{sid},
+	}
+
+	fixes, _, err := s.dal.SearchFixes(dbs, filter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	if len(fixes) == 0 {
+		return nil, perr("fix not found", http.StatusNotFound)
+	}
+
+	pageData := &types.ViewFixPageData{
+		SearchFixesPageData: types.SearchFixesPageData{
+			BasePageData: *bpd,
+			Fixes:        fixes,
+		},
+	}
+
+	return pageData, nil
+}
