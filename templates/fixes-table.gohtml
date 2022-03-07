@@ -1,0 +1,24 @@
+{{define "fixes-table"}}
+    <div id="table-wrapper">
+        <i>tip: use shift+mousewheel to scroll horizontally</i>
+        <div id="table-scroll">
+            <table class="pure-table pure-table-striped submissions-table">
+                <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Uploaded by</th>
+                    <th>Uploaded at</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .Fixes}}
+                <tr>
+                    <td class="wrap-me">{{.Title}}</td>
+                    <td>{{.SubmitterUsername}}</td>
+                    <td>{{if .UploadedAt}}{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}{{else}}{{.UploadedAt}}{{end}}</td>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{{end}}

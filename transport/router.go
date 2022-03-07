@@ -217,6 +217,22 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.UserAuthMux(
+		a.HandleSearchFixesPage,
+		muxAny(isStaff, isTrialCurator, isInAudit))
+
+	router.Handle(
+		"/web/fixes",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/fixes",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
 	// receivers
 
 	////////////////////////

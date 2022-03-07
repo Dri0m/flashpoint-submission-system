@@ -1,0 +1,62 @@
+{{define "fixes-filter"}}
+
+    <div class="submission-filter-wrapper">
+        <form class="pure-form pure-form-stacked" id="filter-form-advanced" method="GET">
+            <div class="pure-g">
+                <div class="pure-u-1-2">
+                    <div class="form-column">
+                        <div class="form-column-text">
+                            <fieldset>
+                                <legend>File Filters</legend>
+                                <label for="file-id">File ID</label>
+                                <input type="number" name="file-id" min="1"
+                                       value="{{if .Filter.FileIDs}}{{coalesce (index .Filter.FileIDs 0) ""}}{{end}}">
+                                <label for="submitter-id">Submitter ID</label>
+                                <input type="number" name="submitter-id" min="1"
+                                       value="{{default "" .Filter.SubmitterID}}">
+                                <label for="submitter-username-partial"
+                                       title="Type comma-separated usernames (substrings) to search, prepend with '!' to exclude a substring. For example, write '!dri0m, !bluemaxima' to exclude submissions from these users. The search is case-insensitive.">Submitter
+                                    Username (hover for help)</label>
+                                <input type="text" name="submitter-username-partial"
+                                       value="{{default "" .Filter.SubmitterUsernamePartial}}">
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+                <div class="pure-u-1-2">
+                    <div class="form-column">
+                        <div class="form-column-text">
+                            <fieldset>
+                                <legend>Personal Filters</legend>
+                                <label for="results-per-page">Results Per Page (default 100)</label>
+                                <input type="number" name="results-per-page" min="1"
+                                       value="{{default "" .Filter.ResultsPerPage}}">
+                                <label for="page">Page</label>
+                                <input type="number" name="page" min="1" value="{{default "" .Filter.Page}}">
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="right">
+                <button type="button" class="pure-button pure-button-primary" id="reset-button"
+                        onclick="resetFilterForm()">Reset
+                </button>
+                <button type="submit" class="pure-button pure-button-primary"
+                        id="search-button">Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let radios = document.getElementsByTagName('input');
+        for (i = 0; i < radios.length; i++) {
+            radios[i].onclick = function (e) {
+                if (e.ctrlKey || e.metaKey) {
+                    this.checked = false;
+                }
+            }
+        }
+    </script>
+{{end}}

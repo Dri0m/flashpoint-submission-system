@@ -553,3 +553,64 @@ type FixesFile struct {
 	MD5Sum           string
 	SHA256Sum        string
 }
+
+type FixesFilter struct {
+	FileIDs     []int64 `schema:"file-id"`
+	SubmitterID *int64  `schema:"submitter-id"`
+
+	SubmitterUsernamePartial *string `schema:"submitter-username-partial"`
+
+	ResultsPerPage *int64 `schema:"results-per-page"`
+	Page           *int64 `schema:"page"`
+}
+
+func (ff *FixesFilter) Validate() error {
+
+	v := reflect.ValueOf(ff).Elem() // fucking schema zeroing out my nil pointers
+	t := reflect.TypeOf(ff).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		if t.Field(i).Type.Kind() == reflect.Ptr {
+			f := v.Field(i)
+			e := f.Elem()
+			if e.Kind() == reflect.Int64 && e.Int() == 0 {
+				f.Set(reflect.Zero(f.Type()))
+			}
+			if e.Kind() == reflect.String && e.String() == "" {
+				f.Set(reflect.Zero(f.Type()))
+			}
+		}
+	}
+
+	if ff.SubmitterID != nil && *ff.SubmitterID < 1 {
+		if *ff.SubmitterID == 0 {
+			ff.SubmitterID = nil
+		} else {
+			return fmt.Errorf("submitter id must be >= 1")
+		}
+	}
+
+	if ff.ResultsPerPage != nil && *ff.ResultsPerPage < 1 {
+		if *ff.ResultsPerPage == 0 {
+			ff.ResultsPerPage = nil
+		} else {
+			return fmt.Errorf("results per page must be >= 1")
+		}
+	}
+	if ff.Page != nil && *ff.Page < 1 {
+		if *ff.Page == 0 {
+			ff.Page = nil
+		} else {
+			return fmt.Errorf("page must be >= 1")
+		}
+	}
+
+	return nil
+}
+
+type ExtendedFixesItem struct {
+	FixID             int64
+	Title             string
+	SubmitterID       int64
+	SubmitterUsername string
+	UploadedAt        *time.Time
+}

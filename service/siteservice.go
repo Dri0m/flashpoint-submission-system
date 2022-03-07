@@ -1947,3 +1947,32 @@ func (s *SiteService) processReceivedFixesItem(ctx context.Context, dbs database
 
 	return &fid, nil
 }
+
+func (s *SiteService) GetSearchFixesData(ctx context.Context, filter *types.FixesFilter) (*types.SearchFixesPageData, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	fixes, count, err := s.dal.SearchFixes(dbs, filter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	pageData := &types.SearchFixesPageData{
+		BasePageData: *bpd,
+		Fixes:        fixes,
+		TotalCount:   count,
+		Filter:       *filter,
+	}
+
+	return pageData, nil
+}

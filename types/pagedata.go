@@ -65,3 +65,10 @@ type SubmitFixesFilesPageData struct {
 	BasePageData
 	FixID int64
 }
+
+type SearchFixesPageData struct {
+	BasePageData
+	Fixes      []*ExtendedFixesItem
+	TotalCount int64
+	Filter     FixesFilter
+}
