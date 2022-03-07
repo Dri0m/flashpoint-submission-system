@@ -5,6 +5,9 @@
     {{$isExtreme := eq "Yes" (unpointify .CurationMeta.Extreme)}}
     {{$UserCanModify := or (isStaff .UserRoles) (eq .UserID (index .Submissions 0).SubmitterID)}}
     <div class="content">
+        {{if .CurationMeta.Title}}
+            <script>document.title = "{{.CurationMeta.Title}}" + " | FPFSS";</script>
+        {{end}}
         <h1>View Submission</h1>
 
         {{template "view-submission-nav" .}}
