@@ -330,11 +330,30 @@ func (a *App) HandleFixesSubmitGenericPage(w http.ResponseWriter, r *http.Reques
 
 func (a *App) HandleFixesSubmitGenericPageUploadFilesPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	params := mux.Vars(r)
+	fixID := params[constants.ResourceKeyFixID]
 
-	pageData, err := a.Service.GetBasePageData(ctx)
+	// get fix ID
+	var fid *int64
+	if fixID != "" {
+		sidParsed, err := strconv.ParseInt(fixID, 10, 64)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			writeError(ctx, w, perr("invalid fix id", http.StatusBadRequest))
+			return
+		}
+		fid = &sidParsed
+	}
+
+	bpd, err := a.Service.GetBasePageData(ctx)
 	if err != nil {
 		writeError(ctx, w, err)
 		return
+	}
+
+	pageData := types.SubmitFixesFilesPageData{
+		BasePageData: *bpd,
+		FixID:        *fid,
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/fixes-submit-generic-upload-files.gohtml")
@@ -864,4 +883,45 @@ func (a *App) HandleSendRemindersAboutRequestedChanges(w http.ResponseWriter, r 
 	}
 
 	writeResponse(ctx, w, presp(fmt.Sprintf("%d notifications added to the queue", count), http.StatusOK), http.StatusOK)
+}
+
+func (a *App) HandleFixesReceiverResumable(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	fixID := params[constants.ResourceKeyFixID]
+
+	// get fix ID
+	var fid *int64
+	if fixID != "" {
+		sidParsed, err := strconv.ParseInt(fixID, 10, 64)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			writeError(ctx, w, perr("invalid fix id", http.StatusBadRequest))
+			return
+		}
+		fid = &sidParsed
+	}
+
+	chunk, resumableParams, err := a.parseResumableRequest(ctx, r)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	// then a magic happens
+	err = a.Service.ReceiveFixesChunk(ctx, *fid, resumableParams, chunk)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	var url *string
+	x := fmt.Sprintf("/TODO/files?file-id=%d", *fid)
+	url = &x
+
+	resp := types.ReceiveFileResp{
+		Message: "success",
+		URL:     url,
+	}
+	writeResponse(ctx, w, resp, http.StatusOK)
 }

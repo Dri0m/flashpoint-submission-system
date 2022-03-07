@@ -541,3 +541,15 @@ func (ff *FlashfreezeFilter) Validate() error {
 type DeleteUserSessionsRequest struct {
 	DiscordID int64 `schema:"discord-user-id"`
 }
+
+type FixesFile struct {
+	ID               int64
+	UserID           int64
+	FixID            int64
+	OriginalFilename string
+	CurrentFilename  string
+	Size             int64
+	UploadedAt       time.Time
+	MD5Sum           string
+	SHA256Sum        string
+}

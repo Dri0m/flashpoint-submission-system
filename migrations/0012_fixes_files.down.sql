@@ -1,0 +1,1 @@
+DROP TABLE fixes_file;

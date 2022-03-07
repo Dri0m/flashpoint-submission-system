@@ -142,6 +142,62 @@ func (s *SiteService) ReceiveFlashfreezeChunk(ctx context.Context, resumablePara
 	return nil, nil
 }
 
+func (s *SiteService) ReceiveFixesChunk(ctx context.Context, fixID int64, resumableParams *types.ResumableParams, chunk []byte) error {
+	ctx = context.WithValue(ctx, utils.CtxKeys.Log, resumableLog(ctx, resumableParams))
+
+	uid := utils.UserID(ctx)
+	if uid == 0 {
+		utils.LogCtx(ctx).Panic("no user associated with request")
+	}
+
+	utils.LogCtx(ctx).Debug("storing fixes chunk")
+	err := s.resumableUploadService.PutChunk(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableChunkNumber, chunk)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+
+	isComplete, err := s.resumableUploadService.IsUploadFinished(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, resumableParams.ResumableTotalSize)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return err
+	}
+
+	if isComplete {
+		utils.LogCtx(ctx).Debug("fixes resumable upload finished")
+
+		processReceivedResumableFlashfreeze := func() (interface{}, error) {
+			return s.processReceivedResumableFixesFile(ctx, uid, fixID, resumableParams)
+		}
+		processReceivedResumableFixesKey := fmt.Sprintf("%d-%s", uid, resumableParams.ResumableIdentifier)
+
+		_, err, cached := resumableMemoizer.Memoize(processReceivedResumableFixesKey, processReceivedResumableFlashfreeze)
+		utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("processed resumable fixes upload")
+
+		if err != nil {
+			resumableMemoizer.Storage.Delete(processReceivedResumableFixesKey)
+			utils.LogCtx(ctx).Error(err)
+			return err
+		}
+
+		if !cached {
+			utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+			if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
+				utils.LogCtx(ctx).Error(err)
+			}
+
+			utils.LogCtx(ctx).WithField("memoizerKey", processReceivedResumableFixesKey).Debug("deleting the memoized call")
+			resumableMemoizer.Storage.Delete(processReceivedResumableFixesKey)
+		}
+
+		return nil
+	}
+
+	return nil
+}
+
+///////////
+
 func (s *SiteService) IsChunkReceived(ctx context.Context, resumableParams *types.ResumableParams) (bool, error) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.Log, resumableLog(ctx, resumableParams))
 

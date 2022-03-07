@@ -139,11 +139,12 @@ type SiteService struct {
 	resumableUploadService    *resumableuploadservice.ResumableUploadService
 	archiveIndexerServerURL   string
 	flashfreezeIngestDir      string
+	fixesDir                  string
 }
 
 func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
-	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir string) *SiteService {
+	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir, fixesDir string) *SiteService {
 
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
@@ -163,6 +164,7 @@ func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *di
 		resumableUploadService:    rsu,
 		archiveIndexerServerURL:   archiveIndexerServerURL,
 		flashfreezeIngestDir:      flashfreezeIngestDir,
+		fixesDir:                  fixesDir,
 	}
 }
 
@@ -1119,7 +1121,7 @@ func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs da
 	}
 	defer destination.Close()
 
-	utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
+	utils.LogCtx(ctx).Debugf("copying flashfreeze file to '%s'...", destinationFilePath)
 
 	md5sum := md5.New()
 	sha256sum := sha256.New()
@@ -1837,4 +1839,111 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 		TotalFlashfreezeSize:        tffs,
 	}
 	return pageData, nil
+}
+
+func (s *SiteService) processReceivedResumableFixesFile(ctx context.Context, uid int64, fixID int64, resumableParams *types.ResumableParams) (*int64, error) {
+	var destinationFilename *string
+
+	cleanup := func() {
+		if destinationFilename != nil {
+			utils.LogCtx(ctx).Debugf("cleaning up file '%s'...", *destinationFilename)
+			if err := os.Remove(*destinationFilename); err != nil {
+				utils.LogCtx(ctx).Error(err)
+			}
+		}
+	}
+
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	ru := newResumableUpload(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, s.resumableUploadService)
+	fid, err := s.processReceivedFixesItem(ctx, dbs, uid, fixID, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		cleanup()
+		return nil, dberr(err)
+	}
+
+	utils.LogCtx(ctx).WithField("amount", 1).Debug("fixes items received")
+
+	return fid, nil
+}
+
+func (s *SiteService) processReceivedFixesItem(ctx context.Context, dbs database.DBSession, uid int64, fixID int64, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64) (*int64, error) {
+	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", filename, filesize)
+
+	if err := os.MkdirAll(s.fixesDir, os.ModeDir); err != nil {
+		return nil, err
+	}
+
+	var destinationFilename string
+	var destinationFilePath string
+
+	for {
+		destinationFilename = s.randomStringProvider.RandomString(64) + filepath.Ext(filename)
+		destinationFilePath = fmt.Sprintf("%s/%s", s.fixesDir, destinationFilename)
+		if !utils.FileExists(destinationFilePath) {
+			break
+		}
+	}
+
+	var err error
+
+	readCloser, err := fileReadCloserProvider.GetReadCloser()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+	defer readCloser.Close()
+
+	destination, err := os.Create(destinationFilePath)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+	defer destination.Close()
+
+	utils.LogCtx(ctx).Debugf("copying fixes file to '%s'...", destinationFilePath)
+
+	md5sum := md5.New()
+	sha256sum := sha256.New()
+	multiWriter := io.MultiWriter(destination, sha256sum, md5sum)
+
+	nBytes, err := io.Copy(multiWriter, readCloser)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+	if nBytes != filesize {
+		err := fmt.Errorf("incorrect number of bytes copied to destination")
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	ff := &types.FixesFile{
+		UserID:           uid,
+		FixID:            fixID,
+		OriginalFilename: filename,
+		CurrentFilename:  destinationFilename,
+		Size:             filesize,
+		UploadedAt:       s.clock.Now(),
+		MD5Sum:           hex.EncodeToString(md5sum.Sum(nil)),
+		SHA256Sum:        hex.EncodeToString(sha256sum.Sum(nil)),
+	}
+
+	fid, err := s.dal.StoreFixesFile(dbs, ff)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	return &fid, nil
 }

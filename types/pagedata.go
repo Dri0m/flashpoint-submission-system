@@ -60,3 +60,8 @@ type StatisticsPageData struct {
 	TotalSubmissionSize         int64
 	TotalFlashfreezeSize        int64
 }
+
+type SubmitFixesFilesPageData struct {
+	BasePageData
+	FixID int64
+}

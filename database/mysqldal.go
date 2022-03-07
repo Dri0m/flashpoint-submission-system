@@ -1011,6 +1011,22 @@ func (d *mysqlDAL) GetFixByID(dbs DBSession, fid int64) (*types.Fix, error) {
 	return f, nil
 }
 
+// StoreFixesFile stores fixes file
+func (d *mysqlDAL) StoreFixesFile(dbs DBSession, s *types.FixesFile) (int64, error) {
+	res, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO fixes_file (fk_user_id, fk_fix_id, original_filename, current_filename, size, created_at, md5sum, sha256sum) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.UserID, s.FixID, s.OriginalFilename, s.CurrentFilename, s.Size, s.UploadedAt.Unix(), s.MD5Sum, s.SHA256Sum)
+	if err != nil {
+		return 0, err
+	}
+	fid, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return fid, nil
+}
+
 // DeleteUserSessions deletes all sessions of a given user, including inactive sessions
 func (d *mysqlDAL) DeleteUserSessions(dbs DBSession, uid int64) (int64, error) {
 	r, err := dbs.Tx().ExecContext(dbs.Ctx(), `

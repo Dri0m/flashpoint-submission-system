@@ -34,6 +34,7 @@ type Config struct {
 	FlashfreezeDirFullPath       string
 	ArchiveIndexerServerURL      string
 	FlashfreezeIngestDirFullPath string
+	FixesDirFullPath             string
 }
 
 func EnvString(name string) string {
@@ -107,5 +108,6 @@ func GetConfig(l *logrus.Entry) *Config {
 		FlashfreezeDirFullPath:       EnvString("FLASHFREEZE_DIR_FULL_PATH"),
 		ArchiveIndexerServerURL:      EnvString("ARCHIVE_INDEXER_SERVER_URL"),
 		FlashfreezeIngestDirFullPath: EnvString("FLASHFREEZE_INGEST_DIR_FULL_PATH"),
+		FixesDirFullPath:             EnvString("FIXES_DIR_FULL_PATH"),
 	}
 }
