@@ -5,6 +5,7 @@
             <table class="pure-table pure-table-striped submissions-table">
                 <thead>
                 <tr>
+                    <th class="center">lookie</th>
                     <th>Title</th>
                     <th>Uploaded by</th>
                     <th>Uploaded at</th>
@@ -13,6 +14,7 @@
                 <tbody>
                 {{range .Fixes}}
                 <tr>
+                    <td class="center"><a href="/web/fix/{{.FixID}}">lookie</a></td>
                     <td class="wrap-me">{{.Title}}</td>
                     <td>{{.SubmitterUsername}}</td>
                     <td>{{if .UploadedAt}}{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}{{else}}{{.UploadedAt}}{{end}}</td>
