@@ -1,8 +1,8 @@
 body, .pure-menu-children {
-    background-color: #121212 !important;
+    background-color: #202020 !important;
 }
 
-body, h1, .pure-menu-children, .pure-table thead, label, table, div, .default-comment, .pure-menu-link, textarea {
+body, h1, .pure-menu-children, .pure-table thead, label, table, div, .default-comment, .pure-menu-link, textarea, input {
     color: #eee !important;
 }
 
@@ -32,7 +32,7 @@ td a:visited {
     background-color: #323232;
 }
 
-.pure-table thead, .pure-menu-children, textarea, input[type=text] {
+.pure-table thead, .pure-menu-children, textarea, input {
     background-color: #252525 !important;
 }
 

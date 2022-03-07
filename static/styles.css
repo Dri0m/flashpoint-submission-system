@@ -62,6 +62,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
+    word-break: break-word;
 }
 
 
@@ -174,7 +176,7 @@ textarea {
 .bgr-assign-testing,
 .dot-assign-testing,
 .button-assign-testing {
-    background: rgb(24, 83, 175) !important;
+    background: rgb(24, 83, 175);
 }
 
 .bgr-unassign-testing,
