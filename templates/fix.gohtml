@@ -1,17 +1,49 @@
 {{define "main"}}
+    {{$fix := (index .Fixes 0)}}
     <div class="content">
-        <script>document.title = "{{(index .Fixes 0).Title}}" + " | FPFSS";</script>
+        <script>document.title = "{{$fix.Title}}" + " | FPFSS";</script>
         <h1>View Fix</h1>
 
         <h3>Table data</h3>
         {{template "fixes-table" .}}
 
-        <h3>{{(index .Fixes 0).Title}}</h3>
+        <h3>{{$fix.Title}}</h3>
         <p>
-            {{range $i, $line := (splitMultilineText (index .Fixes 0).Description) }}{{if gt $i 0}}
+            {{range $i, $line := (splitMultilineText $fix.Description) }}{{if gt $i 0}}
                 <br>{{end}}{{$line}}
             {{end}}
         </p>
+
+        <div id="table-scroll">
+            <table class="pure-table pure-table-striped submissions-table">
+                <thead>
+                <tr>
+                    <th class="center">Get</th>
+                    <th>Size</th>
+                    <th>Uploaded by</th>
+                    <th>Uploaded at</th>
+                    <th>Original Filename</th>
+                    <th>Current Filename</th>
+                    <th>MD5</th>
+                    <th>SHA256</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .FixesFiles}}
+                <tr>
+                    <td class="center"><a href="/data/fix/{{$fix.FixID}}/file/{{.ID}}">Get</a></td>
+                    <td title="{{.Size}}B">{{sizeToString .Size}}</td>
+                    <td>{{.UploadedBy}}</td>
+                    <td>{{.UploadedAt.Format "2006-01-02 15:04:05 -0700"}}</td>
+                    <td>{{.OriginalFilename}}</td>
+                    <td>{{.CurrentFilename}}</td>
+                    <td>{{.MD5Sum}}</td>
+                    <td>{{.SHA256Sum}}</td>
+                    {{end}}
+                </tr>
+                </tbody>
+            </table>
+        </div>
 
     </div>
 {{end}}

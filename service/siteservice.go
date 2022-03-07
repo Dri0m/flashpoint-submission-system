@@ -1977,7 +1977,7 @@ func (s *SiteService) GetSearchFixesData(ctx context.Context, filter *types.Fixe
 	return pageData, nil
 }
 
-func (s *SiteService) GetViewFixPageData(ctx context.Context, sid int64) (*types.ViewFixPageData, error) {
+func (s *SiteService) GetViewFixPageData(ctx context.Context, fid int64) (*types.ViewFixPageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -1991,10 +1991,16 @@ func (s *SiteService) GetViewFixPageData(ctx context.Context, sid int64) (*types
 	}
 
 	filter := &types.FixesFilter{
-		FixIDs: []int64{sid},
+		FixIDs: []int64{fid},
 	}
 
 	fixes, _, err := s.dal.SearchFixes(dbs, filter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	files, err := s.dal.GetFilesForFix(dbs, fid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, dberr(err)
@@ -2009,6 +2015,7 @@ func (s *SiteService) GetViewFixPageData(ctx context.Context, sid int64) (*types
 			BasePageData: *bpd,
 			Fixes:        fixes,
 		},
+		FixesFiles: files,
 	}
 
 	return pageData, nil

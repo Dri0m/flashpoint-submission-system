@@ -554,6 +554,19 @@ type FixesFile struct {
 	SHA256Sum        string
 }
 
+type ExtendedFixesFile struct {
+	ID               int64
+	UserID           int64
+	UploadedBy       string
+	FixID            int64
+	OriginalFilename string
+	CurrentFilename  string
+	Size             int64
+	UploadedAt       time.Time
+	MD5Sum           string
+	SHA256Sum        string
+}
+
 type FixesFilter struct {
 	FixIDs      []int64 `schema:"fix-id"`
 	SubmitterID *int64  `schema:"submitter-id"`

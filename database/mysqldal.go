@@ -1027,6 +1027,35 @@ func (d *mysqlDAL) StoreFixesFile(dbs DBSession, s *types.FixesFile) (int64, err
 	return fid, nil
 }
 
+// GetFilesForFix returns all files of a given fix
+func (d *mysqlDAL) GetFilesForFix(dbs DBSession, fid int64) ([]*types.ExtendedFixesFile, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
+		SELECT fixes_file.id, fk_user_id, discord_user.username, fk_fix_id, original_filename, current_filename, size, created_at, md5sum, sha256sum
+		FROM fixes_file 
+		LEFT JOIN discord_user ON discord_user.id = fk_user_id
+		WHERE fk_fix_id=?`,
+		fid)
+	if err != nil {
+		return nil, err
+	}
+
+	var result = make([]*types.ExtendedFixesFile, 0, 2)
+	for rows.Next() {
+		var uploadedAt int64
+		ff := &types.ExtendedFixesFile{}
+		err := rows.Scan(&ff.ID, &ff.UserID, &ff.UploadedBy, &ff.FixID, &ff.OriginalFilename, &ff.CurrentFilename, &ff.Size, &uploadedAt, &ff.MD5Sum, &ff.SHA256Sum)
+		if err != nil {
+			return nil, err
+		}
+
+		ff.UploadedAt = time.Unix(uploadedAt, 0)
+
+		result = append(result, ff)
+	}
+
+	return result, nil
+}
+
 // DeleteUserSessions deletes all sessions of a given user, including inactive sessions
 func (d *mysqlDAL) DeleteUserSessions(dbs DBSession, uid int64) (int64, error) {
 	r, err := dbs.Tx().ExecContext(dbs.Ctx(), `

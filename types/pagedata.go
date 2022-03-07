@@ -75,4 +75,5 @@ type SearchFixesPageData struct {
 
 type ViewFixPageData struct {
 	SearchFixesPageData
+	FixesFiles []*ExtendedFixesFile
 }
