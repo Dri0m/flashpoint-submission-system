@@ -77,6 +77,7 @@ type DAL interface {
 	StoreFixesFile(dbs DBSession, s *types.FixesFile) (int64, error)
 	SearchFixes(dbs DBSession, filter *types.FixesFilter) ([]*types.ExtendedFixesItem, int64, error)
 	GetFilesForFix(dbs DBSession, fid int64) ([]*types.ExtendedFixesFile, error)
+	GetFixesFiles(dbs DBSession, ffids []int64) ([]*types.FixesFile, error)
 
 	DeleteUserSessions(dbs DBSession, uid int64) (int64, error)
 

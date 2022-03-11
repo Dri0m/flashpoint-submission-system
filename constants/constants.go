@@ -73,7 +73,7 @@ const (
 	ResourceKeyCurationImageID       = "curation-image-id"
 	ResourceKeyFlashfreezeRootFileID = "flashfreeze-root-file-id"
 	ResourceKeyFixID                 = "fix-id"
-	ResourceKeyFixTypeGeneric        = "generic"
+	ResourceKeyFixFileID             = "fix-file-id"
 )
 
 const (

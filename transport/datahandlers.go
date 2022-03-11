@@ -157,3 +157,36 @@ func (a *App) HandleDownloadFlashfreezeRootFile(w http.ResponseWriter, r *http.R
 	w.Header().Set("Content-Type", "application/octet-stream")
 	http.ServeContent(w, r, filename, fi.ModTime(), f)
 }
+
+func (a *App) HandleDownloadFixesFile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	fixFileID := params[constants.ResourceKeyFixFileID]
+
+	ffid, err := strconv.ParseInt(fixFileID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("invalid fixes file id", http.StatusBadRequest))
+		return
+	}
+
+	ffs, err := a.Service.GetFixesFiles(ctx, []int64{ffid})
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+	ff := ffs[0]
+
+	f, err := os.Open(fmt.Sprintf("%s/%s", a.Conf.FixesDirFullPath, ff.CurrentFilename))
+
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to read file", http.StatusInternalServerError))
+		return
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", ff.CurrentFilename))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	http.ServeContent(w, r, ff.CurrentFilename, ff.UploadedAt, f)
+}

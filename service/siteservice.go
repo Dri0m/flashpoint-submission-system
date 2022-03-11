@@ -2020,3 +2020,19 @@ func (s *SiteService) GetViewFixPageData(ctx context.Context, fid int64) (*types
 
 	return pageData, nil
 }
+
+func (s *SiteService) GetFixesFiles(ctx context.Context, ffids []int64) ([]*types.FixesFile, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	ffs, err := s.dal.GetFixesFiles(dbs, ffids)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	return ffs, nil
+}

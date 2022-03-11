@@ -1150,3 +1150,47 @@ func (d *mysqlDAL) GetTotalFlashfreezeFilesize(dbs DBSession) (int64, error) {
 
 	return count, nil
 }
+
+// GetFixesFiles gets fixes files, returns error if input len != output len
+func (d *mysqlDAL) GetFixesFiles(dbs DBSession, ffids []int64) ([]*types.FixesFile, error) {
+	if len(ffids) == 0 {
+		return nil, nil
+	}
+
+	data := make([]interface{}, len(ffids))
+	for i, d := range ffids {
+		data[i] = d
+	}
+
+	q := `
+		SELECT fk_user_id, fk_fix_id, original_filename, current_filename, size, created_at, md5sum, sha256sum 
+		FROM fixes_file 
+		WHERE id IN(?` + strings.Repeat(",?", len(ffids)-1) + `)
+		AND deleted_at IS NULL
+		ORDER BY created_at DESC`
+
+	var rows *sql.Rows
+	var err error
+	rows, err = dbs.Tx().QueryContext(dbs.Ctx(), q, data...)
+	if err != nil {
+		return nil, err
+	}
+
+	var result = make([]*types.FixesFile, 0, len(ffids))
+	for rows.Next() {
+		sf := &types.FixesFile{}
+		var uploadedAt int64
+		err := rows.Scan(&sf.UserID, &sf.FixID, &sf.OriginalFilename, &sf.CurrentFilename, &sf.Size, &uploadedAt, &sf.MD5Sum, &sf.SHA256Sum)
+		if err != nil {
+			return nil, err
+		}
+		sf.UploadedAt = time.Unix(uploadedAt, 0)
+		result = append(result, sf)
+	}
+
+	if len(result) != len(ffids) {
+		return nil, fmt.Errorf("%d files were not found", len(result)-len(ffids))
+	}
+
+	return result, nil
+}
