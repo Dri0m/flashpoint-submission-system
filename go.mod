@@ -6,9 +6,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/ReneKroon/ttlcache/v2 v2.7.0
 	github.com/agnivade/levenshtein v1.1.1
-	github.com/boltdb/bolt v1.3.1
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/gemnasium/logrus-graylog-hook/v3 v3.0.3

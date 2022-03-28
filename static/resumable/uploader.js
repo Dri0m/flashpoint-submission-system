@@ -7,8 +7,8 @@ let r = undefined
 function initResumableUploader(target, maxFiles, allowedExtensions) {
     r = new Resumable({
         target: target,
-        chunkSize: 3 * 1000 * 1000,
-        simultaneousUploads: 3,
+        chunkSize: 16 * 1024 * 1024,
+        simultaneousUploads: 2,
         query: {},
         generateUniqueIdentifier: function (file, event) {
             let relativePath = getFilename(file)
@@ -19,7 +19,7 @@ function initResumableUploader(target, maxFiles, allowedExtensions) {
                 encoded += utf8.charCodeAt(i).toString()
             }
 
-            return size + "-" + encoded
+            return  size + "-" + encoded
         },
         maxFiles: maxFiles,
         testChunks: true,

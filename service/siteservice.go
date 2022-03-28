@@ -1365,32 +1365,13 @@ func (s *SiteService) indexReceivedFlashfreezeFile(l *logrus.Entry, fid int64, f
 	utils.LogCtx(ctx).Debug("flashfreeze file indexed")
 }
 
-func uploadArchiveForIndexing(ctx context.Context, filePath string, baseUrl string) ([]*types.IndexedFileEntry, uint64, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	fn := strings.Split(filePath, "/")
-	fakeFilename := fn[len(fn)-1]
-
-	bytes, err := utils.UploadMultipartFile(ctx, baseUrl+"/upload", f, fakeFilename)
-
-	var ir types.IndexerResp
-	err = json.Unmarshal(bytes, &ir)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return ir.Files, ir.IndexingErrors, nil
-}
-
 func provideArchiveForIndexing(filePath string, baseUrl string) ([]*types.IndexedFileEntry, uint64, error) {
 	client := http.Client{}
 	resp, err := client.Post(fmt.Sprintf("%s/provide-path?path=%s", baseUrl, url.QueryEscape(filePath)), "application/json;charset=utf-8", nil)
 	if err != nil {
 		return nil, 0, err
 	}
+	defer resp.Body.Close()
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

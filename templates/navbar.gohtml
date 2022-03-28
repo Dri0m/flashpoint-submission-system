@@ -29,19 +29,21 @@
                                         </li>
                                     </ul>
                                 </li>
-                                <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
-                                    <a href="#" class="pure-menu-link">Fixes</a>
-                                    <ul class="pure-menu-children left">
-                                        <li class="pure-menu-item">
-                                            <a href="/web/fixes/submit"
-                                               class="pure-menu-link">Submit</a>
-                                        </li>
-                                        <li class="pure-menu-item">
-                                            <a href="/web/fixes"
-                                               class="pure-menu-link">Browse</a>
-                                        </li>
-                                    </ul>
-                                </li>
+                                {{if .IsDevInstance}}
+                                    <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+                                        <a href="#" class="pure-menu-link">Fixes</a>
+                                        <ul class="pure-menu-children left">
+                                            <li class="pure-menu-item">
+                                                <a href="/web/fixes/submit"
+                                                   class="pure-menu-link">Submit</a>
+                                            </li>
+                                            <li class="pure-menu-item">
+                                                <a href="/web/fixes"
+                                                   class="pure-menu-link">Browse</a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                {{end}}
                                 <li class="pure-menu-item">
                                     <a href="/web/statistics" class="pure-menu-link">Stats</a>
                                 </li>
@@ -91,7 +93,8 @@
                                 </li>
                             {{end}}
                             <li class="pure-menu-item">
-                                <a id="lights" href="#" class="pure-menu-link" onclick="enableDarkMode();">Lights off</a>
+                                <a id="lights" href="#" class="pure-menu-link" onclick="enableDarkMode();">Lights
+                                    off</a>
                             </li>
                             <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
                                 <a href="#" class="pure-menu-link">Menu</a>

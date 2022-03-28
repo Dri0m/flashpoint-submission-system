@@ -4,9 +4,6 @@
         <script>document.title = "{{$fix.Title}}" + " | FPFSS";</script>
         <h1>View Fix</h1>
 
-        <h3>Table data</h3>
-        {{template "fixes-table" .}}
-
         <h3>{{$fix.Title}}</h3>
         <p>
             {{range $i, $line := (splitMultilineText $fix.Description) }}{{if gt $i 0}}
