@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"syscall"
 
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/service"
@@ -147,6 +148,9 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 			err := json.NewEncoder(w).Encode(data)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
+				if errors.Is(err, syscall.ECONNRESET) {
+    					return
+				}
 				writeError(ctx, w, err)
 			}
 		}
