@@ -125,6 +125,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	})
 
 	if err := errs.Wait(); err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, nil, 0, err
 	}
 
@@ -283,6 +284,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	})
 
 	if err := errs.Wait(); err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return &destinationFilePath, imageFilePaths, 0, err
 	}
 
