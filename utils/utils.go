@@ -212,7 +212,7 @@ func BoolToString(b bool) string {
 
 func UploadMultipartFile(ctx context.Context, url string, f io.Reader, filename string) ([]byte, error) {
 	body, writer := io.Pipe()
-	client := http.Client{Timeout: 600 * time.Second}
+	client := http.Client{Timeout: 86400 * time.Second}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
