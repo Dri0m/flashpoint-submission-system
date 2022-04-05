@@ -649,7 +649,7 @@ func (a *App) parseResumableRequest(ctx context.Context, r *http.Request) ([]byt
 	}
 
 	// get chunk data
-	if err := r.ParseMultipartForm(10 * 1000 * 1000); err != nil {
+	if err := r.ParseMultipartForm(64 * 1000 * 1000); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, nil, perr("failed to parse form", http.StatusUnprocessableEntity)
 	}
