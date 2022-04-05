@@ -47,7 +47,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	// static file server
 	router.PathPrefix("/static/").Handler(
-		http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+		http.StripPrefix("/static/", NoCache(http.FileServer(http.Dir("./static/")))))
 
 	// auth
 	router.Handle(
