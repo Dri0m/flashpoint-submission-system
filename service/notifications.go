@@ -189,7 +189,7 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:MHSV:909580737068560445>")
 		} else if strings.Contains(lplat, "squeak") {
 			b.WriteString("<:Squeak:933419800384925767>")
-		} else if strings.Contains(lplat, "pointplus ") {
+		} else if strings.Contains(lplat, "pointplus") {
 			b.WriteString("<:PointPlus:917230760337997834>")
 		} else if strings.Contains(lplat, "calendar quick") {
 			b.WriteString("<:Calendar_Quick:917575719536697424>")
@@ -197,6 +197,46 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:e_animator:933419945931448421>")
 		} else if strings.Contains(lplat, "flatland rover") {
 			b.WriteString("<:Flatland_Rover:936449386005819453>")
+		} else if strings.Contains(lplat, "dfusion") {
+			b.WriteString("<:DFusion:953097421779501056>")
+		} else if strings.Contains(lplat, "webanimator") {
+			b.WriteString("<:WebAnimator:953095732896874598>")
+		} else if strings.Contains(lplat, "harvard webshow") {
+			b.WriteString("<:HarvardWebShow:957708182376054794>")
+		} else if strings.Contains(lplat, "svf viewer") {
+			b.WriteString("<:SVFviewer:957708220569366560>")
+		} else if strings.Contains(lplat, "surround video") {
+			b.WriteString("<:SurroundVideo:957719709153919016>")
+		} else if strings.Contains(lplat, "formula one") {
+			b.WriteString("<:FormulaOne:962052882285330532>")
+		} else if strings.Contains(lplat, "illuminatus") {
+			b.WriteString("<:Illuminatus:962052900023050324>")
+		} else if strings.Contains(lplat, "asap webshow") {
+			b.WriteString("<:ASAPWebShow:962766908837474404>")
+		} else if strings.Contains(lplat, "lightning strike") {
+			b.WriteString("<:LightningStrike:962766923936981012>")
+		} else if strings.Contains(lplat, "smoothmove panorama") {
+			b.WriteString("<:SmoothMovePanorama:962766936570208386>")
+		} else if strings.Contains(lplat, "ambulant") {
+			b.WriteString("<:Ambulant:963972260413186129>")
+		} else if strings.Contains(lplat, "ipix") {
+			b.WriteString("<:iPix:964160323336679514>")
+		} else if strings.Contains(lplat, "jcamp-dx") {
+			b.WriteString("<:JCAMPDX:964914642491154452>")
+		} else if strings.Contains(lplat, "abouttime") {
+			b.WriteString("<:AboutTime:965282823361687572>")
+		} else if strings.Contains(lplat, "aboutpeople") {
+			b.WriteString("<:AboutPeople:965282823110000671>")
+		} else if strings.Contains(lplat, "live picture viewer") {
+			b.WriteString("<:LivePicture:965670969643503739>")
+		} else if strings.Contains(lplat, "x3d") {
+			b.WriteString("<:X3D:966206271910969374>")
+		} else if strings.Contains(lplat, "noteworthy composer") {
+			b.WriteString("<:NoteWorthyComposer:967141915189477407>")
+		} else if strings.Contains(lplat, "mapguide") {
+			b.WriteString("<:MapGuide:968518302580215879>")
+		} else if strings.Contains(lplat, "blender") {
+			b.WriteString("<:Blender:968940112627003463>")
 		} else {
 			b.WriteString("❓")
 		}
