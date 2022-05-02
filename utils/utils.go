@@ -250,7 +250,11 @@ func UploadMultipartFile(ctx context.Context, url string, f io.Reader, filename 
 
 	resp, err := client.Do(req)
 	merr := <-errchan
-	defer resp.Body.Close()
+
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
+	
 
 	if err != nil || merr != nil {
 		return nil, fmt.Errorf("http error: %v, multipart error: %v", err, merr)
