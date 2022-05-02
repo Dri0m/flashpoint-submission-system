@@ -154,6 +154,9 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 				if errors.Is(err, syscall.ECONNRESET) {
     					return
 				}
+				if errors.Is(err, syscall.EPIPE) {
+					return
+				}	
 				writeError(ctx, w, err)
 			}
 		}
