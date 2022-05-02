@@ -120,6 +120,9 @@ func (a *App) GetUserIDFromCookie(r *http.Request) (int64, error) {
 func (a *App) GetSecretFromCookie(ctx context.Context, r *http.Request) (string, error) {
 	cookieMap, err := a.CC.GetSecureCookie(r, utils.Cookies.Login)
 	if err != nil {
+		if err == http.ErrNoCookie {
+			return "", err
+		}
 		utils.LogCtx(ctx).Error(err)
 		return "", err
 	}
