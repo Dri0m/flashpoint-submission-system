@@ -25,3 +25,5 @@ backups/*
 
 resumableuploadservice.db*
 resumable-data/*
+
+.idea/*
