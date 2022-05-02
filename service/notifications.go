@@ -303,7 +303,7 @@ func (s *SiteService) ProduceRemindersAboutRequestedChanges(ctx context.Context)
 		var b strings.Builder
 		b.WriteString(fmt.Sprintf("You've got mail! <@%d>\n", authorID))
 		b.WriteString(fmt.Sprintf("You've got %d submissions with changes requested for more than a month\n", count))
-		b.WriteString(fmt.Sprintf("You should visit <https://fpfss.unstable.life/web/my-submissions?filter-layout=advanced&requested-changes-status=ongoing&distinct-action-not=mark-added&asc-desc=asc&order-by=updated> and decide what to do about them.\n"))
+		b.WriteString(fmt.Sprintf("You should visit <https://fpfss.unstable.life/web/submissions?filter-layout=advanced&submitter-id=%d&requested-changes-status=ongoing&distinct-action-not=mark-added&asc-desc=asc&order-by=updated> and decide what to do about them.\n", authorID))
 		b.WriteString("\n----------------------------------------------------------\n")
 		msg := b.String()
 
