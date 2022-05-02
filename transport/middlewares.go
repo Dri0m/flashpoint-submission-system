@@ -102,7 +102,6 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 
 		utils.LogCtx(ctx).Debug("unauthorized attempt")
 		writeError(ctx, w, perr("you do not have the proper authorization to access this page", http.StatusUnauthorized))
-		return
 	}
 }
 
