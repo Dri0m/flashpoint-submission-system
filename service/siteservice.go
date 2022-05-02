@@ -1257,9 +1257,7 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	ru := newResumableUpload(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, s.resumableUploadService)
 	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel)
 
-	for _, imageFilePath := range ifp {
-		imageFilePaths = append(imageFilePaths, imageFilePath)
-	}
+	imageFilePaths = append(imageFilePaths, ifp...)
 
 	if err != nil {
 		cleanup()

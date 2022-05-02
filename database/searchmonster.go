@@ -1039,7 +1039,7 @@ func (d *mysqlDAL) SearchFixes(dbs DBSession, filter *types.FixesFilter) ([]*typ
 	finalQuery += rest
 
 	finalData = append(finalData, data...)
-	unlimitedData := append(finalData)
+	unlimitedData := finalData
 	finalData = append(finalData, currentLimit, currentOffset)
 
 	countingQuery := `SELECT COUNT(*) FROM ( ` + unlimitedQuery + ` ) AS counterino`

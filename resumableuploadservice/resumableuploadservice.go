@@ -35,7 +35,6 @@ func New(path string) (*ResumableUploadService, error) {
 
 // Close stops what needs to be stopped
 func (rsu *ResumableUploadService) Close() {
-	return
 }
 
 // PutChunk stores chunk, overwrites if exists.

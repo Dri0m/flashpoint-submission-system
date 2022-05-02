@@ -99,8 +99,7 @@ func (d *mysqlDAL) DeleteSession(dbs DBSession, secret string) error {
 
 // GetUIDFromSession returns user ID and/or expiration state
 func (d *mysqlDAL) GetUIDFromSession(dbs DBSession, key string) (int64, bool, error) {
-	var row *sql.Row
-	row = dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT uid, expires_at FROM session WHERE secret=?`, key)
+	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT uid, expires_at FROM session WHERE secret=?`, key)
 
 	var uid int64
 	var expiration int64

@@ -57,10 +57,10 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 
 	// stop request changes on comment batches
 	if formAction == constants.ActionRequestChanges && len(sids) > 1 {
-		return perr(fmt.Sprintf("cannot request changes on multiple submissions at once"), http.StatusBadRequest)
+		return perr("cannot request changes on multiple submissions at once", http.StatusBadRequest)
 	}
 	if formAction == constants.ActionReject && len(sids) > 1 {
-		return perr(fmt.Sprintf("cannot reject multiple submissions at once"), http.StatusBadRequest)
+		return perr("cannot reject multiple submissions at once", http.StatusBadRequest)
 	}
 
 	utils.LogCtx(ctx).Debugf("searching submissions for comment batch")

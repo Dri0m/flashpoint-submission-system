@@ -71,7 +71,7 @@ func WriteTarball(w io.Writer, filePaths []string) error {
 	for _, filePath := range filePaths {
 		err := addFileToTarWriter(filePath, tarWriter)
 		if err != nil {
-			return fmt.Errorf("add file to tar: %w", err.Error())
+			return fmt.Errorf("add file to tar: %s", err.Error())
 		}
 	}
 
@@ -146,10 +146,8 @@ func NewBucketLimiter(d time.Duration, capacity int) (chan bool, *time.Ticker) {
 	ticker := time.NewTicker(d)
 	go func() {
 		for {
-			select {
-			case <-ticker.C:
-				bucket <- true
-			}
+			<-ticker.C
+			bucket <- true
 		}
 	}()
 	return bucket, ticker
