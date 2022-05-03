@@ -30,9 +30,6 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
 
-	// TODO: this is a bit hacky way to make the submission process not depend on user connection from now on
-	ctx = utils.ValueOnlyContext{ctx}
-
 	var err error
 
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", filename, filesize)
