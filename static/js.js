@@ -527,7 +527,7 @@ function setColors() {
 
 function populateUserStatisticsTable() {
     let request = new XMLHttpRequest()
-    request.open("GET", "/api/users", false)
+    request.open("GET", "/api/users", true)
 
     request.addEventListener("loadend", function () {
         if (request.status !== 200) {
@@ -559,7 +559,7 @@ function populateUserStatisticsTable() {
 function processOneUserStatistics(userID) {
 
     let request = new XMLHttpRequest()
-    request.open("GET", `/api/user-statistics/${userID}`, false)
+    request.open("GET", `/api/user-statistics/${userID}`, true)
 
     request.addEventListener("loadend", function () {
         if (request.status !== 200) {
