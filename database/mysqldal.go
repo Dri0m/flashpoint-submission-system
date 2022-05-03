@@ -1193,3 +1193,25 @@ func (d *mysqlDAL) GetFixesFiles(dbs DBSession, ffids []int64) ([]*types.FixesFi
 
 	return result, nil
 }
+
+
+// GetUsers returns all users
+func (d *mysqlDAL) GetUsers(dbs DBSession) ([]*types.User, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `SELECT id, username FROM discord_user`)
+	if err != nil {
+		return nil, err
+	}
+
+	var result = make([]*types.User, 0)
+	for rows.Next() {
+		u := &types.User{}
+		err := rows.Scan(&u.ID, &u.Username)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, u)
+	}
+
+	return result, nil
+}

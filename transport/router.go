@@ -217,6 +217,20 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.UserAuthMux(a.HandleUserStatisticsPage)
+
+	router.Handle(
+		"/web/user-statistics",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/user-statistics",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
 	f = a.UserAuthMux(
 		a.HandleSearchFixesPage,
 		muxAny(isStaff, isTrialCurator, isInAudit))

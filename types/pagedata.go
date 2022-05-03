@@ -77,3 +77,8 @@ type ViewFixPageData struct {
 	SearchFixesPageData
 	FixesFiles []*ExtendedFixesFile
 }
+
+type UserStatisticsPageData struct {
+	BasePageData
+	Users []*UserStatistics
+}

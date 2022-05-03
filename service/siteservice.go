@@ -8,10 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
-	"github.com/go-sql-driver/mysql"
-	"github.com/kofalt/go-memoize"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -26,6 +22,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
+	"github.com/go-sql-driver/mysql"
+	"github.com/kofalt/go-memoize"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
@@ -1816,6 +1817,133 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 		FlashfreezeFileCount:        fffc,
 		TotalSubmissionSize:         tss,
 		TotalFlashfreezeSize:        tffs,
+	}
+	return pageData, nil
+}
+
+func (s *SiteService) GetUserStatisticsPageData(ctx context.Context) (*types.UserStatisticsPageData, error) {
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userStatistics := make([]*types.UserStatistics, 0)
+
+	users, err := func() ([]*types.User, error) {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		return s.dal.GetUsers(dbs)
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+
+		us := &types.UserStatistics{
+			UserID:   user.ID,
+			Username: user.Username,
+		}
+
+		errs, _ := errgroup.WithContext(ctx)
+
+		// get the latest user activity, which is a pain in the ass to obtain
+
+		var lastUploadedSubmission *time.Time
+		var lastUpdatedSubmission *time.Time
+		var lastUploadedFlashfreezeSubmission *time.Time
+		var latestUserActivity time.Time
+
+		errs.Go(func() error {
+			dbs, _ := s.dal.NewSession(ctx)
+			defer dbs.Rollback()
+			var err error
+
+			filter := &types.SubmissionsFilter{
+				SubmitterID:    &user.ID,
+				ResultsPerPage: utils.Int64Ptr(1),
+				OrderBy:        utils.StrPtr("uploaded"),
+				AscDesc:        utils.StrPtr("desc"),
+			}
+
+			subs, _, err := s.dal.SearchSubmissions(dbs, filter)
+			if err != nil {
+				return err
+			}
+			if len(subs) > 0 {
+				lastUploadedSubmission = &subs[0].UploadedAt
+			}
+
+			return nil
+		})
+
+		errs.Go(func() error {
+			dbs, _ := s.dal.NewSession(ctx)
+			defer dbs.Rollback()
+			var err error
+
+			filter := &types.SubmissionsFilter{
+				UpdatedByID:    &user.ID,
+				ResultsPerPage: utils.Int64Ptr(1),
+				OrderBy:        utils.StrPtr("updated"),
+				AscDesc:        utils.StrPtr("desc"),
+			}
+
+			subs, _, err := s.dal.SearchSubmissions(dbs, filter)
+			if err != nil {
+				return err
+			}
+
+			if len(subs) > 0 {
+				lastUpdatedSubmission = &subs[0].UpdatedAt
+			}
+
+			return nil
+		})
+
+		errs.Go(func() error {
+			dbs, _ := s.dal.NewSession(ctx)
+			defer dbs.Rollback()
+			var err error
+
+			filter := &types.FlashfreezeFilter{
+				SubmitterID:    &user.ID,
+				ResultsPerPage: utils.Int64Ptr(1),
+				// flashfreeze search is sorted by descending upload date
+			}
+
+			files, _, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
+			if err != nil {
+				return err
+			}
+
+			if len(files) > 0 {
+				lastUploadedFlashfreezeSubmission = files[0].UploadedAt
+			}
+
+			return nil
+		})
+
+		if err := errs.Wait(); err != nil {
+			return nil, err
+		}
+
+		latestUserActivity = utils.NilTime(lastUploadedFlashfreezeSubmission)
+		if utils.NilTime(lastUpdatedSubmission).After(latestUserActivity) {
+			latestUserActivity = utils.NilTime(lastUpdatedSubmission)
+		}
+		if utils.NilTime(lastUploadedSubmission).After(latestUserActivity) {
+			latestUserActivity = utils.NilTime(lastUploadedSubmission)
+		}
+
+		us.LastUserActivity = latestUserActivity
+
+		userStatistics = append(userStatistics, us)
+	}
+
+	pageData := &types.UserStatisticsPageData{
+		BasePageData: *bpd,
+		Users:        userStatistics,
 	}
 	return pageData, nil
 }

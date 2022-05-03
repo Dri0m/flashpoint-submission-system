@@ -323,6 +323,11 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		if filter.ExcludeLegacy {
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
+		if filter.UpdatedByID != nil {
+			filters = append(filters, "(updater.id = ?)")
+			data = append(data, *filter.UpdatedByID)
+			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
+		}
 	}
 
 	and := ""

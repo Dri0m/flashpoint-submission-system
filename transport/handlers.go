@@ -912,6 +912,24 @@ func (a *App) HandleStatisticsPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/statistics.gohtml")
 }
 
+func (a *App) HandleUserStatisticsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetUserStatisticsPageData(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/user-statistics.gohtml")
+}
+
 func (a *App) HandleSendRemindersAboutRequestedChanges(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

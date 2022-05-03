@@ -87,6 +87,8 @@ type DAL interface {
 	GetTotalFlashfreezeFileCount(dbs DBSession) (int64, error)
 	GetTotalSubmissionFilesize(dbs DBSession) (int64, error)
 	GetTotalFlashfreezeFilesize(dbs DBSession) (int64, error)
+
+	GetUsers(dbs DBSession) ([]*types.User, error)
 }
 
 type DBSession interface {

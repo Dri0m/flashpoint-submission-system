@@ -285,3 +285,18 @@ func (ValueOnlyContext) Done() <-chan struct{} {
 func (ValueOnlyContext) Err() error {
 	return nil
 }
+
+func Int64Ptr(n int64) *int64 {
+	return &n
+}
+
+func StrPtr(s string) *string {
+	return &s
+}
+
+func NilTime(t *time.Time) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return *t
+}

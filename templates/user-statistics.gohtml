@@ -1,0 +1,26 @@
+{{define "main"}}
+    <div class="content">
+        <div id="table-wrapper">
+            <i>tip: use shift+mousewheel to scroll horizontally</i>
+            <div id="table-scroll">
+                <table class="pure-table pure-table-striped submissions-table">
+                    <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Username</th>
+                        <th>Last Activity</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{range .Users}}
+                    <tr>
+                        <td>{{.UserID}}</td>
+                        <td>{{.Username}}</td>
+                        <td>{{if .LastUserActivity}}{{.LastUserActivity.Format "2006-01-02 15:04:05 -0700"}}{{else}}N/A{{end}}</td>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{{end}}
