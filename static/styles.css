@@ -549,3 +549,7 @@ video {
         font-size: 4vw !important;
     }
 }
+
+.sortable-table th {
+    cursor: pointer;
+}

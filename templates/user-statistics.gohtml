@@ -1,9 +1,14 @@
 {{define "main"}}
     <div class="content">
+        <h1>User statistics</h1>
+
+        The statistical queries are fairly heavy, so the table loads row by row.<br>
+        The table can be sorted by clicking on the header cells.<br><br>
+
         <div id="table-wrapper">
             <i>tip: use shift+mousewheel to scroll horizontally</i>
             <div id="table-scroll">
-                <table class="pure-table pure-table-striped submissions-table">
+                <table class="pure-table pure-table-striped submissions-table sortable-table">
                     <thead>
                     <tr>
                         <th>User ID</th>
@@ -35,5 +40,20 @@
     </div>
     <script type="text/javascript">
         populateUserStatisticsTable()
+
+        // https://stackoverflow.com/questions/14267781/sorting-html-table-with-javascript/49041392#49041392
+        const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+
+        const comparer = (idx, asc) => (a, b) => ((v1, v2) => 
+            v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+            )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+        // do the work...
+        document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+            const table = th.closest('table');
+            Array.from(table.querySelectorAll('tr:nth-child(n+2)'))
+                .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+                .forEach(tr => table.appendChild(tr) );
+        })));
     </script>
 {{end}}
