@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
@@ -11,8 +14,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/sirupsen/logrus"
-	"strings"
-	"time"
 )
 
 type mysqlDAL struct {
@@ -1194,7 +1195,6 @@ func (d *mysqlDAL) GetFixesFiles(dbs DBSession, ffids []int64) ([]*types.FixesFi
 	return result, nil
 }
 
-
 // GetUsers returns all users
 func (d *mysqlDAL) GetUsers(dbs DBSession) ([]*types.User, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `SELECT id, username FROM discord_user`)
@@ -1205,10 +1205,13 @@ func (d *mysqlDAL) GetUsers(dbs DBSession) ([]*types.User, error) {
 	var result = make([]*types.User, 0)
 	for rows.Next() {
 		u := &types.User{}
-		err := rows.Scan(&u.ID, &u.Username)
+		var uid int64
+		err := rows.Scan(&uid, &u.Username)
 		if err != nil {
 			return nil, err
 		}
+
+		u.ID = fmt.Sprintf("%d", uid)
 
 		result = append(result, u)
 	}

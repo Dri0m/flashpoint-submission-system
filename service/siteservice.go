@@ -1854,7 +1854,7 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 
 	var lastUploadedSubmission *time.Time
 	var lastUpdatedSubmission *time.Time
-	var lastUploadedFlashfreezeSubmission *time.Time
+	//var lastUploadedFlashfreezeSubmission *time.Time
 	var latestUserActivity time.Time
 
 	errs.Go(func() error {
@@ -1904,38 +1904,40 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 		return nil
 	})
 
-	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ectx)
-		defer dbs.Rollback()
-		var err error
+	// TODO: flashfreeze is slow as fuck
+	// errs.Go(func() error {
+	// 	dbs, _ := s.dal.NewSession(ectx)
+	// 	defer dbs.Rollback()
+	// 	var err error
 
-		filter := &types.FlashfreezeFilter{
-			SubmitterID:    &user.ID,
-			ResultsPerPage: utils.Int64Ptr(1),
-			// flashfreeze search is sorted by descending upload date
-		}
+	// 	filter := &types.FlashfreezeFilter{
+	// 		SubmitterID:    &user.ID,
+	// 		ResultsPerPage: utils.Int64Ptr(1),
+	// 		// flashfreeze search is sorted by descending upload date
+	// 	}
 
-		files, _, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
-		if err != nil {
-			return err
-		}
+	// 	files, _, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if len(files) > 0 {
-			lastUploadedFlashfreezeSubmission = files[0].UploadedAt
-		}
+	// 	if len(files) > 0 {
+	// 		lastUploadedFlashfreezeSubmission = files[0].UploadedAt
+	// 	}
 
-		return nil
-	})
+	// 	return nil
+	// })
 
 	if err := errs.Wait(); err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
-	latestUserActivity = utils.NilTime(lastUploadedFlashfreezeSubmission)
-	if utils.NilTime(lastUpdatedSubmission).After(latestUserActivity) {
-		latestUserActivity = utils.NilTime(lastUpdatedSubmission)
-	}
+	// latestUserActivity = utils.NilTime(lastUploadedFlashfreezeSubmission)
+	// if utils.NilTime(lastUpdatedSubmission).After(latestUserActivity) {
+	// 	latestUserActivity = utils.NilTime(lastUpdatedSubmission)
+	// }
+	latestUserActivity = utils.NilTime(lastUpdatedSubmission)
 	if utils.NilTime(lastUploadedSubmission).After(latestUserActivity) {
 		latestUserActivity = utils.NilTime(lastUploadedSubmission)
 	}

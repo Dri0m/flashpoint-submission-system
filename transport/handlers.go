@@ -1051,6 +1051,7 @@ func (a *App) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := a.Service.GetUsers(ctx)
 	if err != nil {
+		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, err)
 		return
 	}
