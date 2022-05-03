@@ -1837,7 +1837,7 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 	}()
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, perr("noy found", http.StatusNotFound)
+			return nil, perr("user not found", http.StatusNotFound)
 		}
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
