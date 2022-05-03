@@ -583,22 +583,64 @@ function processOneUserStatistics(users, index) {
         // could this be done using some map fuckery? probably!
         let cell = row.insertCell(-1)
         cell.innerHTML = stats.UserID
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.Username
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.LastUserActivity
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.UserCommentedCount
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.UserRequestedChangesCount
+        cell.classList.add("bgr-request-changes")
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.UserApprovedCount
+        cell.classList.add("bgr-approve")
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.UserVerifiedCount
+        cell.classList.add("bgr-verify")
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.UserAddedToFlashpointCount
+        cell.classList.add("bgr-mark-added")
+
         cell = row.insertCell(-1)
         cell.innerHTML = stats.UserRejectedCount
+        cell.classList.add("bgr-reject")
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsCount
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsBotHappyCount
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsBotUnhappyCount
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsRequestedChangesCount
+        cell.classList.add("bgr-request-changes")
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsApprovedCount
+        cell.classList.add("bgr-approve")
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsVerifiedCount
+        cell.classList.add("bgr-verify")
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsAddedToFlashpointCount
+        cell.classList.add("bgr-mark-added")
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.SubmissionsRejectedCount
+        cell.classList.add("bgr-reject")
         }
 
         processOneUserStatistics(users, index+1)

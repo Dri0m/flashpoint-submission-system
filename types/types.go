@@ -644,6 +644,8 @@ type UserStatistics struct {
 	UserRejectedCount          int64
 	// these are action of other users on this user's submissions, and the latest state is counted (so, a verified submission is not counted as approved)
 	SubmissionsCount                  int64
+	SubmissionsBotHappyCount          int64
+	SubmissionsBotUnhappyCount        int64
 	SubmissionsRequestedChangesCount  int64
 	SubmissionsApprovedCount          int64
 	SubmissionsVerifiedCount          int64

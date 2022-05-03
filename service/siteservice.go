@@ -2057,6 +2057,198 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 	us.UserAddedToFlashpointCount = addedToFlashpointCount
 	us.UserRejectedCount = rejectedCount
 
+	// actions on user's submissions
+
+	errs, ectx = errgroup.WithContext(ctx)
+
+	var submissionsCount int64
+	var submissionsBotHappyCount int64
+	var submissionsBotUnhappyCount int64
+	var submissionsRequestedChangesCount int64
+	var submissionsApprovedCount int64
+	var submissionsVerifiedCount int64
+	var submissionsAddedToFlashpointCount int64
+	var submissionsRejectedCount int64
+
+	errs, ectx = errgroup.WithContext(ctx)
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID: &user.ID,
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsCount = c
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID: &user.ID,
+			BotActions:  []string{constants.ActionApprove},
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsBotHappyCount = c
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID: &user.ID,
+			BotActions:  []string{constants.ActionRequestChanges},
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsBotUnhappyCount = c
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID:            &user.ID,
+			RequestedChangedStatus: utils.StrPtr("ongoing"),
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsRequestedChangesCount = c
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID:        &user.ID,
+			ApprovalsStatus:    utils.StrPtr("approved"),
+			VerificationStatus: utils.StrPtr("none"),
+			DistinctActionsNot: []string{constants.ActionReject, constants.ActionMarkAdded},
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsApprovedCount = c
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID:        &user.ID,
+			VerificationStatus: utils.StrPtr("verified"),
+			DistinctActionsNot: []string{constants.ActionReject, constants.ActionMarkAdded},
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsVerifiedCount = c
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID:        &user.ID,
+			DistinctActions:    []string{constants.ActionMarkAdded},
+			DistinctActionsNot: []string{constants.ActionReject},
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsAddedToFlashpointCount = c
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID:     &user.ID,
+			DistinctActions: []string{constants.ActionReject},
+		}
+
+		_, c, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		submissionsRejectedCount = c
+
+		return nil
+	})
+
+	if err := errs.Wait(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	us.SubmissionsCount = submissionsCount
+	us.SubmissionsBotHappyCount = submissionsBotHappyCount
+	us.SubmissionsBotUnhappyCount = submissionsBotUnhappyCount
+	us.SubmissionsRequestedChangesCount = submissionsRequestedChangesCount
+	us.SubmissionsApprovedCount = submissionsApprovedCount
+	us.SubmissionsVerifiedCount = submissionsVerifiedCount
+	us.SubmissionsAddedToFlashpointCount = submissionsAddedToFlashpointCount
+	us.SubmissionsRejectedCount = submissionsRejectedCount
+
 	return us, nil
 }
 
