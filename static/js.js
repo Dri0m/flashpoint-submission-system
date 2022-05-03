@@ -523,3 +523,75 @@ function setColors() {
         enableDarkMode()
     }
 }
+
+
+function populateUserStatisticsTable() {
+    let request = new XMLHttpRequest()
+    request.open("GET", "/api/users", false)
+
+    request.addEventListener("loadend", function () {
+        if (request.status !== 200) {
+            return
+        }
+        
+        let users = null
+        try {
+            users = JSON.parse(request.response)
+        } catch (err) {
+            console.error(err)
+            alert("there was an error receiving the data, refresh the page to try again")
+            return
+        }
+
+        users.users.forEach(user => {
+            processOneUserStatistics(user.id)
+        });
+    })
+
+
+    try {
+        request.send()
+    } catch (err) {
+        alert(`exception '${err.message}'`)
+    }
+}
+
+function processOneUserStatistics(userID) {
+
+    let request = new XMLHttpRequest()
+    request.open("GET", `/api/user-statistics/${userID}`, false)
+
+    request.addEventListener("loadend", function () {
+        if (request.status !== 200) {
+            return
+        }
+        
+        let stats = null
+        try {
+            stats = JSON.parse(request.response)
+        } catch (err) {
+            console.error(err)
+            alert("there was an error receiving the data, refresh the page to try again")
+            return
+        }
+
+        console.log(stats)
+
+        let table = document.getElementById("users-table")
+        let row = table.insertRow(-1)
+
+        // could this be done using some map fuckery? probably!
+        let cell = row.insertCell(-1)
+        cell.innerHTML = stats.UserID
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.Username
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.LastUserActivity
+    })
+
+    try {
+        request.send()
+    } catch (err) {
+        alert(`exception '${err.message}'`)
+    }
+}

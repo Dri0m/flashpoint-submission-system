@@ -1673,6 +1673,7 @@ func (s *SiteService) DeleteUserSessions(ctx context.Context, uid int64) (int64,
 func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.StatisticsPageData, error) {
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
@@ -1799,6 +1800,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	if err := errs.Wait(); err != nil {
+		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
@@ -1821,131 +1823,126 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	return pageData, nil
 }
 
-func (s *SiteService) GetUserStatisticsPageData(ctx context.Context) (*types.UserStatisticsPageData, error) {
-	bpd, err := s.GetBasePageData(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (s *SiteService) GetUsers(ctx context.Context) ([]*types.User, error) {
+	dbs, _ := s.dal.NewSession(ctx)
+	defer dbs.Rollback()
+	return s.dal.GetUsers(dbs)
+}
 
-	userStatistics := make([]*types.UserStatistics, 0)
-
-	users, err := func() ([]*types.User, error) {
+func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.UserStatistics, error) {
+	user, err := func() (*types.DiscordUser, error) {
 		dbs, _ := s.dal.NewSession(ctx)
 		defer dbs.Rollback()
-		return s.dal.GetUsers(dbs)
+		return s.dal.GetDiscordUser(dbs, uid)
 	}()
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, perr("noy found", http.StatusNotFound)
+		}
+		utils.LogCtx(ctx).Error(err)
 		return nil, err
 	}
 
-	for _, user := range users {
-
-		us := &types.UserStatistics{
-			UserID:   user.ID,
-			Username: user.Username,
-		}
-
-		errs, _ := errgroup.WithContext(ctx)
-
-		// get the latest user activity, which is a pain in the ass to obtain
-
-		var lastUploadedSubmission *time.Time
-		var lastUpdatedSubmission *time.Time
-		var lastUploadedFlashfreezeSubmission *time.Time
-		var latestUserActivity time.Time
-
-		errs.Go(func() error {
-			dbs, _ := s.dal.NewSession(ctx)
-			defer dbs.Rollback()
-			var err error
-
-			filter := &types.SubmissionsFilter{
-				SubmitterID:    &user.ID,
-				ResultsPerPage: utils.Int64Ptr(1),
-				OrderBy:        utils.StrPtr("uploaded"),
-				AscDesc:        utils.StrPtr("desc"),
-			}
-
-			subs, _, err := s.dal.SearchSubmissions(dbs, filter)
-			if err != nil {
-				return err
-			}
-			if len(subs) > 0 {
-				lastUploadedSubmission = &subs[0].UploadedAt
-			}
-
-			return nil
-		})
-
-		errs.Go(func() error {
-			dbs, _ := s.dal.NewSession(ctx)
-			defer dbs.Rollback()
-			var err error
-
-			filter := &types.SubmissionsFilter{
-				UpdatedByID:    &user.ID,
-				ResultsPerPage: utils.Int64Ptr(1),
-				OrderBy:        utils.StrPtr("updated"),
-				AscDesc:        utils.StrPtr("desc"),
-			}
-
-			subs, _, err := s.dal.SearchSubmissions(dbs, filter)
-			if err != nil {
-				return err
-			}
-
-			if len(subs) > 0 {
-				lastUpdatedSubmission = &subs[0].UpdatedAt
-			}
-
-			return nil
-		})
-
-		errs.Go(func() error {
-			dbs, _ := s.dal.NewSession(ctx)
-			defer dbs.Rollback()
-			var err error
-
-			filter := &types.FlashfreezeFilter{
-				SubmitterID:    &user.ID,
-				ResultsPerPage: utils.Int64Ptr(1),
-				// flashfreeze search is sorted by descending upload date
-			}
-
-			files, _, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
-			if err != nil {
-				return err
-			}
-
-			if len(files) > 0 {
-				lastUploadedFlashfreezeSubmission = files[0].UploadedAt
-			}
-
-			return nil
-		})
-
-		if err := errs.Wait(); err != nil {
-			return nil, err
-		}
-
-		latestUserActivity = utils.NilTime(lastUploadedFlashfreezeSubmission)
-		if utils.NilTime(lastUpdatedSubmission).After(latestUserActivity) {
-			latestUserActivity = utils.NilTime(lastUpdatedSubmission)
-		}
-		if utils.NilTime(lastUploadedSubmission).After(latestUserActivity) {
-			latestUserActivity = utils.NilTime(lastUploadedSubmission)
-		}
-
-		us.LastUserActivity = latestUserActivity
-
-		userStatistics = append(userStatistics, us)
+	us := &types.UserStatistics{
+		UserID:   user.ID,
+		Username: user.Username,
 	}
 
-	pageData := &types.UserStatisticsPageData{
-		BasePageData: *bpd,
-		Users:        userStatistics,
+	errs, _ := errgroup.WithContext(ctx)
+
+	// get the latest user activity, which is a pain in the ass to obtain
+
+	var lastUploadedSubmission *time.Time
+	var lastUpdatedSubmission *time.Time
+	var lastUploadedFlashfreezeSubmission *time.Time
+	var latestUserActivity time.Time
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			SubmitterID:    &user.ID,
+			ResultsPerPage: utils.Int64Ptr(1),
+			OrderBy:        utils.StrPtr("uploaded"),
+			AscDesc:        utils.StrPtr("desc"),
+		}
+
+		subs, _, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+		if len(subs) > 0 {
+			lastUploadedSubmission = &subs[0].UploadedAt
+		}
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.SubmissionsFilter{
+			UpdatedByID:    &user.ID,
+			ResultsPerPage: utils.Int64Ptr(1),
+			OrderBy:        utils.StrPtr("updated"),
+			AscDesc:        utils.StrPtr("desc"),
+		}
+
+		subs, _, err := s.dal.SearchSubmissions(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		if len(subs) > 0 {
+			lastUpdatedSubmission = &subs[0].UpdatedAt
+		}
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ctx)
+		defer dbs.Rollback()
+		var err error
+
+		filter := &types.FlashfreezeFilter{
+			SubmitterID:    &user.ID,
+			ResultsPerPage: utils.Int64Ptr(1),
+			// flashfreeze search is sorted by descending upload date
+		}
+
+		files, _, err := s.dal.SearchFlashfreezeFiles(dbs, filter)
+		if err != nil {
+			return err
+		}
+
+		if len(files) > 0 {
+			lastUploadedFlashfreezeSubmission = files[0].UploadedAt
+		}
+
+		return nil
+	})
+
+	if err := errs.Wait(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
 	}
-	return pageData, nil
+
+	latestUserActivity = utils.NilTime(lastUploadedFlashfreezeSubmission)
+	if utils.NilTime(lastUpdatedSubmission).After(latestUserActivity) {
+		latestUserActivity = utils.NilTime(lastUpdatedSubmission)
+	}
+	if utils.NilTime(lastUploadedSubmission).After(latestUserActivity) {
+		latestUserActivity = utils.NilTime(lastUploadedSubmission)
+	}
+
+	us.LastUserActivity = latestUserActivity
+
+	return us, nil
 }
 
 func (s *SiteService) processReceivedResumableFixesFile(ctx context.Context, uid int64, fixID int64, resumableParams *types.ResumableParams) (*int64, error) {
