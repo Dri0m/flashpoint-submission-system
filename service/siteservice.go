@@ -1944,6 +1944,119 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 
 	us.LastUserActivity = latestUserActivity
 
+	// get the user actions
+
+	errs, ectx = errgroup.WithContext(ctx)
+
+	var commentedCount int64
+	var requestedChangesCount int64
+	var approvedCount int64
+	var verifiedCount int64
+	var addedToFlashpointCount int64
+	var rejectedCount int64
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		comments, err := s.dal.GetCommentsByUserIDAndAction(dbs, user.ID, constants.ActionComment)
+		if err != nil {
+			return err
+		}
+
+		commentedCount = int64(len(comments))
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		comments, err := s.dal.GetCommentsByUserIDAndAction(dbs, user.ID, constants.ActionRequestChanges)
+		if err != nil {
+			return err
+		}
+
+		requestedChangesCount = int64(len(comments))
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		comments, err := s.dal.GetCommentsByUserIDAndAction(dbs, user.ID, constants.ActionApprove)
+		if err != nil {
+			return err
+		}
+
+		approvedCount = int64(len(comments))
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		comments, err := s.dal.GetCommentsByUserIDAndAction(dbs, user.ID, constants.ActionVerify)
+		if err != nil {
+			return err
+		}
+
+		verifiedCount = int64(len(comments))
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		comments, err := s.dal.GetCommentsByUserIDAndAction(dbs, user.ID, constants.ActionMarkAdded)
+		if err != nil {
+			return err
+		}
+
+		addedToFlashpointCount = int64(len(comments))
+
+		return nil
+	})
+
+	errs.Go(func() error {
+		dbs, _ := s.dal.NewSession(ectx)
+		defer dbs.Rollback()
+		var err error
+
+		comments, err := s.dal.GetCommentsByUserIDAndAction(dbs, user.ID, constants.ActionReject)
+		if err != nil {
+			return err
+		}
+
+		rejectedCount = int64(len(comments))
+
+		return nil
+	})
+
+	if err := errs.Wait(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	us.UserCommentedCount = commentedCount
+	us.UserRequestedChangesCount = requestedChangesCount
+	us.UserApprovedCount = approvedCount
+	us.UserVerifiedCount = verifiedCount
+	us.UserAddedToFlashpointCount = addedToFlashpointCount
+	us.UserRejectedCount = rejectedCount
+
 	return us, nil
 }
 

@@ -59,6 +59,7 @@ type MasterDatabaseGame struct {
 }
 
 type Comment struct {
+	ID           int64
 	AuthorID     int64
 	SubmissionID int64
 	Action       string
@@ -648,14 +649,9 @@ type UserStatistics struct {
 	SubmissionsVerifiedCount          int64
 	SubmissionsAddedToFlashpointCount int64
 	SubmissionsRejectedCount          int64
-	//
-	SubmissionsTotalSize int64
-	//
-	FlashfreezeSubmissionsCount     int64
-	FlashfreezeSubmissionsTotalSize int64
 }
 
 type User struct {
-	ID       string  `json:"id"`
+	ID       string `json:"id"`
 	Username string `json:"username"`
 }

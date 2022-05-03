@@ -1218,3 +1218,37 @@ func (d *mysqlDAL) GetUsers(dbs DBSession) ([]*types.User, error) {
 
 	return result, nil
 }
+
+// GetCommentsByUserIDAndAction returns comments with an oddly specific filter
+func (d *mysqlDAL) GetCommentsByUserIDAndAction(dbs DBSession, uid int64, action string) ([]*types.Comment, error) {
+	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `
+		SELECT id, message, created_at FROM
+		(
+			SELECT id, message, (SELECT name FROM action WHERE id=comment.fk_action_id) as action, created_at 
+			FROM comment 
+			WHERE fk_user_id=? 
+			AND comment.deleted_at IS NULL
+		) as t
+		WHERE action=?
+		ORDER BY created_at DESC;`, uid, action)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]*types.Comment, 0)
+
+	var createdAt int64
+
+	for rows.Next() {
+
+		c := &types.Comment{AuthorID: uid, Action: action}
+		if err := rows.Scan(&c.ID, &c.Message, &createdAt); err != nil {
+			return nil, err
+		}
+		c.CreatedAt = time.Unix(createdAt, 0)
+		result = append(result, c)
+	}
+
+	return result, nil
+}

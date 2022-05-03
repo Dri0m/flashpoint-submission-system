@@ -587,6 +587,18 @@ function processOneUserStatistics(users, index) {
         cell.innerHTML = stats.Username
         cell = row.insertCell(-1)
         cell.innerHTML = stats.LastUserActivity
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.UserCommentedCount
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.UserRequestedChangesCount
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.UserApprovedCount
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.UserVerifiedCount
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.UserAddedToFlashpointCount
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.UserRejectedCount
         }
 
         processOneUserStatistics(users, index+1)
