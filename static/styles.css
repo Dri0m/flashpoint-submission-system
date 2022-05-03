@@ -49,6 +49,9 @@ body {
 
 .comment {
     border: 1px solid #cbcbcb;
+    max-height: 600px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .comment-header {
