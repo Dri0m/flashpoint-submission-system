@@ -543,7 +543,7 @@ function populateUserStatisticsTable() {
             return
         }
 
-        processOneUserStatistics(users, 0)
+        processOneUserStatistics(users.users, 0)
     })
 
 
