@@ -543,9 +543,7 @@ function populateUserStatisticsTable() {
             return
         }
 
-        users.users.forEach(user => {
-            processOneUserStatistics(user.id)
-        });
+        processOneUserStatistics(users, 0)
     })
 
 
@@ -556,7 +554,12 @@ function populateUserStatisticsTable() {
     }
 }
 
-function processOneUserStatistics(userID) {
+function processOneUserStatistics(users, index) {
+    if (index >= users.length) {
+        return
+    }
+
+    let userID = users[index].id
 
     let request = new XMLHttpRequest()
     request.open("GET", `/api/user-statistics/${userID}`, true)
@@ -587,6 +590,8 @@ function processOneUserStatistics(userID) {
         cell.innerHTML = stats.Username
         cell = row.insertCell(-1)
         cell.innerHTML = stats.LastUserActivity
+
+        processOneUserStatistics(users, index+1)
     })
 
     try {
