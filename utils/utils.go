@@ -252,7 +252,6 @@ func UploadMultipartFile(ctx context.Context, url string, f io.Reader, filename 
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}
-	
 
 	if err != nil || merr != nil {
 		return nil, fmt.Errorf("http error: %v, multipart error: %v", err, merr)
@@ -271,4 +270,18 @@ func UploadMultipartFile(ctx context.Context, url string, f io.Reader, filename 
 	LogCtx(ctx).WithField("url", url).Debug("response OK")
 
 	return bodyBytes, nil
+}
+
+type ValueOnlyContext struct {
+	context.Context
+}
+
+func (ValueOnlyContext) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+func (ValueOnlyContext) Done() <-chan struct{} {
+	return nil
+}
+func (ValueOnlyContext) Err() error {
+	return nil
 }
