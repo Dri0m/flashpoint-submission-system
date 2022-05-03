@@ -565,11 +565,8 @@ function processOneUserStatistics(users, index) {
     request.open("GET", `/api/user-statistics/${userID}`, true)
 
     request.addEventListener("loadend", function () {
-        if (request.status !== 200) {
-            return
-        }
-        
-        let stats = null
+        if (request.status == 200) {
+            let stats = null
         try {
             stats = JSON.parse(request.response)
         } catch (err) {
@@ -590,6 +587,7 @@ function processOneUserStatistics(users, index) {
         cell.innerHTML = stats.Username
         cell = row.insertCell(-1)
         cell.innerHTML = stats.LastUserActivity
+        }
 
         processOneUserStatistics(users, index+1)
     })
