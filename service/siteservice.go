@@ -1677,7 +1677,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 		return nil, err
 	}
 
-	errs, _ := errgroup.WithContext(ctx)
+	errs, ectx := errgroup.WithContext(ctx)
 
 	var sc int64
 	var scbh int64
@@ -1694,7 +1694,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	var tffs int64
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		_, sc, err = s.dal.SearchSubmissions(dbs, nil)
@@ -1702,7 +1702,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		_, scbh, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"approve"}})
@@ -1710,7 +1710,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		_, scbs, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{BotActions: []string{"request-changes"}})
@@ -1718,7 +1718,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		approved := "approved"
@@ -1727,7 +1727,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		verified := "verified"
@@ -1736,7 +1736,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		_, scr, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"reject"}})
@@ -1744,7 +1744,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		_, scif, err = s.dal.SearchSubmissions(dbs, &types.SubmissionsFilter{DistinctActions: []string{"mark-added"}})
@@ -1752,7 +1752,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		uc, err = s.dal.GetTotalUserCount(dbs)
@@ -1760,7 +1760,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		cc, err = s.dal.GetTotalCommentsCount(dbs)
@@ -1768,7 +1768,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		ffc, err = s.dal.GetTotalFlashfreezeCount(dbs)
@@ -1776,7 +1776,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		fffc, err = s.dal.GetTotalFlashfreezeFileCount(dbs)
@@ -1784,7 +1784,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		tss, err = s.dal.GetTotalSubmissionFilesize(dbs)
@@ -1792,7 +1792,7 @@ func (s *SiteService) GetStatisticsPageData(ctx context.Context) (*types.Statist
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 		tffs, err = s.dal.GetTotalFlashfreezeFilesize(dbs)
@@ -1848,7 +1848,7 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 		Username: user.Username,
 	}
 
-	errs, _ := errgroup.WithContext(ctx)
+	errs, ectx := errgroup.WithContext(ctx)
 
 	// get the latest user activity, which is a pain in the ass to obtain
 
@@ -1858,7 +1858,7 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 	var latestUserActivity time.Time
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 
@@ -1881,7 +1881,7 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 
@@ -1905,7 +1905,7 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 	})
 
 	errs.Go(func() error {
-		dbs, _ := s.dal.NewSession(ctx)
+		dbs, _ := s.dal.NewSession(ectx)
 		defer dbs.Rollback()
 		var err error
 
