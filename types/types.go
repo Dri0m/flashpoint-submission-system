@@ -59,6 +59,7 @@ type MasterDatabaseGame struct {
 }
 
 type Comment struct {
+	ID           int64
 	AuthorID     int64
 	SubmissionID int64
 	Action       string
@@ -164,6 +165,7 @@ type SubmissionsFilter struct {
 	AscDesc                        *string  `schema:"asc-desc"`
 	SubscribedMe                   *string  `schema:"subscribed-me"`
 	ExcludeLegacy                  bool
+	UpdatedByID                    *int64
 }
 
 func unzeroNilPointers(x interface{}) {
@@ -627,4 +629,31 @@ type ExtendedFixesItem struct {
 	SubmitterID       int64
 	SubmitterUsername string
 	UploadedAt        *time.Time
+}
+
+type UserStatistics struct {
+	UserID           int64
+	Username         string
+	LastUserActivity time.Time
+	// these are actions by the user
+	UserCommentedCount         int64
+	UserRequestedChangesCount  int64
+	UserApprovedCount          int64
+	UserVerifiedCount          int64
+	UserAddedToFlashpointCount int64
+	UserRejectedCount          int64
+	// these are action of other users on this user's submissions, and the latest state is counted (so, a verified submission is not counted as approved)
+	SubmissionsCount                  int64
+	SubmissionsBotHappyCount          int64
+	SubmissionsBotUnhappyCount        int64
+	SubmissionsRequestedChangesCount  int64
+	SubmissionsApprovedCount          int64
+	SubmissionsVerifiedCount          int64
+	SubmissionsAddedToFlashpointCount int64
+	SubmissionsRejectedCount          int64
+}
+
+type User struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
 }

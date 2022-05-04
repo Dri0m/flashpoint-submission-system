@@ -7,12 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/Dri0m/flashpoint-submission-system/constants"
-	"github.com/Dri0m/flashpoint-submission-system/database"
-	"github.com/Dri0m/flashpoint-submission-system/types"
-	"github.com/Dri0m/flashpoint-submission-system/utils"
-	"github.com/go-sql-driver/mysql"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -21,6 +15,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/database"
+	"github.com/Dri0m/flashpoint-submission-system/types"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/go-sql-driver/mysql"
+	"golang.org/x/sync/errgroup"
 )
 
 func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64, sid *int64, submissionLevel string) (*string, []string, int64, error) {

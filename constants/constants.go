@@ -74,6 +74,7 @@ const (
 	ResourceKeyFlashfreezeRootFileID = "flashfreeze-root-file-id"
 	ResourceKeyFixID                 = "fix-id"
 	ResourceKeyFixFileID             = "fix-file-id"
+	ResourceKeyUserID                = "user-id"
 )
 
 const (

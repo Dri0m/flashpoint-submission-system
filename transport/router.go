@@ -2,10 +2,11 @@ package transport
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Router) {
@@ -217,6 +218,20 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.UserAuthMux(a.HandleUserStatisticsPage)
+
+	router.Handle(
+		"/web/user-statistics",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/user-statistics",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
 	f = a.UserAuthMux(
 		a.HandleSearchFixesPage,
 		muxAny(isStaff, isTrialCurator, isInAudit))
@@ -415,6 +430,20 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(
 			a.HandleOverrideBot, muxAny(isDeleter, isStaff))))).
 		Methods("POST")
+
+	// user statistics
+
+	router.Handle(
+		"/api/users",
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(a.HandleGetUsers, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/user-statistics/{%s}", constants.ResourceKeyUserID),
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(a.HandleGetUserStatistics, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("GET")
+
+	////////////////////////
 
 	// god tools
 

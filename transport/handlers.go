@@ -3,14 +3,15 @@ package transport
 import (
 	"context"
 	"fmt"
-	"github.com/Dri0m/flashpoint-submission-system/constants"
-	"github.com/Dri0m/flashpoint-submission-system/types"
-	"github.com/Dri0m/flashpoint-submission-system/utils"
-	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/types"
+	"github.com/Dri0m/flashpoint-submission-system/utils"
+	"github.com/gorilla/mux"
 )
 
 var epoch = time.Unix(0, 0).Format(time.RFC1123)
@@ -912,6 +913,23 @@ func (a *App) HandleStatisticsPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData, "templates/statistics.gohtml")
 }
 
+func (a *App) HandleUserStatisticsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/user-statistics.gohtml")
+}
+
 func (a *App) HandleSendRemindersAboutRequestedChanges(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1026,4 +1044,45 @@ func (a *App) HandleViewFixesPage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/fix.gohtml",
 		"templates/fixes-table.gohtml")
+}
+
+func (a *App) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	users, err := a.Service.GetUsers(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, err)
+		return
+	}
+
+	data := struct {
+		Users []*types.User `json:"users"`
+	}{
+		users,
+	}
+
+	writeResponse(ctx, w, data, http.StatusOK)
+}
+
+func (a *App) HandleGetUserStatistics(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	params := mux.Vars(r)
+	userID := params[constants.ResourceKeyUserID]
+
+	uid, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
+		return
+	}
+
+	us, err := a.Service.GetUserStatistics(ctx, uid)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	writeResponse(ctx, w, us, http.StatusOK)
 }
