@@ -871,35 +871,44 @@ func (s *SiteService) GetPreviousSubmission(ctx context.Context, sid int64) (*in
 	return &psid, nil
 }
 
-// UpdateMasterDB TODO internal, not covered by tests
 func (s *SiteService) UpdateMasterDB(ctx context.Context) error {
-	utils.LogCtx(ctx).Debug("downloading new masterdb")
-	databaseBytes, err := utils.GetURL("https://bluebot.unstable.life/master-db")
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return err
-	}
 
-	utils.LogCtx(ctx).Debug("writing masterdb to temp file")
-	tmpDB, err := ioutil.TempFile("", "db*.sqlite3")
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return err
-	}
-	defer func() {
-		tmpDB.Close()
-		os.Remove(tmpDB.Name())
-	}()
+	// downloading fresh master db is not required anymore, we sticking to 10.1 which is the last version before FPFSS
 
-	_, err = tmpDB.Write(databaseBytes)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return err
-	}
-	tmpDB.Close()
+	// utils.LogCtx(ctx).Debug("downloading new masterdb")
+	// databaseBytes, err := utils.GetURL("https://bluebot.unstable.life/master-db")
+	// if err != nil {
+	// 	utils.LogCtx(ctx).Error(err)
+	// 	return err
+	// }
+
+	// utils.LogCtx(ctx).Debug("writing masterdb to temp file")
+	// tmpDB, err := ioutil.TempFile("", "db*.sqlite3")
+	// if err != nil {
+	// 	utils.LogCtx(ctx).Error(err)
+	// 	return err
+	// }
+	// defer func() {
+	// 	tmpDB.Close()
+	// 	os.Remove(tmpDB.Name())
+	// }()
+
+	// _, err = tmpDB.Write(databaseBytes)
+	// if err != nil {
+	// 	utils.LogCtx(ctx).Error(err)
+	// 	return err
+	// }
+	// tmpDB.Close()
+
+	// utils.LogCtx(ctx).Debug("opening masterdb")
+	// db, err := sql.Open("sqlite3", tmpDB.Name()+"?mode=ro")
+	// if err != nil {
+	// 	utils.LogCtx(ctx).Error(err)
+	// 	return err
+	// }
 
 	utils.LogCtx(ctx).Debug("opening masterdb")
-	db, err := sql.Open("sqlite3", tmpDB.Name()+"?mode=ro")
+	db, err := sql.Open("sqlite3", "masterdb.sqlite?mode=ro")
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return err
