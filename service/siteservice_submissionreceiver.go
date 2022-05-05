@@ -24,9 +24,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64, sid *int64, submissionLevel string) (*string, []string, int64, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64, sid *int64, submissionLevel string, tempName string) (*string, []string, int64, error) {
 	uid := utils.UserID(ctx)
 	if uid == 0 {
+		s.SSK.SetFailed(tempName, "internal error")
 		utils.LogCtx(ctx).Panic("no user associated with request")
 	}
 
@@ -35,16 +36,20 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", filename, filesize)
 
 	if err := os.MkdirAll(s.submissionsDir, os.ModeDir); err != nil {
+		s.SSK.SetFailed(tempName, "internal error")
 		return nil, nil, 0, err
 	}
 	if err := os.MkdirAll(s.submissionImagesDir, os.ModeDir); err != nil {
+		s.SSK.SetFailed(tempName, "internal error")
 		return nil, nil, 0, err
 	}
 
 	ext := filepath.Ext(filename)
 
 	if ext != ".7z" && ext != ".zip" {
-		return nil, nil, 0, perr("unsupported file extension", http.StatusUnsupportedMediaType)
+		msg := "unsupported file extension"
+		s.SSK.SetFailed(tempName, msg)
+		return nil, nil, 0, perr(msg, http.StatusUnsupportedMediaType)
 	}
 
 	var destinationFilename string
@@ -99,6 +104,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	var msg *string
 
 	errs.Go(func() error {
+		s.SSK.SetValidating(tempName)
 		utils.LogCtx(ectx).Debug("sending the submission for validation in goroutine...")
 
 		var err error
@@ -127,8 +133,11 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	if err := errs.Wait(); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "processing failed")
 		return &destinationFilePath, nil, 0, err
 	}
+
+	s.SSK.SetFinalizing(tempName)
 
 	// FIXME remove this lazy solution to prevent database deadlocks and fix it properly
 	s.submissionReceiverMutex.Lock()
@@ -142,6 +151,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		submissionID, err = s.dal.StoreSubmission(dbs, submissionLevel)
 		if err != nil {
 			utils.LogCtx(ctx).Error(err)
+			s.SSK.SetFailed(tempName, "internal error")
 			return &destinationFilePath, nil, 0, dberr(err)
 		}
 	} else {
@@ -152,6 +162,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	// send notification about new file uploaded
 	if !isSubmissionNew {
 		if err := s.createNotification(dbs, uid, submissionID, constants.ActionUpload); err != nil {
+			s.SSK.SetFailed(tempName, "internal error")
 			return &destinationFilePath, nil, 0, err
 		}
 	}
@@ -159,6 +170,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	// subscribe the author
 	if err := s.dal.SubscribeUserToSubmission(dbs, uid, submissionID); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
@@ -169,12 +181,14 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		auditionSubscribeUserIDs, err := s.dal.GetUsersForUniversalNotification(dbs, uid, constants.ActionAuditionSubscribe)
 		if err != nil {
 			utils.LogCtx(dbs.Ctx()).Error(err)
+			s.SSK.SetFailed(tempName, "internal error")
 			return &destinationFilePath, nil, 0, dberr(err)
 		}
 
 		for _, subUID := range auditionSubscribeUserIDs {
 			if err := s.dal.SubscribeUserToSubmission(dbs, subUID, submissionID); err != nil {
 				utils.LogCtx(ctx).Error(err)
+				s.SSK.SetFailed(tempName, "internal error")
 				return &destinationFilePath, nil, 0, dberr(err)
 			}
 		}
@@ -196,10 +210,13 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		me, ok := err.(*mysql.MySQLError)
 		if ok {
 			if me.Number == 1062 {
-				return &destinationFilePath, nil, 0, perr(fmt.Sprintf("file '%s' with checksums md5:%s sha256:%s already present in the DB", filename, sf.MD5Sum, sf.SHA256Sum), http.StatusConflict)
+				msg := fmt.Sprintf("file '%s' with checksums md5:%s sha256:%s already present in the DB", filename, sf.MD5Sum, sf.SHA256Sum)
+				s.SSK.SetFailed(tempName, msg)
+				return &destinationFilePath, nil, 0, perr(msg, http.StatusConflict)
 			}
 		}
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
@@ -215,6 +232,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	if err := s.dal.StoreComment(dbs, c); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
@@ -233,12 +251,14 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
 	// feed the curation feed
 	isCurationValid := len(vr.CurationErrors) == 0 && len(vr.CurationWarnings) == 0
 	if err := s.createCurationFeedMessage(dbs, uid, submissionID, isSubmissionNew, isCurationValid, &vr.Meta, isAudition); err != nil {
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
@@ -286,12 +306,14 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	if err := errs.Wait(); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, imageFilePaths, 0, err
 	}
 
 	for _, ci := range cis {
 		if _, err := s.dal.StoreCurationImage(dbs, ci); err != nil {
-			utils.LogCtx(ectx).Error(err)
+			utils.LogCtx(ctx).Error(err)
+			s.SSK.SetFailed(tempName, "internal error")
 			return &destinationFilePath, imageFilePaths, 0, dberr(err)
 		}
 	}
@@ -313,6 +335,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	if sc != nil {
 		if err := s.dal.StoreComment(dbs, sc); err != nil {
 			utils.LogCtx(ectx).Error(err)
+			s.SSK.SetFailed(tempName, "internal error")
 			return &destinationFilePath, imageFilePaths, 0, dberr(err)
 		}
 	}
@@ -322,11 +345,13 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 	bc := s.convertValidatorResponseToComment(vr)
 	if err := s.dal.StoreComment(dbs, bc); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, imageFilePaths, 0, dberr(err)
 	}
 
 	if err := s.dal.UpdateSubmissionCacheTable(dbs, submissionID); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		return &destinationFilePath, imageFilePaths, 0, dberr(err)
 	}
 

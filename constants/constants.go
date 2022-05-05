@@ -75,6 +75,7 @@ const (
 	ResourceKeyFixID                 = "fix-id"
 	ResourceKeyFixFileID             = "fix-file-id"
 	ResourceKeyUserID                = "user-id"
+	ResourceKeyTempName              = "temp-name"
 )
 
 const (
@@ -92,3 +93,11 @@ type PublicResponse struct {
 	Msg    *string `json:"message"`
 	Status int     `json:"status"`
 }
+
+const (
+	SubmissionStatusReceived   = "received"
+	SubmissionStatusFailed     = "failed"
+	SubmissionStatusValidating = "validating"
+	SubmissionStatusFinalizing = "finalizing"
+	SubmissionStatusSuccess    = "success"
+)

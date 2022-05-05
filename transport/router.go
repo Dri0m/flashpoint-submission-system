@@ -443,6 +443,12 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(a.HandleGetUserStatistics, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("GET")
 
+	// upload status
+	router.Handle(
+		fmt.Sprintf("/api/upload-status/{%s}", constants.ResourceKeyTempName),
+		http.HandlerFunc(a.RequestJSON(a.UserAuthMux(a.HandleGetUploadProgress, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("GET")
+
 	////////////////////////
 
 	// god tools

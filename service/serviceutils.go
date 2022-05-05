@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"sync"
+
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
@@ -31,4 +33,51 @@ func resumableLog(ctx context.Context, resumableParams *types.ResumableParams) *
 		"resumableCurrentChunkSize": resumableParams.ResumableCurrentChunkSize,
 		"resumableTotalChunks":      resumableParams.ResumableTotalChunks,
 	})
+}
+
+type SubmissionStatusKeeper struct {
+	m map[string]*types.SubmissionStatus
+	sync.Mutex
+}
+
+func (s *SubmissionStatusKeeper) SetReceived(tempName string) {
+	s.Lock()
+	defer s.Unlock()
+	s.m[tempName] = &types.SubmissionStatus{Status: constants.SubmissionStatusReceived}
+}
+
+func (s *SubmissionStatusKeeper) SetValidating(tempName string) {
+	s.Lock()
+	defer s.Unlock()
+	s.m[tempName].Status = constants.SubmissionStatusValidating
+}
+
+func (s *SubmissionStatusKeeper) SetFinalizing(tempName string) {
+	s.Lock()
+	defer s.Unlock()
+	s.m[tempName].Status = constants.SubmissionStatusFinalizing
+}
+
+func (s *SubmissionStatusKeeper) SetFailed(tempName, message string) {
+	s.Lock()
+	defer s.Unlock()
+	s.m[tempName].Status = constants.SubmissionStatusFailed
+	s.m[tempName].Message = &message
+}
+
+func (s *SubmissionStatusKeeper) SetSuccess(tempName string, sid int64) {
+	s.Lock()
+	defer s.Unlock()
+	s.m[tempName].Status = constants.SubmissionStatusSuccess
+	s.m[tempName].SubmissionID = &sid
+}
+
+func (s *SubmissionStatusKeeper) Get(tempName string) *types.SubmissionStatus {
+	s.Lock()
+	defer s.Unlock()
+	ss, ok := s.m[tempName]
+	if !ok {
+		return nil
+	}
+	return ss
 }

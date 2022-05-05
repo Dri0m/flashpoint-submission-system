@@ -4,7 +4,7 @@ function getFilename(file) {
 
 let r = undefined
 
-function initResumableUploader(target, maxFiles, allowedExtensions) {
+function initResumableUploader(target, maxFiles, allowedExtensions, pollStatus) {
     r = new Resumable({
         target: target,
         chunkSize: 16 * 1024 * 1024,
@@ -83,12 +83,24 @@ function initResumableUploader(target, maxFiles, allowedExtensions) {
     }
 
     function updateFileSuccess(file, message) {
-        try {
-            const obj = JSON.parse(message);
-            file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. <a href="/web${obj["url"]}">View</a>`
-            file.progressBar.value = 1
-        } catch (e) {
-            file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful.<br>Server response: ${message}`
+        if(pollStatus === true) {
+            try {
+                const obj = JSON.parse(message);
+                file.progressText.innerHTML = "Upload finished, fetching status..."
+                file.progressBar.value = 1
+                file.intervalID = setInterval(pollUploadStatus, 500, file, obj["temp_name"]);
+
+            } catch (e) {
+                file.progressText.innerHTML = `${getFilename(file)}<br>The submission is being processed.<br>Server response: ${message}`
+            }
+        } else {
+            try {
+                const obj = JSON.parse(message);
+                file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful. <a href="/web${obj["url"]}">View</a>`
+                file.progressBar.value = 1
+            } catch (e) {
+                file.progressText.innerHTML = `${getFilename(file)}<br>Upload successful.<br>Server response: ${message}`
+            }
         }
     }
 
@@ -151,4 +163,38 @@ function pauseUpload() {
 function cancelUpload() {
     document.getElementById("progress-bars-container-resumable").innerHTML = ""
     r.cancel()
+}
+
+function pollUploadStatus(file, tempName) {
+    let request = new XMLHttpRequest()
+    request.open("GET", `/api/upload-status/${tempName}`, true)
+
+    request.addEventListener("loadend", function () {
+        if (request.status !== 200) {
+            file.progressText.innerHTML = `${getFilename(file)}<br>There was an error fetching the upload status, trying again...`
+            return
+        }
+        
+        let status = null
+        try {
+            status = JSON.parse(request.response)["status"]
+            file.progressText.innerHTML = `${getFilename(file)}<br>Status: ${status["status"]}<br>`
+            if (status["message"] !== null) {
+                file.progressText.innerHTML += `Message: ${status["message"]}<br>`
+            }
+            if (status["submission_id"] !== null) {
+                file.progressText.innerHTML += `<a href="/web/submission/${status["submission_id"]}">View</a>`
+                clearInterval(file.intervalID)
+            }
+            if (status["status"] == "failed") {
+                clearInterval(file.intervalID)
+            }
+        } catch (err) {
+            console.error(err)
+            file.progressText.innerHTML = `${getFilename(file)}<br>There was an error fetching the upload status, trying again...`
+            return
+        }
+    })
+
+    request.send()
 }

@@ -379,6 +379,11 @@ type ValidatorResponse struct {
 	Images           []ValidatorResponseImage `json:"images"`
 }
 
+type ReceiveFileTempNameResp struct {
+	Message  string  `json:"message"`
+	TempName *string `json:"temp_name"`
+}
+
 type ReceiveFileResp struct {
 	Message string  `json:"message"`
 	URL     *string `json:"url"`
@@ -656,4 +661,10 @@ type UserStatistics struct {
 type User struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
+}
+
+type SubmissionStatus struct {
+	Status       string  `json:"status"`
+	Message      *string `json:"message"`
+	SubmissionID *int64  `json:"submission_id"`
 }

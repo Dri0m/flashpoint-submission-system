@@ -234,21 +234,15 @@ func (a *App) HandleSubmissionReceiverResumable(w http.ResponseWriter, r *http.R
 	}
 
 	// then a magic happens
-	sid, err = a.Service.ReceiveSubmissionChunk(ctx, sid, resumableParams, chunk)
+	tn, err := a.Service.ReceiveSubmissionChunk(ctx, sid, resumableParams, chunk)
 	if err != nil {
 		writeError(ctx, w, err)
 		return
 	}
 
-	var url *string
-	if sid != nil {
-		x := fmt.Sprintf("/submission/%d", *sid)
-		url = &x
-	}
-
-	resp := types.ReceiveFileResp{
-		Message: "success",
-		URL:     url,
+	resp := types.ReceiveFileTempNameResp{
+		Message:  "success",
+		TempName: tn,
 	}
 
 	writeResponse(ctx, w, resp, http.StatusOK)
@@ -1085,4 +1079,19 @@ func (a *App) HandleGetUserStatistics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(ctx, w, us, http.StatusOK)
+}
+
+func (a *App) HandleGetUploadProgress(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	params := mux.Vars(r)
+	tempName := params[constants.ResourceKeyTempName]
+
+	data := struct {
+		Status *types.SubmissionStatus `json:"status"`
+	}{
+		a.Service.SSK.Get(tempName),
+	}
+
+	writeResponse(ctx, w, data, http.StatusOK)
 }

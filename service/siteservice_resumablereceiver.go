@@ -3,13 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/kofalt/go-memoize"
-	"io"
-	"net/http"
-	"time"
 )
 
 var resumableMemoizer = memoize.NewMemoizer(time.Hour*24, time.Hour*24)
@@ -18,7 +19,7 @@ func (ru resumableUpload) GetReadCloser() (io.ReadCloser, error) {
 	return ru.rsu.NewFileReader(ru.uid, ru.fileID, ru.chunkCount)
 }
 
-func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, resumableParams *types.ResumableParams, chunk []byte) (*int64, error) {
+func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, resumableParams *types.ResumableParams, chunk []byte) (*string, error) {
 	ctx = context.WithValue(ctx, utils.CtxKeys.Log, resumableLog(ctx, resumableParams))
 
 	uid := utils.UserID(ctx)
@@ -40,33 +41,39 @@ func (s *SiteService) ReceiveSubmissionChunk(ctx context.Context, sid *int64, re
 	}
 
 	if isComplete {
-		utils.LogCtx(ctx).Debug("submission resumable upload finished")
+		// tempName is used as the ID of the submission while the submission is being processed, used by the client to poll for status
+		tempName := s.randomStringProvider.RandomString(32)
+		s.SSK.SetReceived(tempName)
 
-		processReceivedResumableSubmission := func() (interface{}, error) {
-			return s.processReceivedResumableSubmission(ctx, uid, sid, resumableParams)
-		}
-		processReceivedResumableSubmissionKey := fmt.Sprintf("%d-%s", uid, resumableParams.ResumableIdentifier)
+		go func() {
+			ctx := utils.ValueOnlyContext{ctx}
+			utils.LogCtx(ctx).Debug("submission resumable upload finished")
 
-		isid, err, cached := resumableMemoizer.Memoize(processReceivedResumableSubmissionKey, processReceivedResumableSubmission)
-		utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("processed resumable submission upload")
+			processReceivedResumableSubmission := func() (interface{}, error) {
+				return nil, s.processReceivedResumableSubmission(ctx, uid, sid, resumableParams, tempName)
+			}
+			processReceivedResumableSubmissionKey := fmt.Sprintf("%d-%s", uid, resumableParams.ResumableIdentifier)
 
-		if err != nil {
-			resumableMemoizer.Storage.Delete(processReceivedResumableSubmissionKey)
-			utils.LogCtx(ctx).Error(err)
-			return nil, err
-		}
+			_, err, cached := resumableMemoizer.Memoize(processReceivedResumableSubmissionKey, processReceivedResumableSubmission)
+			utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("processed resumable submission upload")
 
-		if !cached {
-			utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
-			if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
+			if err != nil {
+				resumableMemoizer.Storage.Delete(processReceivedResumableSubmissionKey)
 				utils.LogCtx(ctx).Error(err)
 			}
 
-			utils.LogCtx(ctx).WithField("memoizerKey", processReceivedResumableSubmissionKey).Debug("deleting the memoized call")
-			resumableMemoizer.Storage.Delete(processReceivedResumableSubmissionKey)
-		}
+			if !cached {
+				utils.LogCtx(ctx).Debug("deleting the resumable file chunks")
+				if err := s.resumableUploadService.DeleteFile(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks); err != nil {
+					utils.LogCtx(ctx).Error(err)
+				}
 
-		return isid.(*int64), nil
+				utils.LogCtx(ctx).WithField("memoizerKey", processReceivedResumableSubmissionKey).Debug("deleting the memoized call")
+				resumableMemoizer.Storage.Delete(processReceivedResumableSubmissionKey)
+			}
+		}()
+
+		return &tempName, nil
 	}
 
 	return nil, nil

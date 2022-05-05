@@ -141,6 +141,7 @@ type SiteService struct {
 	archiveIndexerServerURL   string
 	flashfreezeIngestDir      string
 	fixesDir                  string
+	SSK                       SubmissionStatusKeeper
 }
 
 func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
@@ -166,6 +167,9 @@ func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *di
 		archiveIndexerServerURL:   archiveIndexerServerURL,
 		flashfreezeIngestDir:      flashfreezeIngestDir,
 		fixesDir:                  fixesDir,
+		SSK: SubmissionStatusKeeper{
+			m: make(map[string]*types.SubmissionStatus),
+		},
 	}
 }
 
@@ -1218,7 +1222,7 @@ func (s *SiteService) GetFlashfreezeRootFile(ctx context.Context, fid int64) (*t
 	return ci, nil
 }
 
-func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, uid int64, sid *int64, resumableParams *types.ResumableParams) (*int64, error) {
+func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, uid int64, sid *int64, resumableParams *types.ResumableParams, tempName string) error {
 	var destinationFilename *string
 	imageFilePaths := make([]string, 0)
 
@@ -1240,18 +1244,22 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, dberr(err)
+		s.SSK.SetFailed(tempName, "internal error")
+		return dberr(err)
 	}
 	defer dbs.Rollback()
 
 	userRoles, err := s.dal.GetDiscordUserRoles(dbs, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		return nil, dberr(err)
+		s.SSK.SetFailed(tempName, "internal error")
+		return dberr(err)
 	}
 
 	if constants.IsInAudit(userRoles) && resumableParams.ResumableTotalSize > constants.UserInAuditSubmissionMaxFilesize {
-		return nil, perr("submission filesize limited to 500MB for users in audit", http.StatusForbidden)
+		msg := "submission filesize limited to 500MB for users in audit"
+		s.SSK.SetFailed(tempName, msg)
+		return perr(msg, http.StatusForbidden)
 	}
 
 	var submissionLevel string
@@ -1265,25 +1273,28 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	}
 
 	ru := newResumableUpload(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, s.resumableUploadService)
-	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel)
+	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel, tempName)
 
 	imageFilePaths = append(imageFilePaths, ifp...)
 
 	if err != nil {
 		cleanup()
-		return nil, err
+		return err
 	}
 
 	if err := dbs.Commit(); err != nil {
 		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
 		cleanup()
-		return nil, dberr(err)
+		return dberr(err)
 	}
 
 	utils.LogCtx(ctx).WithField("amount", 1).Debug("submissions received")
 	s.announceNotification()
 
-	return &submissionID, nil
+	s.SSK.SetSuccess(tempName, submissionID)
+
+	return nil
 }
 
 func (s *SiteService) processReceivedResumableFlashfreeze(ctx context.Context, uid int64, resumableParams *types.ResumableParams) (*int64, error) {
