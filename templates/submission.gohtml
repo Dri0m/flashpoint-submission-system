@@ -52,7 +52,7 @@
                     <link rel="stylesheet" href="/static/resumable/css.css">
                     <script src="/static/resumable/resumable.js"></script>
                     <script src="/static/resumable/uploader.js"></script>
-                    <script>initResumableUploader("/api/submission-receiver-resumable/{{$submissionID}}", 1, [".7z", ".zip"])</script>
+                    <script>initResumableUploader("/api/submission-receiver-resumable/{{$submissionID}}", 1, [".7z", ".zip"], true)</script>
                 </div>
             {{end}}
         </div>

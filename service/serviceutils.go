@@ -46,16 +46,25 @@ func (s *SubmissionStatusKeeper) SetReceived(tempName string) {
 	s.m[tempName] = &types.SubmissionStatus{Status: constants.SubmissionStatusReceived}
 }
 
+func (s *SubmissionStatusKeeper) SetCopying(tempName string, message string) {
+	s.Lock()
+	defer s.Unlock()
+	s.m[tempName].Status = constants.SubmissionStatusCopying
+	s.m[tempName].Message = &message
+}
+
 func (s *SubmissionStatusKeeper) SetValidating(tempName string) {
 	s.Lock()
 	defer s.Unlock()
 	s.m[tempName].Status = constants.SubmissionStatusValidating
+	s.m[tempName].Message = nil
 }
 
 func (s *SubmissionStatusKeeper) SetFinalizing(tempName string) {
 	s.Lock()
 	defer s.Unlock()
 	s.m[tempName].Status = constants.SubmissionStatusFinalizing
+	s.m[tempName].Message = nil
 }
 
 func (s *SubmissionStatusKeeper) SetFailed(tempName, message string) {
@@ -69,6 +78,7 @@ func (s *SubmissionStatusKeeper) SetSuccess(tempName string, sid int64) {
 	s.Lock()
 	defer s.Unlock()
 	s.m[tempName].Status = constants.SubmissionStatusSuccess
+	s.m[tempName].Message = nil
 	s.m[tempName].SubmissionID = &sid
 }
 

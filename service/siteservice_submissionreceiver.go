@@ -18,13 +18,14 @@ import (
 
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/database"
+	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/go-sql-driver/mysql"
 	"golang.org/x/sync/errgroup"
 )
 
-func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64, sid *int64, submissionLevel string, tempName string) (*string, []string, int64, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider resumableuploadservice.ReadCloserInformerProvider, filename string, filesize int64, sid *int64, submissionLevel string, tempName string) (*string, []string, int64, error) {
 	uid := utils.UserID(ctx)
 	if uid == 0 {
 		s.SSK.SetFailed(tempName, "internal error")
@@ -63,21 +64,20 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		}
 	}
 
-	errs, ectx := errgroup.WithContext(ctx)
-
+	// processing
 	md5sum := md5.New()
 	sha256sum := sha256.New()
 
-	errs.Go(func() error {
-		utils.LogCtx(ectx).Debug("processing submission file in goroutine...")
+	err = func() error {
+		utils.LogCtx(ctx).Debug("processing submission file...")
 
 		var err error
 
-		readCloser, err := fileReadCloserProvider.GetReadCloser()
+		readCloserInformer, err := fileReadCloserProvider.GetReadCloserInformer()
 		if err != nil {
 			return err
 		}
-		defer readCloser.Close()
+		defer readCloserInformer.Close()
 
 		destination, err := os.Create(destinationFilePath)
 		if err != nil {
@@ -87,9 +87,27 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 		utils.LogCtx(ctx).Debugf("copying submission file to '%s'...", destinationFilePath)
 
+		tctx, cancel := context.WithCancel(context.Background())
+		bucket, ticker := utils.NewBucketLimiter(10*time.Millisecond, 1)
+		defer ticker.Stop()
+		defer cancel()
+
+		go func() {
+			for {
+				select {
+				case <-tctx.Done():
+					utils.LogCtx(ctx).Debugf("context cancelled, stopping copying progress updater")
+					return
+				case <-bucket:
+					progress := readCloserInformer.GetFractionRead()
+					s.SSK.SetCopying(tempName, fmt.Sprintf("Copying chunks: %0.2f%%", progress*100))
+				}
+			}
+		}()
+
 		multiWriter := io.MultiWriter(destination, sha256sum, md5sum)
 
-		nBytes, err := io.Copy(multiWriter, readCloser)
+		nBytes, err := io.Copy(multiWriter, readCloserInformer)
 		if err != nil {
 			return err
 		}
@@ -97,43 +115,52 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 			return fmt.Errorf("incorrect number of bytes copied to destination")
 		}
 
-		return nil
-	})
+		// TODO this will be moved
 
+		return nil
+	}()
+
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "processing failed")
+		return &destinationFilePath, nil, 0, err
+	}
+
+	// validation
+	s.SSK.SetValidating(tempName)
 	var vr *types.ValidatorResponse
 	var msg *string
 
-	errs.Go(func() error {
-		s.SSK.SetValidating(tempName)
-		utils.LogCtx(ectx).Debug("sending the submission for validation in goroutine...")
+	err = func() error {
+		utils.LogCtx(ctx).Debug("sending the submission for validation...")
 
 		var err error
 
-		readCloser, err := fileReadCloserProvider.GetReadCloser()
+		readCloser, err := fileReadCloserProvider.GetReadCloserInformer()
 		if err != nil {
 			return err
 		}
 		defer readCloser.Close()
 
-		vr, err = s.validator.Validate(ectx, readCloser, destinationFilename)
+		vr, err = s.validator.ProvideArchiveForValidation(destinationFilePath)
 		if err != nil {
-			utils.LogCtx(ectx).Error(err)
+			utils.LogCtx(ctx).Error(err)
 			return perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
 		}
 
-		utils.LogCtx(ectx).Debug("computing similarity in goroutine...")
+		utils.LogCtx(ctx).Debug("computing similarity in goroutine...")
 		msg, err = s.computeSimilarityComment(dbs, sid, &vr.Meta)
 		if err != nil {
-			utils.LogCtx(ectx).Error(err)
+			utils.LogCtx(ctx).Error(err)
 			return err
 		}
 
 		return nil
-	})
+	}()
 
-	if err := errs.Wait(); err != nil {
+	if err != nil {
 		utils.LogCtx(ctx).Error(err)
-		s.SSK.SetFailed(tempName, "processing failed")
+		s.SSK.SetFailed(tempName, "validation failed")
 		return &destinationFilePath, nil, 0, err
 	}
 
@@ -262,7 +289,7 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 		return &destinationFilePath, nil, 0, dberr(err)
 	}
 
-	errs, ectx = errgroup.WithContext(ctx)
+	errs, ectx := errgroup.WithContext(ctx)
 
 	// save images
 	imageFilePaths := make([]string, 0, len(vr.Images))

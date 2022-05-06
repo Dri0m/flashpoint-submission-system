@@ -1096,7 +1096,7 @@ func isFlasfhreezeExtensionValid(filename string) (bool, string) {
 	return true, ext
 }
 
-func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs database.DBSession, uid int64, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64) (*string, *int64, error) {
+func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs database.DBSession, uid int64, fileReadCloserProvider resumableuploadservice.ReadCloserInformerProvider, filename string, filesize int64) (*string, *int64, error) {
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", filename, filesize)
 
 	if err := os.MkdirAll(s.flashfreezeDir, os.ModeDir); err != nil {
@@ -1121,7 +1121,7 @@ func (s *SiteService) processReceivedFlashfreezeItem(ctx context.Context, dbs da
 
 	var err error
 
-	readCloser, err := fileReadCloserProvider.GetReadCloser()
+	readCloser, err := fileReadCloserProvider.GetReadCloserInformer()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, nil, err
@@ -2308,7 +2308,7 @@ func (s *SiteService) processReceivedResumableFixesFile(ctx context.Context, uid
 	return fid, nil
 }
 
-func (s *SiteService) processReceivedFixesItem(ctx context.Context, dbs database.DBSession, uid int64, fixID int64, fileReadCloserProvider ReadCloserProvider, filename string, filesize int64) (*int64, error) {
+func (s *SiteService) processReceivedFixesItem(ctx context.Context, dbs database.DBSession, uid int64, fixID int64, fileReadCloserProvider resumableuploadservice.ReadCloserInformerProvider, filename string, filesize int64) (*int64, error) {
 	utils.LogCtx(ctx).Debugf("received a file '%s' - %d bytes", filename, filesize)
 
 	if err := os.MkdirAll(s.fixesDir, os.ModeDir); err != nil {
@@ -2328,7 +2328,7 @@ func (s *SiteService) processReceivedFixesItem(ctx context.Context, dbs database
 
 	var err error
 
-	readCloser, err := fileReadCloserProvider.GetReadCloser()
+	readCloser, err := fileReadCloserProvider.GetReadCloserInformer()
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err

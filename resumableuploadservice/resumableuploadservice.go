@@ -2,10 +2,11 @@ package resumableuploadservice
 
 import (
 	"fmt"
-	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/Dri0m/flashpoint-submission-system/utils"
 )
 
 type ResumableUploadService struct {
@@ -124,7 +125,17 @@ func (rsu *ResumableUploadService) DeleteFile(uid int64, fileID string, chunkCou
 	return nil
 }
 
-type fileReadCloser struct {
+type ReadCloserInformer interface {
+	Read(buf []byte) (n int, err error)
+	Close() error
+	GetFractionRead() float32
+}
+
+type ReadCloserInformerProvider interface {
+	GetReadCloserInformer() (ReadCloserInformer, error)
+}
+
+type fileReadCloserInformer struct {
 	uid                int64
 	fileID             string
 	rsu                *ResumableUploadService
@@ -135,12 +146,12 @@ type fileReadCloser struct {
 }
 
 // NewFileReader returns a reader that reconstructs the file from the chunks on the fly. It does not check if the file is complete.
-func (rsu *ResumableUploadService) NewFileReader(uid int64, fileID string, chunkCount int) (io.ReadCloser, error) {
+func (rsu *ResumableUploadService) NewFileReader(uid int64, fileID string, chunkCount int) (ReadCloserInformer, error) {
 	if uid == 0 || len(fileID) == 0 {
 		panic("invalid arguments provided")
 	}
 
-	return &fileReadCloser{
+	return &fileReadCloserInformer{
 		uid:                uid,
 		fileID:             fileID,
 		rsu:                rsu,
@@ -151,7 +162,7 @@ func (rsu *ResumableUploadService) NewFileReader(uid int64, fileID string, chunk
 	}, nil
 }
 
-func (fr *fileReadCloser) Read(buf []byte) (n int, err error) {
+func (fr *fileReadCloserInformer) Read(buf []byte) (n int, err error) {
 	// case 0: init the reader
 	if fr.currentChunkNumber == 0 {
 		fr.currentChunkNumber++
@@ -212,8 +223,12 @@ func (fr *fileReadCloser) Read(buf []byte) (n int, err error) {
 }
 
 // Close is just a dummy close in case it's needed later
-func (fr *fileReadCloser) Close() error {
+func (fr *fileReadCloserInformer) Close() error {
 	return nil
+}
+
+func (fr *fileReadCloserInformer) GetFractionRead() float32 {
+	return float32(fr.currentChunkNumber) / float32(fr.chunkCount)
 }
 
 // getChunk returns chunk

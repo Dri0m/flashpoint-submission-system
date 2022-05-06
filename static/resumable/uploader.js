@@ -87,6 +87,7 @@ function initResumableUploader(target, maxFiles, allowedExtensions, pollStatus) 
             try {
                 const obj = JSON.parse(message);
                 file.progressText.innerHTML = "Upload finished, fetching status..."
+                file.progressText.innerHTML += "<br><img src=/static/fpfss-spinner.gif>"
                 file.progressBar.value = 1
                 file.intervalID = setInterval(pollUploadStatus, 500, file, obj["temp_name"]);
 
@@ -178,16 +179,18 @@ function pollUploadStatus(file, tempName) {
         let status = null
         try {
             status = JSON.parse(request.response)["status"]
-            file.progressText.innerHTML = `${getFilename(file)}<br>Status: ${status["status"]}<br>`
+            file.progressText.innerHTML = `${getFilename(file)}<br>Status: ${status["status"]}`
             if (status["message"] !== null) {
-                file.progressText.innerHTML += `Message: ${status["message"]}<br>`
+                file.progressText.innerHTML += `<br>Message: ${status["message"]}`
             }
             if (status["submission_id"] !== null) {
-                file.progressText.innerHTML += `<a href="/web/submission/${status["submission_id"]}">View</a>`
+                file.progressText.innerHTML += `<br><a href="/web/submission/${status["submission_id"]}">View</a>`
                 clearInterval(file.intervalID)
             }
             if (status["status"] == "failed") {
                 clearInterval(file.intervalID)
+            } else {
+                file.progressText.innerHTML += "<br><img src=/static/fpfss-spinner.gif>"
             }
         } catch (err) {
             console.error(err)

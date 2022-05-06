@@ -2,8 +2,8 @@ package constants
 
 const ValidatorID = 810112564787675166
 const SystemID = 844246603102945333
-const SubmissionsDir = "files/submissions"
-const SubmissionImagesDir = "files/submissions-images"
+const SubmissionsDir = "D:/flashpoint-submission-system/files/submissions"
+const SubmissionImagesDir = "D:/flashpoint-submission-system/files/submissions-images"
 const UserInAuditSubmissionMaxFilesize = 500000000
 
 const (
@@ -97,6 +97,7 @@ type PublicResponse struct {
 const (
 	SubmissionStatusReceived   = "received"
 	SubmissionStatusFailed     = "failed"
+	SubmissionStatusCopying    = "copying"
 	SubmissionStatusValidating = "validating"
 	SubmissionStatusFinalizing = "finalizing"
 	SubmissionStatusSuccess    = "success"

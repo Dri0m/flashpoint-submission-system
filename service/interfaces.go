@@ -2,15 +2,17 @@ package service
 
 import (
 	"context"
-	"github.com/Dri0m/flashpoint-submission-system/types"
 	"io"
 	"mime/multipart"
 	"time"
+
+	"github.com/Dri0m/flashpoint-submission-system/types"
 )
 
 type Validator interface {
 	Validate(ctx context.Context, file io.Reader, filename string) (*types.ValidatorResponse, error)
 	GetTags(ctx context.Context) ([]types.Tag, error)
+	ProvideArchiveForValidation(filePath string) (*types.ValidatorResponse, error)
 }
 
 type MultipartFileProvider interface {
@@ -22,8 +24,4 @@ type MultipartFileProvider interface {
 type Clock interface {
 	Now() time.Time
 	Unix(sec int64, nsec int64) time.Time
-}
-
-type ReadCloserProvider interface {
-	GetReadCloser() (io.ReadCloser, error)
 }

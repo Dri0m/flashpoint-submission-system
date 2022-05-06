@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -15,7 +14,7 @@ import (
 
 var resumableMemoizer = memoize.NewMemoizer(time.Hour*24, time.Hour*24)
 
-func (ru resumableUpload) GetReadCloser() (io.ReadCloser, error) {
+func (ru resumableUpload) GetReadCloserInformer() (resumableuploadservice.ReadCloserInformer, error) {
 	return ru.rsu.NewFileReader(ru.uid, ru.fileID, ru.chunkCount)
 }
 
