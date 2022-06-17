@@ -361,6 +361,7 @@ function filterReadyForFlashpoint() {
 
     document.getElementById("distinct-action-not-mark-added").checked = true
     document.getElementById("distinct-action-not-reject").checked = true
+    document.getElementById("requested-changes-status-none").checked = true
     submitAdvancedFilterForm()
 }
 
