@@ -2,8 +2,6 @@ package constants
 
 const ValidatorID = 810112564787675166
 const SystemID = 844246603102945333
-const SubmissionsDir = "D:/flashpoint-submission-system/files/submissions"
-const SubmissionImagesDir = "D:/flashpoint-submission-system/files/submissions-images"
 const UserInAuditSubmissionMaxFilesize = 500000000
 
 const (

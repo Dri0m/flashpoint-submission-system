@@ -4,8 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/Dri0m/flashpoint-submission-system/config"
-	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/logging"
 	"github.com/Dri0m/flashpoint-submission-system/resumableuploadservice"
 	"github.com/Dri0m/flashpoint-submission-system/service"
@@ -16,12 +22,6 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/kofalt/go-memoize"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-	"time"
 )
 
 // App is App
@@ -53,7 +53,7 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, n
 		},
 		Service: service.New(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
-			constants.SubmissionsDir, constants.SubmissionImagesDir, conf.FlashfreezeDirFullPath, conf.IsDev, rsu, conf.ArchiveIndexerServerURL, conf.FlashfreezeIngestDirFullPath, conf.FixesDirFullPath),
+			conf.SubmissionsDirFullPath, conf.SubmissionImagesDirFullPath, conf.FlashfreezeDirFullPath, conf.IsDev, rsu, conf.ArchiveIndexerServerURL, conf.FlashfreezeIngestDirFullPath, conf.FixesDirFullPath),
 		decoder:             decoder,
 		authMiddlewareCache: memoize.NewMemoizer(5*time.Second, 60*time.Minute),
 	}

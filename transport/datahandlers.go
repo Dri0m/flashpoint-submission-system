@@ -30,7 +30,7 @@ func (a *App) HandleDownloadSubmissionFile(w http.ResponseWriter, r *http.Reques
 	}
 	sf := sfs[0]
 
-	f, err := os.Open(fmt.Sprintf("%s/%s", constants.SubmissionsDir, sf.CurrentFilename))
+	f, err := os.Open(fmt.Sprintf("%s/%s", a.Conf.SubmissionsDirFullPath, sf.CurrentFilename))
 
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -69,7 +69,7 @@ func (a *App) HandleDownloadSubmissionBatch(w http.ResponseWriter, r *http.Reque
 	filePaths := make([]string, 0, len(sfs))
 
 	for _, sf := range sfs {
-		filePaths = append(filePaths, fmt.Sprintf("%s/%s", constants.SubmissionsDir, sf.CurrentFilename))
+		filePaths = append(filePaths, fmt.Sprintf("%s/%s", a.Conf.SubmissionsDirFullPath, sf.CurrentFilename))
 	}
 
 	filename := fmt.Sprintf("fpfss-batch-%dfiles-%s.tar", len(sfs), utils.NewRealRandomStringProvider().RandomString(16))
@@ -100,7 +100,7 @@ func (a *App) HandleDownloadCurationImage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	f, err := os.Open(fmt.Sprintf("%s/%s", constants.SubmissionImagesDir, ci.Filename))
+	f, err := os.Open(fmt.Sprintf("%s/%s", a.Conf.SubmissionImagesDirFullPath, ci.Filename))
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, perr("failed to read file", http.StatusInternalServerError))

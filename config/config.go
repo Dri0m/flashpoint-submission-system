@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 	"os"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 )
 
 type Config struct {
@@ -35,6 +36,8 @@ type Config struct {
 	ArchiveIndexerServerURL      string
 	FlashfreezeIngestDirFullPath string
 	FixesDirFullPath             string
+	SubmissionsDirFullPath       string
+	SubmissionImagesDirFullPath  string
 }
 
 func EnvString(name string) string {
@@ -109,5 +112,7 @@ func GetConfig(l *logrus.Entry) *Config {
 		ArchiveIndexerServerURL:      EnvString("ARCHIVE_INDEXER_SERVER_URL"),
 		FlashfreezeIngestDirFullPath: EnvString("FLASHFREEZE_INGEST_DIR_FULL_PATH"),
 		FixesDirFullPath:             EnvString("FIXES_DIR_FULL_PATH"),
+		SubmissionsDirFullPath:       EnvString("SUBMISSIONS_DIR_FULL_PATH"),
+		SubmissionImagesDirFullPath:  EnvString("SUBMISSION_IMAGES_DIR_FULL_PATH"),
 	}
 }
