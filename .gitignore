@@ -27,3 +27,4 @@ resumableuploadservice.db*
 resumable-data/*
 
 .idea/*
+.vscode/*
