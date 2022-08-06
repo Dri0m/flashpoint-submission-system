@@ -1850,10 +1850,12 @@ func (s *SiteService) GetUsers(ctx context.Context) ([]*types.User, error) {
 }
 
 func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.UserStatistics, error) {
-	user, err := func() (*types.DiscordUser, error) {
+	user, isTrial, isStaff, err := func() (*types.DiscordUser, bool, bool, error) {
 		dbs, _ := s.dal.NewSession(ctx)
 		defer dbs.Rollback()
-		return s.dal.GetDiscordUser(dbs, uid)
+		du, err := s.dal.GetDiscordUser(dbs, uid)
+		roles, err := s.GetUserRoles(ctx, uid)
+		return du, constants.IsTrialCurator(roles), constants.IsStaff(roles), err
 	}()
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -1863,9 +1865,18 @@ func (s *SiteService) GetUserStatistics(ctx context.Context, uid int64) (*types.
 		return nil, err
 	}
 
+	role := "User"
+	if isTrial {
+		role = constants.RoleTrialCurator
+	}
+	if isStaff {
+		role = "Staff"
+	}
+
 	us := &types.UserStatistics{
 		UserID:   user.ID,
 		Username: user.Username,
+		Role:     role,
 	}
 
 	errs, ectx := errgroup.WithContext(ctx)

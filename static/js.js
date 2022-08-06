@@ -563,8 +563,6 @@ function processOneUserStatistics(users, index) {
             return
         }
 
-        console.log(stats)
-
         let table = document.getElementById("users-table")
         let row = table.insertRow(-1)
 
@@ -574,6 +572,9 @@ function processOneUserStatistics(users, index) {
 
         cell = row.insertCell(-1)
         cell.innerHTML = stats.Username
+
+        cell = row.insertCell(-1)
+        cell.innerHTML = stats.Role
 
         cell = row.insertCell(-1)
         cell.innerHTML = stats.LastUserActivity

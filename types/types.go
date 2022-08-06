@@ -638,6 +638,7 @@ type ExtendedFixesItem struct {
 type UserStatistics struct {
 	UserID           int64
 	Username         string
+	Role             string
 	LastUserActivity time.Time
 	// these are actions by the user
 	UserCommentedCount         int64
