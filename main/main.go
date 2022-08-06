@@ -26,9 +26,13 @@ func main() {
 	l := log.WithField("commit", config.EnvString("GIT_COMMIT")).WithField("runID", utils.NewRealRandomStringProvider().RandomString(8))
 	l.Infoln("hi")
 
+	l.Infoln("loading config...")
 	conf := config.GetConfig(l)
+	l.Infoln("config loaded")
+
 	db := database.OpenDB(l, conf)
 	defer db.Close()
+
 	authBot := authbot.ConnectBot(l, conf.AuthBotToken)
 	notificationBot := notificationbot.ConnectBot(l, conf.NotificationBotToken)
 
@@ -38,6 +42,7 @@ func main() {
 		l.Fatal(err)
 	}
 	defer rsu.Close()
+	l.Infoln("resumable upload service connected")
 
 	transport.InitApp(l, conf, db, authBot, notificationBot, rsu)
 }

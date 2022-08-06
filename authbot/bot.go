@@ -31,6 +31,8 @@ func ConnectBot(l *logrus.Entry, token string) *discordgo.Session {
 	if err != nil {
 		l.Fatal(err)
 	}
+	l.Infoln("discord auth bot connected")
+
 	return dg
 }
 

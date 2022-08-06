@@ -73,8 +73,6 @@ func EnvBool(name string) bool {
 }
 
 func GetConfig(l *logrus.Entry) *Config {
-	l.Infoln("loading config...")
-
 	const ScopeIdentify = "identify"
 
 	return &Config{

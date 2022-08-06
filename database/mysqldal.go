@@ -28,6 +28,7 @@ func NewMysqlDAL(conn *sql.DB) *mysqlDAL {
 
 // OpenDB opens DAL or panics
 func OpenDB(l *logrus.Entry, conf *config.Config) *sql.DB {
+	l.Infoln("connecting to the database")
 
 	user := conf.DBUser
 	pass := conf.DBPassword
@@ -41,6 +42,7 @@ func OpenDB(l *logrus.Entry, conf *config.Config) *sql.DB {
 		l.Fatal(err)
 	}
 
+	l.Infoln("database connected")
 	return db
 }
 
