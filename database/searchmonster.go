@@ -19,10 +19,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 	data := make([]interface{}, 0)
 	masterData := make([]interface{}, 0)
 
-	if filter != nil && len(filter.ActionsAfterMyLastComment) != 0 {
-		data = append(data, uid, uid)
-	}
-
 	const defaultLimit int64 = 100
 	const defaultOffset int64 = 0
 	const defaultOrderBy string = "updated_at"
@@ -101,23 +97,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			filters = append(filters, `((SELECT name FROM submission_level WHERE id = submission.fk_submission_level_id) IN(?`+strings.Repeat(",?", len(filter.SubmissionLevels)-1)+`))`)
 			for _, ba := range filter.SubmissionLevels {
 				data = append(data, ba)
-			}
-			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
-		}
-		if len(filter.ActionsAfterMyLastComment) != 0 {
-			foundAny := false
-			for _, aamlc := range filter.ActionsAfterMyLastComment {
-				if aamlc == "any" {
-					foundAny = true
-				}
-			}
-			if foundAny {
-				filters = append(filters, `(actions_after_my_last_comment.user_action_string IS NOT NULL)`)
-			} else {
-				filters = append(filters, `(REGEXP_LIKE (actions_after_my_last_comment.user_action_string, CONCAT(CONCAT(?)`+strings.Repeat(", '|', CONCAT(?)", len(filter.ActionsAfterMyLastComment)-1)+`)))`)
-				for _, aamlc := range filter.ActionsAfterMyLastComment {
-					data = append(data, aamlc)
-				}
 			}
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
@@ -388,76 +367,6 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		LEFT JOIN discord_user uploader ON oldest_file.fk_user_id = uploader.id
 		LEFT JOIN discord_user updater ON newest_comment.fk_user_id = updater.id
 		LEFT JOIN curation_meta meta ON meta.fk_submission_file_id = newest_file.id`
-
-	const actionsAfterMyLastCommentQuery = ` LEFT JOIN (
-			SELECT *,
-				SUBSTRING(
-					full_substring
-					FROM POSITION(',' IN full_substring)
-				) AS user_action_string
-			FROM (
-					SELECT *,
-						SUBSTRING(
-							comment_sequence
-							FROM comment_sequence_substring_start
-						) AS full_substring
-					FROM (
-							SELECT *,
-								(
-									SELECT fk_action_id
-									FROM comment
-									WHERE id = comment_id
-								) AS fk_action_id,
-								CHAR_LENGTH(comment_sequence) - LOCATE(
-									REVERSE(CONCAT(810112564787675166)),
-									REVERSE(comment_sequence)
-								) - CHAR_LENGTH(CONCAT(?)) + 2 AS comment_sequence_substring_start
-							FROM (
-									SELECT MAX(id) AS comment_id,
-										fk_submission_id,
-										GROUP_CONCAT(
-											CONCAT(
-												fk_user_id,
-												'-',
-												(
-													SELECT name
-													FROM action
-													WHERE action.id = fk_action_id
-												)
-											)
-										) AS comment_sequence
-									FROM comment
-									WHERE fk_user_id != 810112564787675166
-										AND deleted_at IS NULL
-										AND fk_action_id != (
-											SELECT id
-											FROM action
-											WHERE name = "assign"
-										)
-										AND fk_action_id != (
-											SELECT id
-											FROM action
-											WHERE name = "unassign"
-										)
-									GROUP BY fk_submission_id
-									ORDER BY created_at DESC
-								) AS a
-						) AS b
-				) AS c
-			WHERE REGEXP_LIKE(
-					SUBSTRING(
-						comment_sequence
-						FROM comment_sequence_substring_start
-					),
-					CONCAT(CONCAT(?), '-\\S+,\\d+-\\S+')
-				)
-		) AS actions_after_my_last_comment ON actions_after_my_last_comment.fk_submission_id = submission.id`
-
-	if filter != nil {
-		if len(filter.ActionsAfterMyLastComment) != 0 {
-			finalQuery += actionsAfterMyLastCommentQuery
-		}
-	}
 
 	rest := ` LEFT JOIN submission_notification_subscription AS sns ON sns.fk_submission_id = submission.id
 		WHERE submission.deleted_at IS NULL` + and + strings.Join(filters, " AND ") + `

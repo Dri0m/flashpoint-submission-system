@@ -136,7 +136,6 @@ type SubmissionsFilter struct {
 	MD5SumPartialAny               *string  `schema:"md5sum-partial-any"`
 	SHA256SumPartialAny            *string  `schema:"sha256sum-partial-any"`
 	BotActions                     []string `schema:"bot-action"`
-	ActionsAfterMyLastComment      []string `schema:"post-last-action"`
 	ResultsPerPage                 *int64   `schema:"results-per-page"`
 	Page                           *int64   `schema:"page"`
 	AssignedStatusTesting          *string  `schema:"assigned-status-testing"`

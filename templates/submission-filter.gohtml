@@ -271,39 +271,6 @@
                         </div>
 
                         <fieldset>
-                            <legend>Filter by Comments After Mine (union)</legend>
-                            <div class="pure-g">
-                                <div class="pure-u-1-2">
-                                    <label>
-                                        <input type="checkbox" name="post-last-action" value="any"
-                                               {{if has "any" .Filter.ActionsAfterMyLastComment}}checked{{end}}>
-                                        Any</label>
-                                    <label>
-                                        <input type="checkbox" name="post-last-action" value="comment"
-                                               {{if has "comment" .Filter.ActionsAfterMyLastComment}}checked{{end}}>
-                                        Comment</label>
-                                    <label>
-                                        <input type="checkbox" name="post-last-action" value="approve"
-                                               {{if has "approve" .Filter.ActionsAfterMyLastComment}}checked{{end}}>
-                                        Approve</label>
-                                </div>
-                                <div class="pure-u-1-2">
-                                    <label>
-                                        <input type="checkbox" name="post-last-action" value="request-changes"
-                                               {{if has "request-changes" .Filter.ActionsAfterMyLastComment}}checked{{end}}>
-                                        Request Changes</label>
-                                    <label>
-                                        <input type="checkbox" name="post-last-action" value="mark-added"
-                                               {{if has "mark-added" .Filter.ActionsAfterMyLastComment}}checked{{end}}>
-                                        Mark as Added</label>
-                                    <label>
-                                        <input type="checkbox" name="post-last-action" value="upload-file"
-                                               {{if has "upload-file" .Filter.ActionsAfterMyLastComment}}checked{{end}}>
-                                        Uploaded File</label>
-                                </div>
-                            </div>
-                        </fieldset>
-                        <fieldset>
                             <legend>Filter by My Current State</legend>
                             <div class="pure-g">
                                 <div class="pure-u-1-2">
