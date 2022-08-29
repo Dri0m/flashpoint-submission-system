@@ -237,6 +237,30 @@ func (s *SiteService) createCurationFeedMessage(dbs database.DBSession, authorID
 			b.WriteString("<:MapGuide:968518302580215879>")
 		} else if strings.Contains(lplat, "blender") {
 			b.WriteString("<:Blender:968940112627003463>")
+		} else if strings.Contains(lplat, "vream") {
+			b.WriteString("<:VReam:972878890190131260>")
+		} else if strings.Contains(lplat, "common ground") {
+			b.WriteString("<:CommonGround:973082691375333446>")
+		} else if strings.Contains(lplat, "jutvision") {
+			b.WriteString("<:jutvision:973274204063555635>")
+		} else if strings.Contains(lplat, "cool 360") {
+			b.WriteString("<:cool360:973967480370368612>")
+		} else if strings.Contains(lplat, "mrsid") {
+			b.WriteString("<:MrSID:976488638600847420>")
+		} else if strings.Contains(lplat, "panoramix") {
+			b.WriteString("<:PanoramIX:976488559836037150>")
+		} else if strings.Contains(lplat, "mbed") {
+			b.WriteString("<:MBed:976501234636841080>")
+		} else if strings.Contains(lplat, "djvu") {
+			b.WriteString("<:DjVu:984885288700620800>")
+		} else if strings.Contains(lplat, "jamagic") {
+			b.WriteString("<:Jamagic:988401673401675797>")
+		} else if strings.Contains(lplat, "scorch") {
+			b.WriteString("<:Scorch:990511328160526346>")
+		} else if strings.Contains(lplat, "petz player") {
+			b.WriteString("<:Petz:1010910107044937729>")
+		} else if strings.Contains(lplat, "sizzler") {
+			b.WriteString("<:Sizzler:1010910145540268073>")
 		} else {
 			b.WriteString("❓")
 		}
