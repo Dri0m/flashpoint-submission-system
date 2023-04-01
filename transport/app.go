@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,7 +34,7 @@ type App struct {
 	authMiddlewareCache *memoize.Memoizer
 }
 
-func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session, rsu *resumableuploadservice.ResumableUploadService) {
+func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgx.Conn, authBotSession, notificationBotSession *discordgo.Session, rsu *resumableuploadservice.ResumableUploadService) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{
@@ -51,7 +52,7 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, authBotSession, n
 			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
-		Service: service.New(l, db, authBotSession, notificationBotSession, conf.FlashpointServerID,
+		Service: service.New(l, db, pgdb, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
 			conf.SubmissionsDirFullPath, conf.SubmissionImagesDirFullPath, conf.FlashfreezeDirFullPath, conf.IsDev, rsu, conf.ArchiveIndexerServerURL, conf.FlashfreezeIngestDirFullPath, conf.FixesDirFullPath),
 		decoder:             decoder,

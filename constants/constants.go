@@ -74,6 +74,8 @@ const (
 	ResourceKeyFixFileID             = "fix-file-id"
 	ResourceKeyUserID                = "user-id"
 	ResourceKeyTempName              = "temp-name"
+	ResourceKeyTagID                 = "tag-id"
+	ResourceKeyGameID                = "game-id"
 )
 
 const (

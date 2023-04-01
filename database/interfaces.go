@@ -4,8 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"github.com/Dri0m/flashpoint-submission-system/types"
+	"github.com/jackc/pgx/v5"
 	"time"
 )
+
+type PGDAL interface {
+	NewSession(ctx context.Context) (PGDBSession, error)
+
+	SearchTags(dbs PGDBSession) ([]*types.Tag, error)
+	GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, error)
+	GetTag(dbs PGDBSession, tagId int64) (types.Tag, error)
+	GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error)
+	GetGame(dbs PGDBSession, gameId string) (types.Game, error)
+	DeveloperImportDatabaseJson(dbs PGDBSession, data *types.LauncherDump) error
+}
 
 type DAL interface {
 	NewSession(ctx context.Context) (DBSession, error)
@@ -96,5 +108,12 @@ type DBSession interface {
 	Commit() error
 	Rollback() error
 	Tx() *sql.Tx
+	Ctx() context.Context
+}
+
+type PGDBSession interface {
+	Commit() error
+	Rollback() error
+	Tx() pgx.Tx
 	Ctx() context.Context
 }

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -17,7 +18,7 @@ type CurationMeta struct {
 	LaunchCommand       *string `json:"Launch Command"`
 	OriginalDescription *string `json:"Original Description"`
 	PlayMode            *string `json:"Play Mode"`
-	Platform            *string `json:"Platform"`
+	Platform            *string `json:"Platforms"`
 	Publisher           *string `json:"Publisher"`
 	ReleaseDate         *string `json:"Release Date"`
 	Series              *string `json:"Series"`
@@ -396,9 +397,176 @@ type SimilarityAttributes struct {
 	LaunchCommandRatio float64
 }
 
+type Game struct {
+	ID              string           `json:"id"`
+	ParentGameID    *string          `json:"parent_game_id,omitempty"`
+	Title           string           `json:"title"`
+	AlternateTitles string           `json:"alternate_titles"`
+	Series          string           `json:"series"`
+	Developer       string           `json:"developer"`
+	Publisher       string           `json:"publisher"`
+	Platforms       []*Platform      `json:"platforms,omitempty"`
+	PlatformsStr    string           `json:"platforms_str"`
+	DateAdded       time.Time        `json:"date_added"`
+	DateModified    time.Time        `json:"date_modified"`
+	PlayMode        string           `json:"play_mode"`
+	Status          string           `json:"status"`
+	Notes           string           `json:"notes"`
+	Tags            []*Tag           `json:"tags,omitempty"`
+	TagsStr         string           `json:"tags_str"`
+	Source          string           `json:"source"`
+	ApplicationPath string           `json:"application_path"`
+	LaunchCommand   string           `json:"launch_command"`
+	ReleaseDate     string           `json:"release_date"`
+	Version         string           `json:"version"`
+	OriginalDesc    string           `json:"original_description"`
+	Language        string           `json:"language"`
+	Library         string           `json:"library"`
+	AddApps         []*AdditionalApp `json:"add_apps"`
+	ActiveDataID    *int             `json:"active_data_id,omitempty"`
+	Data            []*GameData      `json:"data,omitempty"`
+	UserID          string           `json:"user_id"`
+}
+
+type GameData struct {
+	ID         int       `json:"id"`
+	Game       *Game     `json:"-"`
+	GameID     string    `json:"game_id,gameId"`
+	Title      string    `json:"title"`
+	DateAdded  time.Time `json:"date_added,dateAdded"`
+	SHA256     string    `json:"sha256"`
+	CRC32      int       `json:"crc32"`
+	Path       *string   `json:"path,omitempty"`
+	Size       int64     `json:"size"`
+	Parameters *string   `json:"parameters,omitempty"`
+}
+
+type AdditionalApp struct {
+	ID              string `json:"id"`
+	ApplicationPath string `json:"application_path"`
+	AutoRunBefore   bool   `json:"auto_run_before"`
+	LaunchCommand   string `json:"launch_command"`
+	Name            string `json:"name"`
+	WaitForExit     bool   `json:"wait_for_exit"`
+	ParentGameID    string `json:"parent_game_id"`
+}
+
+type Platform struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	DateModified time.Time `json:"date_modified"`
+}
+
+type PlatformAlias struct {
+	PlatformID int64  `json:"platform_id"`
+	Name       string `json:"name"`
+}
+
 type Tag struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	DateModified time.Time `json:"date_modified"`
+	Category     string    `json:"category"`
+}
+
+type TagAlias struct {
+	TagID int64  `json:"tag_id"`
+	Name  string `json:"name"`
+}
+
+type TagCategory struct {
+	ID          int64  `json:"id"`
 	Name        string `json:"name"`
+	Color       string `json:"color"`
 	Description string `json:"description"`
+}
+
+type LauncherDumpRelation struct {
+	GameID string `json:"g"`
+	Value  int64  `json:"v"`
+}
+
+type LauncherDump struct {
+	Games             LauncherDumpGames      `json:"games"`
+	Tags              LauncherDumpTags       `json:"tags"`
+	Platforms         LauncherDumpPlatforms  `json:"platforms"`
+	TagRelations      []LauncherDumpRelation `json:"tag_relations"`
+	PlatformRelations []LauncherDumpRelation `json:"platform_relations"`
+}
+
+type LauncherDumpGames struct {
+	AddApps  []AdditionalApp `json:"add_apps"`
+	GameData []GameData      `json:"game_data"`
+	Games    []Game          `json:"games"`
+}
+
+type LauncherDumpTags struct {
+	Categories []TagCategory         `json:"categories"`
+	Aliases    []TagAlias            `json:"aliases"`
+	Tags       []LauncherDumpTagsTag `json:"tags"`
+}
+
+type LauncherDumpPlatforms struct {
+	Aliases   []PlatformAlias                 `json:"aliases"`
+	Platforms []LauncherDumpPlatformsPlatform `json:"platforms"`
+}
+
+type LauncherDumpTagsAliases struct {
+	TagID int64  `json:"tagId"`
+	Name  string `json:"name"`
+}
+
+type LauncherDumpTagsTag struct {
+	ID           int64  `json:"id"`
+	CategoryID   int64  `json:"category_id"`
+	Description  string `json:"description"`
+	PrimaryAlias string `json:"primary_alias"`
+}
+
+type LauncherDumpPlatformsPlatform struct {
+	ID           int64  `json:"id"`
+	Description  string `json:"description"`
+	PrimaryAlias string `json:"primary_alias"`
+}
+
+func (t *LauncherDumpTagsTag) UnmarshalJSON(data []byte) error {
+	type Alias LauncherDumpTagsTag
+	aux := &struct {
+		*Alias
+		Description *string `json:"description"`
+	}{
+		Alias: (*Alias)(t),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Description != nil {
+		t.Description = *aux.Description
+	} else {
+		t.Description = ""
+	}
+	return nil
+}
+
+func (p *LauncherDumpPlatformsPlatform) UnmarshalJSON(data []byte) error {
+	type Alias LauncherDumpPlatformsPlatform
+	aux := &struct {
+		*Alias
+		Description *string `json:"description"`
+	}{
+		Alias: (*Alias)(p),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Description != nil {
+		p.Description = *aux.Description
+	} else {
+		p.Description = ""
+	}
+	return nil
 }
 
 type ValidatorTagResponse struct {

@@ -5,11 +5,19 @@ export $(shell sed 's/=.*//' .env)
 .PHONY: db migrate run
 
 db:
-	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml down -v
+	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml down
 	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up -d
+
+rebuild-postgres:
+	docker-compose -p ${DB_CONTAINER_NAME} down
+	docker volume rm fpfssdb-local_fpfss_postgres_data
+	docker-compose -p ${DB_CONTAINER_NAME} -f dc-db.yml up -d
+	sleep 5
+	make migrate
 
 migrate:
 	docker run --rm -v $(shell pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "mysql://${DB_USER}:${DB_PASSWORD}@tcp(${DB_IP}:${DB_PORT})/${DB_NAME}" up
+	docker run --rm -v $(shell pwd)/postgres_migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}?sslmode=disable" up
 
 migrate-to:
 	docker run --rm -v $(shell pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "mysql://${DB_USER}:${DB_PASSWORD}@tcp(${DB_IP}:${DB_PORT})/${DB_NAME}" goto $(MIGRATION)

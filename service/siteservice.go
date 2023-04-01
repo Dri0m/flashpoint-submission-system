@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -125,6 +126,7 @@ type SiteService struct {
 	authBot                   authbot.DiscordRoleReader
 	notificationBot           notificationbot.DiscordNotificationSender
 	dal                       database.DAL
+	pgdal                     database.PGDAL
 	validator                 Validator
 	clock                     Clock
 	randomStringProvider      utils.RandomStringer
@@ -144,7 +146,7 @@ type SiteService struct {
 	SSK                       SubmissionStatusKeeper
 }
 
-func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
+func New(l *logrus.Entry, db *sql.DB, pgdb *pgx.Conn, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
 	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir, fixesDir string) *SiteService {
 
@@ -152,6 +154,7 @@ func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *di
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
 		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, curationFeedChannelID, l.WithField("botName", "notificationBot"), isDev),
 		dal:                       database.NewMysqlDAL(db),
+		pgdal:                     database.NewPostgresDAL(pgdb),
 		validator:                 NewValidator(validatorServerURL),
 		clock:                     &RealClock{},
 		randomStringProvider:      utils.NewRealRandomStringProvider(),
@@ -207,6 +210,124 @@ func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	}
 
 	return bpd, nil
+}
+
+func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageCdn string, compressedImages bool) (*types.GamePageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	game, err := s.pgdal.GetGame(dbs, gameId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("game not found", http.StatusNotFound)
+	}
+
+	logoUrl := fmt.Sprintf("%s/Logos/%s/%s/%s.png", imageCdn, game.ID[:2], game.ID[2:4], game.ID)
+	if compressedImages {
+		logoUrl = logoUrl + "?type=jpg"
+	}
+	ssUrl := fmt.Sprintf("%s/Screenshots/%s/%s/%s.png", imageCdn, game.ID[:2], game.ID[2:4], game.ID)
+	if compressedImages {
+		ssUrl = ssUrl + "?type=jpg"
+	}
+	pageData := &types.GamePageData{
+		Game:          game,
+		LogoUrl:       logoUrl,
+		ScreenshotUrl: ssUrl,
+		BasePageData:  *bpd,
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*types.TagPageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	categories, err := s.pgdal.GetTagCategories(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	tagId, err := strconv.Atoi(tagIdStr)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+	tag, err := s.pgdal.GetTag(dbs, int64(tagId))
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("tag not found", http.StatusNotFound)
+	}
+
+	gamesUsing, err := s.pgdal.GetGamesUsingTagTotal(dbs, int64(tagId))
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	pageData := &types.TagPageData{
+		Tag:          tag,
+		Categories:   categories,
+		GamesUsing:   gamesUsing,
+		BasePageData: *bpd,
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) GetTagsPageData(ctx context.Context) (*types.TagsPageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	categories, err := s.pgdal.GetTagCategories(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	tags, err := s.pgdal.SearchTags(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	pageData := &types.TagsPageData{
+		Tags:         tags,
+		Categories:   categories,
+		BasePageData: *bpd,
+		TotalCount:   int64(len(tags)),
+	}
+
+	return pageData, nil
 }
 
 func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid int64) (*types.ViewSubmissionPageData, error) {
@@ -2480,4 +2601,40 @@ func (s *SiteService) GetFixesFiles(ctx context.Context, ffids []int64) ([]*type
 		return nil, dberr(err)
 	}
 	return ffs, nil
+}
+
+func (s *SiteService) DeveloperImportDatabaseJson(ctx context.Context, data *types.LauncherDump) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	err = s.pgdal.DeveloperImportDatabaseJson(dbs, data)
+	if err != nil {
+		dbs.Rollback()
+		dbs, err := s.pgdal.NewSession(ctx)
+		// Enable triggers
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `SET session_replication_role = DEFAULT`)
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	dbs, err = s.pgdal.NewSession(ctx)
+	// Enable triggers
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `SET session_replication_role = DEFAULT`)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	utils.LogCtx(ctx).Debug("commited database import")
+
+	return nil
 }

@@ -33,6 +33,9 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	isGod := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.GodRoles())
 	}
+	isColin := func(r *http.Request, uid int64) (bool, error) {
+		return uid == 689080719460663414, nil
+	}
 	userOwnsSubmission := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserOwnsResource(r, uid, constants.ResourceKeySubmissionID)
 	}
@@ -137,6 +140,34 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	router.Handle(
 		"/api/submissions",
 		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	/////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleTagsPage, muxAny(isStaff, isTrialCurator, isInAudit))
+
+	router.Handle(
+		"/web/tags",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandleTagPage, muxAny(isStaff, isTrialCurator, isInAudit))
+
+	router.Handle(
+		fmt.Sprintf("/web/tag/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleGamePage, muxAny(isStaff, isTrialCurator, isInAudit))
+
+	router.Handle(
+		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
 
 	////////////////////////
@@ -362,6 +393,20 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		"/api/fixes/submit/generic",
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleReceiveFixesSubmitGeneric, muxAny(isStaff, isTrialCurator, isInAudit))))).
+		Methods("POST")
+
+	////////////////////////
+
+	router.Handle(
+		"/web/developer",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleDeveloperPage, muxAny(isGod, isColin))))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/developer/submit_dump",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleDeveloperDumpUpload, muxAny(isGod, isColin))))).
 		Methods("POST")
 
 	////////////////////////

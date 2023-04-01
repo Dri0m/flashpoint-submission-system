@@ -13,6 +13,27 @@ type ProfilePageData struct {
 	NotificationActions []string
 }
 
+type TagsPageData struct {
+	BasePageData
+	Tags       []*Tag
+	Categories []*TagCategory
+	TotalCount int64
+}
+
+type TagPageData struct {
+	BasePageData
+	Tag        Tag
+	Categories []*TagCategory
+	GamesUsing int64
+}
+
+type GamePageData struct {
+	BasePageData
+	Game          Game
+	LogoUrl       string
+	ScreenshotUrl string
+}
+
 type SubmissionsPageData struct {
 	BasePageData
 	Submissions  []*ExtendedSubmission

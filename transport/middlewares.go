@@ -118,7 +118,7 @@ func (a *App) UserHasAllRoles(r *http.Request, uid int64, requiredRoles []string
 		return false, err
 	}
 
-	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("getting user roles")
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached))
 
 	isAuthorized := true
 
@@ -317,7 +317,7 @@ func (a *App) UserCanCommentAction(r *http.Request, uid int64) (bool, error) {
 		return false, err
 	}
 
-	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached)).Debug("getting user roles")
+	utils.LogCtx(ctx).WithField("cached", utils.BoolToString(cached))
 
 	formAction := r.FormValue("action")
 

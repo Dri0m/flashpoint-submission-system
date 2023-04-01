@@ -27,6 +27,10 @@ type Config struct {
 	DBIP                         string
 	DBPort                       int64
 	DBName                       string
+	PostgresUser                 string
+	PostgresPassword             string
+	PostgresHost                 string
+	PostgresPort                 int64
 	NotificationBotToken         string
 	NotificationChannelID        string
 	CurationFeedChannelID        string
@@ -38,6 +42,9 @@ type Config struct {
 	FixesDirFullPath             string
 	SubmissionsDirFullPath       string
 	SubmissionImagesDirFullPath  string
+	SystemUid                    int64
+	ImagesCdn                    string
+	ImagesCdnCompressed          bool
 }
 
 func EnvString(name string) string {
@@ -101,6 +108,10 @@ func GetConfig(l *logrus.Entry) *Config {
 		DBIP:                         EnvString("DB_IP"),
 		DBPort:                       EnvInt("DB_PORT"),
 		DBName:                       EnvString("DB_NAME"),
+		PostgresUser:                 EnvString("POSTGRES_USER"),
+		PostgresPassword:             EnvString("POSTGRES_PASSWORD"),
+		PostgresHost:                 EnvString("POSTGRES_HOST"),
+		PostgresPort:                 EnvInt("POSTGRES_PORT"),
 		NotificationBotToken:         EnvString("NOTIFICATION_BOT_TOKEN"),
 		NotificationChannelID:        EnvString("NOTIFICATION_CHANNEL_ID"),
 		CurationFeedChannelID:        EnvString("CURATION_FEED_CHANNEL_ID"),
@@ -112,5 +123,8 @@ func GetConfig(l *logrus.Entry) *Config {
 		FixesDirFullPath:             EnvString("FIXES_DIR_FULL_PATH"),
 		SubmissionsDirFullPath:       EnvString("SUBMISSIONS_DIR_FULL_PATH"),
 		SubmissionImagesDirFullPath:  EnvString("SUBMISSION_IMAGES_DIR_FULL_PATH"),
+		SystemUid:                    EnvInt("SYSTEM_UID"),
+		ImagesCdn:                    EnvString("IMAGES_CDN"),
+		ImagesCdnCompressed:          EnvBool("IMAGES_CDN_COMPRESSED"),
 	}
 }

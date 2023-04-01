@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/database"
@@ -33,6 +34,9 @@ func main() {
 	db := database.OpenDB(l, conf)
 	defer db.Close()
 
+	pgdb := database.OpenPostgresDB(l, conf)
+	defer pgdb.Close(context.Background())
+
 	authBot := authbot.ConnectBot(l, conf.AuthBotToken)
 	notificationBot := notificationbot.ConnectBot(l, conf.NotificationBotToken)
 
@@ -44,5 +48,5 @@ func main() {
 	defer rsu.Close()
 	l.Infoln("resumable upload service connected")
 
-	transport.InitApp(l, conf, db, authBot, notificationBot, rsu)
+	transport.InitApp(l, conf, db, pgdb, authBot, notificationBot, rsu)
 }

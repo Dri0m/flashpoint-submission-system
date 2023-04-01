@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kofalt/go-memoize"
 	"net/http"
@@ -396,6 +397,49 @@ func (a *App) HandleFixesSubmitGenericPageUploadFilesPage(w http.ResponseWriter,
 	a.RenderTemplates(ctx, w, r, pageData, "templates/fixes-submit-generic-upload-files.gohtml")
 }
 
+func (a *App) HandleTagsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetTagsPageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/tags-table.gohtml",
+		"templates/tags.gohtml")
+}
+
+func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	tagID := params[constants.ResourceKeyTagID]
+
+	pageData, err := a.Service.GetTagPageData(ctx, tagID)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/tag.gohtml")
+}
+
+func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyTagID]
+
+	pageData, err := a.Service.GetGamePageData(ctx, gameId, a.Conf.ImagesCdn, a.Conf.ImagesCdnCompressed)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/game.gohtml")
+}
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1130,4 +1174,47 @@ func (a *App) HandleGetUploadProgress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(ctx, w, data, http.StatusOK)
+}
+
+func (a *App) HandleDeveloperPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/developer.gohtml")
+}
+
+func (a *App) HandleDeveloperDumpUpload(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// get file from request body
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to get file from request", http.StatusBadRequest))
+		return
+	}
+	defer file.Close()
+
+	// decode JSON file
+	var jsonData types.LauncherDump
+	err = json.NewDecoder(file).Decode(&jsonData)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode JSON file", http.StatusBadRequest))
+		return
+	}
+
+	err = a.Service.DeveloperImportDatabaseJson(ctx, &jsonData)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to import", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, nil, http.StatusNoContent)
 }
