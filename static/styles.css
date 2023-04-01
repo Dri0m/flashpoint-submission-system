@@ -568,3 +568,7 @@ video {
     padding: 0.2rem;
     margin-right: 0.15rem;
 }
+
+.tag-box:hover {
+    background-color: lightgray;
+}

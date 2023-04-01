@@ -200,7 +200,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 
 	// Get tags
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM tag WHERE id IN (
-    	SELECT tag_id FROM game_tags_tag WHERE game_id = $1)`, gameId)
+    	SELECT tag_id FROM game_tags_tag WHERE game_id = $1) ORDER BY primary_alias`, gameId)
 	if err != nil {
 		return game, err
 	}
@@ -219,7 +219,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 
 	// Get platforms
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM platform WHERE id IN (
-    	SELECT platform_id FROM game_platforms_platform WHERE game_id = $1)`, gameId)
+    	SELECT platform_id FROM game_platforms_platform WHERE game_id = $1) ORDER BY primary_alias`, gameId)
 	if err != nil {
 		return game, err
 	}

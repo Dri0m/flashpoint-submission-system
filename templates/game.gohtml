@@ -1,5 +1,11 @@
 {{define "main"}}
     <div class="content">
+        <script>
+            function tagRedirect(tagId) {
+                window.location.href = "/web/tag/" + tagId;
+            }
+        </script>
+
         <h3>Game {{.Game.ID}}</h3>
         <h1>{{.Game.Title}}</h1>
 
@@ -75,7 +81,7 @@
                         <i>No Tags</i>
                     {{else}}
                         {{range .Game.Tags}}
-                            <div class="tag-box">
+                            <div class="tag-box" onclick="tagRedirect('{{.ID}}')">
                                 <div>{{.Name}}</div>
                             </div>
                         {{end}}

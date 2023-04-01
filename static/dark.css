@@ -54,3 +54,7 @@ input[type=text], textarea{
 .button-reject {
     border: 1px solid #ccc;
 }
+
+.tag-box:hover {
+    background-color: black;
+}
