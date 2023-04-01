@@ -7,5 +7,208 @@
              class="curation-image" alt="curation image">
         <img src={{.ScreenshotUrl}}
              class="curation-image" alt="curation image">
+
+        <h3>Metadata</h3>
+        <table class="pure-table pure-table-bordered meta-table">
+            <tbody>
+            <tr>
+                <td class="meta-property">Title</td>
+                <td class="break-all">{{if not .Game.Title}}<i>No Title</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Title) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Alternate Titles</td>
+                <td class="break-all">{{if not .Game.AlternateTitles}}<i>No Alternate Titles</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.AlternateTitles) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Library</td>
+                <td class="break-all">{{if not .Game.Library}}<i>No Library</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Library) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Series</td>
+                <td class="break-all">{{if not .Game.Series}}<i>No Series</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Series) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Developer</td>
+                <td class="break-all">{{if not .Game.Developer}}<i>No Developer</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Developer) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Publisher</td>
+                <td class="break-all">{{if not .Game.Publisher}}<i>No Publisher</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Publisher) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Platforms</td>
+                <td class="tag-list">
+                    {{if not .Game.Platforms}}
+                        <i>No Platforms</i>
+                    {{else}}
+                        {{range .Game.Platforms}}
+                            <div class="tag-box">
+                                <div>{{.Name}}</div>
+                            </div>
+                        {{end}}
+                    {{end}}
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Tags</td>
+                <td class="tag-list">
+                    {{if not .Game.Tags}}
+                        <i>No Tags</i>
+                    {{else}}
+                        {{range .Game.Tags}}
+                            <div class="tag-box">
+                                <div>{{.Name}}</div>
+                            </div>
+                        {{end}}
+                    {{end}}
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Play Mode</td>
+                <td class="break-all">{{if not .Game.PlayMode}}<i>No Play Mode</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.PlayMode) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Status</td>
+                <td class="break-all">{{if not .Game.Status}}<i>No Status</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Status) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Version</td>
+                <td class="break-all">{{if not .Game.Version}}<i>No Version</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Version) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Release Date</td>
+                <td class="break-all">{{if not .Game.ReleaseDate}}<i>No Release Date</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.ReleaseDate) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Language</td>
+                <td class="break-all">{{if not .Game.Language}}<i>No Language</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Language) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Source</td>
+                <td class="break-all">{{if not .Game.Source}}<i>No Source</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Source) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Application Path</td>
+                <td class="break-all">{{if not .Game.ApplicationPath}}<i>No Application Path</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.ApplicationPath) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Launch Command</td>
+                <td class="break-all">{{if not .Game.LaunchCommand}}<i>No Launch Command</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.LaunchCommand) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Notes</td>
+                <td class="break-all">{{if not .Game.Notes}}<i>No Notes</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.Notes) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Original Description</td>
+                <td class="break-all">{{if not .Game.OriginalDesc}}<i>No Original
+                        Description</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.OriginalDesc) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <h3>Additional Apps</h3>
+        {{range .Game.AddApps}}
+            <table class="pure-table pure-table-bordered meta-table">
+                <tr>
+                    <td class="meta-property">Name</td>
+                    <td class="break-all">{{.Name}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Application Path</td>
+                    <td class="break-all">{{.ApplicationPath}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Launch Command</td>
+                    <td class="break-all">{{.LaunchCommand}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Wait For Exit</td>
+                    <td class="break-all">{{.WaitForExit}}</td>
+                </tr>
+            </table>
+        {{end}}
+
+        <h3>Game Data</h3>
+        {{range .Game.Data}}
+            <table class="pure-table pure-table-bordered meta-table">
+                <tr>
+                    <td class="meta-property">Title</td>
+                    <td class="break-all">{{.Title}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Date Added</td>
+                    <td class="break-all">{{.DateAdded}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">SHA256</td>
+                    <td class="break-all">{{.SHA256}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">CRC32</td>
+                    <td class="break-all">{{.CRC32}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Size</td>
+                    <td class="break-all">{{.Size}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Mount Parameters</td>
+                    <td class="break-all">{{if not .Parameters}}<i>No Mount Parameters</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .Parameters) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+            </table>
+        {{end}}
     </div>
-{{end}}G
+{{end}}

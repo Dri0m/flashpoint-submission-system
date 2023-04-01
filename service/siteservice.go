@@ -239,6 +239,7 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 	if compressedImages {
 		ssUrl = ssUrl + "?type=jpg"
 	}
+
 	pageData := &types.GamePageData{
 		Game:          game,
 		LogoUrl:       logoUrl,

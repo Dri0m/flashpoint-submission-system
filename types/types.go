@@ -430,12 +430,11 @@ type Game struct {
 
 type GameData struct {
 	ID         int       `json:"id"`
-	Game       *Game     `json:"-"`
 	GameID     string    `json:"game_id,gameId"`
 	Title      string    `json:"title"`
 	DateAdded  time.Time `json:"date_added,dateAdded"`
-	SHA256     string    `json:"sha256"`
-	CRC32      int       `json:"crc32"`
+	SHA256     string    `json:"sha_256"`
+	CRC32      int       `json:"crc_32"`
 	Path       *string   `json:"path,omitempty"`
 	Size       int64     `json:"size"`
 	Parameters *string   `json:"parameters,omitempty"`
@@ -456,6 +455,7 @@ type Platform struct {
 	Name         string    `json:"name"`
 	Description  string    `json:"description"`
 	DateModified time.Time `json:"date_modified"`
+	UserID       int64     `json:"user_id"`
 }
 
 type PlatformAlias struct {
@@ -469,6 +469,7 @@ type Tag struct {
 	Description  string    `json:"description"`
 	DateModified time.Time `json:"date_modified"`
 	Category     string    `json:"category"`
+	UserID       int64     `json:"user_id"`
 }
 
 type TagAlias struct {

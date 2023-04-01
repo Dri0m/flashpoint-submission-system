@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
+	"log"
 	"time"
 )
 
@@ -150,6 +151,7 @@ func (d *postgresDAL) GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64
 }
 
 func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error) {
+	// Get game
 	var game types.Game
 	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT * FROM game WHERE id = $1`, gameId).
 		Scan(&game.ID, &game.ParentGameID, &game.Title, &game.AlternateTitles, &game.Series, &game.Developer,
@@ -158,6 +160,80 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 			&game.OriginalDesc, &game.Language, &game.Library, &game.ActiveDataID, &game.TagsStr, &game.PlatformsStr, &game.UserID)
 	if err != nil {
 		return game, err
+	}
+
+	// Get add apps
+	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM additional_app WHERE parent_game_id = $1`, gameId)
+	if err != nil {
+		return game, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var addApp types.AdditionalApp
+		err = rows.Scan(&addApp.ID, &addApp.ApplicationPath, &addApp.AutoRunBefore, &addApp.LaunchCommand, &addApp.Name, &addApp.WaitForExit, &addApp.ParentGameID)
+		if err != nil {
+			return game, err
+		}
+		game.AddApps = append(game.AddApps, &addApp)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Get game data
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM game_data WHERE game_id = $1`, gameId)
+	if err != nil {
+		return game, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var data types.GameData
+		err = rows.Scan(&data.ID, &data.GameID, &data.Title, &data.DateAdded, &data.SHA256, &data.CRC32, &data.Size, &data.Parameters)
+		if err != nil {
+			return game, err
+		}
+		game.Data = append(game.Data, &data)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Get tags
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM tag WHERE id IN (
+    	SELECT tag_id FROM game_tags_tag WHERE game_id = $1)`, gameId)
+	if err != nil {
+		return game, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var data types.Tag
+		err = rows.Scan(&data.ID, &data.DateModified, &data.Name, &data.Category, &data.Description, &data.UserID)
+		if err != nil {
+			return game, err
+		}
+		game.Tags = append(game.Tags, &data)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Get platforms
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM platform WHERE id IN (
+    	SELECT platform_id FROM game_platforms_platform WHERE game_id = $1)`, gameId)
+	if err != nil {
+		return game, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var data types.Platform
+		err = rows.Scan(&data.ID, &data.DateModified, &data.Name, &data.Description, &data.UserID)
+		if err != nil {
+			return game, err
+		}
+		game.Platforms = append(game.Platforms, &data)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
 	}
 
 	return game, nil
