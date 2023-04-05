@@ -131,8 +131,8 @@ func (d *postgresDAL) SearchTags(dbs PGDBSession) ([]*types.Tag, error) {
 
 func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (types.Tag, error) {
 	var tag types.Tag
-	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias FROM tag LEFT JOIN tag_category ON tag_category.id = tag.category_id WHERE tag.id = $1`, tagId).
-		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name)
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, user_id FROM tag LEFT JOIN tag_category ON tag_category.id = tag.category_id WHERE tag.id = $1`, tagId).
+		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.UserID)
 	if err != nil {
 		return tag, err
 	}
@@ -199,7 +199,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 	}
 
 	// Get tags
-	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM tag WHERE id IN (
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, user_id FROM tag LEFT JOIN tag_category ON tag_category.id = tag.category_id WHERE tag.id IN (
     	SELECT tag_id FROM game_tags_tag WHERE game_id = $1) ORDER BY primary_alias`, gameId)
 	if err != nil {
 		return game, err
@@ -207,7 +207,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 	defer rows.Close()
 	for rows.Next() {
 		var data types.Tag
-		err = rows.Scan(&data.ID, &data.DateModified, &data.Name, &data.Category, &data.Description, &data.UserID)
+		err = rows.Scan(&data.ID, &data.Description, &data.Category, &data.DateModified, &data.Name, &data.UserID)
 		if err != nil {
 			return game, err
 		}
@@ -237,6 +237,74 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 	}
 
 	return game, nil
+}
+
+func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) error {
+	// Save tag relations
+	_, err := dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM game_tags_tag WHERE game_id = $1`, game.ID)
+	_, err = dbs.Tx().CopyFrom(
+		dbs.Ctx(),
+		pgx.Identifier{"game_tags_tag"},
+		[]string{"game_id", "tag_id"},
+		pgx.CopyFromSlice(len(game.Tags), func(i int) ([]interface{}, error) {
+			return []interface{}{
+				game.ID,
+				game.Tags[i].ID,
+			}, nil
+		}),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Save platform relations
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM game_platforms_platform WHERE game_id = $1`, game.ID)
+	_, err = dbs.Tx().CopyFrom(
+		dbs.Ctx(),
+		pgx.Identifier{"game_platforms_platform"},
+		[]string{"game_id", "platform_id"},
+		pgx.CopyFromSlice(len(game.Platforms), func(i int) ([]interface{}, error) {
+			return []interface{}{
+				game.ID,
+				game.Platforms[i].ID,
+			}, nil
+		}),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Save add apps
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM additional_app WHERE parent_game_id = $1`, game.ID)
+	_, err = dbs.Tx().CopyFrom(
+		dbs.Ctx(),
+		pgx.Identifier{"additional_app"},
+		[]string{"application_path", "auto_run_before", "launch_command", "name", "wait_for_exit", "parent_game_id"},
+		pgx.CopyFromSlice(len(game.AddApps), func(i int) ([]interface{}, error) {
+			return []interface{}{
+				game.AddApps[i].ApplicationPath,
+				game.AddApps[i].AutoRunBefore,
+				game.AddApps[i].LaunchCommand,
+				game.AddApps[i].Name,
+				game.AddApps[i].WaitForExit,
+				game.ID,
+			}, nil
+		}),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Save game
+	query := "UPDATE game SET parent_game_id=$1, title=$2, alternate_titles=$3, series=$4, developer=$5, publisher=$6, platforms_str=$7, play_mode=$8, status=$9, notes=$10, tags_str=$11, source=$12, application_path=$13, launch_command=$14, release_date=$15, version=$16, original_description=$17, language=$18, library=$19, active_data_id=$20, user_id=$21 WHERE id=$22"
+	_, err = dbs.Tx().Exec(dbs.Ctx(), query, game.ParentGameID, game.Title, game.AlternateTitles, game.Series, game.Developer, game.Publisher, game.PlatformsStr, game.PlayMode, game.Status, game.Notes, game.TagsStr, game.Source, game.ApplicationPath, game.LaunchCommand, game.ReleaseDate, game.Version, game.OriginalDesc, game.Language, game.Library, game.ActiveDataID, uid, game.ID)
+	if err != nil {
+		return err
+	}
+
+	dbs.Commit()
+
+	return nil
 }
 
 func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.LauncherDump) error {

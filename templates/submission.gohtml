@@ -23,6 +23,10 @@
                    href="/data/submission/{{(index .Submissions 0).SubmissionID}}/file/{{(index .Submissions 0).FileID}}">
                     Download latest version
                 </a>
+                <a class="pure-button pure-button-primary"
+                   href="flashpoint://fpfss/open_curation/data/submission/{{(index .Submissions 0).SubmissionID}}/file/{{(index .Submissions 0).FileID}}">
+                    Open in Flashpoint Launcher
+                </a>
 
                 {{if gt (index .Submissions 0).FileCount 1}}
                     <a class="pure-button pure-button-primary"

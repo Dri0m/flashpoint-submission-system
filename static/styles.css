@@ -563,12 +563,22 @@ video {
 }
 
 .tag-box {
+    align-items: center;
     border: 2px solid gray;
     border-radius: 3px;
-    padding: 0.2rem;
+    padding: 0.25rem;
     margin-right: 0.15rem;
+    display: flex;
 }
 
 .tag-box:hover {
     background-color: lightgray;
+}
+
+.tag-box_platform-icon {
+    background-repeat: no-repeat;
+    background-size: contain;
+    width: 1.4rem;
+    height: 1.4rem;
+    margin-right: 0.15rem;
 }

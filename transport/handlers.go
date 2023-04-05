@@ -422,6 +422,11 @@ func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Tag, http.StatusOK)
+		return
+	}
+
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/tag.gohtml")
 }
@@ -431,9 +436,30 @@ func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	gameId := params[constants.ResourceKeyTagID]
 
+	// Handle POST changes
+	if utils.RequestType(ctx) != constants.RequestWeb && r.Method == "POST" {
+		var game types.Game
+		err := json.NewDecoder(r.Body).Decode(&game)
+		if err != nil {
+			writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err = a.Service.SaveGame(ctx, &game)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			writeResponse(ctx, w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	pageData, err := a.Service.GetGamePageData(ctx, gameId, a.Conf.ImagesCdn, a.Conf.ImagesCdnCompressed)
 	if err != nil {
 		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Game, http.StatusOK)
 		return
 	}
 

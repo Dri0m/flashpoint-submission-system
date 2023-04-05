@@ -67,6 +67,16 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(a.HandleLogout))).
 		Methods("GET")
 
+	// device flow
+	router.Handle(
+		"/auth/token",
+		http.HandlerFunc(a.RequestJSON(a.HandleNewDeviceToken))).
+		Methods("GET", "POST")
+	router.Handle(
+		"/auth/device",
+		http.HandlerFunc(a.UserAuthMux(a.RequestWeb(a.HandleApproveDevice), muxAny(isStaff, isTrialCurator, isInAudit)))).
+		Methods("GET", "POST")
+
 	// pages
 	router.Handle(
 		"/",
@@ -160,6 +170,11 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
 
+	router.Handle(
+		fmt.Sprintf("/api/tag/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
 	////////////////////////
 
 	f = a.UserAuthMux(
@@ -169,6 +184,11 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyTagID),
 		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET", "POST")
 
 	////////////////////////
 

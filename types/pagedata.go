@@ -32,6 +32,7 @@ type GamePageData struct {
 	Game          Game
 	LogoUrl       string
 	ScreenshotUrl string
+	ImagesCdn     string
 }
 
 type SubmissionsPageData struct {
@@ -102,4 +103,17 @@ type ViewFixPageData struct {
 type UserStatisticsPageData struct {
 	BasePageData
 	Users []*UserStatistics
+}
+
+type DeviceAuthStates struct {
+	Pending  int64
+	Complete int64
+	Expired  int64
+	Denied   int64
+}
+
+type DeviceAuthPageData struct {
+	BasePageData
+	Token  *DeviceFlowToken
+	States DeviceAuthStates
 }

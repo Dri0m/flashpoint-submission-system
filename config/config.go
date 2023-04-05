@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Port                         int64
 	OauthConf                    *oauth2.Config
+	DeviceFlowVerificaitonUrl    string
 	AuthBotToken                 string
 	FlashpointServerID           string
 	SecurecookieHashKeyPrevious  string
@@ -95,6 +96,7 @@ func GetConfig(l *logrus.Entry) *Config {
 				AuthStyle: oauth2.AuthStyleInParams,
 			},
 		},
+		DeviceFlowVerificaitonUrl:    EnvString("DEVICE_FLOW_VERIFICATION_URL"),
 		AuthBotToken:                 EnvString("AUTH_BOT_TOKEN"),
 		FlashpointServerID:           EnvString("FLASHPOINT_SERVER_ID"),
 		SecurecookieHashKeyPrevious:  EnvString("SECURECOOKIE_HASH_KEY_PREVIOUS"),

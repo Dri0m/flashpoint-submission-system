@@ -2,8 +2,11 @@ package transport
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/constants"
+	"github.com/Dri0m/flashpoint-submission-system/service"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	"github.com/gorilla/mux"
@@ -58,11 +61,43 @@ func (a *App) UserAuthMux(next func(http.ResponseWriter, *http.Request), authori
 
 		}
 
-		secret, err := a.GetSecretFromCookie(ctx, r)
-		if err != nil {
-			handleAuthErr()
-			return
+		var secret string
+		var err error
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			// try bearer token
+			// split the header at the space character
+			authHeaderParts := strings.Split(authHeader, " ")
+			if len(authHeaderParts) != 2 || authHeaderParts[0] != "Bearer" {
+				handleAuthErr()
+				return
+			}
+			decodedBytes, err := base64.StdEncoding.DecodeString(authHeaderParts[1])
+			if err != nil {
+				handleAuthErr()
+				return
+			}
+			var tokenMap map[string]string
+			err = json.Unmarshal(decodedBytes, &tokenMap)
+			if err != nil {
+				handleAuthErr()
+				return
+			}
+			token, err := service.ParseAuthToken(tokenMap)
+			if err != nil {
+				handleAuthErr()
+				return
+			}
+			secret = token.Secret
+		} else {
+			// try cookie
+			secret, err = a.GetSecretFromCookie(ctx, r)
+			if err != nil {
+				handleAuthErr()
+				return
+			}
 		}
+
 		uid, ok, err := a.Service.GetUIDFromSession(ctx, secret)
 		if err != nil {
 			handleAuthErr()

@@ -641,3 +641,11 @@ function processOneUserStatistics(users, index) {
         alert(`exception '${err.message}'`)
     }
 }
+
+function doDeviceFlowAction(userCode, action) {
+    fetch("/auth/device?code=" + userCode + "&action=" + action, { method: 'POST' }).then((res) => {
+        location.reload()
+    }).catch((err) => {
+        alert(err)
+    })
+}

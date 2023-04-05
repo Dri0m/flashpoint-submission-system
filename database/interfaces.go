@@ -16,6 +16,7 @@ type PGDAL interface {
 	GetTag(dbs PGDBSession, tagId int64) (types.Tag, error)
 	GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error)
 	GetGame(dbs PGDBSession, gameId string) (types.Game, error)
+	SaveGame(dbs PGDBSession, game *types.Game, uid int64) error
 	DeveloperImportDatabaseJson(dbs PGDBSession, data *types.LauncherDump) error
 }
 

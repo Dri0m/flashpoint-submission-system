@@ -1,10 +1,6 @@
 {{define "main"}}
     <div class="content">
-        <script>
-            function tagRedirect(tagId) {
-                window.location.href = "/web/tag/" + tagId;
-            }
-        </script>
+        {{ $imagesCdn := .ImagesCdn }}
 
         <h3>Game {{.Game.ID}}</h3>
         <h1>{{.Game.Title}}</h1>
@@ -14,9 +10,22 @@
         <img src={{.ScreenshotUrl}}
              class="curation-image" alt="curation image">
 
+        <a class="pure-button pure-button-primary"
+           href="flashpoint://fpfss/edit_game/api/game/{{.Game.ID}}">
+            Edit in Flashpoint Launcher
+        </a>
+
         <h3>Metadata</h3>
         <table class="pure-table pure-table-bordered meta-table">
             <tbody>
+            <tr>
+                <td class="meta-property">Date Added</td>
+                <td class="break-all">{{.Game.DateAdded}}</td>
+            </tr>
+            <tr>
+                <td class="meta-property">Date Modified</td>
+                <td class="break-all">{{.Game.DateModified}}</td>
+            </tr>
             <tr>
                 <td class="meta-property">Title</td>
                 <td class="break-all">{{if not .Game.Title}}<i>No Title</i>{{else}}
@@ -68,6 +77,7 @@
                     {{else}}
                         {{range .Game.Platforms}}
                             <div class="tag-box">
+                                <div class="tag-box_platform-icon" style="background-image: url({{$imagesCdn}}/Platforms/{{.Name}}.png)"></div>
                                 <div>{{.Name}}</div>
                             </div>
                         {{end}}

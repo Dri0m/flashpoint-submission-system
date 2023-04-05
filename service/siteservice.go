@@ -241,6 +241,7 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 	}
 
 	pageData := &types.GamePageData{
+		ImagesCdn:     imageCdn,
 		Game:          game,
 		LogoUrl:       logoUrl,
 		ScreenshotUrl: ssUrl,
@@ -805,6 +806,33 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 
 	return authToken, nil
+}
+
+func (s *SiteService) GenAuthToken(ctx context.Context, uid int64) (map[string]string, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	authToken, err := s.authTokenProvider.CreateAuthToken(uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	if err = s.dal.StoreSession(dbs, authToken.Secret, uid, s.sessionExpirationSeconds); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	return MapAuthToken(authToken), nil
 }
 
 func (s *SiteService) Logout(ctx context.Context, secret string) error {
@@ -2636,6 +2664,24 @@ func (s *SiteService) DeveloperImportDatabaseJson(ctx context.Context, data *typ
 	}
 
 	utils.LogCtx(ctx).Debug("commited database import")
+
+	return nil
+}
+
+func (s *SiteService) SaveGame(ctx context.Context, game *types.Game) error {
+	uid := utils.UserID(ctx)
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	err = s.pgdal.SaveGame(dbs, game, uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
 
 	return nil
 }

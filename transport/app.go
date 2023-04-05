@@ -32,6 +32,7 @@ type App struct {
 	Service             *service.SiteService
 	decoder             *schema.Decoder
 	authMiddlewareCache *memoize.Memoizer
+	DFStorage           *DeviceFlowStorage
 }
 
 func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgx.Conn, authBotSession, notificationBotSession *discordgo.Session, rsu *resumableuploadservice.ResumableUploadService) {
@@ -52,6 +53,7 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgx.Conn, a
 			Previous: securecookie.New([]byte(conf.SecurecookieHashKeyPrevious), []byte(conf.SecurecookieBlockKeyPrevious)),
 			Current:  securecookie.New([]byte(conf.SecurecookieHashKeyCurrent), []byte(conf.SecurecookieBlockKeyPrevious)),
 		},
+		DFStorage: NewDeviceFlowStorage(conf.DeviceFlowVerificaitonUrl),
 		Service: service.New(l, db, pgdb, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
 			conf.SubmissionsDirFullPath, conf.SubmissionImagesDirFullPath, conf.FlashfreezeDirFullPath, conf.IsDev, rsu, conf.ArchiveIndexerServerURL, conf.FlashfreezeIngestDirFullPath, conf.FixesDirFullPath),
