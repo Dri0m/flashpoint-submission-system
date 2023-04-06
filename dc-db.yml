@@ -30,6 +30,13 @@ services:
     container_name: ${POSTGRES_CONTAINER_NAME}
     restart: unless-stopped
     image: postgres:15
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 4g
+        reservations:
+          memory: 512m
     volumes:
       - fpfss_postgres_data:/var/lib/postgresql/data
     environment:

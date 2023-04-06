@@ -455,6 +455,7 @@ type Platform struct {
 	Name         string    `json:"name"`
 	Description  string    `json:"description"`
 	DateModified time.Time `json:"date_modified"`
+	Aliases      *string   `json:"aliases,omitempty"`
 	UserID       int64     `json:"user_id"`
 }
 
@@ -469,6 +470,7 @@ type Tag struct {
 	Description  string    `json:"description"`
 	DateModified time.Time `json:"date_modified"`
 	Category     string    `json:"category"`
+	Aliases      *string   `json:"aliases,omitempty"`
 	UserID       int64     `json:"user_id"`
 }
 

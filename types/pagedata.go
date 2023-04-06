@@ -20,6 +20,12 @@ type TagsPageData struct {
 	TotalCount int64
 }
 
+type PlatformsPageData struct {
+	BasePageData
+	Platforms  []*Platform
+	TotalCount int64
+}
+
 type TagPageData struct {
 	BasePageData
 	Tag        Tag

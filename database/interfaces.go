@@ -11,7 +11,8 @@ import (
 type PGDAL interface {
 	NewSession(ctx context.Context) (PGDBSession, error)
 
-	SearchTags(dbs PGDBSession) ([]*types.Tag, error)
+	SearchTags(dbs PGDBSession, modifiedAfter *string) ([]*types.Tag, error)
+	SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([]*types.Platform, error)
 	GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, error)
 	GetTag(dbs PGDBSession, tagId int64) (types.Tag, error)
 	GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error)

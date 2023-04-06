@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 	"syscall"
+	"time"
 
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/service"
@@ -145,21 +145,21 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 
 	switch requestType {
 	case constants.RequestJSON, constants.RequestData, constants.RequestWeb:
-		w.WriteHeader(status)
 		if data != nil {
 			w.Header().Set("Content-Type", "application/json")
 			err := json.NewEncoder(w).Encode(data)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
 				if errors.Is(err, syscall.ECONNRESET) {
-    					return
+					return
 				}
 				if errors.Is(err, syscall.EPIPE) {
 					return
-				}	
+				}
 				writeError(ctx, w, err)
 			}
 		}
+		w.WriteHeader(status)
 	default:
 		utils.LogCtx(ctx).Panic("unsupported request type")
 	}

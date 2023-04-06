@@ -400,15 +400,51 @@ func (a *App) HandleFixesSubmitGenericPageUploadFilesPage(w http.ResponseWriter,
 func (a *App) HandleTagsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	pageData, err := a.Service.GetTagsPageData(ctx)
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter *string
+	if ok {
+		modifiedAfter = &modifiedAfterRaw[0]
+	}
+
+	pageData, err := a.Service.GetTagsPageData(ctx, modifiedAfter)
 	if err != nil {
 		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Tags, http.StatusOK)
 		return
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/tags-table.gohtml",
 		"templates/tags.gohtml")
+}
+
+func (a *App) HandlePlatformsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter *string
+	if ok {
+		modifiedAfter = &modifiedAfterRaw[0]
+	}
+
+	pageData, err := a.Service.GetPlatformsPageData(ctx, modifiedAfter)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Platforms, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/platforms-table.gohtml",
+		"templates/platforms.gohtml")
 }
 
 func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {

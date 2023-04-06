@@ -1,0 +1,13 @@
+{{define "main"}}
+<div class="content">
+    <h1>Browse Platforms</h1>
+
+    {{if eq (len .Platforms) 0}}
+    <p>No platforms found.</p>
+    {{else}}
+    {{template "platforms-table" .}}
+
+    <p>Found {{.TotalCount}} platforms</p>
+    {{end}}
+</div>
+{{end}}

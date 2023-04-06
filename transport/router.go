@@ -154,12 +154,16 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	/////////////////////////
 
-	f = a.UserAuthMux(
-		a.HandleTagsPage, muxAny(isStaff, isTrialCurator, isInAudit))
+	f = a.HandleTagsPage
 
 	router.Handle(
 		"/web/tags",
 		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/tags",
+		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET")
 
 	f = a.UserAuthMux(
@@ -172,6 +176,20 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	router.Handle(
 		fmt.Sprintf("/api/tag/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.HandlePlatformsPage
+
+	router.Handle(
+		"/web/platforms",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/platforms",
 		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET")
 

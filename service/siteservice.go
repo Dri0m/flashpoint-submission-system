@@ -297,7 +297,7 @@ func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*typ
 	return pageData, nil
 }
 
-func (s *SiteService) GetTagsPageData(ctx context.Context) (*types.TagsPageData, error) {
+func (s *SiteService) GetTagsPageData(ctx context.Context, modifiedAfter *string) (*types.TagsPageData, error) {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -316,7 +316,7 @@ func (s *SiteService) GetTagsPageData(ctx context.Context) (*types.TagsPageData,
 		return nil, err
 	}
 
-	tags, err := s.pgdal.SearchTags(dbs)
+	tags, err := s.pgdal.SearchTags(dbs, modifiedAfter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
@@ -327,6 +327,34 @@ func (s *SiteService) GetTagsPageData(ctx context.Context) (*types.TagsPageData,
 		Categories:   categories,
 		BasePageData: *bpd,
 		TotalCount:   int64(len(tags)),
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) GetPlatformsPageData(ctx context.Context, modifiedAfter *string) (*types.PlatformsPageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	platforms, err := s.pgdal.SearchPlatforms(dbs, modifiedAfter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	pageData := &types.PlatformsPageData{
+		Platforms:    platforms,
+		BasePageData: *bpd,
+		TotalCount:   int64(len(platforms)),
 	}
 
 	return pageData, nil

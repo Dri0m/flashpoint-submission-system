@@ -107,8 +107,21 @@ func (d *postgresDAL) GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, e
 	return result, nil
 }
 
-func (d *postgresDAL) SearchTags(dbs PGDBSession) ([]*types.Tag, error) {
-	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias FROM tag LEFT JOIN tag_category ON tag_category.id = tag.category_id ORDER BY tag_category.name, primary_alias`)
+func (d *postgresDAL) SearchTags(dbs PGDBSession, modifiedAfter *string) ([]*types.Tag, error) {
+	var rows pgx.Rows
+	var err error
+	if modifiedAfter != nil {
+		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names, user_id 
+			FROM tag 
+				LEFT JOIN tag_category ON tag_category.id = tag.category_id 
+			WHERE tag.date_modified >= $1 
+			ORDER BY tag_category.name, primary_alias`, modifiedAfter)
+	} else {
+		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names, user_id 
+			FROM tag 
+				LEFT JOIN tag_category ON tag_category.id = tag.category_id 
+			ORDER BY tag_category.name, primary_alias`)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +130,7 @@ func (d *postgresDAL) SearchTags(dbs PGDBSession) ([]*types.Tag, error) {
 
 	for rows.Next() {
 		tag := &types.Tag{}
-		if err := rows.Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name); err != nil {
+		if err := rows.Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.Aliases, &tag.UserID); err != nil {
 			return nil, err
 		}
 
@@ -129,10 +142,46 @@ func (d *postgresDAL) SearchTags(dbs PGDBSession) ([]*types.Tag, error) {
 	return result, nil
 }
 
+func (d *postgresDAL) SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([]*types.Platform, error) {
+	var rows pgx.Rows
+	var err error
+	if modifiedAfter != nil {
+		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description, platform.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names, user_id 
+			FROM platform
+			WHERE platform.date_modified >= $1 
+			ORDER BY primary_alias`, modifiedAfter)
+	} else {
+		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description, platform.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names, user_id 
+			FROM platform
+			ORDER BY primary_alias`)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*types.Platform, 0)
+
+	for rows.Next() {
+		platform := &types.Platform{}
+		if err := rows.Scan(&platform.ID, &platform.Description, &platform.DateModified, &platform.Name, &platform.Aliases, &platform.UserID); err != nil {
+			return nil, err
+		}
+
+		result = append(result, platform)
+	}
+
+	rows.Close()
+
+	return result, nil
+}
+
 func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (types.Tag, error) {
 	var tag types.Tag
-	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, user_id FROM tag LEFT JOIN tag_category ON tag_category.id = tag.category_id WHERE tag.id = $1`, tagId).
-		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.UserID)
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names, user_id 
+		FROM tag 
+			LEFT JOIN tag_category ON tag_category.id = tag.category_id 
+		WHERE tag.id = $1`, tagId).
+		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.Aliases, &tag.UserID)
 	if err != nil {
 		return tag, err
 	}
@@ -302,7 +351,10 @@ func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) err
 		return err
 	}
 
-	dbs.Commit()
+	err = dbs.Commit()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
