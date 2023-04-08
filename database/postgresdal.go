@@ -91,7 +91,7 @@ func (d *postgresDAL) GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, e
 		return nil, err
 	}
 
-	result := make([]*types.TagCategory, 100)
+	result := make([]*types.TagCategory, 0)
 
 	for rows.Next() {
 		category := &types.TagCategory{}
@@ -99,7 +99,7 @@ func (d *postgresDAL) GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, e
 			return nil, err
 		}
 
-		result[category.ID] = category
+		result = append(result, category)
 	}
 
 	rows.Close()
@@ -173,6 +173,114 @@ func (d *postgresDAL) SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([
 	rows.Close()
 
 	return result, nil
+}
+
+func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
+	var rows pgx.Rows
+	var err error
+	limit := 2500
+	tagRelations := make([][]string, 0)
+	platformRelations := make([][]string, 0)
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT game.id, game.parent_game_id, game.title, game.alternate_titles, game.series,
+       		game.developer, game.publisher, game.date_added, game.date_modified, game.play_mode, game.status, game.notes, game.source,
+       		game.application_path, game.launch_command, game.release_date, game.version, game.original_description, game.language,
+       		game.library, game.active_data_id, game.tags_str, game.platforms_str, game.user_id
+			FROM game
+			WHERE game.date_modified >= $1 AND game.id > $2
+			ORDER BY game.date_modified, game.id
+			LIMIT $3`, modifiedAfter, afterId, limit)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	result := make([]*types.Game, 0)
+	resultAddApps := make([]*types.AdditionalApp, 0)
+	resultGameData := make([]*types.GameData, 0)
+
+	for rows.Next() {
+		game := &types.Game{}
+		if err := rows.Scan(&game.ID, &game.ParentGameID, &game.Title, &game.AlternateTitles, &game.Series, &game.Developer,
+			&game.Publisher, &game.DateAdded, &game.DateModified, &game.PlayMode, &game.Status, &game.Notes, &game.Source,
+			&game.ApplicationPath, &game.LaunchCommand, &game.ReleaseDate, &game.Version, &game.OriginalDesc, &game.Language,
+			&game.Library, &game.ActiveDataID, &game.TagsStr, &game.PlatformsStr, &game.UserID); err != nil {
+			return nil, nil, nil, nil, nil, err
+		}
+
+		result = append(result, game)
+	}
+
+	// Store tag relations
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gtt.game_id, gtt.tag_id 
+	FROM game_tags_tag gtt 
+	WHERE gtt.game_id IN (
+	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+	)`, modifiedAfter, afterId, limit)
+	for rows.Next() {
+		relation := make([]string, 2)
+		if err := rows.Scan(&relation[0], &relation[1]); err != nil {
+			return nil, nil, nil, nil, nil, err
+		}
+
+		tagRelations = append(tagRelations, relation)
+	}
+
+	// Store platform relations
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gpp.game_id, gpp.platform_id 
+	FROM game_platforms_platform gpp 
+	WHERE gpp.game_id IN (
+	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+	)`, modifiedAfter, afterId, limit)
+	for rows.Next() {
+		relation := make([]string, 2)
+		if err := rows.Scan(&relation[0], &relation[1]); err != nil {
+			return nil, nil, nil, nil, nil, err
+		}
+
+		platformRelations = append(platformRelations, relation)
+	}
+
+	// If broad include add apps and game data
+	if broad {
+		if modifiedAfter != nil {
+			rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT aa.name, aa.application_path, aa.launch_command,
+			aa.wait_for_exit, aa.auto_run_before, aa.parent_game_id
+			FROM additional_app aa
+			WHERE aa.parent_game_id IN (
+			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+			)`, modifiedAfter, afterId, limit)
+
+			for rows.Next() {
+				addApp := &types.AdditionalApp{}
+				if err := rows.Scan(&addApp.Name, &addApp.ApplicationPath, &addApp.LaunchCommand,
+					&addApp.WaitForExit, &addApp.AutoRunBefore, &addApp.ParentGameID); err != nil {
+					return nil, nil, nil, nil, nil, err
+				}
+
+				resultAddApps = append(resultAddApps, addApp)
+			}
+
+			rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gd.id, gd.game_id, gd.title, gd.date_added, gd.sha256,
+       		gd.crc32, gd.size, gd.parameters
+			FROM game_data gd
+			WHERE gd.game_id IN (
+			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+			)`, modifiedAfter, afterId, limit)
+
+			for rows.Next() {
+				gameData := &types.GameData{}
+				if err := rows.Scan(&gameData.ID, &gameData.GameID, &gameData.Title, &gameData.DateAdded, &gameData.SHA256,
+					&gameData.CRC32, &gameData.Size, &gameData.Parameters); err != nil {
+					return nil, nil, nil, nil, nil, err
+				}
+
+				resultGameData = append(resultGameData, gameData)
+			}
+		}
+	}
+
+	rows.Close()
+
+	return result, resultAddApps, resultGameData, tagRelations, platformRelations, nil
 }
 
 func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (types.Tag, error) {

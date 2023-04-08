@@ -46,6 +46,7 @@ type Config struct {
 	SystemUid                    int64
 	ImagesCdn                    string
 	ImagesCdnCompressed          bool
+	MinLauncherVersion           string
 }
 
 func EnvString(name string) string {
@@ -128,5 +129,6 @@ func GetConfig(l *logrus.Entry) *Config {
 		SystemUid:                    EnvInt("SYSTEM_UID"),
 		ImagesCdn:                    EnvString("IMAGES_CDN"),
 		ImagesCdnCompressed:          EnvBool("IMAGES_CDN_COMPRESSED"),
+		MinLauncherVersion:           EnvString("MIN_LAUNCHER_VERSION"),
 	}
 }

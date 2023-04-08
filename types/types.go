@@ -429,7 +429,7 @@ type Game struct {
 }
 
 type GameData struct {
-	ID         int       `json:"id"`
+	ID         int       `json:"id,omitempty"`
 	GameID     string    `json:"game_id,gameId"`
 	Title      string    `json:"title"`
 	DateAdded  time.Time `json:"date_added,dateAdded"`
@@ -441,7 +441,7 @@ type GameData struct {
 }
 
 type AdditionalApp struct {
-	ID              string `json:"id"`
+	ID              string `json:"id,omitempty"`
 	ApplicationPath string `json:"application_path"`
 	AutoRunBefore   bool   `json:"auto_run_before"`
 	LaunchCommand   string `json:"launch_command"`
@@ -804,6 +804,14 @@ type ExtendedFixesItem struct {
 	SubmitterID       int64
 	SubmitterUsername string
 	UploadedAt        *time.Time
+}
+
+type GamePageResJSON struct {
+	Games             []*Game          `json:"games"`
+	AddApps           []*AdditionalApp `json:"add_apps"`
+	GameData          []*GameData      `json:"game_data"`
+	TagRelations      [][]string       `json:"tag_relations"`
+	PlatformRelations [][]string       `json:"platform_relations"`
 }
 
 type UserStatistics struct {

@@ -20,6 +20,11 @@ type TagsPageData struct {
 	TotalCount int64
 }
 
+type TagsPageDataJSON struct {
+	Tags       []*Tag         `json:"tags"`
+	Categories []*TagCategory `json:"categories"`
+}
+
 type PlatformsPageData struct {
 	BasePageData
 	Platforms  []*Platform

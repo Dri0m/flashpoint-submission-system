@@ -13,6 +13,7 @@ type PGDAL interface {
 
 	SearchTags(dbs PGDBSession, modifiedAfter *string) ([]*types.Tag, error)
 	SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([]*types.Platform, error)
+	SearchGames(dbs PGDBSession, modifiedAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error)
 	GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, error)
 	GetTag(dbs PGDBSession, tagId int64) (types.Tag, error)
 	GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error)

@@ -2713,3 +2713,20 @@ func (s *SiteService) SaveGame(ctx context.Context, game *types.Game) error {
 
 	return nil
 }
+
+func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, nil, nil, nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	games, addApps, gameData, tagRelations, platformRelations, err := s.pgdal.SearchGames(dbs, modifierAfter, broad, afterId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, nil, nil, nil, dberr(err)
+	}
+
+	return games, addApps, gameData, tagRelations, platformRelations, nil
+}

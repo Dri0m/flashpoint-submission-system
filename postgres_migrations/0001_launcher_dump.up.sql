@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS "tag_category" (
 	"name"	citext NOT NULL,
 	"color"	varchar NOT NULL,
 	"description"	varchar
-);
+);tag
 CREATE TABLE IF NOT EXISTS "tag_alias" (
 	"name"	citext PRIMARY KEY,
 	"tag_id"	integer NOT NULL
@@ -206,6 +206,10 @@ CREATE INDEX IF NOT EXISTS "IDX_d12253f0cbce01f030a9ced11d2" ON "game_platforms_
 CREATE INDEX IF NOT EXISTS "IDX_gameTitle" ON "game" (
 	"title"
 );
+CREATE INDEX IF NOT EXISTS "IDX_gameDateModified_id" ON "game" (
+	"date_modified",
+	"id"
+);
 CREATE INDEX IF NOT EXISTS "IDX_total" ON "game" (
 	"library"
 );
@@ -232,6 +236,12 @@ CREATE INDEX IF NOT EXISTS "IDX_lookup_dateAdded" ON "game" (
 CREATE INDEX IF NOT EXISTS "IDX_lookup_title" ON "game" (
 	"library",
 	"title"
+);
+CREATE INDEX IF NOT EXISTS "IDX_add_app_parent_game_id" ON "additional_app"(
+	"parent_game_id"
+);
+CREATE INDEX IF NOT EXISTS "IDX_game_data_ game_id" ON "game_data"(
+	"game_id"
 );
 
 -- Changelog Indexing

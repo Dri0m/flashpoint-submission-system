@@ -397,6 +397,53 @@ func (a *App) HandleFixesSubmitGenericPageUploadFilesPage(w http.ResponseWriter,
 	a.RenderTemplates(ctx, w, r, pageData, "templates/fixes-submit-generic-upload-files.gohtml")
 }
 
+func (a *App) HandleMinLauncherVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	writeResponse(ctx, w, map[string]interface{}{"min-version": a.Conf.MinLauncherVersion}, http.StatusOK)
+}
+
+func (a *App) HandleGamesPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter string
+	if ok {
+		modifiedAfter = modifiedAfterRaw[0]
+	} else {
+		modifiedAfter = "1970-01-01"
+	}
+
+	afterIdRaw, ok := r.URL.Query()["afterId"]
+	var afterId string
+	if ok {
+		afterId = afterIdRaw[0]
+	} else {
+		afterId = ""
+	}
+
+	broadRaw, ok := r.URL.Query()["broad"]
+	broad := false
+	if ok && broadRaw[0] != "false" {
+		broad = true
+	}
+
+	games, addApps, gameData, tagRelations, platformRelations, err := a.Service.GetGamesPageData(ctx, &modifiedAfter, broad, &afterId)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	res := types.GamePageResJSON{
+		Games:             games,
+		AddApps:           addApps,
+		GameData:          gameData,
+		TagRelations:      tagRelations,
+		PlatformRelations: platformRelations,
+	}
+	writeResponse(ctx, w, res, http.StatusOK)
+}
+
 func (a *App) HandleTagsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -413,7 +460,11 @@ func (a *App) HandleTagsPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if utils.RequestType(ctx) != constants.RequestWeb {
-		writeResponse(ctx, w, pageData.Tags, http.StatusOK)
+		pageDataJson := types.TagsPageDataJSON{
+			Tags:       pageData.Tags,
+			Categories: pageData.Categories,
+		}
+		writeResponse(ctx, w, pageDataJson, http.StatusOK)
 		return
 	}
 
