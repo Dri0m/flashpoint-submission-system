@@ -214,7 +214,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	f = a.UserAuthMux(
-		a.HandleGamePage, muxAny(isStaff, isTrialCurator, isInAudit))
+		a.HandleGamePage, muxAny(isGod, isColin))
 
 	router.Handle(
 		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyTagID),
