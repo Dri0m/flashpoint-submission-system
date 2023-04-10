@@ -9,9 +9,19 @@ db:
 	$(shell mkdir -p ${REPACK_DIR})
 	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up -d
 
+local:
+	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml down
+	$(shell mkdir -p ${REPACK_DIR})
+	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up validator -d
+
+remote:
+	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml down
+	$(shell mkdir -p ${REPACK_DIR})
+	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up database postgres -d
+
 rebuild-postgres:
 	docker-compose -p ${DB_CONTAINER_NAME} down
-	docker volume rm fpfssdb-local_fpfss_postgres_data
+	docker volume rm ${DB_CONTAINER_NAME}_fpfss_postgres_data
 	docker-compose -p ${DB_CONTAINER_NAME} -f dc-db.yml up -d
 	sleep 5
 	make migrate
