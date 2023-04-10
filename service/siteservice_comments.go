@@ -98,11 +98,13 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 
 		// If marking as added, make sure we update the live metadata before approving the comment
 		if formAction == constants.ActionMarkAdded {
-			_, err := s.AddSubmissionToFlashpoint(ctx, submission, subDirFullPath, dataPacksDir, imagesDir)
+			gameId, err := s.AddSubmissionToFlashpoint(ctx, submission, subDirFullPath, dataPacksDir, imagesDir)
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
 				return err
 			}
+			addedMessage := fmt.Sprintf("Marked the submission as added to Flashpoint. Game ID: %s", *gameId)
+			message = &addedMessage
 		}
 
 		// actually store the comment

@@ -58,3 +58,7 @@ input[type=text], textarea{
 .tag-box:hover {
     background-color: black;
 }
+
+.message-box {
+    background-color: #5a5a5a;
+}

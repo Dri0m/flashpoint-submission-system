@@ -108,7 +108,7 @@
                         {{if and (gt (len $submission.ApprovedUserIDs) 0) (gt (len $submission.VerifiedUserIDs) 0)}}
                             {{if not (has "mark-added" $submission.DistinctActions)}}
                                 <button type="button" class="pure-button pure-button button-mark-added"
-                                        onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
+                                        onclick="doWaitingSpinner('Marking as added...', () => batchComment('submission-checkbox', 'sid', 'mark-added'))">
                                     Mark as Added
                                 </button>
                             {{end}}
@@ -166,7 +166,7 @@
                 {{end}}
                 {{if isAdder .UserRoles}}
                     <button type="button" class="pure-button pure-button button-mark-added"
-                            onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
+                            onclick="doWaitingSpinner('Marking as added...', () => batchComment('submission-checkbox', 'sid', 'mark-added'))">
                         Mark as Added
                     </button>
                 {{end}}

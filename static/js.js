@@ -42,7 +42,7 @@ let friendlyHttpStatus = {
     '505': 'HTTP Version Not Supported',
 };
 
-function sendXHR(url, method, data, reload, failureMessage, successMessage, promptMessage) {
+async function sendXHR(url, method, data, reload, failureMessage, successMessage, promptMessage) {
     let reason = ""
     if (promptMessage != null) {
         reason = prompt(promptMessage)
@@ -54,26 +54,20 @@ function sendXHR(url, method, data, reload, failureMessage, successMessage, prom
         url = urlObject.toString()
     }
 
-    let request = new XMLHttpRequest()
-    request.open(method, url, false)
-
-    request.addEventListener("loadend", function () {
-        if (request.status !== 200 && request.status !== 204) {
-            alert(`${failureMessage}\nRequest status: ${request.status} - ${friendlyHttpStatus[request.status]}\nRequest response: ${request.response}`)
-        } else {
-            if (successMessage !== null) {
-                alert(`${successMessage}`)
-            }
-            if (reload === true) {
-                location.reload()
-            }
-        }
+    const res = await fetch(url, {
+        method,
+        body: data
     })
-
-    try {
-        request.send(data)
-    } catch (err) {
-        alert(`${failureMessage} - exception '${err.message}'`)
+    if (res.ok) {
+        if (successMessage) {
+            return successMessage
+        }
+        if (reload) {
+            location.reload()
+        }
+    } else {
+        const responseText = await res.text();
+        alert(`${failureMessage}\nRequest status: ${res.status} - ${res.statusText}\nRequest response: ${responseText}`);
     }
 }
 
@@ -110,14 +104,14 @@ function batchDownloadFiles(checkboxClassName, attribute) {
     window.location.href = url
 }
 
-function batchComment(checkboxClassName, attribute, action) {
+async function batchComment(checkboxClassName, attribute, action) {
     let checkboxes = document.getElementsByClassName(checkboxClassName);
 
     let url = "/api/submission-batch/"
 
     let checkedCounter = 0
 
-    let magic = function (reload, successMessage) {
+    let magic = async function (reload, successMessage) {
         url = url.slice(0, -1)
 
         let textArea = document.querySelector("#batch-comment-message")
@@ -128,7 +122,7 @@ function batchComment(checkboxClassName, attribute, action) {
         }
         url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${checked}`
 
-        sendXHR(url, "POST", null, reload,
+        await sendXHR(url, "POST", null, reload,
             `Failed to post comment(s) with action '${action}'.`, successMessage, null)
     }
 
@@ -137,7 +131,7 @@ function batchComment(checkboxClassName, attribute, action) {
     // ugly black magic
     if (!u.pathname.endsWith("/submissions") && !u.pathname.endsWith("/my-submissions")) {
         url += checkboxes[0].dataset[attribute] + ","
-        magic(true, null)
+        await magic(true, null)
     } else {
         for (let i = 0; i < checkboxes.length; i++) {
             if (checkboxes[i].checked) {
@@ -149,7 +143,7 @@ function batchComment(checkboxClassName, attribute, action) {
             alert("No submissions selected.")
             return
         }
-        magic(false, `Comments with action '${action}' posted successfully.`)
+        await magic(false, `Comments with action '${action}' posted successfully.`)
     }
 }
 
@@ -169,7 +163,7 @@ function changePage(number) {
     window.location.href = url
 }
 
-function updateNotificationSettings() {
+async function updateNotificationSettings() {
     let checkboxes = document.getElementsByClassName("notification-action")
 
     let url = "/api/notification-settings?"
@@ -182,13 +176,13 @@ function updateNotificationSettings() {
 
     url = url.slice(0, -1)
 
-    sendXHR(url, "PUT", null, true,
+    await sendXHR(url, "PUT", null, true,
         "Failed to update notification settings.",
         "Notification settings updated.", null)
 }
 
-function updateSubscriptionSettings(sid, newValue) {
-    sendXHR(`/api/submission/${sid}/subscription-settings?subscribe=${newValue}`, "PUT", null, true,
+async function updateSubscriptionSettings(sid, newValue) {
+    await sendXHR(`/api/submission/${sid}/subscription-settings?subscribe=${newValue}`, "PUT", null, true,
         "Failed to update subscription settings.", null, null)
 }
 
@@ -246,29 +240,29 @@ function sizeToString(bytes, decimals = 1) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + sizes[i];
 }
 
-function deleteSubmissionFile(sid, sfid) {
-    sendXHR(`/api/submission/${sid}/file/${sfid}`, "DELETE", null, true,
+async function deleteSubmissionFile(sid, sfid) {
+    await sendXHR(`/api/submission/${sid}/file/${sfid}`, "DELETE", null, true,
         "Failed to delete submission file.",
         "Submission file deleted successfully.",
         "Please provide a reason to delete this submission file:")
 }
 
-function deleteSubmission(sid) {
-    sendXHR(`/api/submission/${sid}`, "DELETE", null, true,
+async function deleteSubmission(sid) {
+    await sendXHR(`/api/submission/${sid}`, "DELETE", null, true,
         "Failed to delete submission.",
         "Submission deleted successfully.",
         "Please provide a reason to delete this submission and all its related data:")
 }
 
-function overrideBot(sid) {
-    sendXHR(`/api/submission/${sid}/override`, "POST", null, true,
+async function overrideBot(sid) {
+    await sendXHR(`/api/submission/${sid}/override`, "POST", null, true,
         "Failed to override bot decision.",
         "Override successful.",
         null)
 }
 
-function deleteComment(sid, cid) {
-    sendXHR(`/api/submission/${sid}/comment/${cid}`, "DELETE", null, true,
+async function deleteComment(sid, cid) {
+    await sendXHR(`/api/submission/${sid}/comment/${cid}`, "DELETE", null, true,
         "Failed to delete comment.",
         null,
         "Please provide a reason to delete this comment:")
@@ -474,10 +468,12 @@ function wrapLongWords(list) {
 }
 
 function linkIDsInComments() {
+    const uuidRegex = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/g;
     let comments = document.getElementsByClassName("comment-body")
 
     for (let i = 0; i < comments.length; i++) {
         comments[i].innerHTML = comments[i].innerHTML.replaceAll(/(ID (\d+) )/g, '<a href="/web/submission/$2">$1</a>')
+        comments[i].innerHTML = comments[i].innerHTML.replaceAll(uuidRegex, '<a href="/web/game/$1">$1</a>')
     }
 }
 
@@ -553,7 +549,7 @@ function processOneUserStatistics(users, index) {
     request.open("GET", `/api/user-statistics/${userID}`, true)
 
     request.addEventListener("loadend", function () {
-        if (request.status == 200) {
+        if (request.status === 200) {
             let stats = null
         try {
             stats = JSON.parse(request.response)
@@ -650,7 +646,33 @@ function doDeviceFlowAction(userCode, action) {
     })
 }
 
-async function doWaitingSpinner(cb) {
+async function doWaitingSpinner(message, cb) {
+    // Create a new element
+    const overlay = document.createElement('div');
+    overlay.classList.add('overlay');
+    overlay.style.zIndex = "10000";
 
-    await cb();
+    // Append the overlay element to the body
+    document.body.appendChild(overlay);
+
+    // Create a message box element
+    const messageBox = document.createElement('div');
+    messageBox.classList.add('message-box');
+    messageBox.innerHTML = `
+      <div class="spinner"></div>
+      <div class="message">${message}</div>`;
+
+    // Append the message box element to the overlay
+    overlay.appendChild(messageBox);
+
+    // Close the overlay at the end of the function
+    function closeOverlay() {
+        // Remove the overlay element from the body
+        document.body.removeChild(overlay);
+    }
+    await cb()
+    .finally(() => {
+        closeOverlay();
+    });
+
 }
