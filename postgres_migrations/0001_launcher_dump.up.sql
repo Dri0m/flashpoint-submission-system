@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS "tag_category" (
 	"name"	citext NOT NULL,
 	"color"	varchar NOT NULL,
 	"description"	varchar
-);tag
+);
 CREATE TABLE IF NOT EXISTS "tag_alias" (
 	"name"	citext PRIMARY KEY,
 	"tag_id"	integer NOT NULL
