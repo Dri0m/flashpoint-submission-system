@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -2729,4 +2731,126 @@ func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *strin
 	}
 
 	return games, addApps, gameData, tagRelations, platformRelations, nil
+}
+
+func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission *types.ExtendedSubmission, subDirFullPath string, dataPacksDir string, imagesDir string) (*string, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	sfs, err := s.GetSubmissionFiles(ctx, []int64{submission.FileID})
+	if err != nil {
+		return nil, err
+	}
+	sf := sfs[0]
+
+	// Repack the curation via the validator and get fresh metadata
+	originalPath := fmt.Sprintf("%s/%s", subDirFullPath, sf.CurrentFilename)
+	vr, err := s.validator.ProvideArchiveForRepacking(originalPath)
+	if err != nil {
+		return nil, err
+	}
+	if vr.Error != nil {
+		return nil, types.RepackError(*vr.Error)
+	}
+	defer RemoveRepackFolder(ctx, *vr.FilePath)
+
+	utils.LogCtx(ctx).Debug("Adding sub from validator")
+	// Add game into metadata
+	game, err := s.pgdal.AddSubmissionFromValidator(dbs, utils.UserID(ctx), vr)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+	msTime := game.Data[0].DateAdded.UnixMilli()
+
+	// Get the base name of the data pack file
+	base := filepath.Base(*vr.FilePath)
+
+	// Add date added into filename
+	newBase := fmt.Sprintf("%s-%d%s", game.ID, msTime, filepath.Ext(base))
+	newFileName := filepath.Join(dataPacksDir, newBase)
+	err = os.MkdirAll(dataPacksDir, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy renamed data pack file to data packs folder
+	srcFile, err := os.Open(*vr.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.Create(newFileName) // creates if file doesn't exist
+	if err != nil {
+		return nil, err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, srcFile) // check first var for number of bytes copied
+	if err != nil {
+		return nil, err
+	}
+
+	err = destFile.Sync()
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy image data to new images
+	if len(vr.Images) < 2 {
+		return nil, types.NotEnoughImages(strconv.Itoa(len(vr.Images)))
+	}
+
+	logo := vr.Images[0]
+	logoFilePath := fmt.Sprintf(`%s/Logos/%s/%s/%s.png`, imagesDir, game.ID[0:2], game.ID[2:4], game.ID)
+	decodedLogo, err := base64.StdEncoding.DecodeString(logo.Data)
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(filepath.Dir(logoFilePath), 0777)
+	if err != nil {
+		return nil, err
+	}
+	err = os.WriteFile(logoFilePath, decodedLogo, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ss := vr.Images[1]
+	ssFilePath := fmt.Sprintf(`%s/Screenshots/%s/%s/%s.png`, imagesDir, game.ID[0:2], game.ID[2:4], game.ID)
+	decodedScreenshot, err := base64.StdEncoding.DecodeString(ss.Data)
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(filepath.Dir(ssFilePath), 0777)
+	if err != nil {
+		return nil, err
+	}
+	err = os.WriteFile(ssFilePath, decodedScreenshot, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		utils.LogCtx(dbs.Ctx()).Error(err)
+		return nil, err
+	}
+
+	return &game.ID, nil
+}
+
+func RemoveRepackFolder(ctx context.Context, filePath string) {
+	dir := filepath.Dir(filePath)
+	// Remove the directory
+	err := os.RemoveAll(dir)
+
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+	}
 }

@@ -6,6 +6,7 @@ export $(shell sed 's/=.*//' .env)
 
 db:
 	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml down
+	$(shell mkdir -p ${REPACK_DIR})
 	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up -d
 
 rebuild-postgres:

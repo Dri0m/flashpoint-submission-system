@@ -54,7 +54,10 @@ services:
     build:
       context: ./validator
       dockerfile: Dockerfile
+    environment:
+      REPACK_DIR: $REPACK_DIR
     volumes:
+      - $REPACK_DIR:$REPACK_DIR
       - $SUBMISSIONS_DIR_FULL_PATH:$SUBMISSIONS_DIR_FULL_PATH
     ports:
       - "8000:8000"

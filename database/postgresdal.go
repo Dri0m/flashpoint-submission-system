@@ -2,15 +2,20 @@ package database
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	_ "github.com/golang-migrate/migrate/source/file"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
+	"io"
 	"log"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -283,7 +288,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 	return result, resultAddApps, resultGameData, tagRelations, platformRelations, nil
 }
 
-func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (types.Tag, error) {
+func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (*types.Tag, error) {
 	var tag types.Tag
 	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names, user_id 
 		FROM tag 
@@ -291,10 +296,25 @@ func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (types.Tag, error) {
 		WHERE tag.id = $1`, tagId).
 		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.Aliases, &tag.UserID)
 	if err != nil {
-		return tag, err
+		return nil, err
 	}
 
-	return tag, nil
+	return &tag, nil
+}
+
+func (d *postgresDAL) GetPlatform(dbs PGDBSession, platformId int64) (*types.Platform, error) {
+	var platform types.Platform
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description,
+       		platform.date_modified, primary_alias,
+       		(SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names, user_id 
+		FROM platform
+		WHERE platform.id = $1`, platformId).
+		Scan(&platform.ID, &platform.Description, &platform.DateModified, &platform.Name, &platform.Aliases, &platform.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &platform, nil
 }
 
 func (d *postgresDAL) GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error) {
@@ -307,7 +327,7 @@ func (d *postgresDAL) GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64
 	return count, nil
 }
 
-func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error) {
+func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, error) {
 	// Get game
 	var game types.Game
 	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT * FROM game WHERE id = $1`, gameId).
@@ -316,20 +336,20 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 			&game.Source, &game.ApplicationPath, &game.LaunchCommand, &game.ReleaseDate, &game.Version,
 			&game.OriginalDesc, &game.Language, &game.Library, &game.ActiveDataID, &game.TagsStr, &game.PlatformsStr, &game.UserID)
 	if err != nil {
-		return game, err
+		return nil, err
 	}
 
 	// Get add apps
 	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM additional_app WHERE parent_game_id = $1`, gameId)
 	if err != nil {
-		return game, err
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var addApp types.AdditionalApp
 		err = rows.Scan(&addApp.ID, &addApp.ApplicationPath, &addApp.AutoRunBefore, &addApp.LaunchCommand, &addApp.Name, &addApp.WaitForExit, &addApp.ParentGameID)
 		if err != nil {
-			return game, err
+			return nil, err
 		}
 		game.AddApps = append(game.AddApps, &addApp)
 	}
@@ -340,14 +360,14 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 	// Get game data
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM game_data WHERE game_id = $1`, gameId)
 	if err != nil {
-		return game, err
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var data types.GameData
 		err = rows.Scan(&data.ID, &data.GameID, &data.Title, &data.DateAdded, &data.SHA256, &data.CRC32, &data.Size, &data.Parameters)
 		if err != nil {
-			return game, err
+			return nil, err
 		}
 		game.Data = append(game.Data, &data)
 	}
@@ -359,14 +379,14 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, user_id FROM tag LEFT JOIN tag_category ON tag_category.id = tag.category_id WHERE tag.id IN (
     	SELECT tag_id FROM game_tags_tag WHERE game_id = $1) ORDER BY primary_alias`, gameId)
 	if err != nil {
-		return game, err
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var data types.Tag
 		err = rows.Scan(&data.ID, &data.Description, &data.Category, &data.DateModified, &data.Name, &data.UserID)
 		if err != nil {
-			return game, err
+			return nil, err
 		}
 		game.Tags = append(game.Tags, &data)
 	}
@@ -378,14 +398,14 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM platform WHERE id IN (
     	SELECT platform_id FROM game_platforms_platform WHERE game_id = $1) ORDER BY primary_alias`, gameId)
 	if err != nil {
-		return game, err
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var data types.Platform
 		err = rows.Scan(&data.ID, &data.DateModified, &data.Name, &data.Description, &data.UserID)
 		if err != nil {
-			return game, err
+			return nil, err
 		}
 		game.Platforms = append(game.Platforms, &data)
 	}
@@ -393,7 +413,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (types.Game, error
 		log.Fatal(err)
 	}
 
-	return game, nil
+	return &game, nil
 }
 
 func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) error {
@@ -723,4 +743,346 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 	utils.LogCtx(dbs.Ctx()).Debug("done database import")
 
 	return nil
+}
+
+func (d *postgresDAL) GetTagCategory(dbs PGDBSession, categoryId int64) (*types.TagCategory, error) {
+	var category types.TagCategory
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT "id", "name", "color", "description" FROM tag_category WHERE "id" = $1`,
+		categoryId).Scan(&category.ID, &category.Name, &category.Color, &category.Description)
+	if err != nil {
+		return nil, err
+	}
+	return &category, nil
+}
+
+func (d *postgresDAL) GetOrCreateTagCategory(dbs PGDBSession, categoryName string) (*types.TagCategory, error) {
+	categoryId, err := GetCategoryID(dbs, categoryName)
+	if err != nil {
+		return nil, err
+	}
+	if categoryId != -1 {
+		// Category found, return
+		return d.GetTagCategory(dbs, categoryId)
+	} else {
+		// Create new tag category
+		var newCategoryId int64
+		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO tag_category ("name", "color", "description")
+			VALUES ($1, $2, $3) RETURNING id`,
+			categoryName, "#FFFFFF", "").Scan(&newCategoryId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Return tag category
+		return d.GetTagCategory(dbs, newCategoryId)
+	}
+}
+
+func (d *postgresDAL) GetOrCreatePlatform(dbs PGDBSession, platformName string, uid int64) (*types.Platform, error) {
+	platformId, err := GetPlatformID(dbs, platformName)
+	if err != nil {
+		return nil, err
+	}
+	if platformId != -1 {
+		// Platform exists, return
+		return d.GetPlatform(dbs, platformId)
+	} else {
+		// Create new platform
+		var newPlatformId int64
+		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO platform ("primary_alias", "description", "user_id")
+			VALUES ($1, $2, $3) RETURNING id`,
+			platformName, "", uid).Scan(&newPlatformId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create new alias
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO platform_alias ("name", "platform_id")
+			VALUES ($1, $2)`,
+			platformName, newPlatformId)
+		if err != nil {
+			return nil, err
+		}
+
+		return d.GetPlatform(dbs, newPlatformId)
+	}
+}
+
+func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, uid int64) (*types.Tag, error) {
+	// Find tag id if already exists
+	utils.LogCtx(dbs.Ctx()).Debug("Getting tag id if exists")
+	tagId, err := GetTagID(dbs, tagName)
+	if err != nil {
+		return nil, err
+	}
+	if tagId != -1 {
+		// Found tag, return early
+		return d.GetTag(dbs, tagId)
+	} else {
+		// Tag not found create new tag
+		// Get category ID
+		category, err := d.GetOrCreateTagCategory(dbs, tagCategory)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create Tag
+		var newTagId int64
+		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO tag ("primary_alias", "category_id", "description", "user_id")
+			VALUES ($1, $2, $3, $4) RETURNING id`,
+			tagName, category.ID, "", uid).Scan(&newTagId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create Tag Alias
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO tag_alias ("name", "tag_id")
+			VALUES ($1, $2)`,
+			tagName, newTagId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Return new tag
+		return d.GetTag(dbs, newTagId)
+	}
+}
+
+func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error) {
+	// DO EXPENSIVE OPERATIONS FIRST
+
+	// Game Data - Get SHA256
+	file, err := os.Open(*vr.FilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		log.Fatal(err)
+	}
+	hashStr := fmt.Sprintf("%x", hash.Sum(nil))
+
+	// Game Data - Get Size
+	fileInfo, err := os.Stat(*vr.FilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fileSize := fileInfo.Size()
+
+	// Map metadata to a new game
+	game := types.Game{}
+
+	game.ID = uuid.New().String()
+	EnsureString(vr.Meta.Title, &game.Title)
+	EnsureString(vr.Meta.AlternateTitles, &game.AlternateTitles)
+	EnsureString(vr.Meta.Series, &game.Series)
+	EnsureString(vr.Meta.Developer, &game.Developer)
+	EnsureString(vr.Meta.Publisher, &game.Publisher)
+	EnsureString(vr.Meta.PlayMode, &game.PlayMode)
+	EnsureString(vr.Meta.Status, &game.Status)
+	EnsureString(vr.Meta.GameNotes, &game.Notes)
+	EnsureString(vr.Meta.Source, &game.Source)
+	EnsureString(vr.Meta.ApplicationPath, &game.ApplicationPath)
+	EnsureString(vr.Meta.LaunchCommand, &game.LaunchCommand)
+	EnsureString(vr.Meta.ReleaseDate, &game.ReleaseDate)
+	EnsureString(vr.Meta.Version, &game.Version)
+	EnsureString(vr.Meta.OriginalDescription, &game.OriginalDesc)
+	EnsureString(vr.Meta.Languages, &game.Language)
+	EnsureString(vr.Meta.Library, &game.Library)
+	game.UserID = uid
+	game.AddApps = make([]*types.AdditionalApp, 0)
+
+	// Tags
+	rawTags := strings.Split(*vr.Meta.Tags, ";")
+	tags := make([]*types.Tag, 0)
+	for _, tagName := range rawTags {
+		tag, err := d.GetOrCreateTag(dbs, strings.TrimSpace(tagName), "default", uid)
+		if err != nil {
+			return nil, err
+		}
+
+		tags = append(tags, tag)
+	}
+
+	// Platforms
+	rawPlatforms := strings.Split(*vr.Meta.Platform, ";")
+	platforms := make([]*types.Platform, 0)
+	for _, platformName := range rawPlatforms {
+		platform, err := d.GetOrCreatePlatform(dbs, strings.TrimSpace(platformName), uid)
+		if err != nil {
+			return nil, err
+		}
+
+		platforms = append(platforms, platform)
+	}
+
+	// Save Game Data
+
+	var gameData types.GameData
+	gameData.GameID = game.ID
+	gameData.Title = "Data Pack"
+	gameData.Size = fileSize
+	gameData.SHA256 = hashStr
+	gameData.CRC32 = 0
+	gameData.Parameters = vr.Meta.MountParameters
+	err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO game_data ("game_id", "title", "sha256", "crc32", "size", "parameters")
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, date_added`,
+		&gameData.GameID, &gameData.Title, &gameData.SHA256, &gameData.CRC32, &gameData.Size, &gameData.Parameters).
+		Scan(&gameData.ID, &gameData.DateAdded)
+	if err != nil {
+		return nil, err
+	}
+	// Update active data id
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE game 
+	SET active_data_id = (SELECT id FROM game_data WHERE game_data.game_id = game.id LIMIT 1) 
+	WHERE game.id = $1`, game.ID)
+	game.Data = []*types.GameData{&gameData}
+
+	// Save Additional Apps
+	if vr.Meta.Extras != nil {
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO additional_app 
+    	("application_path", "auto_run_before", "launch_command", "name", "wait_for_exit", "parent_game_id") 
+		VALUES (':extras:', FALSE, $1, 'Extras', FALSE, $2)`,
+			vr.Meta.Extras, game.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if vr.Meta.Message != nil {
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO additional_app 
+    	("application_path", "auto_run_before", "launch_command", "name", "wait_for_exit", "parent_game_id") 
+		VALUES (':message:', FALSE, $1, 'Message', FALSE, $2)`,
+			vr.Meta.Message, game.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, addApp := range vr.Meta.AdditionalApps {
+		if addApp.ApplicationPath != nil && addApp.LaunchCommand != nil && addApp.Heading != nil {
+			_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO additional_app 
+    		("application_path", "auto_run_before", "launch_command", "name", "wait_for_exit", "parent_game_id") 
+			VALUES ($1, FALSE, $2, $3, FALSE, $4)`,
+				addApp.ApplicationPath, addApp.LaunchCommand, addApp.Heading, game.ID)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, types.InvalidAddApps{}
+		}
+	}
+
+	// Save Tag Relations
+	for _, tag := range tags {
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO game_tags_tag ("game_id", "tag_id") VALUES ($1, $2)`, game.ID, tag.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	tagsStrArr := make([]string, 0)
+	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT tag.primary_alias FROM tag WHERE tag.id IN (
+		SELECT DISTINCT tag_id FROM game_tags_tag WHERE game_tags_tag.game_id = $1
+	)`, game.ID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var tagName string
+		err = rows.Scan(&tagName)
+		if err != nil {
+			return nil, err
+		}
+		tagsStrArr = append(tagsStrArr, tagName)
+	}
+
+	// Save Platform Relations
+	for _, platform := range platforms {
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO game_platforms_platform ("game_id", "platform_id") VALUES ($1, $2)`,
+			game.ID, platform.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	platformsStrArr := make([]string, 0)
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT platform.primary_alias FROM platform WHERE platform.id IN (
+		SELECT DISTINCT platform_id FROM game_platforms_platform WHERE game_platforms_platform.game_id = $1
+	)`, game.ID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var platformName string
+		err = rows.Scan(&platformName)
+		if err != nil {
+			return nil, err
+		}
+		platformsStrArr = append(platformsStrArr, platformName)
+	}
+
+	// Save Game
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO game
+	(id, parent_game_id, title, alternate_titles, series, developer, publisher, play_mode, status, notes,
+	 source, application_path, launch_command, release_date, version, original_description, language, library,
+	 active_data_id, tags_str, platforms_str, user_id) 
+	 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+		game.ID, "", game.Title, game.AlternateTitles, game.Series, game.Developer, game.Publisher, game.PlayMode,
+		game.Status, game.Notes, game.Source, game.ApplicationPath, game.LaunchCommand, game.ReleaseDate, game.Version,
+		game.OriginalDesc, game.Language, game.Library, gameData.ID, strings.Join(tagsStrArr, "; "),
+		strings.Join(platformsStrArr, "; "), uid)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &game, nil
+}
+
+func GetPlatformID(dbs PGDBSession, name string) (int64, error) {
+	query := `SELECT platform_id FROM platform_alias WHERE platform_alias.name = $1`
+	var id int64
+	err := dbs.Tx().QueryRow(dbs.Ctx(), query, name).Scan(&id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			// Platform not found, return -1 to indicate
+			return -1, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func GetTagID(dbs PGDBSession, name string) (int64, error) {
+	query := `SELECT tag_id FROM tag_alias WHERE tag_alias.name = $1`
+	var id int64
+	err := dbs.Tx().QueryRow(dbs.Ctx(), query, name).Scan(&id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			// Tag not found, return -1 to indicate
+			return -1, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func GetCategoryID(dbs PGDBSession, name string) (int64, error) {
+	query := `SELECT id FROM tag_category WHERE tag_category.name = $1`
+	var id int64
+	err := dbs.Tx().QueryRow(dbs.Ctx(), query, name).Scan(&id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			// Tag category not found, return -1 to indicate
+			return -1, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func EnsureString(src *string, dest *string) {
+	if src == nil {
+		*dest = ""
+	} else {
+		*dest = *src
+	}
 }

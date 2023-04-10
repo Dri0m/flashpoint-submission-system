@@ -15,11 +15,20 @@ type PGDAL interface {
 	SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([]*types.Platform, error)
 	SearchGames(dbs PGDBSession, modifiedAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error)
 	GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, error)
-	GetTag(dbs PGDBSession, tagId int64) (types.Tag, error)
 	GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error)
-	GetGame(dbs PGDBSession, gameId string) (types.Game, error)
 	SaveGame(dbs PGDBSession, game *types.Game, uid int64) error
 	DeveloperImportDatabaseJson(dbs PGDBSession, data *types.LauncherDump) error
+
+	GetTagCategory(dbs PGDBSession, categoryId int64) (*types.TagCategory, error)
+	GetTag(dbs PGDBSession, tagId int64) (*types.Tag, error)
+	GetPlatform(dbs PGDBSession, platformId int64) (*types.Platform, error)
+	GetGame(dbs PGDBSession, gameId string) (*types.Game, error)
+
+	GetOrCreateTagCategory(dbs PGDBSession, categoryName string) (*types.TagCategory, error)
+	GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, uid int64) (*types.Tag, error)
+	GetOrCreatePlatform(dbs PGDBSession, platformName string, uid int64) (*types.Platform, error)
+
+	AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error)
 }
 
 type DAL interface {

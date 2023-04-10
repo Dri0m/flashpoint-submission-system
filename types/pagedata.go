@@ -33,14 +33,14 @@ type PlatformsPageData struct {
 
 type TagPageData struct {
 	BasePageData
-	Tag        Tag
+	Tag        *Tag
 	Categories []*TagCategory
 	GamesUsing int64
 }
 
 type GamePageData struct {
 	BasePageData
-	Game          Game
+	Game          *Game
 	LogoUrl       string
 	ScreenshotUrl string
 	ImagesCdn     string

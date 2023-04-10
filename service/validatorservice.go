@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	"github.com/Dri0m/flashpoint-submission-system/types"
@@ -27,7 +28,42 @@ func NewValidator(validatorServerURL string) *curationValidator {
 	}
 }
 
+func (c *curationValidator) ProvideArchiveForRepacking(filePath string) (*types.ValidatorRepackResponse, error) {
+	filePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, err
+	}
+	client := http.Client{Timeout: 86400 * time.Second}
+	resp, err := client.Post(fmt.Sprintf("%s/pack-path?path=%s", c.validatorServerURL, url.QueryEscape(filePath)), "application/json;charset=utf-8", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the response
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("provide to remote error: %s", string(bytes))
+	}
+
+	var vr types.ValidatorRepackResponse
+	err = json.Unmarshal(bytes, &vr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vr, nil
+}
+
 func (c *curationValidator) ProvideArchiveForValidation(filePath string) (*types.ValidatorResponse, error) {
+	filePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, err
+	}
 	client := http.Client{Timeout: 86400 * time.Second}
 	resp, err := client.Post(fmt.Sprintf("%s/provide-path?path=%s", c.validatorServerURL, url.QueryEscape(filePath)), "application/json;charset=utf-8", nil)
 	if err != nil {

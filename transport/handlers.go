@@ -92,7 +92,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions); err != nil {
+	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions, a.Conf.SubmissionsDirFullPath, a.Conf.DataPacksDir, a.Conf.ImagesDir); err != nil {
 		writeError(ctx, w, err)
 		return
 	}

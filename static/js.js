@@ -649,3 +649,8 @@ function doDeviceFlowAction(userCode, action) {
         alert(err)
     })
 }
+
+async function doWaitingSpinner(cb) {
+
+    await cb();
+}

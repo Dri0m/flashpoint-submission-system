@@ -10,29 +10,37 @@ import (
 type CurationMeta struct {
 	SubmissionID        int64
 	SubmissionFileID    int64
-	ApplicationPath     *string `json:"Application Path"`
-	Developer           *string `json:"Developer"`
-	Extreme             *string `json:"Extreme"`
-	GameNotes           *string `json:"Game Notes"`
-	Languages           *string `json:"Languages"`
-	LaunchCommand       *string `json:"Launch Command"`
-	OriginalDescription *string `json:"Original Description"`
-	PlayMode            *string `json:"Play Mode"`
-	Platform            *string `json:"Platforms"`
-	Publisher           *string `json:"Publisher"`
-	ReleaseDate         *string `json:"Release Date"`
-	Series              *string `json:"Series"`
-	Source              *string `json:"Source"`
-	Status              *string `json:"Status"`
-	Tags                *string `json:"Tags"`
-	TagCategories       *string `json:"Tag Categories"`
-	Title               *string `json:"Title"`
-	AlternateTitles     *string `json:"Alternate Titles"`
-	Library             *string `json:"Library"`
-	Version             *string `json:"Version"`
-	CurationNotes       *string `json:"Curation Notes"`
-	MountParameters     *string `json:"Mount Parameters"`
-	//AdditionalApplications *CurationFormatAddApps `json:"Additional Applications"`
+	ApplicationPath     *string                  `json:"Application Path"`
+	Developer           *string                  `json:"Developer"`
+	Extreme             *string                  `json:"Extreme"`
+	GameNotes           *string                  `json:"Game Notes"`
+	Languages           *string                  `json:"Languages"`
+	LaunchCommand       *string                  `json:"Launch Command"`
+	OriginalDescription *string                  `json:"Original Description"`
+	PlayMode            *string                  `json:"Play Mode"`
+	Platform            *string                  `json:"Platforms"`
+	Publisher           *string                  `json:"Publisher"`
+	ReleaseDate         *string                  `json:"Release Date"`
+	Series              *string                  `json:"Series"`
+	Source              *string                  `json:"Source"`
+	Status              *string                  `json:"Status"`
+	Tags                *string                  `json:"Tags"`
+	TagCategories       *string                  `json:"Tag Categories"`
+	Title               *string                  `json:"Title"`
+	AlternateTitles     *string                  `json:"Alternate Titles"`
+	Library             *string                  `json:"Library"`
+	Version             *string                  `json:"Version"`
+	CurationNotes       *string                  `json:"Curation Notes"`
+	MountParameters     *string                  `json:"Mount Parameters"`
+	Extras              *string                  `json:"Extras"`
+	Message             *string                  `json:"Message"`
+	AdditionalApps      []*CurationAdditionalApp `json:"Additional Applications"`
+}
+
+type CurationAdditionalApp struct {
+	Heading         *string `json:"Heading"`
+	ApplicationPath *string `json:"Application Path"`
+	LaunchCommand   *string `json:"Launch Command"`
 }
 
 type MasterDatabaseGame struct {
@@ -368,6 +376,13 @@ type ValidatorResponseImage struct {
 	Data string `json:"data"`
 }
 
+type ValidatorRepackResponse struct {
+	Error    *string                  `json:"error,omitempty"`
+	FilePath *string                  `json:"path,omitempty"`
+	Meta     CurationMeta             `json:"meta"`
+	Images   []ValidatorResponseImage `json:"images"`
+}
+
 type ValidatorResponse struct {
 	Filename         string                   `json:"filename"`
 	Path             string                   `json:"path"`
@@ -425,7 +440,7 @@ type Game struct {
 	AddApps         []*AdditionalApp `json:"add_apps"`
 	ActiveDataID    *int             `json:"active_data_id,omitempty"`
 	Data            []*GameData      `json:"data,omitempty"`
-	UserID          string           `json:"user_id"`
+	UserID          int64            `json:"user_id"`
 }
 
 type GameData struct {
@@ -846,4 +861,23 @@ type SubmissionStatus struct {
 	Status       string  `json:"status"`
 	Message      *string `json:"message"`
 	SubmissionID *int64  `json:"submission_id"`
+}
+
+type RepackError string
+
+func (ce RepackError) Error() string {
+	return fmt.Sprintf("Error repacking submission: %s", string(ce))
+}
+
+type NotEnoughImages string
+
+func (nei NotEnoughImages) Error() string {
+	return fmt.Sprintf("Submission does not have 2 images: has %s", string(nei))
+}
+
+type InvalidAddApps struct {
+}
+
+func (iaa InvalidAddApps) Error() string {
+	return "Add app invalid"
 }
