@@ -217,14 +217,35 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		a.HandleGamePage, muxAny(isGod, isColin))
 
 	router.Handle(
-		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyTagID),
+		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyGameID),
 		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
 
 	router.Handle(
-		fmt.Sprintf("/api/game/{%s}", constants.ResourceKeyTagID),
+		fmt.Sprintf("/web/game/{%s}/revision/{%s}", constants.ResourceKeyGameID, constants.ResourceKeyGameRevision),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}", constants.ResourceKeyGameID),
 		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET", "POST")
+
+	f = a.UserAuthMux(
+		a.HandleDeleteGame, muxAny(isGod, isColin))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("DELETE")
+
+	f = a.UserAuthMux(
+		a.HandleRestoreGame, muxAny(isGod, isColin))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}/restore", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
 
 	////////////////////////
 

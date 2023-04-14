@@ -107,3 +107,7 @@ func IsAdder(roles []string) bool {
 func IsGod(roles []string) bool {
 	return HasAnyRole(roles, GodRoles())
 }
+
+func IsGodOrColin(roles []string, uid int64) bool {
+	return HasAnyRole(roles, GodRoles()) || uid == 689080719460663414
+}

@@ -365,6 +365,22 @@ func (d *mysqlDAL) StoreComment(dbs DBSession, c *types.Comment) error {
 	return nil
 }
 
+func (d *mysqlDAL) PopulateGameRevisionInfo(dbs DBSession, revisions []*types.GameRevisionInfo) error {
+	for _, revision := range revisions {
+		var avatar string
+		err := dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT username, avatar
+		FROM discord_user
+		WHERE discord_user.id = ?`,
+			revision.AuthorID).
+			Scan(&revision.Username, &avatar)
+		if err != nil {
+			return err
+		}
+		revision.AvatarURL = utils.FormatAvatarURL(revision.AuthorID, avatar)
+	}
+	return nil
+}
+
 // GetExtendedCommentsBySubmissionID returns all comments with author data for a given submission
 func (d *mysqlDAL) GetExtendedCommentsBySubmissionID(dbs DBSession, sid int64) ([]*types.ExtendedComment, error) {
 	rows, err := dbs.Tx().QueryContext(dbs.Ctx(), `

@@ -214,13 +214,74 @@ func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	return bpd, nil
 }
 
-func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageCdn string, compressedImages bool) (*types.GamePageData, error) {
+func (s *SiteService) DeleteGame(ctx context.Context, gameId string) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	uid := utils.UserID(ctx)
+
+	// Soft delete database entry
+	err = s.pgdal.DeleteGame(dbs, gameId, uid, "TEST")
+	if err != nil {
+		return err
+	}
+
+	// Move game data and images (where exist)
+	// @TODO
+
+	err = dbs.Commit()
+	if err != nil {
+		return dberr(err)
+	}
+
+	return nil
+}
+
+func (s *SiteService) RestoreGame(ctx context.Context, gameId string) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	uid := utils.UserID(ctx)
+
+	// Restire database entry
+	err = s.pgdal.RestoreGame(dbs, gameId, uid, "TEST")
+	if err != nil {
+		return err
+	}
+
+	// Move game data and images (where exist)
+	// @TODO
+
+	err = dbs.Commit()
+	if err != nil {
+		return dberr(err)
+	}
+
+	return nil
+}
+
+func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageCdn string, compressedImages bool, revisionDate string) (*types.GamePageData, error) {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, dberr(err)
 	}
 	defer dbs.Rollback()
+
+	msqldbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer msqldbs.Rollback()
 
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
@@ -232,6 +293,28 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 		utils.LogCtx(ctx).Error(err)
 		return nil, perr("game not found", http.StatusNotFound)
 	}
+
+	user, err := s.dal.GetDiscordUser(msqldbs, game.UserID)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to fetch user info for version", http.StatusNotFound)
+	}
+
+	revisions, err := s.pgdal.GetGameRevisionInfo(dbs, gameId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to find revision info", http.StatusNotFound)
+	}
+	err = s.dal.PopulateGameRevisionInfo(msqldbs, revisions)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to populate revision info with user details", http.StatusNotFound)
+	}
+
+	// Desc sort revisions
+	sort.Slice(revisions, func(i, j int) bool {
+		return revisions[i].CreatedAt.After(revisions[j].CreatedAt)
+	})
 
 	logoUrl := fmt.Sprintf("%s/Logos/%s/%s/%s.png", imageCdn, game.ID[:2], game.ID[2:4], game.ID)
 	if compressedImages {
@@ -247,6 +330,10 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 		Game:          game,
 		LogoUrl:       logoUrl,
 		ScreenshotUrl: ssUrl,
+		Revisions:     revisions,
+		GameUsername:  user.Username,
+		GameAvatarURL: utils.FormatAvatarURL(user.ID, user.Avatar),
+		GameAuthorID:  user.ID,
 		BasePageData:  *bpd,
 	}
 

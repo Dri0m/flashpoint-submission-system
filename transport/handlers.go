@@ -509,6 +509,12 @@ func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if pageData.Tag.Deleted && !constants.IsGodOrColin(pageData.UserRoles, pageData.UserID) {
+		// Prevent non-God users viewing deleted resource
+		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
+		return
+	}
+
 	if utils.RequestType(ctx) != constants.RequestWeb {
 		writeResponse(ctx, w, pageData.Tag, http.StatusOK)
 		return
@@ -521,7 +527,8 @@ func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
-	gameId := params[constants.ResourceKeyTagID]
+	gameId := params[constants.ResourceKeyGameID]
+	revisionDate := params[constants.ResourceKeyGameRevision]
 
 	// Handle POST changes
 	if utils.RequestType(ctx) != constants.RequestWeb && r.Method == "POST" {
@@ -539,9 +546,15 @@ func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pageData, err := a.Service.GetGamePageData(ctx, gameId, a.Conf.ImagesCdn, a.Conf.ImagesCdnCompressed)
+	pageData, err := a.Service.GetGamePageData(ctx, gameId, a.Conf.ImagesCdn, a.Conf.ImagesCdnCompressed, revisionDate)
 	if err != nil {
 		writeError(ctx, w, err)
+		return
+	}
+
+	if pageData.Game.Deleted && !constants.IsGodOrColin(pageData.UserRoles, pageData.UserID) {
+		// Prevent non-God users viewing deleted resource
+		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
 		return
 	}
 
@@ -553,6 +566,37 @@ func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/game.gohtml")
 }
+
+func (a *App) HandleDeleteGame(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyGameID]
+
+	err := a.Service.DeleteGame(ctx, gameId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, map[string]interface{}{"status": "success"}, http.StatusOK)
+}
+
+func (a *App) HandleRestoreGame(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyGameID]
+
+	err := a.Service.RestoreGame(ctx, gameId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, map[string]interface{}{"status": "success"}, http.StatusOK)
+}
+
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

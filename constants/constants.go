@@ -76,6 +76,7 @@ const (
 	ResourceKeyTempName              = "temp-name"
 	ResourceKeyTagID                 = "tag-id"
 	ResourceKeyGameID                = "game-id"
+	ResourceKeyGameRevision          = "revision-date"
 )
 
 const (

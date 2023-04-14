@@ -1,7 +1,7 @@
 {{define "main"}}
     <div class="content">
         <h3>Tag {{.Tag.ID}}</h3>
-        <h1>{{.Tag.Name}}</h1>
+        <h1>{{if .Tag.Deleted}}DELETED - {{end}}{{.Tag.Name}}</h1>
         <h3>{{.GamesUsing}} games with this tag</h3>
     </div>
 {{end}}

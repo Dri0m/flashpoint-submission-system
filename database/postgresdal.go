@@ -119,7 +119,7 @@ func (d *postgresDAL) SearchTags(dbs PGDBSession, modifiedAfter *string) ([]*typ
 		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names, user_id 
 			FROM tag 
 				LEFT JOIN tag_category ON tag_category.id = tag.category_id 
-			WHERE tag.date_modified >= $1 
+			WHERE tag.date_modified >= $1 AND tag.deleted = FALSE
 			ORDER BY tag_category.name, primary_alias`, modifiedAfter)
 	} else {
 		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names, user_id 
@@ -151,9 +151,11 @@ func (d *postgresDAL) SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([
 	var rows pgx.Rows
 	var err error
 	if modifiedAfter != nil {
-		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description, platform.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names, user_id 
+		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description,
+       		platform.date_modified, primary_alias, (SELECT string_agg(name, '; ')
+			FROM platform_alias WHERE platform_id = platform.id) as alias_names, user_id 
 			FROM platform
-			WHERE platform.date_modified >= $1 
+			WHERE platform.date_modified >= $1 AND platform.deleted = FALSE
 			ORDER BY primary_alias`, modifiedAfter)
 	} else {
 		rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description, platform.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names, user_id 
@@ -189,9 +191,9 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT game.id, game.parent_game_id, game.title, game.alternate_titles, game.series,
        		game.developer, game.publisher, game.date_added, game.date_modified, game.play_mode, game.status, game.notes, game.source,
        		game.application_path, game.launch_command, game.release_date, game.version, game.original_description, game.language,
-       		game.library, game.active_data_id, game.tags_str, game.platforms_str, game.user_id
+       		game.library, game.active_data_id, game.tags_str, game.platforms_str
 			FROM game
-			WHERE game.date_modified >= $1 AND game.id > $2
+			WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE
 			ORDER BY game.date_modified, game.id
 			LIMIT $3`, modifiedAfter, afterId, limit)
 	if err != nil {
@@ -207,7 +209,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 		if err := rows.Scan(&game.ID, &game.ParentGameID, &game.Title, &game.AlternateTitles, &game.Series, &game.Developer,
 			&game.Publisher, &game.DateAdded, &game.DateModified, &game.PlayMode, &game.Status, &game.Notes, &game.Source,
 			&game.ApplicationPath, &game.LaunchCommand, &game.ReleaseDate, &game.Version, &game.OriginalDesc, &game.Language,
-			&game.Library, &game.ActiveDataID, &game.TagsStr, &game.PlatformsStr, &game.UserID); err != nil {
+			&game.Library, &game.ActiveDataID, &game.TagsStr, &game.PlatformsStr); err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 
@@ -218,7 +220,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gtt.game_id, gtt.tag_id 
 	FROM game_tags_tag gtt 
 	WHERE gtt.game_id IN (
-	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
 	)`, modifiedAfter, afterId, limit)
 	for rows.Next() {
 		relation := make([]string, 2)
@@ -233,7 +235,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gpp.game_id, gpp.platform_id 
 	FROM game_platforms_platform gpp 
 	WHERE gpp.game_id IN (
-	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
 	)`, modifiedAfter, afterId, limit)
 	for rows.Next() {
 		relation := make([]string, 2)
@@ -251,7 +253,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 			aa.wait_for_exit, aa.auto_run_before, aa.parent_game_id
 			FROM additional_app aa
 			WHERE aa.parent_game_id IN (
-			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
 			)`, modifiedAfter, afterId, limit)
 
 			for rows.Next() {
@@ -268,7 +270,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
        		gd.crc32, gd.size, gd.parameters
 			FROM game_data gd
 			WHERE gd.game_id IN (
-			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 LIMIT $3
+			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
 			)`, modifiedAfter, afterId, limit)
 
 			for rows.Next() {
@@ -290,11 +292,15 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 
 func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (*types.Tag, error) {
 	var tag types.Tag
-	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description, tag_category.name, tag.date_modified, primary_alias, (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names, user_id 
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description,
+       tag_category.name, tag.date_modified, primary_alias,
+       (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names,
+       action, reason, deleted, user_id 
 		FROM tag 
 			LEFT JOIN tag_category ON tag_category.id = tag.category_id 
 		WHERE tag.id = $1`, tagId).
-		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.Aliases, &tag.UserID)
+		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.Aliases,
+			&tag.Action, &tag.Reason, &tag.Deleted, &tag.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -306,10 +312,12 @@ func (d *postgresDAL) GetPlatform(dbs PGDBSession, platformId int64) (*types.Pla
 	var platform types.Platform
 	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description,
        		platform.date_modified, primary_alias,
-       		(SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names, user_id 
+       		(SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names,
+       		action, reason, deleted, user_id 
 		FROM platform
 		WHERE platform.id = $1`, platformId).
-		Scan(&platform.ID, &platform.Description, &platform.DateModified, &platform.Name, &platform.Aliases, &platform.UserID)
+		Scan(&platform.ID, &platform.Description, &platform.DateModified, &platform.Name, &platform.Aliases,
+			&platform.Action, &platform.Reason, &platform.Deleted, &platform.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +327,8 @@ func (d *postgresDAL) GetPlatform(dbs PGDBSession, platformId int64) (*types.Pla
 
 func (d *postgresDAL) GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error) {
 	var count int64
-	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*) FROM game_tags_tag WHERE tag_id = $1`, tagId).Scan(&count)
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*) FROM game_tags_tag WHERE tag_id = $1
+	AND game_id IN (SELECT id FROM game WHERE deleted = FALSE)`, tagId).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -334,7 +343,8 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 		Scan(&game.ID, &game.ParentGameID, &game.Title, &game.AlternateTitles, &game.Series, &game.Developer,
 			&game.Publisher, &game.DateAdded, &game.DateModified, &game.PlayMode, &game.Status, &game.Notes,
 			&game.Source, &game.ApplicationPath, &game.LaunchCommand, &game.ReleaseDate, &game.Version,
-			&game.OriginalDesc, &game.Language, &game.Library, &game.ActiveDataID, &game.TagsStr, &game.PlatformsStr, &game.UserID)
+			&game.OriginalDesc, &game.Language, &game.Library, &game.ActiveDataID, &game.TagsStr, &game.PlatformsStr,
+			&game.Action, &game.Reason, &game.Deleted, &game.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +405,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 	}
 
 	// Get platforms
-	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM platform WHERE id IN (
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT id, date_modified, primary_alias, description, user_id FROM platform WHERE id IN (
     	SELECT platform_id FROM game_platforms_platform WHERE game_id = $1) ORDER BY primary_alias`, gameId)
 	if err != nil {
 		return nil, err
@@ -473,8 +483,14 @@ func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) err
 	}
 
 	// Save game
-	query := "UPDATE game SET parent_game_id=$1, title=$2, alternate_titles=$3, series=$4, developer=$5, publisher=$6, platforms_str=$7, play_mode=$8, status=$9, notes=$10, tags_str=$11, source=$12, application_path=$13, launch_command=$14, release_date=$15, version=$16, original_description=$17, language=$18, library=$19, active_data_id=$20, user_id=$21 WHERE id=$22"
-	_, err = dbs.Tx().Exec(dbs.Ctx(), query, game.ParentGameID, game.Title, game.AlternateTitles, game.Series, game.Developer, game.Publisher, game.PlatformsStr, game.PlayMode, game.Status, game.Notes, game.TagsStr, game.Source, game.ApplicationPath, game.LaunchCommand, game.ReleaseDate, game.Version, game.OriginalDesc, game.Language, game.Library, game.ActiveDataID, uid, game.ID)
+	query := `UPDATE game SET parent_game_id=$1, title=$2, alternate_titles=$3, series=$4, developer=$5,
+                publisher=$6, platforms_str=$7, play_mode=$8, status=$9, notes=$10, tags_str=$11, source=$12,
+                application_path=$13, launch_command=$14, release_date=$15, version=$16, original_description=$17,
+                language=$18, library=$19, active_data_id=$20, user_id=$21, action=$22, reason=$23 WHERE id=$24`
+	_, err = dbs.Tx().Exec(dbs.Ctx(), query, game.ParentGameID, game.Title, game.AlternateTitles, game.Series, game.Developer,
+		game.Publisher, game.PlatformsStr, game.PlayMode, game.Status, game.Notes, game.TagsStr, game.Source,
+		game.ApplicationPath, game.LaunchCommand, game.ReleaseDate, game.Version, game.OriginalDesc,
+		game.Language, game.Library, game.ActiveDataID, uid, "update", "User changed metadata", game.ID)
 	if err != nil {
 		return err
 	}
@@ -547,13 +563,15 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 	_, err = dbs.Tx().CopyFrom(
 		dbs.Ctx(),
 		pgx.Identifier{"tag"},
-		[]string{"id", "category_id", "description", "primary_alias", "user_id"},
+		[]string{"id", "category_id", "description", "primary_alias", "action", "reason", "user_id"},
 		pgx.CopyFromSlice(len(dump.Tags.Tags), func(i int) ([]interface{}, error) {
 			return []interface{}{
 				dump.Tags.Tags[i].ID,
 				dump.Tags.Tags[i].CategoryID,
 				dump.Tags.Tags[i].Description,
 				dump.Tags.Tags[i].PrimaryAlias,
+				"create",
+				"Database Import",
 				conf.SystemUid,
 			}, nil
 		}),
@@ -586,12 +604,14 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 	_, err = dbs.Tx().CopyFrom(
 		dbs.Ctx(),
 		pgx.Identifier{"platform"},
-		[]string{"id", "description", "primary_alias", "user_id"},
+		[]string{"id", "description", "primary_alias", "action", "reason", "user_id"},
 		pgx.CopyFromSlice(len(dump.Platforms.Platforms), func(i int) ([]interface{}, error) {
 			return []interface{}{
 				dump.Platforms.Platforms[i].ID,
 				dump.Platforms.Platforms[i].Description,
 				dump.Platforms.Platforms[i].PrimaryAlias,
+				"create",
+				"Database Import",
 				conf.SystemUid,
 			}, nil
 		}),
@@ -693,7 +713,7 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 		[]string{"id", "parent_game_id", "title", "alternate_titles", "series", "developer", "publisher",
 			"date_added", "date_modified", "play_mode", "status", "notes", "source", "application_path",
 			"launch_command", "release_date", "version", "original_description", "language", "library",
-			"tags_str", "platforms_str", "user_id"},
+			"tags_str", "platforms_str", "action", "reason", "user_id"},
 		pgx.CopyFromSlice(len(dump.Games.Games), func(i int) ([]interface{}, error) {
 			return []interface{}{
 				dump.Games.Games[i].ID,
@@ -718,6 +738,8 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 				dump.Games.Games[i].Library,
 				dump.Games.Games[i].TagsStr,
 				dump.Games.Games[i].PlatformsStr,
+				"create",
+				"Database Import",
 				conf.SystemUid,
 			}, nil
 		}),
@@ -736,8 +758,14 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
    		SELECT game_id, tag_id, $1 FROM game_tags_tag`, t)
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game_platforms_platform ("game_id", "platform_id", "date_modified")
    		SELECT game_id, platform_id, $1 FROM game_platforms_platform`, t)
-	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game (id, parent_game_id, title, alternate_titles, series, developer, publisher, date_added, date_modified, play_mode, status, notes, source, application_path, launch_command, release_date, version, original_description, language, library, active_data_id, tags_str, platforms_str, user_id)
-		SELECT id, parent_game_id, title, alternate_titles, series, developer, publisher, date_added, date_modified, play_mode, status, notes, source, application_path, launch_command, release_date, version, original_description, language, library, active_data_id, tags_str, platforms_str, user_id
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game (id, parent_game_id, title, alternate_titles, series,
+                            developer, publisher, date_added, date_modified, play_mode, status, notes, source,
+                            application_path, launch_command, release_date, version, original_description, language,
+                            library, active_data_id, tags_str, platforms_str, action, reason, user_id)
+		SELECT id, parent_game_id, title, alternate_titles, series,
+		       developer, publisher, date_added, date_modified, play_mode, status, notes, source,
+		       application_path, launch_command, release_date, version, original_description, language,
+		       library, active_data_id, tags_str, platforms_str, action, reason, user_id
 		FROM game`)
 
 	utils.LogCtx(dbs.Ctx()).Debug("done database import")
@@ -789,9 +817,10 @@ func (d *postgresDAL) GetOrCreatePlatform(dbs PGDBSession, platformName string, 
 	} else {
 		// Create new platform
 		var newPlatformId int64
-		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO platform ("primary_alias", "description", "user_id")
-			VALUES ($1, $2, $3) RETURNING id`,
-			platformName, "", uid).Scan(&newPlatformId)
+		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO platform ("primary_alias", "description", "action", "reason", "user_id")
+			VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			platformName, "", "create", "Submission Import", uid).
+			Scan(&newPlatformId)
 		if err != nil {
 			return nil, err
 		}
@@ -828,9 +857,11 @@ func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategor
 
 		// Create Tag
 		var newTagId int64
-		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO tag ("primary_alias", "category_id", "description", "user_id")
-			VALUES ($1, $2, $3, $4) RETURNING id`,
-			tagName, category.ID, "", uid).Scan(&newTagId)
+		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO tag ("primary_alias", "category_id", "description",
+                 "action", "reason", "user_id")
+			VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+			tagName, category.ID, "", "create", "Submission Import", uid).
+			Scan(&newTagId)
 		if err != nil {
 			return nil, err
 		}
@@ -1023,18 +1054,49 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO game
 	(id, parent_game_id, title, alternate_titles, series, developer, publisher, play_mode, status, notes,
 	 source, application_path, launch_command, release_date, version, original_description, language, library,
-	 active_data_id, tags_str, platforms_str, user_id) 
+	 active_data_id, tags_str, platforms_str, action, reason, user_id) 
 	 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
 		game.ID, "", game.Title, game.AlternateTitles, game.Series, game.Developer, game.Publisher, game.PlayMode,
 		game.Status, game.Notes, game.Source, game.ApplicationPath, game.LaunchCommand, game.ReleaseDate, game.Version,
 		game.OriginalDesc, game.Language, game.Library, gameData.ID, strings.Join(tagsStrArr, "; "),
-		strings.Join(platformsStrArr, "; "), uid)
+		strings.Join(platformsStrArr, "; "), "create", "Submission Import", uid)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &game, nil
+}
+
+func (d *postgresDAL) GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.GameRevisionInfo, error) {
+	revisions := make([]*types.GameRevisionInfo, 0)
+
+	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT date_modified, action, reason, user_id FROM changelog_game WHERE id = $1`, gameId)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		revision := &types.GameRevisionInfo{}
+		err = rows.Scan(&revision.CreatedAt, &revision.Action, &revision.Reason, &revision.AuthorID)
+		if err != nil {
+			return nil, err
+		}
+		revisions = append(revisions, revision)
+	}
+
+	return revisions, nil
+}
+
+func (d *postgresDAL) DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string) error {
+	_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE game SET action = 'delete', deleted = TRUE, user_id = $1, reason = $2 WHERE id = $3`,
+		uid, reason, gameId)
+	return err
+}
+
+func (d *postgresDAL) RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string) error {
+	_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE game SET action = 'restore', deleted = FALSE, user_id = $1, reason = $2 WHERE id = $3`,
+		uid, reason, gameId)
+	return err
 }
 
 func GetPlatformID(dbs PGDBSession, name string) (int64, error) {

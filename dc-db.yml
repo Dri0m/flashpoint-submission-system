@@ -19,7 +19,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3306:3306" # TODO unmap in prod
+      - "${DB_PORT}:3306" # TODO unmap in prod
     volumes:
       - fpfssdb_data:/var/lib/mysql
     networks:
@@ -43,7 +43,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:${POSTGRES_PORT}"
+      - "${POSTGRES_PORT}:5432"
     networks:
       fpfssnetwork:
         ipv4_address: 10.50.0.3
@@ -60,7 +60,7 @@ services:
       - $REPACK_DIR:$REPACK_DIR
       - $SUBMISSIONS_DIR_FULL_PATH:$SUBMISSIONS_DIR_FULL_PATH
     ports:
-      - "8000:8000"
+      - "${VALIDATOR_PORT}:8000"
     networks:
       fpfssnetwork:
         ipv4_address: 10.50.0.4

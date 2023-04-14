@@ -676,3 +676,11 @@ async function doWaitingSpinner(message, cb) {
     });
 
 }
+
+async function confirmAction(message, cb) {
+    const confirmation = confirm(message);
+
+    if (confirmation) {
+        return cb();
+    }
+}

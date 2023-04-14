@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS "tag" (
 	"primary_alias"	citext NOT NULL,
 	"category_id"	integer NOT NULL,
 	"description"	varchar,
+	"action" varchar NOT NULL,
+	"reason" varchar NOT NULL,
+	"deleted" bool DEFAULT FALSE,
 	"user_id" bigint NOT NULL,
 	CONSTRAINT "FK_tag_category_id" FOREIGN KEY("category_id") REFERENCES "tag_category"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
 	CONSTRAINT "FK_tag_primary_alias" FOREIGN KEY("primary_alias") REFERENCES "tag_alias"("name") ON DELETE CASCADE ON UPDATE NO ACTION
@@ -31,6 +34,8 @@ CREATE TABLE IF NOT EXISTS "changelog_tag" (
 	 "primary_alias"	citext NOT NULL,
 	 "category_id"	integer NOT NULL,
 	 "description"	varchar,
+	 "action" varchar NOT NULL,
+	 "reason" varchar NOT NULL,
 	 "user_id" bigint NOT NULL
 );
 CREATE TABLE IF NOT EXISTS "changelog_tag_alias" (
@@ -76,6 +81,9 @@ CREATE TABLE IF NOT EXISTS "game" (
 	"active_data_id"	integer,
 	"tags_str"	citext NOT NULL DEFAULT (''),
 	"platforms_str"	varchar NOT NULL DEFAULT (''),
+	"action" varchar NOT NULL,
+	"reason" varchar NOT NULL,
+	"deleted" bool DEFAULT FALSE,
 	"user_id" bigint NOT NULL
 );
 CREATE TABLE IF NOT EXISTS "changelog_game" (
@@ -103,6 +111,8 @@ CREATE TABLE IF NOT EXISTS "changelog_game" (
 	"active_data_id"	integer,
 	"tags_str"	citext NOT NULL DEFAULT (''),
 	"platforms_str"	varchar NOT NULL DEFAULT (''),
+	"action" varchar NOT NULL,
+	"reason" varchar NOT NULL,
 	"user_id" bigint NOT NULL
 );
 
@@ -164,6 +174,9 @@ CREATE TABLE IF NOT EXISTS "platform" (
 	"date_modified"	timestamp NOT NULL DEFAULT now(),
 	"primary_alias"	citext NOT NULL,
 	"description"	varchar,
+	"action" varchar NOT NULL,
+	"reason" varchar NOT NULL,
+	"deleted" bool DEFAULT FALSE,
 	"user_id" bigint NOT NULL,
 	CONSTRAINT "FK_platform_primary_alias" FOREIGN KEY("primary_alias") REFERENCES "platform_alias"("name") ON DELETE CASCADE ON UPDATE NO ACTION
 );
@@ -173,6 +186,8 @@ CREATE TABLE IF NOT EXISTS "changelog_platform" (
 	"date_modified"	timestamp NOT NULL DEFAULT now(),
 	"primary_alias"	citext NOT NULL,
 	"description"	varchar,
+	"action" varchar NOT NULL,
+	"reason" varchar NOT NULL,
 	"user_id" bigint NOT NULL
 );
 
@@ -186,6 +201,14 @@ CREATE TABLE IF NOT EXISTS "changelog_game_platforms_platform" (
 	"game_id"	varchar(36) NOT NULL,
 	"platform_id"	integer NOT NULL,
 	"date_modified" timestamp
+);
+
+CREATE INDEX IF NOT EXISTS "IDX_platform_alive" ON "platform" (
+	 "deleted"
+);
+
+CREATE INDEX IF NOT EXISTS "IDX_tag_alive" ON "tag" (
+	"deleted"
 );
 
 CREATE INDEX IF NOT EXISTS "IDX_34d6ff6807129b3b193aea2678" ON "tag_alias" (
@@ -203,40 +226,43 @@ CREATE INDEX IF NOT EXISTS "IDX_6366e7093c3571f85f1b5ffd4f2" ON "game_platforms_
 CREATE INDEX IF NOT EXISTS "IDX_d12253f0cbce01f030a9ced11d2" ON "game_platforms_platform" (
 	"platform_id"
 );
+CREATE INDEX IF NOT EXISTS "IDX_game_alive" ON "game" (
+	"deleted"
+);
 CREATE INDEX IF NOT EXISTS "IDX_gameTitle" ON "game" (
 	"title"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_gameDateModified_id" ON "game" (
 	"date_modified",
 	"id"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_total" ON "game" (
 	"library"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_lookup_series" ON "game" (
 	"library",
 	"series"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_lookup_publisher" ON "game" (
 	"library",
 	"publisher"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_lookup_developer" ON "game" (
 	"library",
 	"developer"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_lookup_dateModified" ON "game" (
 	"library",
 	"date_modified"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_lookup_dateAdded" ON "game" (
 	"library",
 	"date_added"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_lookup_title" ON "game" (
 	"library",
 	"title"
-);
+) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS "IDX_add_app_parent_game_id" ON "additional_app"(
 	"parent_game_id"
 );
@@ -292,7 +318,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION log_tag()
 	RETURNS TRIGGER AS $$
 BEGIN
-	INSERT INTO changelog_tag (id, date_modified, primary_alias, category_id, description, user_id) VALUES (NEW.id, NEW.date_modified, NEW.primary_alias, NEW.category_id, NEW.description, NEW.user_id);
+	INSERT INTO changelog_tag (id, date_modified, primary_alias, category_id, description, action, reason, user_id)
+	VALUES (NEW.id, NEW.date_modified, NEW.primary_alias, NEW.category_id, NEW.description, NEW.action, NEW.reason, NEW.user_id);
 
 	-- loop through the aliases and log their updates
 	INSERT INTO changelog_tag_alias (tag_id, name, date_modified)
@@ -309,7 +336,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION log_platform()
 	RETURNS TRIGGER AS $$
 BEGIN
-	INSERT INTO changelog_platform (id, date_modified, primary_alias, description, user_id) VALUES (NEW.id, NEW.date_modified, NEW.primary_alias, NEW.description, NEW.user_id);
+	INSERT INTO changelog_platform (id, date_modified, primary_alias, description, action, reason, user_id)
+	VALUES (NEW.id, NEW.date_modified, NEW.primary_alias, NEW.description, NEW.action, NEW.reason, NEW.user_id);
 
 	-- loop through the aliases and log their updates
 	INSERT INTO changelog_platform_alias (platform_id, name, date_modified)
@@ -331,10 +359,16 @@ BEGIN
 	CALL log_platform_relations('game_id', NEW.id, NEW.date_modified);
 	CALL log_tag_relations('game_id', NEW.id, NEW.date_modified);
 
-	INSERT INTO changelog_game (id, parent_game_id, title, alternate_titles, series, developer, publisher, date_added, date_modified, play_mode, status, notes, source, application_path, launch_command, release_date, version, original_description, language, library, active_data_id, tags_str, platforms_str, user_id)
-	SELECT id, parent_game_id, title, alternate_titles, series, developer, publisher, date_added, date_modified, play_mode, status, notes, source, application_path, launch_command, release_date, version, original_description, language, library, active_data_id, tags_str, platforms_str, user_id
-	FROM game
-	WHERE id = NEW.id;
+	INSERT INTO changelog_game (id, parent_game_id, title, alternate_titles, series, developer,
+	                            publisher, date_added, date_modified, play_mode, status, notes, source,
+	                            application_path, launch_command, release_date, version, original_description,
+	                            language, library, active_data_id, tags_str, platforms_str, action, reason,
+	                            user_id)
+	VALUES (NEW.id, NEW.parent_game_id, NEW.title, NEW.alternate_titles, NEW.series, NEW.developer,
+	        NEW.publisher, NEW.date_added, NEW.date_modified, NEW.play_mode, NEW.status, NEW.notes, NEW.source,
+	        NEW.application_path, NEW.launch_command, NEW.release_date, NEW.version, NEW.original_description,
+	        NEW.language, NEW.library, NEW.active_data_id, NEW.tags_str, NEW.platforms_str, NEW.action, NEW.reason,
+	        NEW.user_id);
 
 	RETURN NEW;
 END;
@@ -379,7 +413,6 @@ BEGIN
 	WHERE additional_app.parent_game_id = value;
 END;
 $$ LANGUAGE plpgsql;
-
 
 -- Date Modified Triggers
 

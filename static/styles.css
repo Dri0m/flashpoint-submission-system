@@ -101,7 +101,10 @@ textarea {
     border-radius: 4px;
 }
 
-
+.bgr-restore,
+.bgr-create,
+.bgr-update,
+.bgr-delete,
 .bgr-comment,
 .bgr-approve,
 .bgr-request-changes,
@@ -164,12 +167,15 @@ textarea {
     background: rgb(184, 184, 184) !important;
 }
 
+.bgr-create,
 .bgr-approve,
+.bgr-restore,
 .dot-approve,
 .button-approve {
     background: rgb(28, 184, 65) !important;
 }
 
+.bgr-delete,
 .bgr-request-changes,
 .dot-request-changes,
 .button-request-changes {
@@ -218,6 +224,7 @@ textarea {
     background: rgb(14, 175, 175) !important;
 }
 
+.bgr-update,
 .bgr-verify,
 .dot-verify,
 .button-verify {
@@ -630,4 +637,18 @@ video {
     to {
         transform: rotate(360deg);
     }
+}
+
+.game-buttons {
+    display: flex;
+    flex-direction: row;
+}
+
+.game-buttons > * {
+    margin-right: 1rem;
+}
+
+.missing-game-section {
+    color: #5E5E5E !important;
+    font-style: italic;
 }

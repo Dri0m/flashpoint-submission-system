@@ -3,17 +3,48 @@
         {{ $imagesCdn := .ImagesCdn }}
 
         <h3>Game {{.Game.ID}}</h3>
-        <h1>{{.Game.Title}}</h1>
+        {{if .Game.Deleted}}<h3>DELETED</h3>{{end}}
+
+        <div class="game-buttons">
+            <a class="pure-button pure-button-primary"
+               href="flashpoint://fpfss/edit_game/api/game/{{.Game.ID}}">
+                Edit in Flashpoint Launcher
+            </a>
+        {{if isAdder .UserRoles}}
+            {{ if .Game.Deleted }}
+                <a class="pure-button pure-button-primary button-approve" onclick="confirmAction('Restore Game?', () => {
+                    fetch('/api/game/{{.Game.ID}}/restore')
+                        .then(() => {
+                            window.location.reload()
+                        })
+                        .catch((err) => {
+                            alert(err);
+                        })
+                    })">
+                    Restore
+                </a>
+            {{else}}
+                <a class="pure-button pure-button-primary button-delete" onclick="confirmAction('Delete Game?', () => {
+                    fetch('/api/game/{{.Game.ID}}', { method: 'DELETE' })
+                        .then(() => {
+                            window.location.reload()
+                        })
+                        .catch((err) => {
+                            alert(err);
+                        })
+                    })">
+                    Delete
+                </a>
+            {{end}}
+        {{end}}
+        </div>
+
+        <h1>{{.Game.Title}} </h1>
 
         <img src={{.LogoUrl}}
              class="curation-image" alt="curation image">
         <img src={{.ScreenshotUrl}}
              class="curation-image" alt="curation image">
-
-        <a class="pure-button pure-button-primary"
-           href="flashpoint://fpfss/edit_game/api/game/{{.Game.ID}}">
-            Edit in Flashpoint Launcher
-        </a>
 
         <h3>Metadata</h3>
         <table class="pure-table pure-table-bordered meta-table">
@@ -173,6 +204,9 @@
         </table>
 
         <h3>Additional Apps</h3>
+        {{if not .Game.AddApps}}
+            <div class="missing-game-section">No Additional Apps</div>
+        {{end}}
         {{range .Game.AddApps}}
             <table class="pure-table pure-table-bordered meta-table">
                 <tr>
@@ -195,6 +229,9 @@
         {{end}}
 
         <h3>Game Data</h3>
+        {{if not .Game.Data}}
+            <div class="missing-game-section">No Game Data</div>
+        {{end}}
         {{range .Game.Data}}
             <table class="pure-table pure-table-bordered meta-table">
                 <tr>
@@ -225,6 +262,39 @@
                             {{end}}{{end}}</td>
                 </tr>
             </table>
+        {{end}}
+
+        <h3>Revisions</h3>
+        {{range .Revisions}}
+            <div class="pure-g comment">
+                <div class="pure-u-1-6 bgr-{{.Action}}">
+                    <div class="comment-header">
+                        <div class="comment-header-user">
+                            <img src="{{default "/static/zuma.png" .AvatarURL}}" class="comment-avatar"
+                                 alt="avatar"
+                                 title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
+                            <b>{{.Username}}</b>
+                        </div>
+                        <br>
+                        <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
+                    </div>
+                </div>
+                <div class="pure-u-5-6">
+                    <div class="comment-body">
+                        {{ if eq .Action "create" }}
+                            Created:
+                        {{ else if eq .Action "update" }}
+                            Updated:
+                        {{ else if eq .Action "delete" }}
+                            Deleted:
+                        {{ else if eq .Action "restore" }}
+                            Restored:
+                        {{end}}
+                        {{range $i, $line := (splitMultilineText .Reason) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}{{end}}
+                    </div>
+                </div>
+            </div>
         {{end}}
     </div>
 {{end}}

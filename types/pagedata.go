@@ -41,6 +41,10 @@ type TagPageData struct {
 type GamePageData struct {
 	BasePageData
 	Game          *Game
+	GameAvatarURL string
+	GameAuthorID  int64
+	GameUsername  string
+	Revisions     []*GameRevisionInfo
 	LogoUrl       string
 	ScreenshotUrl string
 	ImagesCdn     string

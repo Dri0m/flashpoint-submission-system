@@ -23,6 +23,11 @@ type PGDAL interface {
 	GetTag(dbs PGDBSession, tagId int64) (*types.Tag, error)
 	GetPlatform(dbs PGDBSession, platformId int64) (*types.Platform, error)
 	GetGame(dbs PGDBSession, gameId string) (*types.Game, error)
+	GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.GameRevisionInfo, error)
+
+	DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string) error
+
+	RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string) error
 
 	GetOrCreateTagCategory(dbs PGDBSession, categoryName string) (*types.TagCategory, error)
 	GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, uid int64) (*types.Tag, error)
@@ -114,6 +119,8 @@ type DAL interface {
 
 	GetUsers(dbs DBSession) ([]*types.User, error)
 	GetCommentsByUserIDAndAction(dbs DBSession, uid int64, action string) ([]*types.Comment, error)
+
+	PopulateGameRevisionInfo(dbs DBSession, revisions []*types.GameRevisionInfo) error
 }
 
 type DBSession interface {

@@ -440,7 +440,10 @@ type Game struct {
 	AddApps         []*AdditionalApp `json:"add_apps"`
 	ActiveDataID    *int             `json:"active_data_id,omitempty"`
 	Data            []*GameData      `json:"data,omitempty"`
-	UserID          int64            `json:"user_id"`
+	Action          string           `json:"action"`
+	Reason          string           `json:"reason"`
+	Deleted         bool
+	UserID          int64
 }
 
 type GameData struct {
@@ -471,7 +474,10 @@ type Platform struct {
 	Description  string    `json:"description"`
 	DateModified time.Time `json:"date_modified"`
 	Aliases      *string   `json:"aliases,omitempty"`
-	UserID       int64     `json:"user_id"`
+	Action       string    `json:"action"`
+	Reason       string    `json:"reason"`
+	Deleted      bool
+	UserID       int64 `json:"user_id"`
 }
 
 type PlatformAlias struct {
@@ -486,7 +492,10 @@ type Tag struct {
 	DateModified time.Time `json:"date_modified"`
 	Category     string    `json:"category"`
 	Aliases      *string   `json:"aliases,omitempty"`
-	UserID       int64     `json:"user_id"`
+	Action       string    `json:"action"`
+	Reason       string    `json:"reason"`
+	Deleted      bool
+	UserID       int64 `json:"user_id"`
 }
 
 type TagAlias struct {
@@ -880,4 +889,13 @@ type InvalidAddApps struct {
 
 func (iaa InvalidAddApps) Error() string {
 	return "Add app invalid"
+}
+
+type GameRevisionInfo struct {
+	Action    string
+	Reason    string
+	CreatedAt time.Time
+	AvatarURL string
+	AuthorID  int64
+	Username  string
 }
