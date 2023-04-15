@@ -615,6 +615,14 @@ video {
     align-items: center;
 }
 
+.message-box > :not(:last-child) {
+    margin-bottom: 1rem;
+}
+
+.message-box-buttons > :not(:first-child) {
+    margin-left: 1rem;
+}
+
 .message {
     margin-top: 1rem;
 }

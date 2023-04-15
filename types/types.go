@@ -412,6 +412,11 @@ type SimilarityAttributes struct {
 	LaunchCommandRatio float64
 }
 
+type DeletedGame struct {
+	ID     string `json:"id"`
+	Reason string `json:"reason"`
+}
+
 type Game struct {
 	ID              string           `json:"id"`
 	ParentGameID    *string          `json:"parent_game_id,omitempty"`

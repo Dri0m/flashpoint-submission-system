@@ -214,7 +214,7 @@ func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	return bpd, nil
 }
 
-func (s *SiteService) DeleteGame(ctx context.Context, gameId string) error {
+func (s *SiteService) DeleteGame(ctx context.Context, gameId string, reason string) error {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -225,7 +225,7 @@ func (s *SiteService) DeleteGame(ctx context.Context, gameId string) error {
 	uid := utils.UserID(ctx)
 
 	// Soft delete database entry
-	err = s.pgdal.DeleteGame(dbs, gameId, uid, "TEST")
+	err = s.pgdal.DeleteGame(dbs, gameId, uid, reason)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (s *SiteService) DeleteGame(ctx context.Context, gameId string) error {
 	return nil
 }
 
-func (s *SiteService) RestoreGame(ctx context.Context, gameId string) error {
+func (s *SiteService) RestoreGame(ctx context.Context, gameId string, reason string) error {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -252,7 +252,7 @@ func (s *SiteService) RestoreGame(ctx context.Context, gameId string) error {
 	uid := utils.UserID(ctx)
 
 	// Restire database entry
-	err = s.pgdal.RestoreGame(dbs, gameId, uid, "TEST")
+	err = s.pgdal.RestoreGame(dbs, gameId, uid, reason)
 	if err != nil {
 		return err
 	}
@@ -325,16 +325,21 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 		ssUrl = ssUrl + "?type=jpg"
 	}
 
+	validDeleteReasons := constants.GetValidDeleteReasons()
+	validRestoreReasons := constants.GetValidRestoreReasons()
+
 	pageData := &types.GamePageData{
-		ImagesCdn:     imageCdn,
-		Game:          game,
-		LogoUrl:       logoUrl,
-		ScreenshotUrl: ssUrl,
-		Revisions:     revisions,
-		GameUsername:  user.Username,
-		GameAvatarURL: utils.FormatAvatarURL(user.ID, user.Avatar),
-		GameAuthorID:  user.ID,
-		BasePageData:  *bpd,
+		ImagesCdn:           imageCdn,
+		Game:                game,
+		LogoUrl:             logoUrl,
+		ScreenshotUrl:       ssUrl,
+		Revisions:           revisions,
+		GameUsername:        user.Username,
+		GameAvatarURL:       utils.FormatAvatarURL(user.ID, user.Avatar),
+		GameAuthorID:        user.ID,
+		BasePageData:        *bpd,
+		ValidDeleteReasons:  validDeleteReasons,
+		ValidRestoreReasons: validRestoreReasons,
 	}
 
 	return pageData, nil
@@ -2801,6 +2806,23 @@ func (s *SiteService) SaveGame(ctx context.Context, game *types.Game) error {
 	}
 
 	return nil
+}
+
+func (s *SiteService) GetDeletedGamePageData(ctx context.Context, modifiedAfter *string, afterId *string) ([]*types.DeletedGame, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	games, err := s.pgdal.SearchDeletedGames(dbs, modifiedAfter, afterId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	return games, nil
 }
 
 func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {

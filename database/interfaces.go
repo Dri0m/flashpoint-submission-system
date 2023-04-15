@@ -14,6 +14,8 @@ type PGDAL interface {
 	SearchTags(dbs PGDBSession, modifiedAfter *string) ([]*types.Tag, error)
 	SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([]*types.Platform, error)
 	SearchGames(dbs PGDBSession, modifiedAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error)
+	SearchDeletedGames(dbs PGDBSession, modifiedAfter *string, afterId *string) ([]*types.DeletedGame, error)
+
 	GetTagCategories(dbs PGDBSession) ([]*types.TagCategory, error)
 	GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64, error)
 	SaveGame(dbs PGDBSession, game *types.Game, uid int64) error

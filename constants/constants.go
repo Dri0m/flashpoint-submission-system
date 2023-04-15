@@ -77,6 +77,7 @@ const (
 	ResourceKeyTagID                 = "tag-id"
 	ResourceKeyGameID                = "game-id"
 	ResourceKeyGameRevision          = "revision-date"
+	ResourceKeyReason                = "reason"
 )
 
 const (
@@ -103,3 +104,11 @@ const (
 	SubmissionStatusFinalizing = "finalizing"
 	SubmissionStatusSuccess    = "success"
 )
+
+func GetValidDeleteReasons() []string {
+	return []string{"Duplicate", "Owner Request", "Still On Sale", "Blacklisted Content"}
+}
+
+func GetValidRestoreReasons() []string {
+	return []string{"Wrong Delete Reason", "Taken Off Sale", "Removed From Blacklist"}
+}

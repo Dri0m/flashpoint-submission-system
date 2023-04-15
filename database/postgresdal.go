@@ -182,6 +182,32 @@ func (d *postgresDAL) SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([
 	return result, nil
 }
 
+func (d *postgresDAL) SearchDeletedGames(dbs PGDBSession, modifiedAfter *string, afterId *string) ([]*types.DeletedGame, error) {
+	var rows pgx.Rows
+	var err error
+	limit := 2500
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT id, reason FROM game
+	WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = TRUE
+	ORDER BY game.date_modified, game.id
+	LIMIT $3`, modifiedAfter, afterId, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*types.DeletedGame, 0)
+
+	for rows.Next() {
+		game := &types.DeletedGame{}
+		err = rows.Scan(&game.ID, &game.Reason)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, game)
+	}
+
+	return results, nil
+}
+
 func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
 	var rows pgx.Rows
 	var err error

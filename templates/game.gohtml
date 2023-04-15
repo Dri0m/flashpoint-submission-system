@@ -12,8 +12,8 @@
             </a>
         {{if isAdder .UserRoles}}
             {{ if .Game.Deleted }}
-                <a class="pure-button pure-button-primary button-approve" onclick="confirmAction('Restore Game?', () => {
-                    fetch('/api/game/{{.Game.ID}}/restore')
+                <a class="pure-button pure-button-primary button-approve" onclick="selectReason('Restore Game?', {{.ValidRestoreReasons}}, (reason) => {
+                    fetch(`/api/game/` + {{.Game.ID}} + `/restore?reason=${reason}`)
                         .then(() => {
                             window.location.reload()
                         })
@@ -24,8 +24,8 @@
                     Restore
                 </a>
             {{else}}
-                <a class="pure-button pure-button-primary button-delete" onclick="confirmAction('Delete Game?', () => {
-                    fetch('/api/game/{{.Game.ID}}', { method: 'DELETE' })
+                <a class="pure-button pure-button-primary button-delete" onclick="selectReason('Delete Game?', {{.ValidDeleteReasons}}, (reason) => {
+                    fetch(`/api/game/` + {{.Game.ID}} + `?reason=${reason}`, { method: 'DELETE' })
                         .then(() => {
                             window.location.reload()
                         })

@@ -684,3 +684,45 @@ async function confirmAction(message, cb) {
         return cb();
     }
 }
+
+async function selectReason(message, options, cb) {
+    const createElem = (type, classNames, text) => {
+        const elem = document.createElement(type);
+        classNames.forEach((className) => elem.classList.add(className));
+        if (text) elem.innerText = text;
+        return elem;
+    };
+
+    const messageBox = createElem('div', ['message-box']);
+    const messageBoxInner = createElem('div', [], message);
+    messageBox.appendChild(messageBoxInner);
+
+    const dropdown = createElem('select', []);
+    options.forEach((option) => {
+        const optionElem = createElem('option', [], option);
+        optionElem.setAttribute('value', option);
+        dropdown.appendChild(optionElem);
+    });
+    messageBox.appendChild(dropdown);
+
+    const confirmButton = createElem('button', ['pure-button', 'pure-button-primary', 'button-approve'], 'Confirm');
+    const cancelButton = createElem('button', ['pure-button', 'pure-button-primary', 'button-delete'], 'Cancel');
+    const buttonBox = createElem('div', ['message-box-buttons']);
+    buttonBox.append(confirmButton, cancelButton);
+    messageBox.appendChild(buttonBox);
+
+    const overlay = createElem('div', ['overlay']);
+    overlay.style.zIndex = '10000';
+    overlay.appendChild(messageBox);
+    document.body.appendChild(overlay);
+
+    await new Promise((resolve, reject) => {
+        confirmButton.addEventListener('click', () => resolve(dropdown.value));
+        cancelButton.addEventListener('click', reject);
+    })
+        .then((reason) => cb(reason))
+        .catch(() => { /** ignore */ })
+        .finally(() => {
+            document.body.removeChild(overlay);
+        });
+}

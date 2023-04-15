@@ -197,6 +197,13 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET")
 
+	f = a.HandleDeletedGames
+
+	router.Handle(
+		"/api/games/deleted",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
 	////////////////////////
 
 	f = a.HandlePlatformsPage

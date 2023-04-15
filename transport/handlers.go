@@ -403,6 +403,33 @@ func (a *App) HandleMinLauncherVersion(w http.ResponseWriter, r *http.Request) {
 	writeResponse(ctx, w, map[string]interface{}{"min-version": a.Conf.MinLauncherVersion}, http.StatusOK)
 }
 
+func (a *App) HandleDeletedGames(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter string
+	if ok {
+		modifiedAfter = modifiedAfterRaw[0]
+	} else {
+		modifiedAfter = "1970-01-01"
+	}
+
+	afterIdRaw, ok := r.URL.Query()["afterId"]
+	var afterId string
+	if ok {
+		afterId = afterIdRaw[0]
+	} else {
+		afterId = ""
+	}
+
+	games, err := a.Service.GetDeletedGamePageData(ctx, &modifiedAfter, &afterId)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+	writeResponse(ctx, w, games, http.StatusOK)
+}
+
 func (a *App) HandleGamesPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -571,8 +598,17 @@ func (a *App) HandleDeleteGame(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
 	gameId := params[constants.ResourceKeyGameID]
+	query := r.URL.Query()
+	reason := query.Get("reason")
+	validReasons := constants.GetValidDeleteReasons()
 
-	err := a.Service.DeleteGame(ctx, gameId)
+	if !isElementExist(validReasons, reason) {
+		writeError(ctx, w,
+			perr(fmt.Sprintf("reason query param must be of [%s], got %s", strings.Join(validReasons, ", "), reason), http.StatusBadRequest))
+		return
+	}
+
+	err := a.Service.DeleteGame(ctx, gameId, reason)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
@@ -586,8 +622,17 @@ func (a *App) HandleRestoreGame(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
 	gameId := params[constants.ResourceKeyGameID]
+	query := r.URL.Query()
+	reason := query.Get("reason")
+	validReasons := constants.GetValidRestoreReasons()
 
-	err := a.Service.RestoreGame(ctx, gameId)
+	if !isElementExist(validReasons, reason) {
+		writeError(ctx, w,
+			perr(fmt.Sprintf("reason query param must be of [%s], got %s", strings.Join(validReasons, ", "), reason), http.StatusBadRequest))
+		return
+	}
+
+	err := a.Service.RestoreGame(ctx, gameId, reason)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
@@ -1374,4 +1419,13 @@ func (a *App) HandleDeveloperDumpUpload(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeResponse(ctx, w, nil, http.StatusNoContent)
+}
+
+func isElementExist(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
