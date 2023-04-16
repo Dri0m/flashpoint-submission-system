@@ -293,7 +293,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 			}
 
 			rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gd.id, gd.game_id, gd.title, gd.date_added, gd.sha256,
-       		gd.crc32, gd.size, gd.parameters
+       		gd.crc32, gd.size, gd.parameters, gd.application_path, gd.launch_command
 			FROM game_data gd
 			WHERE gd.game_id IN (
 			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
@@ -302,7 +302,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 			for rows.Next() {
 				gameData := &types.GameData{}
 				if err := rows.Scan(&gameData.ID, &gameData.GameID, &gameData.Title, &gameData.DateAdded, &gameData.SHA256,
-					&gameData.CRC32, &gameData.Size, &gameData.Parameters); err != nil {
+					&gameData.CRC32, &gameData.Size, &gameData.Parameters, &gameData.ApplicationPath, &gameData.LaunchCommand); err != nil {
 					return nil, nil, nil, nil, nil, err
 				}
 
@@ -394,14 +394,16 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 	}
 
 	// Get game data
-	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT * FROM game_data WHERE game_id = $1`, gameId)
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT id, game_id, title, date_added, sha256,
+       crc32, size, parameters, application_path, launch_command FROM game_data WHERE game_id = $1`, gameId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var data types.GameData
-		err = rows.Scan(&data.ID, &data.GameID, &data.Title, &data.DateAdded, &data.SHA256, &data.CRC32, &data.Size, &data.Parameters)
+		err = rows.Scan(&data.ID, &data.GameID, &data.Title, &data.DateAdded, &data.SHA256,
+			&data.CRC32, &data.Size, &data.Parameters, &data.ApplicationPath, &data.LaunchCommand)
 		if err != nil {
 			return nil, err
 		}
@@ -674,7 +676,7 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 	_, err = dbs.Tx().CopyFrom(
 		dbs.Ctx(),
 		pgx.Identifier{"game_data"},
-		[]string{"game_id", "title", "date_added", "sha256", "crc32", "size", "parameters"},
+		[]string{"game_id", "title", "date_added", "sha256", "crc32", "size", "parameters", "application_path", "launch_command"},
 		pgx.CopyFromSlice(len(dump.Games.GameData), func(i int) ([]interface{}, error) {
 			return []interface{}{
 				dump.Games.GameData[i].GameID,
@@ -684,6 +686,8 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 				dump.Games.GameData[i].CRC32,
 				dump.Games.GameData[i].Size,
 				dump.Games.GameData[i].Parameters,
+				dump.Games.GameData[i].ApplicationPath,
+				dump.Games.GameData[i].LaunchCommand,
 			}, nil
 		}),
 	)
@@ -777,13 +781,26 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_additional_app (application_path, auto_run_before, launch_command, name, wait_for_exit, parent_game_id, date_modified) 
 		SELECT application_path, auto_run_before, launch_command, name, wait_for_exit, parent_game_id, $1
 		FROM additional_app`, t)
-	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game_data (game_id, title, date_added, sha256, crc32, size, parameters, date_modified)
-		SELECT game_id, title, date_added, sha256, crc32, size, parameters, $1
+	if err != nil {
+		return err
+	}
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game_data (game_id, title, date_added, sha256, crc32, size, parameters, date_modified,
+                                 application_path, launch_command)
+		SELECT game_id, title, date_added, sha256, crc32, size, parameters, $1, application_path, launch_command
 		FROM game_data`, t)
+	if err != nil {
+		return err
+	}
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game_tags_tag ("game_id", "tag_id", "date_modified")
    		SELECT game_id, tag_id, $1 FROM game_tags_tag`, t)
+	if err != nil {
+		return err
+	}
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game_platforms_platform ("game_id", "platform_id", "date_modified")
    		SELECT game_id, platform_id, $1 FROM game_platforms_platform`, t)
+	if err != nil {
+		return err
+	}
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO changelog_game (id, parent_game_id, title, alternate_titles, series,
                             developer, publisher, date_added, date_modified, play_mode, status, notes, source,
                             application_path, launch_command, release_date, version, original_description, language,
@@ -793,6 +810,9 @@ func (d *postgresDAL) DeveloperImportDatabaseJson(dbs PGDBSession, dump *types.L
 		       application_path, launch_command, release_date, version, original_description, language,
 		       library, active_data_id, tags_str, platforms_str, action, reason, user_id
 		FROM game`)
+	if err != nil {
+		return err
+	}
 
 	utils.LogCtx(dbs.Ctx()).Debug("done database import")
 

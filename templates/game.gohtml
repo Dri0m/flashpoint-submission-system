@@ -171,20 +171,22 @@
                             <br>{{end}}{{$line}}
                         {{end}}{{end}}</td>
             </tr>
-            <tr>
-                <td class="meta-property">Application Path</td>
-                <td class="break-all">{{if not .Game.ApplicationPath}}<i>No Application Path</i>{{else}}
-                        {{range $i, $line := (splitMultilineText .Game.ApplicationPath) }}{{if gt $i 0}}
-                            <br>{{end}}{{$line}}
-                        {{end}}{{end}}</td>
-            </tr>
-            <tr>
-                <td class="meta-property">Launch Command</td>
-                <td class="break-all">{{if not .Game.LaunchCommand}}<i>No Launch Command</i>{{else}}
-                        {{range $i, $line := (splitMultilineText .Game.LaunchCommand) }}{{if gt $i 0}}
-                            <br>{{end}}{{$line}}
-                        {{end}}{{end}}</td>
-            </tr>
+            {{if not .Game.Data}}
+                <tr>
+                    <td class="meta-property">Legacy Application Path</td>
+                    <td class="break-all">{{if not .Game.ApplicationPath}}<i>No Application Path</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .Game.ApplicationPath) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Legacy Launch Command</td>
+                    <td class="break-all">{{if not .Game.LaunchCommand}}<i>No Launch Command</i>{{else}}
+                            {{range $i, $line := (splitMultilineText .Game.LaunchCommand) }}{{if gt $i 0}}
+                                <br>{{end}}{{$line}}
+                            {{end}}{{end}}</td>
+                </tr>
+            {{end}}
             <tr>
                 <td class="meta-property">Notes</td>
                 <td class="break-all">{{if not .Game.Notes}}<i>No Notes</i>{{else}}
@@ -260,6 +262,14 @@
                             {{range $i, $line := (splitMultilineText .Parameters) }}{{if gt $i 0}}
                                 <br>{{end}}{{$line}}
                             {{end}}{{end}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Application Path</td>
+                    <td class="break-all">{{.ApplicationPath}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Launch Command</td>
+                    <td class="break-all">{{.LaunchCommand}}</td>
                 </tr>
             </table>
         {{end}}

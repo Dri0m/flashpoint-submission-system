@@ -10,6 +10,7 @@ import (
 type CurationMeta struct {
 	SubmissionID        int64
 	SubmissionFileID    int64
+	UUID                *string                  `json:"UUID"`
 	ApplicationPath     *string                  `json:"Application Path"`
 	Developer           *string                  `json:"Developer"`
 	Extreme             *string                  `json:"Extreme"`
@@ -452,15 +453,16 @@ type Game struct {
 }
 
 type GameData struct {
-	ID         int       `json:"id,omitempty"`
-	GameID     string    `json:"game_id,gameId"`
-	Title      string    `json:"title"`
-	DateAdded  time.Time `json:"date_added,dateAdded"`
-	SHA256     string    `json:"sha_256"`
-	CRC32      int       `json:"crc_32"`
-	Path       *string   `json:"path,omitempty"`
-	Size       int64     `json:"size"`
-	Parameters *string   `json:"parameters,omitempty"`
+	ID              int       `json:"id,omitempty"`
+	GameID          string    `json:"game_id,gameId"`
+	Title           string    `json:"title"`
+	DateAdded       time.Time `json:"date_added,dateAdded"`
+	SHA256          string    `json:"sha_256"`
+	CRC32           int       `json:"crc_32"`
+	Size            int64     `json:"size"`
+	Parameters      *string   `json:"parameters"`
+	ApplicationPath string    `json:"application_path"`
+	LaunchCommand   string    `json:"launch_command"`
 }
 
 type AdditionalApp struct {

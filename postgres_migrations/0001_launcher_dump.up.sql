@@ -144,6 +144,8 @@ CREATE TABLE IF NOT EXISTS "game_data" (
 	"sha256"	varchar NOT NULL,
 	"crc32"	integer NOT NULL,
 	"size"	bigint NOT NULL,
+	"application_path" varchar NOT NULL,
+	"launch_command" varchar NOT NULL,
 	"parameters"	varchar
 );
 CREATE TABLE IF NOT EXISTS "changelog_game_data" (
@@ -155,6 +157,8 @@ CREATE TABLE IF NOT EXISTS "changelog_game_data" (
 	 "crc32"	integer NOT NULL,
 	 "size"	bigint NOT NULL,
 	 "parameters"	varchar,
+	 "application_path" varchar NOT NULL,
+	 "launch_command" varchar NOT NULL,
 	 "date_modified" timestamp NOT NULL
 );
 
@@ -397,8 +401,9 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE PROCEDURE log_game_data_for_game(value varchar, date_modified timestamp)
 AS $$
 BEGIN
-	INSERT INTO changelog_game_data (game_id, title, date_added, sha256, crc32, size, parameters, date_modified)
-	SELECT game_id, title, date_added, sha256, crc32, size, parameters, date_modified
+	INSERT INTO changelog_game_data (game_id, title, date_added, sha256, crc32, size, parameters, date_modified,
+	                                application_path, launch_command)
+	SELECT game_id, title, date_added, sha256, crc32, size, parameters, date_modified, application_path, launch_command
 	FROM game_data
 	WHERE game_data.game_id = value;
 END;

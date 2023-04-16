@@ -1,0 +1,1 @@
+ALTER TABLE curation_meta ADD uuid TEXT;
