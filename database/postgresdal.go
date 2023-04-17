@@ -925,25 +925,79 @@ func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategor
 	}
 }
 
-func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error) {
+func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) error {
 	// DO EXPENSIVE OPERATIONS FIRST
 
 	// Game Data - Get SHA256
 	file, err := os.Open(*vr.FilePath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer file.Close()
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	hashStr := fmt.Sprintf("%x", hash.Sum(nil))
 
 	// Game Data - Get Size
 	fileInfo, err := os.Stat(*vr.FilePath)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	fileSize := fileInfo.Size()
+
+	// Save Game Data
+
+	var gameData types.GameData
+	gameData.GameID = gameId
+	gameData.Title = "Data Pack"
+	gameData.Size = fileSize
+	gameData.SHA256 = hashStr
+	gameData.CRC32 = 0
+	gameData.Parameters = vr.Meta.MountParameters
+	gameData.ApplicationPath = *vr.Meta.ApplicationPath
+	gameData.LaunchCommand = *vr.Meta.LaunchCommand
+	err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO game_data ("game_id", "title", "sha256", "crc32", "size", "parameters",
+                       "application_path", "launch_command")
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, date_added`,
+		&gameData.GameID, &gameData.Title, &gameData.SHA256, &gameData.CRC32, &gameData.Size, &gameData.Parameters,
+		&gameData.ApplicationPath, &gameData.LaunchCommand).
+		Scan(&gameData.ID, &gameData.DateAdded)
+	if err != nil {
+		return err
+	}
+	// Update active data id
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE game 
+	SET active_data_id = (SELECT id FROM game_data WHERE game_data.game_id = game.id ORDER BY date_modified DESC LIMIT 1),
+	    user_id = $1, action = 'update', reason = 'Content Change'
+	WHERE game.id = $2`, uid, gameId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error) {
+	// DO EXPENSIVE OPERATIONS FIRST
+
+	// Game Data - Get SHA256
+	file, err := os.Open(*vr.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return nil, err
+	}
+	hashStr := fmt.Sprintf("%x", hash.Sum(nil))
+
+	// Game Data - Get Size
+	fileInfo, err := os.Stat(*vr.FilePath)
+	if err != nil {
+		return nil, err
 	}
 	fileSize := fileInfo.Size()
 
@@ -996,6 +1050,10 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 
 	// Save Game Data
 
+	if vr.Meta.ApplicationPath == nil || vr.Meta.LaunchCommand == nil {
+		return nil, types.MissingLaunchParams{}
+	}
+
 	var gameData types.GameData
 	gameData.GameID = game.ID
 	gameData.Title = "Data Pack"
@@ -1003,17 +1061,17 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 	gameData.SHA256 = hashStr
 	gameData.CRC32 = 0
 	gameData.Parameters = vr.Meta.MountParameters
-	err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO game_data ("game_id", "title", "sha256", "crc32", "size", "parameters")
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, date_added`,
-		&gameData.GameID, &gameData.Title, &gameData.SHA256, &gameData.CRC32, &gameData.Size, &gameData.Parameters).
+	gameData.ApplicationPath = *vr.Meta.ApplicationPath
+	gameData.LaunchCommand = *vr.Meta.LaunchCommand
+	err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO game_data ("game_id", "title", "sha256", "crc32", "size", "parameters",
+                       "application_path", "launch_command")
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, date_added`,
+		&gameData.GameID, &gameData.Title, &gameData.SHA256, &gameData.CRC32, &gameData.Size, &gameData.Parameters,
+		&gameData.ApplicationPath, &gameData.LaunchCommand).
 		Scan(&gameData.ID, &gameData.DateAdded)
 	if err != nil {
 		return nil, err
 	}
-	// Update active data id
-	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE game 
-	SET active_data_id = (SELECT id FROM game_data WHERE game_data.game_id = game.id LIMIT 1) 
-	WHERE game.id = $1`, game.ID)
 	game.Data = []*types.GameData{&gameData}
 
 	// Save Additional Apps
@@ -1101,7 +1159,7 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 	(id, parent_game_id, title, alternate_titles, series, developer, publisher, play_mode, status, notes,
 	 source, application_path, launch_command, release_date, version, original_description, language, library,
 	 active_data_id, tags_str, platforms_str, action, reason, user_id) 
-	 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+	 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
 		game.ID, "", game.Title, game.AlternateTitles, game.Series, game.Developer, game.Publisher, game.PlayMode,
 		game.Status, game.Notes, game.Source, game.ApplicationPath, game.LaunchCommand, game.ReleaseDate, game.Version,
 		game.OriginalDesc, game.Language, game.Library, gameData.ID, strings.Join(tagsStrArr, "; "),

@@ -462,6 +462,13 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 	}
 	defer dbs.Rollback()
 
+	pgdbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer pgdbs.Rollback()
+
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
 		return nil, err
@@ -1521,6 +1528,14 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	}
 	defer dbs.Rollback()
 
+	pgdbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
+		return dberr(err)
+	}
+	defer pgdbs.Rollback()
+
 	userRoles, err := s.dal.GetDiscordUserRoles(dbs, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -1545,7 +1560,7 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	}
 
 	ru := newResumableUpload(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, s.resumableUploadService)
-	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel, tempName)
+	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, pgdbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel, tempName)
 
 	imageFilePaths = append(imageFilePaths, ifp...)
 
@@ -2867,14 +2882,31 @@ func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission 
 	}
 	defer RemoveRepackFolder(ctx, *vr.FilePath)
 
+	// If UUID is given, check if game exists alreay
+	var game *types.Game
+	if vr.Meta.UUID != nil {
+		game, _ = s.pgdal.GetGame(dbs, *vr.Meta.UUID)
+		if game != nil {
+			// Game exists, add new game data instead
+			err = s.pgdal.AddGameData(dbs, utils.UserID(ctx), game.ID, vr)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if game == nil {
+		game, err = s.pgdal.AddSubmissionFromValidator(dbs, utils.UserID(ctx), vr)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, err
+		}
+	}
+
+	msTime := game.Data[0].DateAdded.UnixMilli()
+
 	utils.LogCtx(ctx).Debug("Adding sub from validator")
 	// Add game into metadata
-	game, err := s.pgdal.AddSubmissionFromValidator(dbs, utils.UserID(ctx), vr)
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, err
-	}
-	msTime := game.Data[0].DateAdded.UnixMilli()
 
 	// Get the base name of the data pack file
 	base := filepath.Base(*vr.FilePath)

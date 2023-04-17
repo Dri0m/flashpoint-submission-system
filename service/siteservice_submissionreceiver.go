@@ -25,7 +25,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider resumableuploadservice.ReadCloserInformerProvider, filename string, filesize int64, sid *int64, submissionLevel string, tempName string) (*string, []string, int64, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, pgdbs database.PGDBSession, fileReadCloserProvider resumableuploadservice.ReadCloserInformerProvider, filename string, filesize int64, sid *int64, submissionLevel string, tempName string) (*string, []string, int64, error) {
 	uid := utils.UserID(ctx)
 	if uid == 0 {
 		s.SSK.SetFailed(tempName, "internal error")
@@ -275,6 +275,16 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
+
+	// Check if game exists
+	vr.Meta.GameExists = false
+	if vr.Meta.UUID != nil {
+		existingGame, _ := s.pgdal.GetGame(pgdbs, *vr.Meta.UUID)
+		if existingGame != nil {
+			// Game exists
+			vr.Meta.GameExists = true
+		}
+	}
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)

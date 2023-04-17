@@ -10,6 +10,7 @@ import (
 type CurationMeta struct {
 	SubmissionID        int64
 	SubmissionFileID    int64
+	GameExists          bool                     `json:"game_exists"`
 	UUID                *string                  `json:"UUID"`
 	ApplicationPath     *string                  `json:"Application Path"`
 	Developer           *string                  `json:"Developer"`
@@ -896,6 +897,13 @@ type InvalidAddApps struct {
 
 func (iaa InvalidAddApps) Error() string {
 	return "Add app invalid"
+}
+
+type MissingLaunchParams struct {
+}
+
+func (mlp MissingLaunchParams) Error() string {
+	return "Missing application path or launch command"
 }
 
 type GameRevisionInfo struct {

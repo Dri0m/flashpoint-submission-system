@@ -36,6 +36,7 @@ type PGDAL interface {
 	GetOrCreatePlatform(dbs PGDBSession, platformName string, uid int64) (*types.Platform, error)
 
 	AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error)
+	AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) error
 }
 
 type DAL interface {
