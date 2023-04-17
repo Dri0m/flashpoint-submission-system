@@ -210,7 +210,7 @@
             <div class="missing-game-section">No Additional Apps</div>
         {{end}}
         {{range .Game.AddApps}}
-            <table class="pure-table pure-table-bordered meta-table">
+            <table class="pure-table pure-table-bordered meta-table stackable-table">
                 <tr>
                     <td class="meta-property">Name</td>
                     <td class="break-all">{{.Name}}</td>
@@ -235,7 +235,7 @@
             <div class="missing-game-section">No Game Data</div>
         {{end}}
         {{range .Game.Data}}
-            <table class="pure-table pure-table-bordered meta-table">
+            <table class="pure-table pure-table-bordered meta-table stackable-table">
                 <tr>
                     <td class="meta-property">Title</td>
                     <td class="break-all">{{.Title}}</td>

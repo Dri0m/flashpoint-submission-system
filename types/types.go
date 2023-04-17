@@ -133,6 +133,7 @@ type ExtendedSubmission struct {
 	ApprovedUserIDs             []int64
 	VerifiedUserIDs             []int64
 	DistinctActions             []string
+	GameExists                  bool
 }
 
 type SubmissionsFilter struct {
@@ -174,6 +175,7 @@ type SubmissionsFilter struct {
 	OrderBy                        *string  `schema:"order-by"`
 	AscDesc                        *string  `schema:"asc-desc"`
 	SubscribedMe                   *string  `schema:"subscribed-me"`
+	IsContentChange                *string  `schema:"is-content-change"`
 	ExcludeLegacy                  bool
 	UpdatedByID                    *int64
 }

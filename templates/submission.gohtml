@@ -120,6 +120,10 @@
                                 <br>{{end}}{{$line}}
                             {{end}}{{end}}</td>
                 </tr>
+                <tr>
+                    <td class="meta-property">Entry UUID</td>
+                    <td class="break-all">{{.CurationMeta.UUID}}</td>
+                </tr>
                 </tbody>
             </table>
         {{else}}
@@ -282,11 +286,6 @@
                     <tr>
                         <td class="meta-property">Additional Applications</td>
                         <td class="break-all">--Not Implemented--</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-property">Entry UUID</td>
-                        <td class="break-all">{{if not .CurationMeta.UUID}}<i>No UUID</i>{{else}}
-                                {{.CurationMeta.UUID}}{{end}}</td>
                     </tr>
                     </tbody>
                 </table>

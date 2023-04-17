@@ -307,6 +307,14 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			data = append(data, *filter.UpdatedByID)
 			masterFilters = append(masterFilters, "(1 = 0)") // exclude legacy results
 		}
+		if filter.IsContentChange != nil {
+			if *filter.IsContentChange == "yes" {
+				filters = append(filters, "(meta.game_exists = true)")
+			} else {
+				filters = append(filters, "(meta.game_exists = false)")
+			}
+
+		}
 	}
 
 	and := ""
@@ -352,7 +360,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 		submission_cache.active_requested_changes_ids AS active_requested_changes_ids,
 		submission_cache.active_approved_ids AS active_approved_ids,
 		submission_cache.active_verified_ids AS active_verified_ids,
-		submission_cache.distinct_actions AS distinct_actions
+		submission_cache.distinct_actions AS distinct_actions,
+		meta.game_exists AS meta_game_exists
 		FROM submission
 		LEFT JOIN submission_cache ON submission_cache.fk_submission_id = submission.id
 		LEFT JOIN submission_file AS oldest_file ON oldest_file.id = submission_cache.fk_oldest_file_id
@@ -400,7 +409,8 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			(SELECT "") AS active_requested_changes_ids,
 			(SELECT "") AS active_approved_ids,
 			(SELECT "") AS active_verified_ids,
-			(SELECT "mark-added") AS distinct_actions
+			(SELECT "mark-added") AS distinct_actions,
+			(SELECT TRUE) as meta_game_exists
 			FROM masterdb_game
 			WHERE (SELECT 1) ` + masterAnd + strings.Join(masterFilters, " AND ") + `
 		ORDER BY ` + currentOrderBy + ` ` + currentSortOrder + `
@@ -458,7 +468,7 @@ func (d *mysqlDAL) SearchSubmissions(dbs DBSession, filter *types.SubmissionsFil
 			&s.BotAction,
 			&s.FileCount,
 			&assignedTestingUserIDs, &assignedVerificationUserIDs, &requestedChangesUserIDs, &approvedUserIDs, &verifiedUserIDs,
-			&distinctActions); err != nil {
+			&distinctActions, &s.GameExists); err != nil {
 			return nil, 0, err
 		}
 		s.SubmitterAvatarURL = utils.FormatAvatarURL(s.SubmitterID, submitterAvatar)

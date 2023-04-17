@@ -395,7 +395,8 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 
 	// Get game data
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT id, game_id, title, date_added, sha256,
-       crc32, size, parameters, application_path, launch_command FROM game_data WHERE game_id = $1`, gameId)
+       crc32, size, parameters, application_path, launch_command FROM game_data WHERE game_id = $1
+       ORDER BY game_data.date_added DESC`, gameId)
 	if err != nil {
 		return nil, err
 	}

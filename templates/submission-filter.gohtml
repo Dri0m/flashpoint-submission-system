@@ -44,6 +44,7 @@
                             {{template "submission-filter-bot-actions" .}}
                             {{template "submission-filter-maturity" .}}
                             {{template "submission-filter-level" .}}
+                            {{template "submission-filter-type" .}}
                         </div>
                     </div>
                     <div class="pure-u-1-2">
@@ -87,6 +88,8 @@
                                        value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             </fieldset>
                         </div>
+                        {{template "submission-filter-type" .}}
+
 
                         {{template "submission-filter-level" .}}
                         {{template "submission-filter-bot-actions" .}}
