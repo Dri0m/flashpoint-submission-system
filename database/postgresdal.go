@@ -461,8 +461,21 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 }
 
 func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) error {
-	// Save tag relations
+	// Clear tag relations
 	_, err := dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM game_tags_tag WHERE game_id = $1`, game.ID)
+	// Create new tags where applicable
+	for idx, tag := range game.Tags {
+		if tag.ID == -1 {
+			// New tag
+			t, err := d.GetOrCreateTag(dbs, tag.Name, "default", fmt.Sprintf("Game Metadata Update - ID %s", game.ID), uid)
+			if err != nil {
+				return err
+			} else {
+				game.Tags[idx].ID = t.ID
+			}
+		}
+	}
+	// Save tag relations
 	_, err = dbs.Tx().CopyFrom(
 		dbs.Ctx(),
 		pgx.Identifier{"game_tags_tag"},
@@ -478,8 +491,21 @@ func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) err
 		return err
 	}
 
-	// Save platform relations
+	// Clear platform relations
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM game_platforms_platform WHERE game_id = $1`, game.ID)
+	// Create new platforms where applicable
+	for idx, platform := range game.Platforms {
+		if platform.ID == -1 {
+			// New platform
+			p, err := d.GetOrCreatePlatform(dbs, platform.Name, fmt.Sprintf("Game Metadata Update - ID %s", game.ID), uid)
+			if err != nil {
+				return err
+			} else {
+				game.Platforms[idx].ID = p.ID
+			}
+		}
+	}
+	// Save platform relations
 	_, err = dbs.Tx().CopyFrom(
 		dbs.Ctx(),
 		pgx.Identifier{"game_platforms_platform"},
@@ -858,7 +884,7 @@ func (d *postgresDAL) GetOrCreateTagCategory(dbs PGDBSession, categoryName strin
 	}
 }
 
-func (d *postgresDAL) GetOrCreatePlatform(dbs PGDBSession, platformName string, uid int64) (*types.Platform, error) {
+func (d *postgresDAL) GetOrCreatePlatform(dbs PGDBSession, platformName string, reason string, uid int64) (*types.Platform, error) {
 	platformId, err := GetPlatformID(dbs, platformName)
 	if err != nil {
 		return nil, err
@@ -867,20 +893,27 @@ func (d *postgresDAL) GetOrCreatePlatform(dbs PGDBSession, platformName string, 
 		// Platform exists, return
 		return d.GetPlatform(dbs, platformId)
 	} else {
+		// Create new alias
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO platform_alias ("name", "platform_id")
+			VALUES ($1, $2)`,
+			platformName, -1)
+		if err != nil {
+			return nil, err
+		}
+
 		// Create new platform
 		var newPlatformId int64
 		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO platform ("primary_alias", "description", "action", "reason", "user_id")
 			VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			platformName, "", "create", "Submission Import", uid).
+			platformName, "", "create", reason, uid).
 			Scan(&newPlatformId)
 		if err != nil {
 			return nil, err
 		}
 
-		// Create new alias
-		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO platform_alias ("name", "platform_id")
-			VALUES ($1, $2)`,
-			platformName, newPlatformId)
+		// Set Platform Alias ID
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE platform_alias SET platform_id = $1 WHERE name = $2`,
+			newPlatformId, platformName)
 		if err != nil {
 			return nil, err
 		}
@@ -889,7 +922,7 @@ func (d *postgresDAL) GetOrCreatePlatform(dbs PGDBSession, platformName string, 
 	}
 }
 
-func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, uid int64) (*types.Tag, error) {
+func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, reason string, uid int64) (*types.Tag, error) {
 	// Find tag id if already exists
 	utils.LogCtx(dbs.Ctx()).Debug("Getting tag id if exists")
 	tagId, err := GetTagID(dbs, tagName)
@@ -907,21 +940,28 @@ func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategor
 			return nil, err
 		}
 
+		// Create Tag Alias
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO tag_alias ("name", "tag_id")
+			VALUES ($1, $2)`,
+			tagName, -1)
+		if err != nil {
+			return nil, err
+		}
+
 		// Create Tag
 		var newTagId int64
 		err = dbs.Tx().QueryRow(dbs.Ctx(), `INSERT INTO tag ("primary_alias", "category_id", "description",
                  "action", "reason", "user_id")
 			VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-			tagName, category.ID, "", "create", "Submission Import", uid).
+			tagName, category.ID, "", "create", reason, uid).
 			Scan(&newTagId)
 		if err != nil {
 			return nil, err
 		}
 
-		// Create Tag Alias
-		_, err = dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO tag_alias ("name", "tag_id")
-			VALUES ($1, $2)`,
-			tagName, newTagId)
+		// Set Tag Alias ID
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE tag_alias SET tag_id = $1 WHERE name = $2`,
+			newTagId, tagName)
 		if err != nil {
 			return nil, err
 		}
@@ -1034,7 +1074,7 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 	rawTags := strings.Split(*vr.Meta.Tags, ";")
 	tags := make([]*types.Tag, 0)
 	for _, tagName := range rawTags {
-		tag, err := d.GetOrCreateTag(dbs, strings.TrimSpace(tagName), "default", uid)
+		tag, err := d.GetOrCreateTag(dbs, strings.TrimSpace(tagName), "default", "Submission Import", uid)
 		if err != nil {
 			return nil, err
 		}
@@ -1046,7 +1086,7 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 	rawPlatforms := strings.Split(*vr.Meta.Platform, ";")
 	platforms := make([]*types.Platform, 0)
 	for _, platformName := range rawPlatforms {
-		platform, err := d.GetOrCreatePlatform(dbs, strings.TrimSpace(platformName), uid)
+		platform, err := d.GetOrCreatePlatform(dbs, strings.TrimSpace(platformName), "Submission Import", uid)
 		if err != nil {
 			return nil, err
 		}

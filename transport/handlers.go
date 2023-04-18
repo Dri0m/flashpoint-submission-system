@@ -643,28 +643,11 @@ func (a *App) HandleRestoreGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandleGameLogo(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	err := r.ParseMultipartForm(16 << 20) // 16 MB Limit for Images
-	if err != nil {
-		http.Error(w, "Failed to parse multipart form data", http.StatusBadRequest)
-		return
-	}
-
-	// Retrieve the file from the form data
-	file, handler, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, "Failed to retrieve file from form data", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// Backup existing image
 
 }
 
 func (a *App) HandleGameScreenshot(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+
 }
 
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {

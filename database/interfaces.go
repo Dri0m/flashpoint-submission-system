@@ -33,8 +33,8 @@ type PGDAL interface {
 	RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string) error
 
 	GetOrCreateTagCategory(dbs PGDBSession, categoryName string) (*types.TagCategory, error)
-	GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, uid int64) (*types.Tag, error)
-	GetOrCreatePlatform(dbs PGDBSession, platformName string, uid int64) (*types.Platform, error)
+	GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, reason string, uid int64) (*types.Tag, error)
+	GetOrCreatePlatform(dbs PGDBSession, platformName string, reason string, uid int64) (*types.Platform, error)
 
 	AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error)
 	AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) error
