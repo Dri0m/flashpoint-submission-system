@@ -35,6 +35,7 @@ type TagPageData struct {
 	BasePageData
 	Tag        *Tag
 	Categories []*TagCategory
+	Revisions  []*RevisionInfo
 	GamesUsing int64
 }
 
@@ -44,7 +45,7 @@ type GamePageData struct {
 	GameAvatarURL       string
 	GameAuthorID        int64
 	GameUsername        string
-	Revisions           []*GameRevisionInfo
+	Revisions           []*RevisionInfo
 	LogoUrl             string
 	ScreenshotUrl       string
 	ImagesCdn           string

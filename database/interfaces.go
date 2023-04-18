@@ -25,7 +25,8 @@ type PGDAL interface {
 	GetTag(dbs PGDBSession, tagId int64) (*types.Tag, error)
 	GetPlatform(dbs PGDBSession, platformId int64) (*types.Platform, error)
 	GetGame(dbs PGDBSession, gameId string) (*types.Game, error)
-	GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.GameRevisionInfo, error)
+	GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.RevisionInfo, error)
+	GetTagRevisionInfo(dbs PGDBSession, tagId int64) ([]*types.RevisionInfo, error)
 
 	DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string) error
 
@@ -37,6 +38,8 @@ type PGDAL interface {
 
 	AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error)
 	AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) error
+
+	UpdateTagsFromTagsList(dbs PGDBSession, tagsList []types.Tag) error
 }
 
 type DAL interface {
@@ -123,7 +126,7 @@ type DAL interface {
 	GetUsers(dbs DBSession) ([]*types.User, error)
 	GetCommentsByUserIDAndAction(dbs DBSession, uid int64, action string) ([]*types.Comment, error)
 
-	PopulateGameRevisionInfo(dbs DBSession, revisions []*types.GameRevisionInfo) error
+	PopulateRevisionInfo(dbs DBSession, revisions []*types.RevisionInfo) error
 }
 
 type DBSession interface {

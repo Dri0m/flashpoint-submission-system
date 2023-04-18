@@ -642,6 +642,31 @@ func (a *App) HandleRestoreGame(w http.ResponseWriter, r *http.Request) {
 	writeResponse(ctx, w, map[string]interface{}{"status": "success"}, http.StatusOK)
 }
 
+func (a *App) HandleGameLogo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	err := r.ParseMultipartForm(16 << 20) // 16 MB Limit for Images
+	if err != nil {
+		http.Error(w, "Failed to parse multipart form data", http.StatusBadRequest)
+		return
+	}
+
+	// Retrieve the file from the form data
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Failed to retrieve file from form data", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Backup existing image
+
+}
+
+func (a *App) HandleGameScreenshot(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+}
+
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1388,6 +1413,19 @@ func (a *App) HandleDeveloperPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.RenderTemplates(ctx, w, r, pageData, "templates/developer.gohtml")
+}
+
+func (a *App) HandleDeveloperTagDescFromValidator(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	err := a.Service.DeveloperTagDescFromValidator(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to populate tags from validator", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, nil, http.StatusNoContent)
 }
 
 func (a *App) HandleDeveloperDumpUpload(w http.ResponseWriter, r *http.Request) {

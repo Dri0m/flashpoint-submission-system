@@ -305,7 +305,7 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 		utils.LogCtx(ctx).Error(err)
 		return nil, perr("failed to find revision info", http.StatusNotFound)
 	}
-	err = s.dal.PopulateGameRevisionInfo(msqldbs, revisions)
+	err = s.dal.PopulateRevisionInfo(msqldbs, revisions)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, perr("failed to populate revision info with user details", http.StatusNotFound)
@@ -346,6 +346,13 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 }
 
 func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*types.TagPageData, error) {
+	msqldbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer msqldbs.Rollback()
+
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -375,6 +382,22 @@ func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*typ
 		return nil, perr("tag not found", http.StatusNotFound)
 	}
 
+	revisions, err := s.pgdal.GetTagRevisionInfo(dbs, tag.ID)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("tag revisions not found?", http.StatusInternalServerError)
+	}
+	err = s.dal.PopulateRevisionInfo(msqldbs, revisions)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to populate revision info with user details", http.StatusInternalServerError)
+	}
+
+	// Desc sort revisions
+	sort.Slice(revisions, func(i, j int) bool {
+		return revisions[i].CreatedAt.After(revisions[j].CreatedAt)
+	})
+
 	gamesUsing, err := s.pgdal.GetGamesUsingTagTotal(dbs, int64(tagId))
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -385,6 +408,7 @@ func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*typ
 		Tag:          tag,
 		Categories:   categories,
 		GamesUsing:   gamesUsing,
+		Revisions:    revisions,
 		BasePageData: *bpd,
 	}
 
@@ -2767,6 +2791,32 @@ func (s *SiteService) GetFixesFiles(ctx context.Context, ffids []int64) ([]*type
 		return nil, dberr(err)
 	}
 	return ffs, nil
+}
+
+func (s *SiteService) DeveloperTagDescFromValidator(ctx context.Context) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	tagsList, err := s.validator.GetTags(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.pgdal.UpdateTagsFromTagsList(dbs, tagsList)
+	if err != nil {
+		return err
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *SiteService) DeveloperImportDatabaseJson(ctx context.Context, data *types.LauncherDump) error {

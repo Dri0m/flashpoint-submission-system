@@ -221,7 +221,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	f = a.UserAuthMux(
-		a.HandleGamePage, muxAny(isGod, isColin))
+		a.HandleGamePage, muxAny(isStaff))
 
 	router.Handle(
 		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyGameID),
@@ -253,6 +253,22 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		fmt.Sprintf("/api/game/{%s}/restore", constants.ResourceKeyGameID),
 		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandleGameLogo, muxAny(isStaff))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}/logo", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
+
+	f = a.UserAuthMux(
+		a.HandleGameScreenshot, muxAny(isStaff))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}/screenshot", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
 
 	////////////////////////
 
@@ -492,6 +508,12 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleDeveloperDumpUpload, muxAny(isGod, isColin))))).
 		Methods("POST")
+
+	router.Handle(
+		"/api/developer/tag_desc_from_validator",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleDeveloperTagDescFromValidator, muxAny(isGod, isColin))))).
+		Methods("GET")
 
 	////////////////////////
 

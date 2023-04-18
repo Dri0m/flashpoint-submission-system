@@ -2,6 +2,47 @@
     <div class="content">
         <h3>Tag {{.Tag.ID}}</h3>
         <h1>{{if .Tag.Deleted}}DELETED - {{end}}{{.Tag.Name}}</h1>
+
+        <b>Description</b>
+        {{if .Tag.Description}}
+            <div>{{.Tag.Description}}</div>
+        {{else}}
+            <i>No Tag Description</i>
+        {{end}}
+
         <h3>{{.GamesUsing}} games with this tag</h3>
+
+        <h3>Revisions</h3>
+        {{range .Revisions}}
+            <div class="pure-g comment">
+                <div class="pure-u-1-6 bgr-{{.Action}}">
+                    <div class="comment-header">
+                        <div class="comment-header-user">
+                            <img src="{{default "/static/zuma.png" .AvatarURL}}" class="comment-avatar"
+                                 alt="avatar"
+                                 title="{{if not .AvatarURL}}avatar missing, feels really weird man{{else}}a beautiful avatar{{end}}">
+                            <b>{{.Username}}</b>
+                        </div>
+                        <br>
+                        <span class="comment-date">{{.CreatedAt.Format "2006-01-02 15:04:05 -0700"}}</span>
+                    </div>
+                </div>
+                <div class="pure-u-5-6">
+                    <div class="comment-body">
+                        {{ if eq .Action "create" }}
+                            Created:
+                        {{ else if eq .Action "update" }}
+                            Updated:
+                        {{ else if eq .Action "delete" }}
+                            Deleted:
+                        {{ else if eq .Action "restore" }}
+                            Restored:
+                        {{end}}
+                        {{range $i, $line := (splitMultilineText .Reason) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}{{end}}
+                    </div>
+                </div>
+            </div>
+        {{end}}
     </div>
 {{end}}

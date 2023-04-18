@@ -365,7 +365,7 @@ func (d *mysqlDAL) StoreComment(dbs DBSession, c *types.Comment) error {
 	return nil
 }
 
-func (d *mysqlDAL) PopulateGameRevisionInfo(dbs DBSession, revisions []*types.GameRevisionInfo) error {
+func (d *mysqlDAL) PopulateRevisionInfo(dbs DBSession, revisions []*types.RevisionInfo) error {
 	for _, revision := range revisions {
 		var avatar string
 		err := dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT username, avatar

@@ -908,7 +908,7 @@ func (mlp MissingLaunchParams) Error() string {
 	return "Missing application path or launch command"
 }
 
-type GameRevisionInfo struct {
+type RevisionInfo struct {
 	Action    string
 	Reason    string
 	CreatedAt time.Time

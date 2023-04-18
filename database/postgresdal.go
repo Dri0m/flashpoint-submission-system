@@ -365,7 +365,12 @@ func (d *postgresDAL) GetGamesUsingTagTotal(dbs PGDBSession, tagId int64) (int64
 func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, error) {
 	// Get game
 	var game types.Game
-	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT * FROM game WHERE id = $1`, gameId).
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT id, parent_game_id, title, alternate_titles, series, developer,
+       		publisher, date_added, date_modified, play_mode, status, notes,
+       		source, application_path, launch_command, release_Date, version,
+       		original_description, language, library, active_data_id, tags_str, platforms_str,
+       		action, reason, deleted, user_id 
+			FROM game WHERE id = $1`, gameId).
 		Scan(&game.ID, &game.ParentGameID, &game.Title, &game.AlternateTitles, &game.Series, &game.Developer,
 			&game.Publisher, &game.DateAdded, &game.DateModified, &game.PlayMode, &game.Status, &game.Notes,
 			&game.Source, &game.ApplicationPath, &game.LaunchCommand, &game.ReleaseDate, &game.Version,
@@ -1173,15 +1178,34 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 	return &game, nil
 }
 
-func (d *postgresDAL) GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.GameRevisionInfo, error) {
-	revisions := make([]*types.GameRevisionInfo, 0)
+func (d *postgresDAL) GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.RevisionInfo, error) {
+	revisions := make([]*types.RevisionInfo, 0)
 
 	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT date_modified, action, reason, user_id FROM changelog_game WHERE id = $1`, gameId)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
-		revision := &types.GameRevisionInfo{}
+		revision := &types.RevisionInfo{}
+		err = rows.Scan(&revision.CreatedAt, &revision.Action, &revision.Reason, &revision.AuthorID)
+		if err != nil {
+			return nil, err
+		}
+		revisions = append(revisions, revision)
+	}
+
+	return revisions, nil
+}
+
+func (d *postgresDAL) GetTagRevisionInfo(dbs PGDBSession, tagId int64) ([]*types.RevisionInfo, error) {
+	revisions := make([]*types.RevisionInfo, 0)
+
+	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT date_modified, action, reason, user_id FROM changelog_tag WHERE id = $1`, tagId)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		revision := &types.RevisionInfo{}
 		err = rows.Scan(&revision.CreatedAt, &revision.Action, &revision.Reason, &revision.AuthorID)
 		if err != nil {
 			return nil, err
@@ -1202,6 +1226,20 @@ func (d *postgresDAL) RestoreGame(dbs PGDBSession, gameId string, uid int64, rea
 	_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE game SET action = 'restore', deleted = FALSE, user_id = $1, reason = $2 WHERE id = $3`,
 		uid, reason, gameId)
 	return err
+}
+
+func (d *postgresDAL) UpdateTagsFromTagsList(dbs PGDBSession, tagsList []types.Tag) error {
+	conf := config.GetConfig(nil)
+	for _, tag := range tagsList {
+		_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE tag
+			SET description = $1, action = $2, reason = $3, user_id = $4
+			WHERE tag.id IN (SELECT DISTINCT tag_alias.tag_id FROM tag_alias WHERE tag_alias.name = $5)`,
+			tag.Description, "update", "Scraped Description from Wiki", conf.SystemUid, tag.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func GetPlatformID(dbs PGDBSession, name string) (int64, error) {
