@@ -49,3 +49,6 @@ restore-db:
 run:
 	export GIT_COMMIT=$(shell git rev-list -1 HEAD) && go run ./main/*.go
 
+dump-pgdb:
+	mkdir -p ./backups/pgdb/
+	docker exec -e PGPASSWORD=${POSTGRES_PASSWORD} ${POSTGRES_CONTAINER_NAME} pg_dump -U ${POSTGRES_USER} > ./backups/pgdb/pgdb-dump-${DB_NAME}-$(shell date -u +"%Y-%m-%d-%H-%M-%S").sql
