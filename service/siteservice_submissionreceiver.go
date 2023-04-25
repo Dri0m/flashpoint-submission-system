@@ -147,6 +147,14 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 			utils.LogCtx(ctx).Error(err)
 			return perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
 		}
+		if vr.CurationErrors != nil {
+			for _, curError := range vr.CurationErrors {
+				if curError == "Contains blacklisted tags" {
+					utils.LogCtx(ctx).Error(curError)
+					return perr(fmt.Sprintf("validator bot: %s", curError), http.StatusBadRequest)
+				}
+			}
+		}
 
 		utils.LogCtx(ctx).Debug("computing similarity in goroutine...")
 		msg, err = s.computeSimilarityComment(dbs, sid, &vr.Meta)

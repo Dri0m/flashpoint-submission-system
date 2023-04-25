@@ -39,6 +39,7 @@ services:
           memory: 512m
     volumes:
       - fpfss_postgres_data:/var/lib/postgresql/data
+      - ./backups/pgdb:/var/lib/postgresql/backups
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

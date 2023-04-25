@@ -544,11 +544,27 @@ func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) err
 
 	// Save game
 	query := `UPDATE game SET parent_game_id=$1, title=$2, alternate_titles=$3, series=$4, developer=$5,
-                publisher=$6, platforms_str=$7, play_mode=$8, status=$9, notes=$10, tags_str=$11, source=$12,
-                application_path=$13, launch_command=$14, release_date=$15, version=$16, original_description=$17,
-                language=$18, library=$19, active_data_id=$20, user_id=$21, action=$22, reason=$23 WHERE id=$24`
+                publisher=$6, play_mode=$7, status=$8, notes=$9, source=$10,
+                application_path=$11, launch_command=$12, release_date=$13, version=$14, original_description=$15,
+                language=$16, library=$17, active_data_id=$18, user_id=$19, action=$20, reason=$21,
+                tags_str = coalesce(
+					(
+						SELECT string_agg(
+										(SELECT primary_alias FROM tag WHERE id = t.tag_id), '; '
+									)
+						FROM game_tags_tag t
+						WHERE t.game_id = game.id
+					 ), ''
+				),
+                platforms_str = (
+					SELECT string_agg(
+					   (SELECT primary_alias FROM platform WHERE id = p.platform_id), '; '
+				    )
+					FROM game_platforms_platform p
+					WHERE p.game_id = game.id
+				) WHERE id=$22`
 	_, err = dbs.Tx().Exec(dbs.Ctx(), query, game.ParentGameID, game.Title, game.AlternateTitles, game.Series, game.Developer,
-		game.Publisher, game.PlatformsStr, game.PlayMode, game.Status, game.Notes, game.TagsStr, game.Source,
+		game.Publisher, game.PlayMode, game.Status, game.Notes, game.Source,
 		game.ApplicationPath, game.LaunchCommand, game.ReleaseDate, game.Version, game.OriginalDesc,
 		game.Language, game.Library, game.ActiveDataID, uid, "update", "User changed metadata", game.ID)
 	if err != nil {
