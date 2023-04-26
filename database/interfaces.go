@@ -28,9 +28,9 @@ type PGDAL interface {
 	GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.RevisionInfo, error)
 	GetTagRevisionInfo(dbs PGDBSession, tagId int64) ([]*types.RevisionInfo, error)
 
-	DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string) error
+	DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error
 
-	RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string) error
+	RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error
 
 	GetOrCreateTagCategory(dbs PGDBSession, categoryName string) (*types.TagCategory, error)
 	GetOrCreateTag(dbs PGDBSession, tagName string, tagCategory string, reason string, uid int64) (*types.Tag, error)

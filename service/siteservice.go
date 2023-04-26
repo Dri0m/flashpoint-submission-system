@@ -214,7 +214,7 @@ func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	return bpd, nil
 }
 
-func (s *SiteService) DeleteGame(ctx context.Context, gameId string, reason string) error {
+func (s *SiteService) DeleteGame(ctx context.Context, gameId string, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -225,7 +225,7 @@ func (s *SiteService) DeleteGame(ctx context.Context, gameId string, reason stri
 	uid := utils.UserID(ctx)
 
 	// Soft delete database entry
-	err = s.pgdal.DeleteGame(dbs, gameId, uid, reason)
+	err = s.pgdal.DeleteGame(dbs, gameId, uid, reason, imagesPath, gamesPath, deletedImagesPath, deletedGamesPath)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (s *SiteService) DeleteGame(ctx context.Context, gameId string, reason stri
 	return nil
 }
 
-func (s *SiteService) RestoreGame(ctx context.Context, gameId string, reason string) error {
+func (s *SiteService) RestoreGame(ctx context.Context, gameId string, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -252,7 +252,7 @@ func (s *SiteService) RestoreGame(ctx context.Context, gameId string, reason str
 	uid := utils.UserID(ctx)
 
 	// Restire database entry
-	err = s.pgdal.RestoreGame(dbs, gameId, uid, reason)
+	err = s.pgdal.RestoreGame(dbs, gameId, uid, reason, imagesPath, gamesPath, deletedImagesPath, deletedGamesPath)
 	if err != nil {
 		return err
 	}

@@ -15,6 +15,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -1272,16 +1273,127 @@ func (d *postgresDAL) GetTagRevisionInfo(dbs PGDBSession, tagId int64) ([]*types
 	return revisions, nil
 }
 
-func (d *postgresDAL) DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string) error {
-	_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE game SET action = 'delete', deleted = TRUE, user_id = $1, reason = $2 WHERE id = $3`,
+func (d *postgresDAL) DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error {
+	// Get Game Data
+	game, err := d.GetGame(dbs, gameId)
+	if err != nil {
+		return err
+	}
+
+	// Disable Database Entry
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE game SET action = 'delete', deleted = TRUE, user_id = $1, reason = $2 WHERE id = $3`,
 		uid, reason, gameId)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Disable Game Files
+	for _, data := range game.Data {
+		base := fmt.Sprintf("%s-%d%s", game.ID, data.DateAdded.UnixMilli(), ".zip")
+		existingFileName := filepath.Join(gamesPath, base)
+		if _, err := os.Stat(existingFileName); err == nil {
+			newFilename := filepath.Join(deletedGamesPath, base)
+			err = os.MkdirAll(filepath.Dir(newFilename), 0755)
+			if err != nil {
+				return err
+			}
+			err = os.Rename(existingFileName, newFilename)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Disable Image Files
+	logoPath := fmt.Sprintf("%s/Logos/%s/%s/%s.png", imagesPath, gameId[:2], gameId[2:4], gameId)
+	ssPath := fmt.Sprintf("%s/Screenshots/%s/%s/%s.png", imagesPath, gameId[:2], gameId[2:4], gameId)
+
+	if _, err := os.Stat(logoPath); err == nil {
+		newLogoPath := fmt.Sprintf("%s/Logos/%s/%s/%s.png", deletedImagesPath, gameId[:2], gameId[2:4], gameId)
+		err = os.MkdirAll(filepath.Dir(newLogoPath), 0755)
+		if err != nil {
+			return err
+		}
+		err = os.Rename(logoPath, newLogoPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	if _, err := os.Stat(ssPath); err == nil {
+		newSSPath := fmt.Sprintf("%s/Screenshots/%s/%s/%s.png", deletedImagesPath, gameId[:2], gameId[2:4], gameId)
+		err = os.MkdirAll(filepath.Dir(newSSPath), 0755)
+		if err != nil {
+			return err
+		}
+		err = os.Rename(ssPath, newSSPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (d *postgresDAL) RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string) error {
-	_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE game SET action = 'restore', deleted = FALSE, user_id = $1, reason = $2 WHERE id = $3`,
+func (d *postgresDAL) RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error {
+	// Get Game Data
+	game, err := d.GetGame(dbs, gameId)
+	if err != nil {
+		return err
+	}
+
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE game SET action = 'restore', deleted = FALSE, user_id = $1, reason = $2 WHERE id = $3`,
 		uid, reason, gameId)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Disable Game Files
+	for _, data := range game.Data {
+		base := fmt.Sprintf("%s-%d%s", game.ID, data.DateAdded.UnixMilli(), ".zip")
+		existingFileName := filepath.Join(deletedGamesPath, base)
+		if _, err := os.Stat(existingFileName); err == nil {
+			newFilename := filepath.Join(gamesPath, base)
+			err = os.MkdirAll(filepath.Dir(newFilename), 0755)
+			if err != nil {
+				return err
+			}
+			err = os.Rename(existingFileName, newFilename)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Enable Image Files
+	logoPath := fmt.Sprintf("%s/Logos/%s/%s/%s.png", deletedImagesPath, gameId[:2], gameId[2:4], gameId)
+	ssPath := fmt.Sprintf("%s/Screenshots/%s/%s/%s.png", deletedImagesPath, gameId[:2], gameId[2:4], gameId)
+
+	if _, err := os.Stat(logoPath); err == nil {
+		newLogoPath := fmt.Sprintf("%s/Logos/%s/%s/%s.png", imagesPath, gameId[:2], gameId[2:4], gameId)
+		err = os.MkdirAll(filepath.Dir(newLogoPath), 0755)
+		if err != nil {
+			return err
+		}
+		err = os.Rename(logoPath, newLogoPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	if _, err := os.Stat(ssPath); err == nil {
+		newSSPath := fmt.Sprintf("%s/Screenshots/%s/%s/%s.png", imagesPath, gameId[:2], gameId[2:4], gameId)
+		err = os.MkdirAll(filepath.Dir(newSSPath), 0755)
+		if err != nil {
+			return err
+		}
+		err = os.Rename(ssPath, newSSPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (d *postgresDAL) UpdateTagsFromTagsList(dbs PGDBSession, tagsList []types.Tag) error {

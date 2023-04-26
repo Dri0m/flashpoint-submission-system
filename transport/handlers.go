@@ -608,7 +608,7 @@ func (a *App) HandleDeleteGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := a.Service.DeleteGame(ctx, gameId, reason)
+	err := a.Service.DeleteGame(ctx, gameId, reason, a.Conf.ImagesDir, a.Conf.DataPacksDir, a.Conf.DeletedImagesDir, a.Conf.DeletedDataPacksDir)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
@@ -632,7 +632,7 @@ func (a *App) HandleRestoreGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := a.Service.RestoreGame(ctx, gameId, reason)
+	err := a.Service.RestoreGame(ctx, gameId, reason, a.Conf.ImagesDir, a.Conf.DataPacksDir, a.Conf.DeletedImagesDir, a.Conf.DeletedDataPacksDir)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))

@@ -49,6 +49,8 @@ type Config struct {
 	MinLauncherVersion           string
 	DataPacksDir                 string
 	ImagesDir                    string
+	DeletedDataPacksDir          string
+	DeletedImagesDir             string
 }
 
 func EnvString(name string) string {
@@ -134,5 +136,7 @@ func GetConfig(l *logrus.Entry) *Config {
 		MinLauncherVersion:           EnvString("MIN_LAUNCHER_VERSION"),
 		DataPacksDir:                 EnvString("DATA_PACKS_PATH"),
 		ImagesDir:                    EnvString("IMAGES_PATH"),
+		DeletedDataPacksDir:          EnvString("DELETED_DATA_PACKS_PATH"),
+		DeletedImagesDir:             EnvString("DELETED_IMAGES_PATH"),
 	}
 }
