@@ -12,12 +12,12 @@ db:
 local:
 	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml down
 	$(shell mkdir -p ${REPACK_DIR})
-	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up validator -d
+	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up -d validator
 
 remote:
 	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml down
 	$(shell mkdir -p ${REPACK_DIR})
-	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up database postgres -d
+	docker-compose -p ${DB_CONTAINER_NAME}  -f dc-db.yml up -d database postgres
 
 rebuild-postgres:
 	docker-compose -p ${DB_CONTAINER_NAME} down

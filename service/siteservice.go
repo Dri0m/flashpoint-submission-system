@@ -251,14 +251,11 @@ func (s *SiteService) RestoreGame(ctx context.Context, gameId string, reason str
 
 	uid := utils.UserID(ctx)
 
-	// Restire database entry
+	// Restore database entry
 	err = s.pgdal.RestoreGame(dbs, gameId, uid, reason, imagesPath, gamesPath, deletedImagesPath, deletedGamesPath)
 	if err != nil {
 		return err
 	}
-
-	// Move game data and images (where exist)
-	// @TODO
 
 	err = dbs.Commit()
 	if err != nil {
