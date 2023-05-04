@@ -5,7 +5,6 @@
 package main
 
 import (
-	"context"
 	"github.com/Dri0m/flashpoint-submission-system/authbot"
 	"github.com/Dri0m/flashpoint-submission-system/config"
 	"github.com/Dri0m/flashpoint-submission-system/database"
@@ -35,7 +34,7 @@ func main() {
 	defer db.Close()
 
 	pgdb := database.OpenPostgresDB(l, conf)
-	defer pgdb.Close(context.Background())
+	defer pgdb.Close()
 
 	authBot := authbot.ConnectBot(l, conf.AuthBotToken)
 	notificationBot := notificationbot.ConnectBot(l, conf.NotificationBotToken)

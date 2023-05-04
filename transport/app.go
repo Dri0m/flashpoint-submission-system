@@ -4,7 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/kofalt/go-memoize"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,7 +22,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/gorilla/securecookie"
-	"github.com/kofalt/go-memoize"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,7 +35,7 @@ type App struct {
 	DFStorage           *DeviceFlowStorage
 }
 
-func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgx.Conn, authBotSession, notificationBotSession *discordgo.Session, rsu *resumableuploadservice.ResumableUploadService) {
+func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgxpool.Pool, authBotSession, notificationBotSession *discordgo.Session, rsu *resumableuploadservice.ResumableUploadService) {
 	l.Infoln("initializing the server")
 	router := mux.NewRouter()
 	srv := &http.Server{

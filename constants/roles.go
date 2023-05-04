@@ -10,6 +10,7 @@ const (
 	RoleMechanic      = "Mechanic"
 	RoleHunter        = "Hunter"
 	RoleTrialCurator  = "Trial Curator"
+	RoleTrialEditor   = "Trial Editor"
 	RoleTheBlue       = "The Blue"
 	RoleTheD          = "The D"
 )
@@ -32,6 +33,12 @@ func StaffRoles() []string {
 func TrialCuratorRoles() []string {
 	return []string{
 		RoleTrialCurator,
+	}
+}
+
+func TrialEditorRoles() []string {
+	return []string{
+		RoleTrialEditor,
 	}
 }
 
@@ -86,6 +93,10 @@ func IsStaff(roles []string) bool {
 // IsTrialCurator allows user to submit submissions and see only his own submissions
 func IsTrialCurator(roles []string) bool {
 	return HasAnyRole(roles, TrialCuratorRoles())
+}
+
+func isTrialEditor(roles []string) bool {
+	return HasAnyRole(roles, TrialEditorRoles())
 }
 
 // IsDeleter allows users to soft delete things

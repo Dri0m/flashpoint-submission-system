@@ -9,7 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -148,7 +148,7 @@ type SiteService struct {
 	SSK                       SubmissionStatusKeeper
 }
 
-func New(l *logrus.Entry, db *sql.DB, pgdb *pgx.Conn, authBotSession, notificationBotSession *discordgo.Session,
+func New(l *logrus.Entry, db *sql.DB, pgdb *pgxpool.Pool, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
 	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir, fixesDir string) *SiteService {
 

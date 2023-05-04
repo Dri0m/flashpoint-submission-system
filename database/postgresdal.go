@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"io"
 	"log"
@@ -21,17 +22,17 @@ import (
 )
 
 type postgresDAL struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewPostgresDAL(conn *pgx.Conn) *postgresDAL {
+func NewPostgresDAL(conn *pgxpool.Pool) *postgresDAL {
 	return &postgresDAL{
 		db: conn,
 	}
 }
 
 // OpenPostgresDB opens DAL or panics
-func OpenPostgresDB(l *logrus.Entry, conf *config.Config) *pgx.Conn {
+func OpenPostgresDB(l *logrus.Entry, conf *config.Config) *pgxpool.Pool {
 	l.Infoln("connecting to the postgres database")
 
 	user := conf.PostgresUser
@@ -39,7 +40,7 @@ func OpenPostgresDB(l *logrus.Entry, conf *config.Config) *pgx.Conn {
 	ip := conf.PostgresHost
 	port := conf.PostgresPort
 
-	conn, err := pgx.Connect(context.Background(),
+	conn, err := pgxpool.New(context.Background(),
 		fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", user, pass, ip, port, user))
 
 	if err != nil {

@@ -13,6 +13,9 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	isStaff := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.StaffRoles())
 	}
+	isTrialEditor := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserHasAnyRole(r, uid, constants.TrialEditorRoles())
+	}
 	isTrialCurator := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.TrialCuratorRoles())
 	}
@@ -221,7 +224,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	f = a.UserAuthMux(
-		a.HandleGamePage, muxAny(isStaff))
+		a.HandleGamePage, muxAny(isStaff, isTrialEditor))
 
 	router.Handle(
 		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyGameID),
