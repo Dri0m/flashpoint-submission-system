@@ -463,29 +463,28 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 }
 
 func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) error {
+	newTags := make([]*types.Tag, 0)
+	newPlats := make([]*types.Platform, 0)
+
 	// Clear tag relations
 	_, err := dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM game_tags_tag WHERE game_id = $1`, game.ID)
-	// Create new tags where applicable
-	for idx, tag := range game.Tags {
-		if tag.ID == -1 {
-			// New tag
-			t, err := d.GetOrCreateTag(dbs, tag.Name, "default", fmt.Sprintf("Game Metadata Update - ID %s", game.ID), uid)
-			if err != nil {
-				return err
-			} else {
-				game.Tags[idx].ID = t.ID
-			}
+	// Match tags to existing ones by name
+	for _, tag := range game.Tags {
+		t, err := d.GetOrCreateTag(dbs, tag.Name, "default", fmt.Sprintf("Game Metadata Update - ID %s", game.ID), uid)
+		if err != nil {
+			return err
 		}
+		newTags = append(newTags, t)
 	}
 	// Save tag relations
 	_, err = dbs.Tx().CopyFrom(
 		dbs.Ctx(),
 		pgx.Identifier{"game_tags_tag"},
 		[]string{"game_id", "tag_id"},
-		pgx.CopyFromSlice(len(game.Tags), func(i int) ([]interface{}, error) {
+		pgx.CopyFromSlice(len(newTags), func(i int) ([]interface{}, error) {
 			return []interface{}{
 				game.ID,
-				game.Tags[i].ID,
+				newTags[i].ID,
 			}, nil
 		}),
 	)
@@ -496,26 +495,22 @@ func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) err
 	// Clear platform relations
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM game_platforms_platform WHERE game_id = $1`, game.ID)
 	// Create new platforms where applicable
-	for idx, platform := range game.Platforms {
-		if platform.ID == -1 {
-			// New platform
-			p, err := d.GetOrCreatePlatform(dbs, platform.Name, fmt.Sprintf("Game Metadata Update - ID %s", game.ID), uid)
-			if err != nil {
-				return err
-			} else {
-				game.Platforms[idx].ID = p.ID
-			}
+	for _, plat := range game.Platforms {
+		p, err := d.GetOrCreatePlatform(dbs, plat.Name, fmt.Sprintf("Game Metadata Update - ID %s", game.ID), uid)
+		if err != nil {
+			return err
 		}
+		newPlats = append(newPlats, p)
 	}
 	// Save platform relations
 	_, err = dbs.Tx().CopyFrom(
 		dbs.Ctx(),
 		pgx.Identifier{"game_platforms_platform"},
 		[]string{"game_id", "platform_id"},
-		pgx.CopyFromSlice(len(game.Platforms), func(i int) ([]interface{}, error) {
+		pgx.CopyFromSlice(len(newPlats), func(i int) ([]interface{}, error) {
 			return []interface{}{
 				game.ID,
-				game.Platforms[i].ID,
+				newPlats[i].ID,
 			}, nil
 		}),
 	)
