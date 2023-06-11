@@ -20,6 +20,7 @@ type CurationMeta struct {
 	LaunchCommand       *string                  `json:"Launch Command"`
 	OriginalDescription *string                  `json:"Original Description"`
 	PlayMode            *string                  `json:"Play Mode"`
+	PrimaryPlatform     *string                  `json:"Primary Platform"`
 	Platform            *string                  `json:"Platforms"`
 	Publisher           *string                  `json:"Publisher"`
 	ReleaseDate         *string                  `json:"Release Date"`
@@ -429,6 +430,7 @@ type Game struct {
 	Series          string           `json:"series"`
 	Developer       string           `json:"developer"`
 	Publisher       string           `json:"publisher"`
+	PrimaryPlatform string           `json:"platform_name,omitempty"`
 	Platforms       []*Platform      `json:"platforms,omitempty"`
 	PlatformsStr    string           `json:"platforms_str"`
 	DateAdded       time.Time        `json:"date_added"`

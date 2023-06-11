@@ -227,8 +227,15 @@
                                 {{end}}{{end}}</td>
                     </tr>
                     <tr>
-                        <td class="meta-property">Platform</td>
-                        <td class="break-all">{{if not .CurationMeta.Platform}}<i>No Platform</i>{{else}}
+                        <td class="meta-property">Primary Platform</td>
+                        <td class="break-all">{{if not .CurationMeta.PrimaryPlatform}}<i>No Primary Platform</i>{{else}}
+                                {{range $i, $line := (splitMultilineText .CurationMeta.PrimaryPlatform) }}{{if gt $i 0}}
+                                    <br>{{end}}{{$line}}
+                                {{end}}{{end}}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-property">Platforms</td>
+                        <td class="break-all">{{if not .CurationMeta.Platform}}<i>No Platforms</i>{{else}}
                                 {{range $i, $line := (splitMultilineText .CurationMeta.Platform) }}{{if gt $i 0}}
                                     <br>{{end}}{{$line}}
                                 {{end}}{{end}}</td>

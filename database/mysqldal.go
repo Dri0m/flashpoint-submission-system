@@ -320,11 +320,13 @@ func (d *mysqlDAL) GetExtendedSubmissionFilesBySubmissionID(dbs DBSession, sid i
 func (d *mysqlDAL) StoreCurationMeta(dbs DBSession, cm *types.CurationMeta) error {
 	_, err := dbs.Tx().ExecContext(dbs.Ctx(), `INSERT INTO curation_meta (fk_submission_file_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
-                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters, uuid, game_exists) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters, uuid, game_exists,
+                           primary_platform) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cm.SubmissionFileID, cm.ApplicationPath, cm.Developer, cm.Extreme, cm.GameNotes, cm.Languages,
 		cm.LaunchCommand, cm.OriginalDescription, cm.PlayMode, cm.Platform, cm.Publisher, cm.ReleaseDate, cm.Series, cm.Source, cm.Status,
-		cm.Tags, cm.TagCategories, cm.Title, cm.AlternateTitles, cm.Library, cm.Version, cm.CurationNotes, cm.MountParameters, cm.UUID, cm.GameExists)
+		cm.Tags, cm.TagCategories, cm.Title, cm.AlternateTitles, cm.Library, cm.Version, cm.CurationNotes, cm.MountParameters, cm.UUID, cm.GameExists,
+		cm.PrimaryPlatform)
 	return err
 }
 
@@ -332,14 +334,16 @@ func (d *mysqlDAL) StoreCurationMeta(dbs DBSession, cm *types.CurationMeta) erro
 func (d *mysqlDAL) GetCurationMetaBySubmissionFileID(dbs DBSession, sfid int64) (*types.CurationMeta, error) {
 	row := dbs.Tx().QueryRowContext(dbs.Ctx(), `SELECT submission_file.fk_submission_id, application_path, developer, extreme, game_notes, languages,
                            launch_command, original_description, play_mode, platform, publisher, release_date, series, source, status,
-                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters, uuid, game_exists 
+                           tags, tag_categories, title, alternate_titles, library, version, curation_notes, mount_parameters, uuid, game_exists,
+                           primary_platform
 		FROM curation_meta JOIN submission_file ON curation_meta.fk_submission_file_id = submission_file.id
 		WHERE fk_submission_file_id=? AND submission_file.deleted_at IS NULL`, sfid)
 
 	c := &types.CurationMeta{SubmissionFileID: sfid}
 	err := row.Scan(&c.SubmissionID, &c.ApplicationPath, &c.Developer, &c.Extreme, &c.GameNotes, &c.Languages,
 		&c.LaunchCommand, &c.OriginalDescription, &c.PlayMode, &c.Platform, &c.Publisher, &c.ReleaseDate, &c.Series, &c.Source, &c.Status,
-		&c.Tags, &c.TagCategories, &c.Title, &c.AlternateTitles, &c.Library, &c.Version, &c.CurationNotes, &c.MountParameters, &c.UUID, &c.GameExists)
+		&c.Tags, &c.TagCategories, &c.Title, &c.AlternateTitles, &c.Library, &c.Version, &c.CurationNotes, &c.MountParameters, &c.UUID, &c.GameExists,
+		&c.PrimaryPlatform)
 	if err != nil {
 		return nil, err
 	}

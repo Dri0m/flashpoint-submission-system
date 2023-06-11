@@ -101,6 +101,13 @@
                         {{end}}{{end}}</td>
             </tr>
             <tr>
+                <td class="meta-property">Primary Platform</td>
+                <td class="break-all">{{if not .Game.PrimaryPlatform}}<i>No Primary Platform</i>{{else}}
+                        {{range $i, $line := (splitMultilineText .Game.PrimaryPlatform) }}{{if gt $i 0}}
+                            <br>{{end}}{{$line}}
+                        {{end}}{{end}}</td>
+            </tr>
+            <tr>
                 <td class="meta-property">Platforms</td>
                 <td class="tag-list">
                     {{if not .Game.Platforms}}
