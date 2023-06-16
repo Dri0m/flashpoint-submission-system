@@ -423,6 +423,41 @@ type DeletedGame struct {
 	Reason       string    `json:"reason"`
 }
 
+type GameDump struct {
+	ID              string           `json:"id"`
+	ParentGameID    *string          `json:"parent_game_id,omitempty"`
+	Title           string           `json:"title"`
+	AlternateTitles string           `json:"alternate_titles"`
+	Series          string           `json:"series"`
+	Developer       string           `json:"developer"`
+	Publisher       string           `json:"publisher"`
+	PrimaryPlatform string           `json:"platform_name,omitempty"`
+	Platforms       []*Platform      `json:"platforms,omitempty"`
+	PlatformsStr    string           `json:"platforms_str"`
+	DateAdded       time.Time        `json:"date_added"`
+	DateModified    time.Time        `json:"date_modified"`
+	PlayMode        string           `json:"play_mode"`
+	Status          string           `json:"status"`
+	Notes           string           `json:"notes"`
+	Tags            []*Tag           `json:"tags,omitempty"`
+	TagsStr         string           `json:"tags_str"`
+	Source          string           `json:"source"`
+	ApplicationPath string           `json:"legacy_application_path"`
+	LaunchCommand   string           `json:"legacy_launch_command"`
+	ReleaseDate     string           `json:"release_date"`
+	Version         string           `json:"version"`
+	OriginalDesc    string           `json:"original_description"`
+	Language        string           `json:"language"`
+	Library         string           `json:"library"`
+	AddApps         []*AdditionalApp `json:"add_apps"`
+	ActiveDataID    *int             `json:"active_data_id,omitempty"`
+	Data            []*GameData      `json:"data,omitempty"`
+	Action          string           `json:"action"`
+	Reason          string           `json:"reason"`
+	Deleted         bool
+	UserID          int64
+}
+
 type Game struct {
 	ID              string           `json:"id"`
 	ParentGameID    *string          `json:"parent_game_id,omitempty"`
@@ -539,7 +574,7 @@ type LauncherDump struct {
 type LauncherDumpGames struct {
 	AddApps  []AdditionalApp `json:"add_apps"`
 	GameData []GameData      `json:"game_data"`
-	Games    []Game          `json:"games"`
+	Games    []GameDump      `json:"games"`
 }
 
 type LauncherDumpTags struct {
