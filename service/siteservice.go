@@ -2870,7 +2870,7 @@ func (s *SiteService) SaveGame(ctx context.Context, game *types.Game) error {
 	return nil
 }
 
-func (s *SiteService) GetDeletedGamePageData(ctx context.Context, modifiedAfter *string, afterId *string) ([]*types.DeletedGame, error) {
+func (s *SiteService) GetDeletedGamePageData(ctx context.Context, modifiedAfter *string) ([]*types.DeletedGame, error) {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -2878,7 +2878,7 @@ func (s *SiteService) GetDeletedGamePageData(ctx context.Context, modifiedAfter 
 	}
 	defer dbs.Rollback()
 
-	games, err := s.pgdal.SearchDeletedGames(dbs, modifiedAfter, afterId)
+	games, err := s.pgdal.SearchDeletedGames(dbs, modifiedAfter)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err
@@ -2887,7 +2887,23 @@ func (s *SiteService) GetDeletedGamePageData(ctx context.Context, modifiedAfter 
 	return games, nil
 }
 
-func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
+func (s *SiteService) GetGameCountSinceDate(ctx context.Context, modifiedAfter *string) (int, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, nil
+	}
+	defer dbs.Rollback()
+
+	total, err := s.pgdal.CountSinceDate(dbs, modifiedAfter)
+	if err != nil {
+		return 0, dberr(err)
+	}
+
+	return total, nil
+}
+
+func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *string, modifiedBefore *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -2895,7 +2911,7 @@ func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *strin
 	}
 	defer dbs.Rollback()
 
-	games, addApps, gameData, tagRelations, platformRelations, err := s.pgdal.SearchGames(dbs, modifierAfter, broad, afterId)
+	games, addApps, gameData, tagRelations, platformRelations, err := s.pgdal.SearchGames(dbs, modifierAfter, modifiedBefore, broad, afterId)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, nil, nil, nil, nil, dberr(err)

@@ -418,8 +418,9 @@ type SimilarityAttributes struct {
 }
 
 type DeletedGame struct {
-	ID     string `json:"id"`
-	Reason string `json:"reason"`
+	ID           string    `json:"id"`
+	DateModified time.Time `json:"date_modified"`
+	Reason       string    `json:"reason"`
 }
 
 type Game struct {
@@ -840,6 +841,14 @@ type ExtendedFixesItem struct {
 	SubmitterID       int64
 	SubmitterUsername string
 	UploadedAt        *time.Time
+}
+
+type GameCountSinceDateJSON struct {
+	Total int `json:"total"`
+}
+
+type GamesDeletedSinceDateJSON struct {
+	Games []*DeletedGame `json:"games"`
 }
 
 type GamePageResJSON struct {

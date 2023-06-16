@@ -193,6 +193,13 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.HandleGameCountSinceDate
+
+	router.Handle(
+		"/api/games/updates",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
 	f = a.HandleGamesPage
 
 	router.Handle(

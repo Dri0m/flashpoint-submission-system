@@ -414,20 +414,39 @@ func (a *App) HandleDeletedGames(w http.ResponseWriter, r *http.Request) {
 		modifiedAfter = "1970-01-01"
 	}
 
-	afterIdRaw, ok := r.URL.Query()["afterId"]
-	var afterId string
-	if ok {
-		afterId = afterIdRaw[0]
-	} else {
-		afterId = ""
-	}
-
-	games, err := a.Service.GetDeletedGamePageData(ctx, &modifiedAfter, &afterId)
+	games, err := a.Service.GetDeletedGamePageData(ctx, &modifiedAfter)
 	if err != nil {
 		writeError(ctx, w, err)
 		return
 	}
-	writeResponse(ctx, w, games, http.StatusOK)
+
+	res := types.GamesDeletedSinceDateJSON{
+		Games: games,
+	}
+	writeResponse(ctx, w, res, http.StatusOK)
+}
+
+func (a *App) HandleGameCountSinceDate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter string
+	if ok {
+		modifiedAfter = modifiedAfterRaw[0]
+	} else {
+		modifiedAfter = "1970-01-01"
+	}
+
+	result, err := a.Service.GetGameCountSinceDate(ctx, &modifiedAfter)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	res := types.GameCountSinceDateJSON{
+		Total: result,
+	}
+	writeResponse(ctx, w, res, http.StatusOK)
 }
 
 func (a *App) HandleGamesPage(w http.ResponseWriter, r *http.Request) {
@@ -439,6 +458,14 @@ func (a *App) HandleGamesPage(w http.ResponseWriter, r *http.Request) {
 		modifiedAfter = modifiedAfterRaw[0]
 	} else {
 		modifiedAfter = "1970-01-01"
+	}
+
+	modifiedBeforeRaw, ok := r.URL.Query()["before"]
+	var modifiedBefore string
+	if ok {
+		modifiedBefore = modifiedBeforeRaw[0]
+	} else {
+		modifiedBefore = "2999-01-01"
 	}
 
 	afterIdRaw, ok := r.URL.Query()["afterId"]
@@ -455,7 +482,7 @@ func (a *App) HandleGamesPage(w http.ResponseWriter, r *http.Request) {
 		broad = true
 	}
 
-	games, addApps, gameData, tagRelations, platformRelations, err := a.Service.GetGamesPageData(ctx, &modifiedAfter, broad, &afterId)
+	games, addApps, gameData, tagRelations, platformRelations, err := a.Service.GetGamesPageData(ctx, &modifiedAfter, &modifiedBefore, broad, &afterId)
 	if err != nil {
 		writeError(ctx, w, err)
 		return

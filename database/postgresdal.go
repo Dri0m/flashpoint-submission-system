@@ -184,14 +184,12 @@ func (d *postgresDAL) SearchPlatforms(dbs PGDBSession, modifiedAfter *string) ([
 	return result, nil
 }
 
-func (d *postgresDAL) SearchDeletedGames(dbs PGDBSession, modifiedAfter *string, afterId *string) ([]*types.DeletedGame, error) {
+func (d *postgresDAL) SearchDeletedGames(dbs PGDBSession, modifiedAfter *string) ([]*types.DeletedGame, error) {
 	var rows pgx.Rows
 	var err error
-	limit := 2500
-	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT id, reason FROM game
-	WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = TRUE
-	ORDER BY game.date_modified, game.id
-	LIMIT $3`, modifiedAfter, afterId, limit)
+	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT id, date_modified, reason FROM game
+	WHERE game.date_modified >= $1 AND game.deleted = TRUE
+	ORDER BY game.date_modified, game.id`, modifiedAfter)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +198,7 @@ func (d *postgresDAL) SearchDeletedGames(dbs PGDBSession, modifiedAfter *string,
 
 	for rows.Next() {
 		game := &types.DeletedGame{}
-		err = rows.Scan(&game.ID, &game.Reason)
+		err = rows.Scan(&game.ID, &game.DateModified, &game.Reason)
 		if err != nil {
 			return nil, err
 		}
@@ -210,7 +208,21 @@ func (d *postgresDAL) SearchDeletedGames(dbs PGDBSession, modifiedAfter *string,
 	return results, nil
 }
 
-func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
+func (d *postgresDAL) CountSinceDate(dbs PGDBSession, modifiedAfter *string) (int, error) {
+	result := 0
+
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*) 
+		FROM game 
+		WHERE game.date_modified > $1 AND game.deleted = FALSE`, modifiedAfter).Scan(&result)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
+}
+
+func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, modifiedBefore *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
 	var rows pgx.Rows
 	var err error
 	limit := 2500
@@ -221,9 +233,9 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
        		game.application_path, game.launch_command, game.release_date, game.version, game.original_description, game.language,
        		game.library, game.active_data_id, game.tags_str, game.platforms_str, game.platform_name
 			FROM game
-			WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE
-			ORDER BY game.date_modified, game.id
-			LIMIT $3`, modifiedAfter, afterId, limit)
+			WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 AND game.deleted = FALSE
+			ORDER BY game.id
+			LIMIT $4`, modifiedAfter, modifiedBefore, afterId, limit)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -248,8 +260,9 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gtt.game_id, gtt.tag_id 
 	FROM game_tags_tag gtt 
 	WHERE gtt.game_id IN (
-	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
-	)`, modifiedAfter, afterId, limit)
+	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2  AND game.id > $3
+	    AND game.deleted = FALSE ORDER BY game.id LIMIT $4
+	)`, modifiedAfter, modifiedBefore, afterId, limit)
 	for rows.Next() {
 		relation := make([]string, 2)
 		if err := rows.Scan(&relation[0], &relation[1]); err != nil {
@@ -263,8 +276,9 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT gpp.game_id, gpp.platform_id 
 	FROM game_platforms_platform gpp 
 	WHERE gpp.game_id IN (
-	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
-	)`, modifiedAfter, afterId, limit)
+	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 
+	    AND game.deleted = FALSE LIMIT $4
+	)`, modifiedAfter, modifiedBefore, afterId, limit)
 	for rows.Next() {
 		relation := make([]string, 2)
 		if err := rows.Scan(&relation[0], &relation[1]); err != nil {
@@ -281,8 +295,9 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
 			aa.wait_for_exit, aa.auto_run_before, aa.parent_game_id
 			FROM additional_app aa
 			WHERE aa.parent_game_id IN (
-			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
-			)`, modifiedAfter, afterId, limit)
+			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 
+			    AND game.deleted = FALSE LIMIT $4
+			)`, modifiedAfter, modifiedBefore, afterId, limit)
 
 			for rows.Next() {
 				addApp := &types.AdditionalApp{}
@@ -298,8 +313,9 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, broad 
        		gd.crc32, gd.size, gd.parameters, gd.application_path, gd.launch_command
 			FROM game_data gd
 			WHERE gd.game_id IN (
-			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.id > $2 AND game.deleted = FALSE LIMIT $3
-			)`, modifiedAfter, afterId, limit)
+			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 
+			    AND game.deleted = FALSE LIMIT $4
+			)`, modifiedAfter, modifiedBefore, afterId, limit)
 
 			for rows.Next() {
 				gameData := &types.GameData{}
