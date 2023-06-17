@@ -606,7 +606,7 @@ func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if pageData.Game.Deleted && !constants.IsGodOrColin(pageData.UserRoles, pageData.UserID) {
+	if pageData.Game.Deleted && !constants.IsDeleter(pageData.UserRoles) {
 		// Prevent non-God users viewing deleted resource
 		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
 		return

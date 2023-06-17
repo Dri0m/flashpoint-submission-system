@@ -249,7 +249,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		Methods("GET", "POST")
 
 	f = a.UserAuthMux(
-		a.HandleDeleteGame, muxAny(isGod, isColin))
+		a.HandleDeleteGame, muxAny(isDeleter))
 
 	router.Handle(
 		fmt.Sprintf("/api/game/{%s}", constants.ResourceKeyGameID),
@@ -257,7 +257,7 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		Methods("DELETE")
 
 	f = a.UserAuthMux(
-		a.HandleRestoreGame, muxAny(isGod, isColin))
+		a.HandleRestoreGame, muxAny(isDeleter))
 
 	router.Handle(
 		fmt.Sprintf("/api/game/{%s}/restore", constants.ResourceKeyGameID),
