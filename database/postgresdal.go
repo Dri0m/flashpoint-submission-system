@@ -352,6 +352,27 @@ func (d *postgresDAL) GetTag(dbs PGDBSession, tagId int64) (*types.Tag, error) {
 	return &tag, nil
 }
 
+func (d *postgresDAL) GetTagByName(dbs PGDBSession, tagName string) (*types.Tag, error) {
+	var tag types.Tag
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT tag.id, coalesce(tag.description, 'none') as description,
+       tag_category.name, tag.date_modified, primary_alias,
+       (SELECT string_agg(name, '; ') FROM tag_alias WHERE tag_id = tag.id) as alias_names,
+       action, reason, deleted, user_id 
+		FROM tag 
+			LEFT JOIN tag_category ON tag_category.id = tag.category_id 
+		WHERE tag.id = (
+		    SELECT tag_alias.tag_id FROM tag_alias
+		    WHERE tag_alias.name = $1 LIMIT 1
+		)`, tagName).
+		Scan(&tag.ID, &tag.Description, &tag.Category, &tag.DateModified, &tag.Name, &tag.Aliases,
+			&tag.Action, &tag.Reason, &tag.Deleted, &tag.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tag, nil
+}
+
 func (d *postgresDAL) GetPlatform(dbs PGDBSession, platformId int64) (*types.Platform, error) {
 	var platform types.Platform
 	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description,
@@ -360,6 +381,26 @@ func (d *postgresDAL) GetPlatform(dbs PGDBSession, platformId int64) (*types.Pla
        		action, reason, deleted, user_id 
 		FROM platform
 		WHERE platform.id = $1`, platformId).
+		Scan(&platform.ID, &platform.Description, &platform.DateModified, &platform.Name, &platform.Aliases,
+			&platform.Action, &platform.Reason, &platform.Deleted, &platform.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &platform, nil
+}
+
+func (d *postgresDAL) GetPlatformByName(dbs PGDBSession, platformName string) (*types.Platform, error) {
+	var platform types.Platform
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT platform.id, coalesce(platform.description, 'none') as description,
+       		platform.date_modified, primary_alias,
+       		(SELECT string_agg(name, '; ') FROM platform_alias WHERE platform_id = platform.id) as alias_names,
+       		action, reason, deleted, user_id 
+		FROM platform
+		WHERE platform.id = (
+		    SELECT platform_alias.platform_id FROM platform_alias
+		    WHERE platform_alias.name = $1 LIMIT 1
+		)`, platformName).
 		Scan(&platform.ID, &platform.Description, &platform.DateModified, &platform.Name, &platform.Aliases,
 			&platform.Action, &platform.Reason, &platform.Deleted, &platform.UserID)
 	if err != nil {

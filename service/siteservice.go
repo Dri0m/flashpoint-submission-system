@@ -368,15 +368,22 @@ func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*typ
 		return nil, err
 	}
 
+	var tag *types.Tag
 	tagId, err := strconv.Atoi(tagIdStr)
 	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, err
-	}
-	tag, err := s.pgdal.GetTag(dbs, int64(tagId))
-	if err != nil {
-		utils.LogCtx(ctx).Error(err)
-		return nil, perr("tag not found", http.StatusNotFound)
+		// Not an ID, check against tag name instead
+		tag, err = s.pgdal.GetTagByName(dbs, tagIdStr)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, perr("tag not found", http.StatusNotFound)
+		}
+	} else {
+		// Is an ID, use that
+		tag, err = s.pgdal.GetTag(dbs, int64(tagId))
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, perr("tag not found", http.StatusNotFound)
+		}
 	}
 
 	revisions, err := s.pgdal.GetTagRevisionInfo(dbs, tag.ID)
