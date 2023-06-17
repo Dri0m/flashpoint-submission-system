@@ -342,6 +342,24 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 	return pageData, nil
 }
 
+func (s *SiteService) SaveTag(ctx context.Context, tag *types.Tag) error {
+	uid := utils.UserID(ctx)
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	err = s.pgdal.SaveTag(dbs, tag, uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	return nil
+}
+
 func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*types.TagPageData, error) {
 	msqldbs, err := s.dal.NewSession(ctx)
 	if err != nil {
@@ -402,7 +420,7 @@ func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*typ
 		return revisions[i].CreatedAt.After(revisions[j].CreatedAt)
 	})
 
-	gamesUsing, err := s.pgdal.GetGamesUsingTagTotal(dbs, int64(tagId))
+	gamesUsing, err := s.pgdal.GetGamesUsingTagTotal(dbs, tag.ID)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
 		return nil, err

@@ -1,14 +1,35 @@
 {{define "main"}}
     <div class="content">
         <h3>Tag {{.Tag.ID}}</h3>
+
+        {{if isDeleter .UserRoles}}
+            <a href="/web/tag/{{.Tag.ID}}/edit" class="pure-button pure-button-primary">
+                Edit Tag
+            </a>
+        {{end}}
+
         <h1>{{if .Tag.Deleted}}DELETED - {{end}}{{.Tag.Name}}</h1>
 
-        <b>Description</b>
-        {{if .Tag.Description}}
-            <div>{{.Tag.Description}}</div>
-        {{else}}
-            <i>No Tag Description</i>
-        {{end}}
+        <table class="pure-table pure-table-bordered meta-table">
+            <tbody>
+            <tr>
+                <td class="meta-property">Description</td>
+                <td class="break-all">
+                    {{if not .Tag.Description}}
+                        <i>No Description</i>
+                    {{else}}
+                        {{.Tag.Description}}
+                    {{end}}
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Aliases</td>
+                <td class="break-all">
+                    {{.Tag.Aliases}}
+                </td>
+            </tr>
+            </tbody>
+        </table>
 
         <h3>{{.GamesUsing}} games with this tag</h3>
 

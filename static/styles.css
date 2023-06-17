@@ -686,3 +686,16 @@ video {
 .submission-type-icon-new {
     filter: invert(28%) sepia(85%) saturate(1609%) hue-rotate(116deg) brightness(91%) contrast(85%)
 }
+
+.tag-edit-description {
+    width: 23rem;
+}
+
+.tag-edit-alias {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.1rem;
+    min-width: 23rem;
+    height: 1.5rem;
+}

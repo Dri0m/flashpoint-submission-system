@@ -940,6 +940,13 @@ func (nei NotEnoughImages) Error() string {
 	return fmt.Sprintf("Submission does not have 2 images: has %s", string(nei))
 }
 
+type InvalidTagUpdate struct {
+}
+
+func (itu InvalidTagUpdate) Error() string {
+	return "Invalid tag aliases"
+}
+
 type InvalidAddApps struct {
 }
 

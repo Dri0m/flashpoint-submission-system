@@ -1,0 +1,1 @@
+ALTER TABLE tag DROP CONSTRAINT "FK_tag_primary_alias";

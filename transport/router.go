@@ -170,6 +170,14 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		Methods("GET")
 
 	f = a.UserAuthMux(
+		a.HandlePostTag, muxAny(isDeleter))
+
+	router.Handle(
+		fmt.Sprintf("/api/tag/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
+
+	f = a.UserAuthMux(
 		a.HandleTagPage, muxAny(isStaff, isTrialCurator, isInAudit))
 
 	router.Handle(
@@ -180,6 +188,14 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	router.Handle(
 		fmt.Sprintf("/api/tag/{%s}", constants.ResourceKeyTagID),
 		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandleTagEditPage, muxAny(isDeleter))
+
+	router.Handle(
+		fmt.Sprintf("/web/tag/{%s}/edit", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
 
 	////////////////////////

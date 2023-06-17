@@ -552,6 +552,43 @@ func (a *App) HandlePlatformsPage(w http.ResponseWriter, r *http.Request) {
 		"templates/platforms.gohtml")
 }
 
+func (a *App) HandlePostTag(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	tagIdStr := params[constants.ResourceKeyTagID]
+	tagId, err := strconv.Atoi(tagIdStr)
+	if err != nil {
+		writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var tag types.Tag
+	err = json.NewDecoder(r.Body).Decode(&tag)
+	if err != nil {
+		writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if tag.ID != int64(tagId) {
+		writeResponse(ctx, w, "Tag ID does not match route", http.StatusBadRequest)
+		return
+	}
+
+	err = a.Service.SaveTag(ctx, &tag)
+	if err != nil {
+		writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	pageData, err := a.Service.GetTagPageData(ctx, tagIdStr)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	writeResponse(ctx, w, pageData.Tag, http.StatusOK)
+	return
+}
+
 func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)
@@ -576,6 +613,32 @@ func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {
 
 	a.RenderTemplates(ctx, w, r, pageData,
 		"templates/tag.gohtml")
+}
+
+func (a *App) HandleTagEditPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	tagID := params[constants.ResourceKeyTagID]
+
+	pageData, err := a.Service.GetTagPageData(ctx, tagID)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if pageData.Tag.Deleted && !constants.IsGodOrColin(pageData.UserRoles, pageData.UserID) {
+		// Prevent non-God users editing deleted resource
+		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Tag, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/tag-edit.gohtml")
 }
 
 func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {

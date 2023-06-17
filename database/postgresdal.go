@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/Dri0m/flashpoint-submission-system/config"
+	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/types"
 	"github.com/Dri0m/flashpoint-submission-system/utils"
 	_ "github.com/golang-migrate/migrate/source/file"
@@ -517,6 +518,102 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 	}
 
 	return &game, nil
+}
+
+func (d *postgresDAL) SaveTag(dbs PGDBSession, tag *types.Tag, uid int64) error {
+	// Store existing primary alias, update redundant game fields if changes later
+	existingTag, err := d.GetTag(dbs, tag.ID)
+	if err != nil {
+		return err
+	}
+	aliasChanged := strings.ToLower(tag.Name) != strings.ToLower(existingTag.Name)
+	descUpdated := strings.ToLower(tag.Description) != strings.ToLower(existingTag.Description)
+	aliasesUpdated := strings.ToLower(*tag.Aliases) != strings.ToLower(*existingTag.Aliases)
+
+	// Generate tag update reason
+	reasons := make([]string, 0)
+	if descUpdated {
+		reasons = append(reasons, "Description Changed")
+	}
+	if aliasChanged {
+		reasons = append(reasons, "Primary Alias Changed")
+	}
+	if aliasesUpdated {
+		reasons = append(reasons, "Aliases Changed")
+	}
+
+	// Make sure all alias changes are valid
+	aliases := strings.Split(*tag.Aliases, ";")
+	for _, alias := range aliases {
+		alias = strings.TrimSpace(alias)
+		existingTagWithAlias, _ := d.GetTagByName(dbs, alias)
+		if existingTagWithAlias != nil && existingTagWithAlias.ID != tag.ID {
+			// Alias exists on another tag, cannot save
+			return types.InvalidTagUpdate{}
+		}
+	}
+
+	// Make sure at least one alias is present
+	if len(aliases) == 0 {
+		return types.InvalidTagUpdate{}
+	}
+	if aliases[0] == "" {
+		return types.InvalidTagUpdate{}
+	}
+
+	// Remove old aliases
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM tag_alias WHERE tag_id = $1`, tag.ID)
+	if err != nil {
+		return err
+	}
+
+	// Add new aliases
+	for _, alias := range aliases {
+		alias = strings.TrimSpace(alias)
+		_, err := dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO tag_alias (name, tag_id) VALUES ($1, $2)`,
+			alias, tag.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Update tag
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE tag SET description = $1, primary_alias = $2,
+               reason = $3, action = 'update', user_id = $4 WHERE id = $5`,
+		tag.Description, tag.Name, strings.Join(reasons, ", "), uid, tag.ID)
+	if err != nil {
+		return err
+	}
+
+	if aliasChanged {
+		// Update redundant game fields
+		_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE game
+			SET reason = 'Updating Redundant Tag String',
+			action = 'update',
+			user_id = $1,
+			tags_str = coalesce(
+				(
+					SELECT string_agg(
+								   (SELECT primary_alias FROM tag WHERE id = t.tag_id), '; '
+							   )
+					FROM game_tags_tag t
+					WHERE t.game_id = game.id
+				), ''
+			) WHERE game.id IN (
+			    SELECT game_tags_tag.game_id FROM game_tags_tag
+				WHERE game_tags_tag.tag_id = $2
+			)`, constants.SystemID, tag.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *postgresDAL) SaveGame(dbs PGDBSession, game *types.Game, uid int64) error {
