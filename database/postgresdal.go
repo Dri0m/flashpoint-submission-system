@@ -1144,25 +1144,25 @@ func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategor
 	}
 }
 
-func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) error {
+func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) (*types.GameData, error) {
 	// DO EXPENSIVE OPERATIONS FIRST
 
 	// Game Data - Get SHA256
 	file, err := os.Open(*vr.FilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer file.Close()
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		return err
+		return nil, err
 	}
 	hashStr := fmt.Sprintf("%x", hash.Sum(nil))
 
 	// Game Data - Get Size
 	fileInfo, err := os.Stat(*vr.FilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fileSize := fileInfo.Size()
 
@@ -1184,7 +1184,7 @@ func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr 
 		&gameData.ApplicationPath, &gameData.LaunchCommand).
 		Scan(&gameData.ID, &gameData.DateAdded)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// Update active data id
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE game 
@@ -1192,10 +1192,10 @@ func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr 
 	    user_id = $1, action = 'update', reason = 'Content Change'
 	WHERE game.id = $2`, uid, gameId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &gameData, nil
 }
 
 func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error) {

@@ -2976,10 +2976,11 @@ func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission 
 		game, _ = s.pgdal.GetGame(dbs, *vr.Meta.UUID)
 		if game != nil {
 			// Game exists, add new game data instead
-			err = s.pgdal.AddGameData(dbs, utils.UserID(ctx), game.ID, vr)
+			data, err := s.pgdal.AddGameData(dbs, utils.UserID(ctx), game.ID, vr)
 			if err != nil {
 				return nil, err
 			}
+			game.Data = append(game.Data, data)
 		}
 	}
 
