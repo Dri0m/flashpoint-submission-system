@@ -156,11 +156,38 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 			}
 		}
 
-		utils.LogCtx(ctx).Debug("computing similarity in goroutine...")
-		msg, err = s.computeSimilarityComment(dbs, sid, &vr.Meta)
-		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			return err
+		// Check if game exists
+		vr.Meta.GameExists = false
+		if vr.Meta.UUID != nil {
+			existingGame, _ := s.pgdal.GetGame(pgdbs, *vr.Meta.UUID)
+			if existingGame != nil {
+				// Game exists
+				vr.Meta.GameExists = true
+			}
+		}
+
+		if !vr.Meta.GameExists {
+			utils.LogCtx(ctx).Debug("computing similarity in goroutine...")
+			msg, err = s.computeSimilarityComment(dbs, sid, &vr.Meta)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return err
+			}
+		} else {
+			utils.LogCtx(ctx).Debug("removing redunant comment...")
+			// Make sure it's at least set to nothing
+			msgStr := ""
+			msg = &msgStr
+			// Remove identical launch command error
+			filteredStrings := make([]string, 0)
+
+			for _, str := range vr.CurationErrors {
+				if !strings.HasPrefix(str, "Identical launch command") {
+					filteredStrings = append(filteredStrings, str)
+				}
+			}
+
+			vr.CurationErrors = filteredStrings
 		}
 
 		return nil
@@ -283,16 +310,6 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 
 	vr.Meta.SubmissionID = submissionID
 	vr.Meta.SubmissionFileID = fid
-
-	// Check if game exists
-	vr.Meta.GameExists = false
-	if vr.Meta.UUID != nil {
-		existingGame, _ := s.pgdal.GetGame(pgdbs, *vr.Meta.UUID)
-		if existingGame != nil {
-			// Game exists
-			vr.Meta.GameExists = true
-		}
-	}
 
 	if err := s.dal.StoreCurationMeta(dbs, &vr.Meta); err != nil {
 		utils.LogCtx(ctx).Error(err)
