@@ -1240,6 +1240,7 @@ func (d *postgresDAL) AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr 
 	EnsureString(vr.Meta.OriginalDescription, &game.OriginalDesc)
 	EnsureString(vr.Meta.Languages, &game.Language)
 	EnsureString(vr.Meta.Library, &game.Library)
+	EnsureString(vr.Meta.PrimaryPlatform, &game.PrimaryPlatform)
 	game.UserID = uid
 	game.AddApps = make([]*types.AdditionalApp, 0)
 
