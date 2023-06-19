@@ -278,7 +278,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, modifi
 	FROM game_platforms_platform gpp 
 	WHERE gpp.game_id IN (
 	    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 
-	    AND game.deleted = FALSE LIMIT $4
+	    AND game.deleted = FALSE ORDER BY game.id LIMIT $4
 	)`, modifiedAfter, modifiedBefore, afterId, limit)
 	for rows.Next() {
 		relation := make([]string, 2)
