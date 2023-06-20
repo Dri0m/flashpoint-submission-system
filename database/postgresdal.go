@@ -1271,7 +1271,7 @@ func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr 
 	// Update active data id
 	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE game 
 	SET active_data_id = (SELECT id FROM game_data WHERE game_data.game_id = game.id ORDER BY date_modified DESC LIMIT 1),
-	    user_id = $1, action = 'update', reason = 'Content Change'
+	    user_id = $1, action = 'update', reason = 'Content Patch Game Data'
 	WHERE game.id = $2`, uid, gameId)
 	if err != nil {
 		return nil, err
