@@ -4,6 +4,22 @@
     {{$submissionID := (index .Submissions 0).SubmissionID}}
     {{$isExtreme := eq "Yes" (unpointify .CurationMeta.Extreme)}}
     {{$UserCanModify := or (isStaff .UserRoles) (eq .UserID (index .Submissions 0).SubmitterID)}}
+    <script type="text/javascript">
+        function showExtremeImages() {
+            const baseElem = document.getElementById('submission-images');
+            baseElem.innerHTML = '';
+
+            {{range .CurationImageIDs}}
+            {
+                const elem = document.createElement('img');
+                elem.setAttribute('src', "/data/submission/{{$submissionID}}/curation-image/{{.}}.png");
+                elem.setAttribute('class', 'curation-image');
+                elem.setAttribute('alt', 'Curation Image');
+                baseElem.appendChild(elem);
+            }
+            {{end}}
+        }
+    </script>
     <div class="content">
         {{if .CurationMeta.Title}}
             <script>document.title = "{{.CurationMeta.Title}}" + " | FPFSS";</script>
@@ -85,10 +101,16 @@
 
         {{if not .CurationMeta.GameExists}}
             <h3>Curation images</h3>
-            {{range .CurationImageIDs}}
-                <img src="/data/submission/{{$submissionID}}/curation-image/{{.}}.png"
-                     class="curation-image {{if $isExtreme}}blur-img{{end}}" alt="curation image">
-            {{end}}
+            <div id="submission-images">
+                {{if not $isExtreme}}
+                    {{range .CurationImageIDs}}
+                        <img src="/data/submission/{{$submissionID}}/curation-image/{{.}}.png"
+                             class="curation-image" alt="curation image">
+                    {{end}}
+                {{else}}
+                <button class="pure-button" onclick="showExtremeImages()">Show Extreme Images</button>
+                {{end}}
+            </div>
         {{else}}
             <h3>Game Link</h3>
                 <a href="/web/game/{{.CurationMeta.UUID}}">{{.CurationMeta.Title}}</a>

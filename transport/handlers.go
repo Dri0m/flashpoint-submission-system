@@ -92,7 +92,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions, a.Conf.SubmissionsDirFullPath, a.Conf.DataPacksDir, a.Conf.ImagesDir); err != nil {
+	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions, a.Conf.SubmissionsDirFullPath, a.Conf.DataPacksDir, a.Conf.ImagesDir, r); err != nil {
 		writeError(ctx, w, err)
 		return
 	}
@@ -819,6 +819,33 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		"templates/submission-pagenav.gohtml",
 		"templates/submission-filter-chunks.gohtml",
 		"templates/comment-form.gohtml")
+}
+
+func (a *App) HandleApplyContentPatchPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionID := params[constants.ResourceKeySubmissionID]
+
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
+		return
+	}
+
+	pageData, err := a.Service.GetApplyContentPatchPageData(ctx, sid)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/submission-content-patch-apply.gohtml")
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {

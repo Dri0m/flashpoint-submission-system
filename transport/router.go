@@ -327,6 +327,15 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET")
 
+	f = a.UserAuthMux(
+		a.HandleApplyContentPatchPage,
+		isDeleter)
+
+	router.Handle(
+		fmt.Sprintf("/web/submission/{%s}/apply", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
 	////////////////////////
 
 	f = a.UserAuthMux(

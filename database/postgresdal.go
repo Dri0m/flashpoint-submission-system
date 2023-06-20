@@ -1144,6 +1144,88 @@ func (d *postgresDAL) GetOrCreateTag(dbs PGDBSession, tagName string, tagCategor
 	}
 }
 
+func (d *postgresDAL) ApplyGamePatch(dbs PGDBSession, uid int64, game *types.Game, patch *types.GameContentPatch, addApps []*types.CurationAdditionalApp) error {
+	if addApps != nil {
+		// Clear existing add apps
+		_, err := dbs.Tx().Exec(dbs.Ctx(), `DELETE FROM additional_app
+			WHERE parent_game_id = $1`, game.ID)
+		if err != nil {
+			return err
+		}
+
+		// Add new add apps
+		for _, addApp := range addApps {
+			_, err := dbs.Tx().Exec(dbs.Ctx(), `INSERT INTO additional_app
+				(application_path, auto_run_before, launch_command, name, wait_for_exit, parent_game_id)
+				VALUES ($1, $2, $3, $4, $5, $6)`,
+				addApp.ApplicationPath, false, addApp.LaunchCommand, addApp.Heading, false, game.ID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if patch != nil {
+		if patch.Title != nil {
+			game.Title = *patch.Title
+		}
+		if patch.AlternateTitles != nil {
+			game.AlternateTitles = *patch.AlternateTitles
+		}
+		if patch.Series != nil {
+			game.Series = *patch.Series
+		}
+		if patch.Developer != nil {
+			game.Developer = *patch.Developer
+		}
+		if patch.Publisher != nil {
+			game.Publisher = *patch.Publisher
+		}
+		if patch.PlayMode != nil {
+			game.PlayMode = *patch.PlayMode
+		}
+		if patch.Status != nil {
+			game.Status = *patch.Status
+		}
+		if patch.Notes != nil {
+			game.Notes = *patch.Notes
+		}
+		if patch.Source != nil {
+			game.Source = *patch.Source
+		}
+		if patch.ReleaseDate != nil {
+			game.ReleaseDate = *patch.ReleaseDate
+		}
+		if patch.Version != nil {
+			game.Version = *patch.Version
+		}
+		if patch.OriginalDesc != nil {
+			game.OriginalDesc = *patch.OriginalDesc
+		}
+		if patch.Language != nil {
+			game.Language = *patch.Language
+		}
+		if patch.Library != nil {
+			game.Library = *patch.Library
+		}
+	}
+
+	_, err := dbs.Tx().Exec(dbs.Ctx(), `UPDATE game 
+		SET title = $1, alternate_titles = $2, series = $3, developer = $4, publisher = $5,
+		    play_mode = $6, status = $7, notes = $8, source = $9, release_date = $10,
+		    version = $11, original_description = $12, language = $13, library = $14,
+		    action = 'update', reason = 'Content Patch Metadata', user_id = $15
+		    WHERE id = $16`,
+		game.Title, game.AlternateTitles, game.Series, game.Developer, game.Publisher,
+		game.PlayMode, game.Status, game.Notes, game.Source, game.ReleaseDate,
+		game.Version, game.OriginalDesc, game.Language, game.Library, uid, game.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) (*types.GameData, error) {
 	// DO EXPENSIVE OPERATIONS FIRST
 

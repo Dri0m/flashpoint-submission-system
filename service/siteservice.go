@@ -500,6 +500,67 @@ func (s *SiteService) GetPlatformsPageData(ctx context.Context, modifiedAfter *s
 	return pageData, nil
 }
 
+func (s *SiteService) GetApplyContentPatchPageData(ctx context.Context, sid int64) (*types.ApplyContentPatchPageData, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	pgdbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer pgdbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := &types.SubmissionsFilter{
+		SubmissionIDs: []int64{sid},
+	}
+
+	submissions, _, err := s.dal.SearchSubmissions(dbs, filter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	if len(submissions) == 0 {
+		return nil, perr("submission not found", http.StatusNotFound)
+	}
+
+	submission := submissions[0]
+
+	meta, err := s.dal.GetCurationMetaBySubmissionFileID(dbs, submission.FileID)
+	if err != nil && err != sql.ErrNoRows {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	if meta.UUID == nil || *meta.UUID == "" || !meta.GameExists {
+		return nil, types.NotContentPatch{}
+	}
+
+	game, err := s.pgdal.GetGame(pgdbs, *meta.UUID)
+	if err != nil {
+		return nil, dberr(err)
+	}
+
+	pageData := &types.ApplyContentPatchPageData{
+		BasePageData: *bpd,
+		SubmissionID: submission.SubmissionID,
+		CurationMeta: meta,
+		ExistingMeta: game,
+	}
+
+	return pageData, nil
+}
+
 func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid int64) (*types.ViewSubmissionPageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
@@ -2945,7 +3006,7 @@ func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *strin
 	return games, addApps, gameData, tagRelations, platformRelations, nil
 }
 
-func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission *types.ExtendedSubmission, subDirFullPath string, dataPacksDir string, imagesDir string) (*string, error) {
+func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission *types.ExtendedSubmission, subDirFullPath string, dataPacksDir string, imagesDir string, r *http.Request) (*string, error) {
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -2975,6 +3036,26 @@ func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission 
 	if vr.Meta.UUID != nil {
 		game, _ = s.pgdal.GetGame(dbs, *vr.Meta.UUID)
 		if game != nil {
+			// If body exists, apply patch in metadata
+			if r.ContentLength > 0 {
+				var patch *types.GameContentPatch
+				err = json.NewDecoder(r.Body).Decode(&patch)
+				if err != nil {
+					return nil, err
+				}
+
+				err := s.pgdal.ApplyGamePatch(dbs, utils.UserID(ctx), game, patch, vr.Meta.AdditionalApps)
+				if err != nil {
+					return nil, err
+				}
+			} else if vr.Meta.AdditionalApps != nil {
+				// No body, just patch in add apps
+				err := s.pgdal.ApplyGamePatch(dbs, utils.UserID(ctx), game, nil, vr.Meta.AdditionalApps)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			// Game exists, add new game data instead
 			data, err := s.pgdal.AddGameData(dbs, utils.UserID(ctx), game.ID, vr)
 			if err != nil {

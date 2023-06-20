@@ -1,0 +1,240 @@
+{{define "main"}}
+    <div class="content">
+        <script type="text/javascript">
+            async function applyPatch() {
+                // Get all radio inputs on the page
+                const radioInputs = document.querySelectorAll('input[type="radio"]:checked');
+
+                // Create an empty object to store unique names and their labels
+                const values = {};
+
+                // Loop through each radio input
+                radioInputs.forEach((input) => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    const label = document.querySelector(`label[for="${id}"]`);
+
+                    // Add the label to the array associated with the name
+                    if (label) {
+                        values[name] = label.innerText;
+                    }
+                });
+
+                console.log(values);
+                await doWaitingSpinner('Marking as added...', async () => {
+                    let url = '/api/submission-batch/{{ .SubmissionID }}'
+                    url += `/comment?action=${encodeURIComponent('mark-added')}&message=""&ignore-duplicate-actions=${false}`
+                    const res = await sendXHR(url, "POST", JSON.stringify(values), false,
+                        `Failed to post comment(s) with action mark as added'.`, 'Success', null)
+                    if (res === 'Success') {
+                        window.location.pathname = '/web/submission/{{ .SubmissionID }}'
+                    }
+                })
+            }
+        </script>
+        <script>document.title = "Applying {{.CurationMeta.Title}}" + " | FPFSS";</script>
+        <h1>Applying Content Patch</h1>
+
+        <h3>Merge Metadata</h3>
+
+        <table id="apply-meta-table" class="pure-table pure-table-striped">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th></th>
+                    <th>Existing Metadata</th>
+                    <th></th>
+                    <th>Incoming Metadata</th>
+                </tr>
+            </thead>
+            <tbody id="apply-meta-table-body">
+                {{ if ner .CurationMeta.Title .ExistingMeta.Title }}
+                    <tr>
+                        <td>Title</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Title" name="Title"></label>
+                        </td>
+                        <td><label for="existing-Title">{{.ExistingMeta.Title}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Title" name="Title"></label>
+                        </td>
+                        <td><label for="curation-Title">{{.CurationMeta.Title}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.AlternateTitles .ExistingMeta.AlternateTitles }}
+                    <tr>
+                        <td>Alternate Titles</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-AlternateTitles" name="AlternateTitles"></label>
+                        </td>
+                        <td><label for="existing-AlternateTitles">{{.ExistingMeta.AlternateTitles}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-AlternateTitles" name="AlternateTitles"></label>
+                        </td>
+                        <td><label for="curation-AlternateTitles">{{.CurationMeta.AlternateTitles}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Series .ExistingMeta.Series }}
+                    <tr>
+                        <td>Series</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Series" name="Series"></label>
+                        </td>
+                        <td><label for="existing-Series">{{.ExistingMeta.Series}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Series" name="Series"></label>
+                        </td>
+                        <td><label for="curation-Series">{{.CurationMeta.Series}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Developer .ExistingMeta.Developer }}
+                    <tr>
+                        <td>Developer</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Developer" name="Developer"></label>
+                        </td>
+                        <td><label for="existing-Developer">{{.ExistingMeta.Developer}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Developer" name="Developer"></label>
+                        </td>
+                        <td><label for="curation-Developer">{{.CurationMeta.Developer}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Publisher .ExistingMeta.Publisher }}
+                    <tr>
+                        <td>Publisher</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Publisher" name="Publisher"></label>
+                        </td>
+                        <td><label for="existing-Publisher">{{.ExistingMeta.Publisher}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Publisher" name="Publisher"></label>
+                        </td>
+                        <td><label for="curation-Publisher">{{.CurationMeta.Publisher}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.PlayMode .ExistingMeta.PlayMode }}
+                    <tr>
+                        <td>Play Mode</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-PlayMode" name="PlayMode"></label>
+                        </td>
+                        <td><label for="existing-PlayMode">{{.ExistingMeta.PlayMode}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-PlayMode" name="PlayMode"></label>
+                        </td>
+                        <td><label for="curation-PlayMode">{{.CurationMeta.PlayMode}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Status .ExistingMeta.Status }}
+                    <tr>
+                        <td>Status</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Status" name="Status"></label>
+                        </td>
+                        <td><label for="existing-Status">{{.ExistingMeta.Status}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Status" name="Status"></label>
+                        </td>
+                        <td><label for="curation-Status">{{.CurationMeta.Status}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.GameNotes .ExistingMeta.Notes }}
+                    <tr>
+                        <td>Notes</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Notes" name="Notes"></label>
+                        </td>
+                        <td><label for="existing-Notes">{{.ExistingMeta.Notes}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Notes" name="Notes"></label>
+                        </td>
+                        <td><label for="curation-Notes">{{.CurationMeta.GameNotes}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Source .ExistingMeta.Source }}
+                    <tr>
+                        <td>Source</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Source" name="Source"></label>
+                        </td>
+                        <td><label for="existing-Source">{{.ExistingMeta.Source}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Source" name="Source"></label>
+                        </td>
+                        <td><label for="curation-Source">{{.CurationMeta.Source}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.ReleaseDate .ExistingMeta.ReleaseDate }}
+                    <tr>
+                        <td>Release Date</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-ReleaseDate" name="ReleaseDate"></label>
+                        </td>
+                        <td><label for="existing-ReleaseDate">{{.ExistingMeta.ReleaseDate}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-ReleaseDate" name="ReleaseDate"></label>
+                        </td>
+                        <td><label for="curation-ReleaseDate">{{.CurationMeta.ReleaseDate}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Version .ExistingMeta.Version }}
+                    <tr>
+                        <td>Version</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Version" name="Version"></label>
+                        </td>
+                        <td><label for="existing-Version">{{.ExistingMeta.Version}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Version" name="Version"></label>
+                        </td>
+                        <td><label for="curation-Version">{{.CurationMeta.Version}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.OriginalDescription .ExistingMeta.OriginalDesc }}
+                    <tr>
+                        <td>Original Description</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-OriginalDesc" name="OriginalDesc"></label>
+                        </td>
+                        <td><label for="existing-OriginalDesc">{{.ExistingMeta.OriginalDesc}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-OriginalDesc" name="OriginalDesc"></label>
+                        </td>
+                        <td><label for="curation-OriginalDesc">{{.CurationMeta.OriginalDescription}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Languages .ExistingMeta.Language }}
+                    <tr>
+                        <td>Languages</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Languages" name="Languages"></label>
+                        </td>
+                        <td><label for="existing-Languages">{{.ExistingMeta.Language}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Languages" name="Languages"></label>
+                        </td>
+                        <td><label for="curation-Languages">{{.CurationMeta.Languages}}</label></td>
+                    </tr>
+                {{ end }}
+                {{ if ner .CurationMeta.Library .ExistingMeta.Library }}
+                    <tr>
+                        <td>Library</td>
+                        <td class="radio">
+                            <label><input type="radio" checked="checked" id="existing-Library" name="Library"></label>
+                        </td>
+                        <td><label for="existing-Library">{{.ExistingMeta.Library}}</label></td>
+                        <td class="radio">
+                            <label><input type="radio" id="curation-Library" name="Library"></label>
+                        </td>
+                        <td><label for="curation-Library">{{.CurationMeta.Library}}</label></td>
+                    </tr>
+                {{ end }}
+            </tbody>
+        </table>
+
+        <br>
+
+        <button class="pure-button pure-button-primary" onclick="applyPatch()">Apply Content Patch</button>
+    </div>
+{{end}}

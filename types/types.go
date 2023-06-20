@@ -878,6 +878,23 @@ type ExtendedFixesItem struct {
 	UploadedAt        *time.Time
 }
 
+type GameContentPatch struct {
+	Title           *string `json:"Title,omitempty"`
+	AlternateTitles *string `json:"AlternateTitles,omitempty"`
+	Series          *string `json:"Series,omitempty"`
+	Developer       *string `json:"Developer,omitempty"`
+	Publisher       *string `json:"Publisher,omitempty"`
+	PlayMode        *string `json:"PlayMode,omitempty"`
+	Status          *string `json:"status,omitempty"`
+	Notes           *string `json:"Notes,omitempty"`
+	Source          *string `json:"Source,omitempty"`
+	ReleaseDate     *string `json:"ReleaseDate,omitempty"`
+	Version         *string `json:"Version,omitempty"`
+	OriginalDesc    *string `json:"OriginalDesc,omitempty"`
+	Language        *string `json:"Language,omitempty"`
+	Library         *string `json:"Library,omitempty"`
+}
+
 type GameCountSinceDateJSON struct {
 	Total int `json:"total"`
 }
@@ -926,6 +943,13 @@ type SubmissionStatus struct {
 	Status       string  `json:"status"`
 	Message      *string `json:"message"`
 	SubmissionID *int64  `json:"submission_id"`
+}
+
+type NotContentPatch struct {
+}
+
+func (ncp NotContentPatch) Error() string {
+	return "Not a content patch"
 }
 
 type RepackError string

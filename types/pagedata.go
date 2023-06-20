@@ -61,6 +61,13 @@ type SubmissionsPageData struct {
 	FilterLayout string
 }
 
+type ApplyContentPatchPageData struct {
+	BasePageData
+	SubmissionID int64
+	CurationMeta *CurationMeta
+	ExistingMeta *Game
+}
+
 type ViewSubmissionPageData struct {
 	SubmissionsPageData
 	CurationMeta         *CurationMeta

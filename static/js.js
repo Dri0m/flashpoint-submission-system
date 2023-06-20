@@ -104,7 +104,7 @@ function batchDownloadFiles(checkboxClassName, attribute) {
     window.location.href = url
 }
 
-async function batchComment(checkboxClassName, attribute, action) {
+async function batchComment(checkboxClassName, attribute, action, body) {
     let checkboxes = document.getElementsByClassName(checkboxClassName);
 
     let url = "/api/submission-batch/"
@@ -122,8 +122,14 @@ async function batchComment(checkboxClassName, attribute, action) {
         }
         url += `/comment?action=${encodeURIComponent(action)}&message=${encodeURIComponent(textArea.value)}&ignore-duplicate-actions=${checked}`
 
-        await sendXHR(url, "POST", null, reload,
-            `Failed to post comment(s) with action '${action}'.`, successMessage, null)
+        if (body) {
+            await sendXHR(url, "POST", null, reload,
+                `Failed to post comment(s) with action '${action}'.`, successMessage, null)
+        } else {
+            await sendXHR(url, "POST", body, reload,
+                `Failed to post comment(s) with action '${action}'.`, successMessage, null)
+        }
+
     }
 
     let u = new URL(window.location.href)

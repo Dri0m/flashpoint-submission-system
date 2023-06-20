@@ -44,6 +44,8 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"submissionsShowPreviousButton": submissionsShowPreviousButton,
 		"submissionsShowNextButton":     submissionsShowNextButton,
 		"capString":                     capString,
+		"er":                            equalReference,
+		"ner":                           notEqualReference,
 	})
 
 	parse := func() (interface{}, error) {
@@ -240,6 +242,14 @@ func capString(maxLen int, s *string) string {
 		return str
 	}
 	return str[:maxLen-3] + "..."
+}
+
+func equalReference(ref *string, str string) bool {
+	return *ref == str
+}
+
+func notEqualReference(ref *string, str string) bool {
+	return *ref != str
 }
 
 func isReturnURLValid(s string) bool {

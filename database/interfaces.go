@@ -45,6 +45,7 @@ type PGDAL interface {
 	AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) (*types.GameData, error)
 
 	UpdateTagsFromTagsList(dbs PGDBSession, tagsList []types.Tag) error
+	ApplyGamePatch(dbs PGDBSession, uid int64, game *types.Game, patch *types.GameContentPatch, addApps []*types.CurationAdditionalApp) error
 }
 
 type DAL interface {
