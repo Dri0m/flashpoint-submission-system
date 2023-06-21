@@ -10,7 +10,7 @@
                href="flashpoint://fpfss/edit_game/api/game/{{.Game.ID}}">
                 Edit in Flashpoint Launcher
             </a>
-        {{if isAdder .UserRoles}}
+        {{if isDeleter .UserRoles}}
             {{ if .Game.Deleted }}
                 <a class="pure-button pure-button-primary button-approve" onclick="selectReason('Restore Game?', {{.ValidRestoreReasons}}, (reason) => {
                     fetch(`/api/game/` + {{.Game.ID}} + `/restore?reason=${reason}`)

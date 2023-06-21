@@ -109,12 +109,12 @@
                             {{if not (has "mark-added" $submission.DistinctActions)}}
                                 {{if $submission.GameExists }}
                                     <a type="button" class="pure-button pure-button button-mark-added" href="/web/submission/{{$submission.SubmissionID}}/apply">
-                                        Mark as Added
+                                        Import into Flashpoint
                                     </a>
                                 {{else}}
                                     <button type="button" class="pure-button pure-button button-mark-added"
                                             onclick="doWaitingSpinner('Marking as added...', () => batchComment('submission-checkbox', 'sid', 'mark-added'))">
-                                        Mark as Added
+                                        Import into Flashpoint
                                     </button>
                                 {{end}}
                             {{end}}

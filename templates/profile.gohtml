@@ -54,12 +54,15 @@
         {{end}}
         {{if isStaff .UserRoles}}
             You are a staff member. You can see and interact with any submission.<br>
+            You have permissions to modify game metadata.<br>
         {{end}}
         {{if isTrialCurator .UserRoles}}
             You are a Trial Curator. You can interact only with your own submissions.<br>
         {{end}}
         {{if isDeleter .UserRoles}}
             You have permissions to delete submissions, files and comments.<br>
+            You have permissions to delete and restore games.<br>
+            You have permissions to modify tags.<br>
         {{end}}
         {{if isDecider .UserRoles}}
             You have permissions to request changes or approve submissions.<br>
