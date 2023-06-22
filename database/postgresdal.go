@@ -297,7 +297,7 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, modifi
 			FROM additional_app aa
 			WHERE aa.parent_game_id IN (
 			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 
-			    AND game.deleted = FALSE LIMIT $4
+			    AND game.deleted = FALSE ORDER BY game.id LIMIT $4
 			)`, modifiedAfter, modifiedBefore, afterId, limit)
 
 			for rows.Next() {
@@ -314,8 +314,8 @@ func (d *postgresDAL) SearchGames(dbs PGDBSession, modifiedAfter *string, modifi
        		gd.crc32, gd.size, gd.parameters, gd.application_path, gd.launch_command
 			FROM game_data gd
 			WHERE gd.game_id IN (
-			    SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 
-			    AND game.deleted = FALSE LIMIT $4
+				SELECT game.id FROM game WHERE game.date_modified >= $1 AND game.date_modified <= $2 AND game.id > $3 
+				AND game.deleted = FALSE ORDER BY game.id LIMIT $4
 			)`, modifiedAfter, modifiedBefore, afterId, limit)
 
 			for rows.Next() {
