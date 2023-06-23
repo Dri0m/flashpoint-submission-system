@@ -553,6 +553,10 @@ func (a *App) HandlePlatformsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandlePostTag(w http.ResponseWriter, r *http.Request) {
+	// Lock the database for sequential writes
+	utils.MetadataMutex.Lock()
+	defer utils.MetadataMutex.Unlock()
+
 	ctx := r.Context()
 	params := mux.Vars(r)
 	tagIdStr := params[constants.ResourceKeyTagID]
@@ -649,6 +653,10 @@ func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
 
 	// Handle POST changes
 	if utils.RequestType(ctx) != constants.RequestWeb && r.Method == "POST" {
+		// Lock the database for sequential write
+		utils.MetadataMutex.Lock()
+		defer utils.MetadataMutex.Unlock()
+
 		var game types.Game
 		err := json.NewDecoder(r.Body).Decode(&game)
 		if err != nil {

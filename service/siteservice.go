@@ -3007,6 +3007,10 @@ func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *strin
 }
 
 func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission *types.ExtendedSubmission, subDirFullPath string, dataPacksDir string, imagesDir string, r *http.Request) (*string, error) {
+	// Lock the database for sequential write
+	utils.MetadataMutex.Lock()
+	defer utils.MetadataMutex.Unlock()
+
 	dbs, err := s.pgdal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
