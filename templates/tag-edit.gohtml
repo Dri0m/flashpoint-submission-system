@@ -1,8 +1,9 @@
 {{define "main"}}
+    {{$tagCategory := .Tag.Category}}
     <div class="content">
         <script type="text/javascript">
             const tagId = {{.Tag.ID}};
-            const tagCategory = String({{.Tag.Category}});
+            let storedTagCategory = String({{.Tag.Category}});
             let storedPrimary = String({{.Tag.Name}})
             let storedAliases = String({{.Tag.Aliases}}).split(";").map(a => a.trim())
 
@@ -12,7 +13,7 @@
                     "id": tagId,
                     "name": storedPrimary,
                     "description": document.getElementById("tag-description").value,
-                    "category": tagCategory,
+                    "category": storedTagCategory,
                     "aliases": storedAliases.join("; ")
                 }
                 console.log(tagData);
@@ -130,6 +131,11 @@
                     container.appendChild(newBox)
                 }
             }
+
+            function updateSelectedCategory(elem) {
+                storedTagCategory = elem.value;
+            }
+
             document.addEventListener('DOMContentLoaded', reloadAliasRows);
         </script>
         <div hidden>{{.Tag.Aliases}}</div>
@@ -145,6 +151,20 @@
                 </td>
                 <td class="break-all">
                     <textarea id="tag-description" class="tag-edit-description" rows="5" type="text">{{.Tag.Description}}</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Category</td>
+                <td class="break-all">
+                    <select name="category" id="category" onchange="updateSelectedCategory(this)">
+                        {{range .Categories}}
+                            {{ if eq .Name $tagCategory }}
+                                <option value="{{.Name}}" selected="selected">{{.Name}}</option>
+                            {{else}}
+                                <option value="{{.Name}}">{{.Name}}</option>
+                            {{end}}
+                        {{end}}
+                    </select>
                 </td>
             </tr>
             <tr>

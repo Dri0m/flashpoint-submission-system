@@ -529,6 +529,11 @@ func (d *postgresDAL) SaveTag(dbs PGDBSession, tag *types.Tag, uid int64) error 
 	aliasChanged := strings.ToLower(tag.Name) != strings.ToLower(existingTag.Name)
 	descUpdated := strings.ToLower(tag.Description) != strings.ToLower(existingTag.Description)
 	aliasesUpdated := strings.ToLower(*tag.Aliases) != strings.ToLower(*existingTag.Aliases)
+	categoryUpdated := strings.ToLower(tag.Category) != strings.ToLower(existingTag.Category)
+	categories, err := d.GetTagCategories(dbs)
+	if err != nil {
+		return err
+	}
 
 	// Generate tag update reason
 	reasons := make([]string, 0)
@@ -540,6 +545,18 @@ func (d *postgresDAL) SaveTag(dbs PGDBSession, tag *types.Tag, uid int64) error 
 	}
 	if aliasesUpdated {
 		reasons = append(reasons, "Aliases Changed")
+	}
+	if categoryUpdated {
+		reasons = append(reasons, "Category Changed")
+
+		// Make sure category is valid
+		if !containsCategory(categories, tag.Category) {
+			return types.InvalidTagUpdate{}
+		}
+	}
+
+	if len(reasons) == 0 {
+		return types.InvalidTagUpdate{}
 	}
 
 	// Make sure all alias changes are valid
@@ -578,9 +595,15 @@ func (d *postgresDAL) SaveTag(dbs PGDBSession, tag *types.Tag, uid int64) error 
 	}
 
 	// Update tag
-	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE tag SET description = $1, primary_alias = $2,
-               reason = $3, action = 'update', user_id = $4 WHERE id = $5`,
-		tag.Description, tag.Name, strings.Join(reasons, ", "), uid, tag.ID)
+	var catId int64
+	if categoryUpdated {
+		catId = getCategoryID(categories, tag.Category)
+	} else {
+		catId = getCategoryID(categories, existingTag.Category)
+	}
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `UPDATE tag SET description = $1, primary_alias = $2, category_id = $3,
+               reason = $4, action = 'update', user_id = $5 WHERE id = $6`,
+		tag.Description, tag.Name, catId, strings.Join(reasons, ", "), uid, tag.ID)
 	if err != nil {
 		return err
 	}
@@ -1697,4 +1720,22 @@ func EnsureString(src *string, dest *string) {
 	} else {
 		*dest = *src
 	}
+}
+
+func containsCategory(arr []*types.TagCategory, target string) bool {
+	for _, cat := range arr {
+		if cat.Name == target {
+			return true
+		}
+	}
+	return false
+}
+
+func getCategoryID(arr []*types.TagCategory, target string) int64 {
+	for _, cat := range arr {
+		if cat.Name == target {
+			return cat.ID
+		}
+	}
+	return -1
 }

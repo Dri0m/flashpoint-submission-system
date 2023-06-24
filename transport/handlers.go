@@ -630,8 +630,8 @@ func (a *App) HandleTagEditPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if pageData.Tag.Deleted && !constants.IsGodOrColin(pageData.UserRoles, pageData.UserID) {
-		// Prevent non-God users editing deleted resource
+	if pageData.Tag.Deleted && !constants.IsAdder(pageData.UserRoles) {
+		// Prevent non-Admins from viewing deleted tags
 		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
 		return
 	}

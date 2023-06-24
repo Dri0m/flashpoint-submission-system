@@ -15,6 +15,16 @@
             <tr>
                 <td class="meta-property">Description</td>
                 <td class="break-all">
+                    {{if not .Tag.Category}}
+                        <i>No Category</i>
+                    {{else}}
+                        {{.Tag.Category}}
+                    {{end}}
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Description</td>
+                <td class="break-all">
                     {{if not .Tag.Description}}
                         <i>No Description</i>
                     {{else}}
