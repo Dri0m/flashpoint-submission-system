@@ -17,14 +17,15 @@ import (
 )
 
 type discordUserResponse struct {
-	ID            string `json:"id"`
-	Username      string `json:"username"`
-	Avatar        string `json:"avatar"`
-	Discriminator string `json:"discriminator"`
-	PublicFlags   int64  `json:"public_flags"`
-	Flags         int64  `json:"flags"`
-	Locale        string `json:"locale"`
-	MFAEnabled    bool   `json:"mfa_enabled"`
+	ID            string  `json:"id"`
+	Username      string  `json:"username"`
+	Avatar        string  `json:"avatar"`
+	Discriminator string  `json:"discriminator"`
+	PublicFlags   int64   `json:"public_flags"`
+	Flags         int64   `json:"flags"`
+	Locale        string  `json:"locale"`
+	MFAEnabled    bool    `json:"mfa_enabled"`
+	GlobalName    *string `json:"global_name,omitempty"`
 }
 
 type StateKeeper struct {
@@ -161,10 +162,14 @@ func (a *App) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 		writeError(ctx, w, perr("failed to parse discord response", http.StatusInternalServerError))
 		return
 	}
+	username := discordUserResp.Username
+	if discordUserResp.GlobalName != nil && *discordUserResp.GlobalName != "" {
+		username = *discordUserResp.GlobalName
+	}
 
 	discordUser := &types.DiscordUser{
 		ID:            uid,
-		Username:      discordUserResp.Username,
+		Username:      username,
 		Avatar:        discordUserResp.Avatar,
 		Discriminator: discordUserResp.Discriminator,
 		PublicFlags:   discordUserResp.PublicFlags,
