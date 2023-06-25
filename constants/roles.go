@@ -58,6 +58,7 @@ func DeciderRoles() []string {
 
 func AdderRoles() []string {
 	return []string{
+		RoleModerator,
 		RoleAdministrator,
 	}
 }
