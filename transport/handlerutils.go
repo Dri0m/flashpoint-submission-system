@@ -248,11 +248,19 @@ func capString(maxLen int, s *string) string {
 }
 
 func equalReference(ref *string, str string) bool {
-	return *ref == str
+	if ref != nil {
+		return *ref == str
+	} else {
+		return str != ""
+	}
 }
 
 func notEqualReference(ref *string, str string) bool {
-	return *ref != str
+	if ref != nil {
+		return *ref != str
+	} else {
+		return str == ""
+	}
 }
 
 func localeNum(ref *int64) string {
