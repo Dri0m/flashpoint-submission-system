@@ -403,6 +403,19 @@ func (a *App) HandleMinLauncherVersion(w http.ResponseWriter, r *http.Request) {
 	writeResponse(ctx, w, map[string]interface{}{"min-version": a.Conf.MinLauncherVersion}, http.StatusOK)
 }
 
+func (a *App) HandleMetadataStats(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetMetadataStatsPageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/metadata-stats.gohtml")
+}
+
 func (a *App) HandleDeletedGames(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

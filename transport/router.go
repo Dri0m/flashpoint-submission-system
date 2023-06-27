@@ -200,6 +200,15 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 
 	////////////////////////
 
+	f = a.HandleMetadataStats
+
+	router.Handle(
+		"/web/metadata-stats",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	////////////////////////
+
 	f = a.HandleMinLauncherVersion
 
 	router.Handle(

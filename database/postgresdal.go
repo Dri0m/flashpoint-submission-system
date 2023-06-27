@@ -1672,6 +1672,51 @@ func (d *postgresDAL) UpdateTagsFromTagsList(dbs PGDBSession, tagsList []types.T
 	return nil
 }
 
+func (d *postgresDAL) GetMetadataStats(dbs PGDBSession) (*types.MetadataStatsPageDataBare, error) {
+	var totalGames int64
+	err := dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*) FROM game WHERE deleted = false AND library = 'arcade'`).Scan(&totalGames)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalAnims int64
+	err = dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*) FROM game WHERE deleted = false AND library = 'theatre'`).Scan(&totalAnims)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalLegacy int64
+	err = dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*)
+		FROM game
+		LEFT JOIN game_data ON game.id = game_data.game_id
+		WHERE game_data.game_id IS NULL AND game.deleted = false`).Scan(&totalLegacy)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalPlatforms int64
+	err = dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*) FROM platform WHERE deleted = false`).Scan(&totalPlatforms)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalTags int64
+	err = dbs.Tx().QueryRow(dbs.Ctx(), `SELECT COUNT(*) FROM tag WHERE deleted = false`).Scan(&totalTags)
+	if err != nil {
+		return nil, err
+	}
+
+	data := types.MetadataStatsPageDataBare{
+		TotalGames:      totalGames,
+		TotalAnimations: totalAnims,
+		TotalLegacy:     totalLegacy,
+		TotalPlatforms:  totalPlatforms,
+		TotalTags:       totalTags,
+	}
+
+	return &data, nil
+}
+
 func GetPlatformID(dbs PGDBSession, name string) (int64, error) {
 	query := `SELECT platform_id FROM platform_alias WHERE platform_alias.name = $1`
 	var id int64

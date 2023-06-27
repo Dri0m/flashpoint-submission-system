@@ -12,6 +12,17 @@ type ProfilePageData struct {
 	BasePageData
 	NotificationActions []string
 }
+type MetadataStatsPageDataBare struct {
+	TotalGames      int64
+	TotalAnimations int64
+	TotalTags       int64
+	TotalPlatforms  int64
+	TotalLegacy     int64
+}
+type MetadataStatsPageData struct {
+	BasePageData
+	MetadataStatsPageDataBare
+}
 
 type TagsPageData struct {
 	BasePageData

@@ -1,0 +1,27 @@
+{{define "main"}}
+    <div class="content">
+        <h1 style="text-align: center">Metadata Statistics</h1>
+        <div class="metadata-stats">
+            <div class="metadata-stats-box">
+                <div class="metadata-stats-title">Games</div>
+                <div class="metadata-stats-value">{{localeNum .TotalGames}}</div>
+            </div>
+            <div class="metadata-stats-box">
+                <div class="metadata-stats-title">Animations</div>
+                <div class="metadata-stats-value">{{localeNum .TotalAnimations}}</div>
+            </div>
+            <div class="metadata-stats-box">
+                <div class="metadata-stats-title">Platforms</div>
+                <div class="metadata-stats-value">{{localeNum .TotalPlatforms}}</div>
+            </div>
+            <div class="metadata-stats-box">
+                <div class="metadata-stats-title">Tags</div>
+                <div class="metadata-stats-value">{{localeNum .TotalTags}}</div>
+            </div>
+            <div class="metadata-stats-box">
+                <div class="metadata-stats-title">Legacy Games Remaining</div>
+                <div class="metadata-stats-value">{{localeNum .TotalLegacy}}</div>
+            </div>
+        </div>
+    </div>
+{{end}}

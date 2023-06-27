@@ -33,6 +33,8 @@ type PGDAL interface {
 	GetGameRevisionInfo(dbs PGDBSession, gameId string) ([]*types.RevisionInfo, error)
 	GetTagRevisionInfo(dbs PGDBSession, tagId int64) ([]*types.RevisionInfo, error)
 
+	GetMetadataStats(dbs PGDBSession) (*types.MetadataStatsPageDataBare, error)
+
 	DeleteGame(dbs PGDBSession, gameId string, uid int64, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error
 
 	RestoreGame(dbs PGDBSession, gameId string, uid int64, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error

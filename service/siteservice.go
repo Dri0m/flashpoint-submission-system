@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	cache2 "github.com/patrickmn/go-cache"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -141,6 +142,7 @@ type SiteService struct {
 	isDev                     bool
 	submissionReceiverMutex   sync.Mutex
 	discordRoleCache          *memoize.Memoizer
+	metadataStatsCache        *memoize.Memoizer
 	resumableUploadService    *resumableuploadservice.ResumableUploadService
 	archiveIndexerServerURL   string
 	flashfreezeIngestDir      string
@@ -168,6 +170,7 @@ func New(l *logrus.Entry, db *sql.DB, pgdb *pgxpool.Pool, authBotSession, notifi
 		notificationQueueNotEmpty: make(chan bool, 1),
 		isDev:                     isDev,
 		discordRoleCache:          memoize.NewMemoizer(2*time.Minute, 60*time.Minute),
+		metadataStatsCache:        memoize.NewMemoizer(1*time.Minute, cache2.NoExpiration),
 		resumableUploadService:    rsu,
 		archiveIndexerServerURL:   archiveIndexerServerURL,
 		flashfreezeIngestDir:      flashfreezeIngestDir,
@@ -2954,6 +2957,39 @@ func (s *SiteService) SaveGame(ctx context.Context, game *types.Game) error {
 	}
 
 	return nil
+}
+
+func (s *SiteService) GetMetadataStatsPageData(ctx context.Context) (*types.MetadataStatsPageData, error) {
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	memo, err, _ := s.metadataStatsCache.Memoize("metadataStats", func() (interface{}, error) {
+		dbs, err := s.pgdal.NewSession(ctx)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, err
+		}
+		defer dbs.Rollback()
+
+		data, err := s.pgdal.GetMetadataStats(dbs)
+		if err != nil {
+			return nil, err
+		}
+
+		return data, err
+	})
+	if err != nil {
+		return nil, dberr(err)
+	}
+
+	pageData := types.MetadataStatsPageData{
+		BasePageData:              *bpd,
+		MetadataStatsPageDataBare: *memo.(*types.MetadataStatsPageDataBare),
+	}
+
+	return &pageData, nil
 }
 
 func (s *SiteService) GetDeletedGamePageData(ctx context.Context, modifiedAfter *string) ([]*types.DeletedGame, error) {

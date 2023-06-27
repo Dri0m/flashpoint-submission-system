@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -46,6 +48,7 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"capString":                     capString,
 		"er":                            equalReference,
 		"ner":                           notEqualReference,
+		"localeNum":                     localeNum,
 	})
 
 	parse := func() (interface{}, error) {
@@ -250,6 +253,12 @@ func equalReference(ref *string, str string) bool {
 
 func notEqualReference(ref *string, str string) bool {
 	return *ref != str
+}
+
+func localeNum(ref *int64) string {
+	p := message.NewPrinter(language.English)
+	s := p.Sprintf("%d\n", *ref)
+	return s
 }
 
 func isReturnURLValid(s string) bool {

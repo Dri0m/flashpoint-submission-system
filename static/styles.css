@@ -699,3 +699,26 @@ video {
     min-width: 23rem;
     height: 1.5rem;
 }
+
+.metadata-stats {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.metadata-stats-box {
+    min-width: 37vw;
+    height: 10rem;
+    text-align: center;
+    margin: auto;
+}
+
+.metadata-stats-title {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.metadata-stats-value {
+    font-family: monospace;
+    font-size: 2rem;
+}
