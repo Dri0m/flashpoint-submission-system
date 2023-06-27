@@ -251,7 +251,7 @@ func equalReference(ref *string, str string) bool {
 	if ref != nil {
 		return *ref == str
 	} else {
-		return str != ""
+		return str == ""
 	}
 }
 
@@ -259,7 +259,7 @@ func notEqualReference(ref *string, str string) bool {
 	if ref != nil {
 		return *ref != str
 	} else {
-		return str == ""
+		return str != ""
 	}
 }
 
