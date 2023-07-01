@@ -77,6 +77,7 @@ const (
 	ResourceKeyTagID                 = "tag-id"
 	ResourceKeyGameID                = "game-id"
 	ResourceKeyGameRevision          = "revision-date"
+	ResourceKeyGameDataDate          = "game-data-date"
 	ResourceKeyReason                = "reason"
 )
 

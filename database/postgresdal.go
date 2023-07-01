@@ -460,7 +460,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 
 	// Get game data
 	rows, err = dbs.Tx().Query(dbs.Ctx(), `SELECT id, game_id, title, date_added, sha256,
-       crc32, size, parameters, application_path, launch_command FROM game_data WHERE game_id = $1
+       crc32, size, parameters, application_path, launch_command, indexed FROM game_data WHERE game_id = $1
        ORDER BY game_data.date_added DESC`, gameId)
 	if err != nil {
 		return nil, err
@@ -469,7 +469,7 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 	for rows.Next() {
 		var data types.GameData
 		err = rows.Scan(&data.ID, &data.GameID, &data.Title, &data.DateAdded, &data.SHA256,
-			&data.CRC32, &data.Size, &data.Parameters, &data.ApplicationPath, &data.LaunchCommand)
+			&data.CRC32, &data.Size, &data.Parameters, &data.ApplicationPath, &data.LaunchCommand, &data.Indexed)
 		if err != nil {
 			return nil, err
 		}
@@ -518,6 +518,41 @@ func (d *postgresDAL) GetGame(dbs PGDBSession, gameId string) (*types.Game, erro
 	}
 
 	return &game, nil
+}
+
+func (d *postgresDAL) GetGameDataIndex(dbs PGDBSession, gameID string, date int64) (*types.GameDataIndex, error) {
+	rows, err := dbs.Tx().Query(dbs.Ctx(), `SELECT path, size, 
+        encode(crc32, 'hex'), 
+        encode(md5, 'hex'),
+        encode(sha1, 'hex'),
+        encode(sha256, 'hex'),
+        zip_date
+		FROM game_data_index WHERE game_id = $1`, gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var index types.GameDataIndex
+	index.GameID = gameID
+	index.Date = date
+	index.Data = make([]types.GameDataIndexFile, 0)
+
+	// Save results with matching date to row (This saves a lot of space over using an index)
+	for rows.Next() {
+		var r types.GameDataIndexFile
+		var rDate time.Time
+		err = rows.Scan(&r.Path, &r.Size, &r.CRC32, &r.MD5, &r.SHA1, &r.SHA256, &rDate)
+		if err != nil {
+			return nil, err
+		}
+		if rDate.UnixMilli() == date {
+			// Matching date, add to list
+			index.Data = append(index.Data, r)
+		}
+	}
+
+	return &index, nil
 }
 
 func (d *postgresDAL) SaveTag(dbs PGDBSession, tag *types.Tag, uid int64) error {

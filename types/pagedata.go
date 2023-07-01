@@ -64,6 +64,26 @@ type GamePageData struct {
 	ValidRestoreReasons []string
 }
 
+type GameDataIndexFile struct {
+	SHA256 string `json:"sha256"`
+	SHA1   string `json:"sha1"`
+	CRC32  string `json:"crc32"`
+	MD5    string `json:"md5"`
+	Path   string `json:"path"`
+	Size   int64  `json:"size"`
+}
+
+type GameDataIndex struct {
+	GameID string              `json:"game_id"`
+	Date   int64               `json:"date_added"`
+	Data   []GameDataIndexFile `json:"data"`
+}
+
+type GameDataIndexPageData struct {
+	BasePageData
+	Index *GameDataIndex
+}
+
 type SubmissionsPageData struct {
 	BasePageData
 	Submissions  []*ExtendedSubmission

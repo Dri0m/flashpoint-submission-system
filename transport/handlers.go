@@ -705,6 +705,28 @@ func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
 		"templates/game.gohtml")
 }
 
+func (a *App) HandleGameDataIndexPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyGameID]
+	dateStr := params[constants.ResourceKeyGameDataDate]
+	date, err := strconv.ParseInt(dateStr, 10, 64)
+
+	pageData, err := a.Service.GetGameDataIndexPageData(ctx, gameId, date)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Index, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/game-data-index.gohtml")
+}
+
 func (a *App) HandleDeleteGame(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	params := mux.Vars(r)

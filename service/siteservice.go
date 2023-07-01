@@ -349,6 +349,33 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 	return pageData, nil
 }
 
+func (s *SiteService) GetGameDataIndexPageData(ctx context.Context, gameId string, date int64) (*types.GameDataIndexPageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	index, err := s.pgdal.GetGameDataIndex(dbs, gameId, date)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	pageData := &types.GameDataIndexPageData{
+		BasePageData: *bpd,
+		Index:        index,
+	}
+
+	return pageData, nil
+}
+
 func (s *SiteService) SaveTag(ctx context.Context, tag *types.Tag) error {
 	uid := utils.UserID(ctx)
 	dbs, err := s.pgdal.NewSession(ctx)

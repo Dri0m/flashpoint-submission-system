@@ -1,6 +1,7 @@
 {{define "main"}}
     <div class="content">
         {{ $imagesCdn := .ImagesCdn }}
+        {{ $gameId := .Game.ID }}
 
         <h3>Game {{.Game.ID}}</h3>
         {{if .Game.Deleted}}<h3>DELETED</h3>{{end}}
@@ -277,6 +278,16 @@
                 <tr>
                     <td class="meta-property">Launch Command</td>
                     <td class="break-all">{{.LaunchCommand}}</td>
+                </tr>
+                <tr>
+                    <td class="meta-property">Index</td>
+                    <td class="break-all">
+                        {{if not .Indexed}}
+                            <i>Not Indexed Yet</i>
+                        {{else}}
+                            <a href="/web/game/{{$gameId}}/data/{{.DateAdded.UnixMilli}}/index">View Files</a>
+                        {{end}}
+                    </td>
                 </tr>
             </table>
         {{end}}
