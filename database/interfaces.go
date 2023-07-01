@@ -46,6 +46,11 @@ type PGDAL interface {
 	AddSubmissionFromValidator(dbs PGDBSession, uid int64, vr *types.ValidatorRepackResponse) (*types.Game, error)
 	AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) (*types.GameData, error)
 
+	IndexerGetNext(ctx context.Context) (*types.GameData, error)
+	IndexerInsert(ctx context.Context, crc32sum []byte, md5sum []byte, sha256sum []byte, sha1sum []byte,
+		size uint64, path string, gameId string, zipDate time.Time) error
+	IndexerMarkFailure(ctx context.Context, gameId string, zipDate time.Time) error
+
 	UpdateTagsFromTagsList(dbs PGDBSession, tagsList []types.Tag) error
 	ApplyGamePatch(dbs PGDBSession, uid int64, game *types.Game, patch *types.GameContentPatch, addApps []*types.CurationAdditionalApp) error
 }

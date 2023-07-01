@@ -504,6 +504,8 @@ type GameData struct {
 	Parameters      *string   `json:"parameters"`
 	ApplicationPath string    `json:"application_path"`
 	LaunchCommand   string    `json:"launch_command"`
+	Indexed         bool      `json:"indexed"`
+	IndexError      bool      `json:"index_error"`
 }
 
 type AdditionalApp struct {

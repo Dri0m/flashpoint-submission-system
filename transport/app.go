@@ -56,7 +56,9 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgxpool.Poo
 		DFStorage: NewDeviceFlowStorage(conf.DeviceFlowVerificaitonUrl),
 		Service: service.New(l, db, pgdb, authBotSession, notificationBotSession, conf.FlashpointServerID,
 			conf.NotificationChannelID, conf.CurationFeedChannelID, conf.ValidatorServerURL, conf.SessionExpirationSeconds,
-			conf.SubmissionsDirFullPath, conf.SubmissionImagesDirFullPath, conf.FlashfreezeDirFullPath, conf.IsDev, rsu, conf.ArchiveIndexerServerURL, conf.FlashfreezeIngestDirFullPath, conf.FixesDirFullPath),
+			conf.SubmissionsDirFullPath, conf.SubmissionImagesDirFullPath, conf.FlashfreezeDirFullPath, conf.IsDev,
+			rsu, conf.ArchiveIndexerServerURL, conf.FlashfreezeIngestDirFullPath, conf.FixesDirFullPath,
+			conf.DataPacksDir),
 		decoder:             decoder,
 		authMiddlewareCache: memoize.NewMemoizer(5*time.Second, 60*time.Minute),
 	}
@@ -70,10 +72,14 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgxpool.Poo
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
+
+	l.Infoln("starting the data pack indexer...")
+
+	a.Service.DataPacksIndexer.Start()
 
 	l.Infoln("starting the notification consumer...")
 
+	wg.Add(1)
 	go func() {
 		a.Service.RunNotificationConsumer(l, ctx, wg)
 	}()
@@ -97,6 +103,9 @@ func InitApp(l *logrus.Entry, conf *config.Config, db *sql.DB, pgdb *pgxpool.Poo
 
 	l.Infoln("closing the notification bot session...")
 	notificationBotSession.Close()
+
+	l.Infoln("closing data pack indexer...")
+	a.Service.DataPacksIndexer.Stop()
 
 	l.Infoln("shutting down the server...")
 	if err := srv.Shutdown(context.Background()); err != nil {

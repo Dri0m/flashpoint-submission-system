@@ -1249,6 +1249,36 @@ func (d *postgresDAL) ApplyGamePatch(dbs PGDBSession, uid int64, game *types.Gam
 	return nil
 }
 
+func (d *postgresDAL) IndexerGetNext(ctx context.Context) (*types.GameData, error) {
+	var gameData types.GameData
+	err := d.db.QueryRow(ctx, `SELECT id, game_id, date_added
+		FROM game_data WHERE indexed = FALSE AND index_error = FALSE LIMIT 1`).Scan(
+		&gameData.ID, &gameData.GameID, &gameData.DateAdded)
+	if err != nil {
+		return nil, err
+	}
+	return &gameData, nil
+}
+
+func (d *postgresDAL) IndexerInsert(ctx context.Context, crc32sum []byte, md5sum []byte, sha256sum []byte, sha1sum []byte,
+	size uint64, path string, gameId string, zipDate time.Time) error {
+	_, err := d.db.Exec(ctx, `INSERT INTO game_data_index (crc32, md5, sha256, sha1, size, path, game_id, zip_date)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		crc32sum, md5sum, sha256sum, sha1sum, size, path, gameId, zipDate)
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(ctx, `UPDATE game_data SET indexed = TRUE, index_error = FALSE WHERE game_id = $1 AND date_added = $2`,
+		gameId, zipDate)
+	return err
+}
+
+func (d *postgresDAL) IndexerMarkFailure(ctx context.Context, gameId string, zipDate time.Time) error {
+	_, err := d.db.Exec(ctx, `UPDATE game_data SET index_error = TRUE WHERE game_id = $1 AND date_added = $2`,
+		gameId, zipDate)
+	return err
+}
+
 func (d *postgresDAL) AddGameData(dbs PGDBSession, uid int64, gameId string, vr *types.ValidatorRepackResponse) (*types.GameData, error) {
 	// DO EXPENSIVE OPERATIONS FIRST
 

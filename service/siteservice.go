@@ -148,11 +148,14 @@ type SiteService struct {
 	flashfreezeIngestDir      string
 	fixesDir                  string
 	SSK                       SubmissionStatusKeeper
+	DataPacksIndexer          ZipIndexer
 }
 
 func New(l *logrus.Entry, db *sql.DB, pgdb *pgxpool.Pool, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
-	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir, fixesDir string) *SiteService {
+	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool,
+	rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir, fixesDir string,
+	dataPacksDir string) *SiteService {
 
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
@@ -178,6 +181,7 @@ func New(l *logrus.Entry, db *sql.DB, pgdb *pgxpool.Pool, authBotSession, notifi
 		SSK: SubmissionStatusKeeper{
 			m: make(map[string]*types.SubmissionStatus),
 		},
+		DataPacksIndexer: NewZipIndexer(pgdb, dataPacksDir, l.WithField("botName", "dataPackIndexer")),
 	}
 }
 
