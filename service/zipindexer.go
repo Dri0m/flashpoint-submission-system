@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 type ZipIndexer struct {
@@ -130,8 +131,10 @@ func (z *ZipIndexer) run() {
 							return err
 						}
 
+						cleanName := forceUTF8Compliant(file.Name)
+
 						err = pgdal.IndexerInsert(z.ctx, crc32hasher.Sum(nil), md5hasher.Sum(nil), sha256hasher.Sum(nil),
-							sha1hasher.Sum(nil), size, file.Name, data.GameID, data.DateAdded)
+							sha1hasher.Sum(nil), size, cleanName, data.GameID, data.DateAdded)
 						if err != nil {
 							return err
 						}
@@ -207,4 +210,25 @@ func (z *ZipIndexer) GetStatus() (string, error) {
 	defer z.statusMutex.Unlock()
 
 	return strings.Clone(z.status), z.error
+}
+
+func forceUTF8Compliant(str string) string {
+	if utf8.ValidString(str) {
+		return str
+	}
+
+	// If the string is not valid UTF-8, convert it to valid UTF-8.
+	validBytes := make([]byte, 0, len(str))
+	for i := 0; i < len(str); {
+		r, size := utf8.DecodeRuneInString(str[i:])
+		if r == utf8.RuneError {
+			// Skip invalid runes
+			i += size
+			continue
+		}
+		validBytes = append(validBytes, str[i:i+size]...)
+		i += size
+	}
+
+	return string(validBytes)
 }
