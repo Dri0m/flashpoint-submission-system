@@ -79,6 +79,7 @@ const (
 	ResourceKeyGameRevision          = "revision-date"
 	ResourceKeyGameDataDate          = "game-data-date"
 	ResourceKeyReason                = "reason"
+	ResourceKeyHash                  = "hash"
 )
 
 const (

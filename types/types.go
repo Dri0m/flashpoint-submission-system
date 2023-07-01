@@ -947,6 +947,27 @@ type SubmissionStatus struct {
 	SubmissionID *int64  `json:"submission_id"`
 }
 
+type IndexMatchResult struct {
+	Results []*IndexMatchResultData `json:"results"`
+}
+
+type IndexMatchResultData struct {
+	HashType string            `json:"type"`
+	Hash     string            `json:"hash"`
+	Matches  []*IndexMatchData `json:"data"`
+}
+
+type IndexMatchData struct {
+	SHA256 string `json:"sha256"`
+	SHA1   string `json:"sha1"`
+	CRC32  string `json:"crc32"`
+	MD5    string `json:"md5"`
+	Path   string `json:"path"`
+	Size   int64  `json:"size"`
+	GameID string `json:"game_id"`
+	Date   int64  `json:"date_added"`
+}
+
 type NotContentPatch struct {
 }
 

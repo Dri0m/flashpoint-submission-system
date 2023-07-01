@@ -555,6 +555,34 @@ func (d *postgresDAL) GetGameDataIndex(dbs PGDBSession, gameID string, date int6
 	return &index, nil
 }
 
+func (d *postgresDAL) GetIndexMatchesHash(dbs PGDBSession, hashType string, hashStr string) ([]*types.IndexMatchData, error) {
+	data := make([]*types.IndexMatchData, 0)
+
+	rows, err := dbs.Tx().Query(dbs.Ctx(), fmt.Sprintf(`SELECT 
+		encode(crc32, 'hex'), 
+        encode(md5, 'hex'),
+        encode(sha1, 'hex'),
+        encode(sha256, 'hex'),
+        size, path, game_id, zip_date 
+		FROM game_data_index WHERE %s = decode($1, 'hex')`, hashType), hashStr)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var r types.IndexMatchData
+		var d time.Time
+		err = rows.Scan(&r.CRC32, &r.MD5, &r.SHA1, &r.SHA256, &r.Size, &r.Path, &r.GameID, &d)
+		if err != nil {
+			return nil, err
+		}
+		r.Date = d.UnixMilli()
+		data = append(data, &r)
+	}
+
+	return data, nil
+}
+
 func (d *postgresDAL) SaveTag(dbs PGDBSession, tag *types.Tag, uid int64) error {
 	// Store existing primary alias, update redundant game fields if changes later
 	existingTag, err := d.GetTag(dbs, tag.ID)

@@ -321,6 +321,16 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	////////////////////////
 
 	f = a.UserAuthMux(
+		a.HandleMatchingIndexHash, muxAny(isStaff, isTrialCurator))
+
+	router.Handle(
+		fmt.Sprintf("/api/index/hash/{%s}", constants.ResourceKeyHash),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
 		a.HandleMySubmissionsPage, muxAny(isStaff, isTrialCurator, isInAudit))
 
 	router.Handle(

@@ -775,6 +775,36 @@ func (a *App) HandleRestoreGame(w http.ResponseWriter, r *http.Request) {
 	writeResponse(ctx, w, map[string]interface{}{"status": "success"}, http.StatusOK)
 }
 
+func (a *App) HandleMatchingIndexHash(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	hashStr := params[constants.ResourceKeyHash]
+
+	var hashType string
+	if len(hashStr) == 8 {
+		hashType = "crc32"
+	} else if len(hashStr) == 32 {
+		hashType = "md5"
+	} else if len(hashStr) == 40 {
+		hashType = "sha1"
+	} else if len(hashStr) == 64 {
+		hashType = "sha256"
+	}
+	if hashType == "" {
+		writeError(ctx, w, perr("not a valid hash", http.StatusBadRequest))
+		return
+	}
+
+	indexMatches, err := a.Service.GetIndexMatchesHash(ctx, hashType, hashStr)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("error checking index", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, indexMatches, http.StatusOK)
+}
+
 func (a *App) HandleGameLogo(w http.ResponseWriter, r *http.Request) {
 
 }

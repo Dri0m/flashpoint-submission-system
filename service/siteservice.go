@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	cache2 "github.com/patrickmn/go-cache"
 	"io"
@@ -347,6 +348,37 @@ func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageC
 	}
 
 	return pageData, nil
+}
+
+func (s *SiteService) GetIndexMatchesHash(ctx context.Context, hashType string, hashStr string) (*types.IndexMatchResult, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	matches, err := s.pgdal.GetIndexMatchesHash(dbs, hashType, hashStr)
+	if err != nil {
+		if err != pgx.ErrNoRows {
+			utils.LogCtx(ctx).Error(err)
+			return nil, dberr(err)
+		} else {
+			// No results, let an empty result happen
+			matches = make([]*types.IndexMatchData, 0)
+		}
+	}
+
+	result := &types.IndexMatchResultData{
+		HashType: hashType,
+		Hash:     hashStr,
+		Matches:  matches,
+	}
+	data := &types.IndexMatchResult{
+		Results: []*types.IndexMatchResultData{result},
+	}
+
+	return data, nil
 }
 
 func (s *SiteService) GetGameDataIndexPageData(ctx context.Context, gameId string, date int64) (*types.GameDataIndexPageData, error) {

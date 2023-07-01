@@ -52,6 +52,8 @@ type PGDAL interface {
 		size uint64, path string, gameId string, zipDate time.Time) error
 	IndexerMarkFailure(ctx context.Context, gameId string, zipDate time.Time) error
 
+	GetIndexMatchesHash(dbs PGDBSession, hashType string, hashStr string) ([]*types.IndexMatchData, error)
+
 	UpdateTagsFromTagsList(dbs PGDBSession, tagsList []types.Tag) error
 	ApplyGamePatch(dbs PGDBSession, uid int64, game *types.Game, patch *types.GameContentPatch, addApps []*types.CurationAdditionalApp) error
 }
