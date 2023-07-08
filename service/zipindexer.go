@@ -139,10 +139,11 @@ func (z *ZipIndexer) run() {
 							return err
 						}
 
-						// Print the game just indexed
-						utils.LogCtx(z.ctx).
-							Debug(fmt.Sprintf("Finished Indexing %s", data.GameID))
 					}
+
+					// Print the game just indexed
+					utils.LogCtx(z.ctx).
+						Debug(fmt.Sprintf("Finished Indexing %s", data.GameID))
 
 					return nil
 				}()
