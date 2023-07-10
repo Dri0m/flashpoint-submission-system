@@ -2,7 +2,7 @@
 
 it's a thing, and it's pretty WIP
 
-it will be a submission management system for https://bluemaxima.org/flashpoint/ or something
+it will be a submission management system for https://flashpointarchive.org/ or something
 
 <img src="static/opal.png" alt="drawing" width="200"/>
 
