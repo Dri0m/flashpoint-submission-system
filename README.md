@@ -1,3 +1,5 @@
+## The project has been moved to https://github.com/FlashpointProject/flashpoint-submission-system
+
 # flashpoint-submission-system
 
 it's a thing, and it's pretty WIP
