@@ -5,12 +5,17 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	cache2 "github.com/patrickmn/go-cache"
 	"io"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -125,6 +130,7 @@ type SiteService struct {
 	authBot                   authbot.DiscordRoleReader
 	notificationBot           notificationbot.DiscordNotificationSender
 	dal                       database.DAL
+	pgdal                     database.PGDAL
 	validator                 Validator
 	clock                     Clock
 	randomStringProvider      utils.RandomStringer
@@ -137,21 +143,26 @@ type SiteService struct {
 	isDev                     bool
 	submissionReceiverMutex   sync.Mutex
 	discordRoleCache          *memoize.Memoizer
+	metadataStatsCache        *memoize.Memoizer
 	resumableUploadService    *resumableuploadservice.ResumableUploadService
 	archiveIndexerServerURL   string
 	flashfreezeIngestDir      string
 	fixesDir                  string
 	SSK                       SubmissionStatusKeeper
+	DataPacksIndexer          ZipIndexer
 }
 
-func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *discordgo.Session,
+func New(l *logrus.Entry, db *sql.DB, pgdb *pgxpool.Pool, authBotSession, notificationBotSession *discordgo.Session,
 	flashpointServerID, notificationChannelID, curationFeedChannelID, validatorServerURL string,
-	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool, rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir, fixesDir string) *SiteService {
+	sessionExpirationSeconds int64, submissionsDir, submissionImagesDir, flashfreezeDir string, isDev bool,
+	rsu *resumableuploadservice.ResumableUploadService, archiveIndexerServerURL, flashfreezeIngestDir, fixesDir string,
+	dataPacksDir string) *SiteService {
 
 	return &SiteService{
 		authBot:                   authbot.NewBot(authBotSession, flashpointServerID, l.WithField("botName", "authBot"), isDev),
 		notificationBot:           notificationbot.NewBot(notificationBotSession, flashpointServerID, notificationChannelID, curationFeedChannelID, l.WithField("botName", "notificationBot"), isDev),
 		dal:                       database.NewMysqlDAL(db),
+		pgdal:                     database.NewPostgresDAL(pgdb),
 		validator:                 NewValidator(validatorServerURL),
 		clock:                     &RealClock{},
 		randomStringProvider:      utils.NewRealRandomStringProvider(),
@@ -163,6 +174,7 @@ func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *di
 		notificationQueueNotEmpty: make(chan bool, 1),
 		isDev:                     isDev,
 		discordRoleCache:          memoize.NewMemoizer(2*time.Minute, 60*time.Minute),
+		metadataStatsCache:        memoize.NewMemoizer(1*time.Minute, cache2.NoExpiration),
 		resumableUploadService:    rsu,
 		archiveIndexerServerURL:   archiveIndexerServerURL,
 		flashfreezeIngestDir:      flashfreezeIngestDir,
@@ -170,6 +182,7 @@ func New(l *logrus.Entry, db *sql.DB, authBotSession, notificationBotSession *di
 		SSK: SubmissionStatusKeeper{
 			m: make(map[string]*types.SubmissionStatus),
 		},
+		DataPacksIndexer: NewZipIndexer(pgdb, dataPacksDir, l.WithField("botName", "dataPackIndexer")),
 	}
 }
 
@@ -209,6 +222,411 @@ func (s *SiteService) GetBasePageData(ctx context.Context) (*types.BasePageData,
 	return bpd, nil
 }
 
+func (s *SiteService) DeleteGame(ctx context.Context, gameId string, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	uid := utils.UserID(ctx)
+
+	// Soft delete database entry
+	err = s.pgdal.DeleteGame(dbs, gameId, uid, reason, imagesPath, gamesPath, deletedImagesPath, deletedGamesPath)
+	if err != nil {
+		return err
+	}
+
+	// Move game data and images (where exist)
+	// @TODO
+
+	err = dbs.Commit()
+	if err != nil {
+		return dberr(err)
+	}
+
+	return nil
+}
+
+func (s *SiteService) RestoreGame(ctx context.Context, gameId string, reason string, imagesPath string, gamesPath string, deletedImagesPath string, deletedGamesPath string) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	uid := utils.UserID(ctx)
+
+	// Restore database entry
+	err = s.pgdal.RestoreGame(dbs, gameId, uid, reason, imagesPath, gamesPath, deletedImagesPath, deletedGamesPath)
+	if err != nil {
+		return err
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		return dberr(err)
+	}
+
+	return nil
+}
+
+func (s *SiteService) GetGamePageData(ctx context.Context, gameId string, imageCdn string, compressedImages bool, revisionDate string) (*types.GamePageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	msqldbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer msqldbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	game, err := s.pgdal.GetGame(dbs, gameId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("game not found", http.StatusNotFound)
+	}
+
+	user, err := s.dal.GetDiscordUser(msqldbs, game.UserID)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to fetch user info for version", http.StatusNotFound)
+	}
+
+	revisions, err := s.pgdal.GetGameRevisionInfo(dbs, gameId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to find revision info", http.StatusNotFound)
+	}
+	err = s.dal.PopulateRevisionInfo(msqldbs, revisions)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to populate revision info with user details", http.StatusNotFound)
+	}
+
+	// Desc sort revisions
+	sort.Slice(revisions, func(i, j int) bool {
+		return revisions[i].CreatedAt.After(revisions[j].CreatedAt)
+	})
+
+	logoUrl := fmt.Sprintf("%s/Logos/%s/%s/%s.png", imageCdn, game.ID[:2], game.ID[2:4], game.ID)
+	if compressedImages {
+		logoUrl = logoUrl + "?type=jpg"
+	}
+	ssUrl := fmt.Sprintf("%s/Screenshots/%s/%s/%s.png", imageCdn, game.ID[:2], game.ID[2:4], game.ID)
+	if compressedImages {
+		ssUrl = ssUrl + "?type=jpg"
+	}
+
+	validDeleteReasons := constants.GetValidDeleteReasons()
+	validRestoreReasons := constants.GetValidRestoreReasons()
+
+	pageData := &types.GamePageData{
+		ImagesCdn:           imageCdn,
+		Game:                game,
+		LogoUrl:             logoUrl,
+		ScreenshotUrl:       ssUrl,
+		Revisions:           revisions,
+		GameUsername:        user.Username,
+		GameAvatarURL:       utils.FormatAvatarURL(user.ID, user.Avatar),
+		GameAuthorID:        user.ID,
+		BasePageData:        *bpd,
+		ValidDeleteReasons:  validDeleteReasons,
+		ValidRestoreReasons: validRestoreReasons,
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) GetIndexMatchesHash(ctx context.Context, hashType string, hashStr string) (*types.IndexMatchResult, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	matches, err := s.pgdal.GetIndexMatchesHash(dbs, hashType, hashStr)
+	if err != nil {
+		if err != pgx.ErrNoRows {
+			utils.LogCtx(ctx).Error(err)
+			return nil, dberr(err)
+		} else {
+			// No results, let an empty result happen
+			matches = make([]*types.IndexMatchData, 0)
+		}
+	}
+
+	result := &types.IndexMatchResultData{
+		HashType: hashType,
+		Hash:     hashStr,
+		Matches:  matches,
+	}
+	data := &types.IndexMatchResult{
+		Results: []*types.IndexMatchResultData{result},
+	}
+
+	return data, nil
+}
+
+func (s *SiteService) GetGameDataIndexPageData(ctx context.Context, gameId string, date int64) (*types.GameDataIndexPageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	index, err := s.pgdal.GetGameDataIndex(dbs, gameId, date)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	pageData := &types.GameDataIndexPageData{
+		BasePageData: *bpd,
+		Index:        index,
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) SaveTag(ctx context.Context, tag *types.Tag) error {
+	uid := utils.UserID(ctx)
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	err = s.pgdal.SaveTag(dbs, tag, uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	return nil
+}
+
+func (s *SiteService) GetTagPageData(ctx context.Context, tagIdStr string) (*types.TagPageData, error) {
+	msqldbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer msqldbs.Rollback()
+
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	categories, err := s.pgdal.GetTagCategories(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	var tag *types.Tag
+	tagId, err := strconv.Atoi(tagIdStr)
+	if err != nil {
+		// Not an ID, check against tag name instead
+		tag, err = s.pgdal.GetTagByName(dbs, tagIdStr)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, perr("tag not found", http.StatusNotFound)
+		}
+	} else {
+		// Is an ID, use that
+		tag, err = s.pgdal.GetTag(dbs, int64(tagId))
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, perr("tag not found", http.StatusNotFound)
+		}
+	}
+
+	revisions, err := s.pgdal.GetTagRevisionInfo(dbs, tag.ID)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("tag revisions not found?", http.StatusInternalServerError)
+	}
+	err = s.dal.PopulateRevisionInfo(msqldbs, revisions)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, perr("failed to populate revision info with user details", http.StatusInternalServerError)
+	}
+
+	// Desc sort revisions
+	sort.Slice(revisions, func(i, j int) bool {
+		return revisions[i].CreatedAt.After(revisions[j].CreatedAt)
+	})
+
+	gamesUsing, err := s.pgdal.GetGamesUsingTagTotal(dbs, tag.ID)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	pageData := &types.TagPageData{
+		Tag:          tag,
+		Categories:   categories,
+		GamesUsing:   gamesUsing,
+		Revisions:    revisions,
+		BasePageData: *bpd,
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) GetTagsPageData(ctx context.Context, modifiedAfter *string) (*types.TagsPageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	categories, err := s.pgdal.GetTagCategories(dbs)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	tags, err := s.pgdal.SearchTags(dbs, modifiedAfter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	pageData := &types.TagsPageData{
+		Tags:         tags,
+		Categories:   categories,
+		BasePageData: *bpd,
+		TotalCount:   int64(len(tags)),
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) GetPlatformsPageData(ctx context.Context, modifiedAfter *string) (*types.PlatformsPageData, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	platforms, err := s.pgdal.SearchPlatforms(dbs, modifiedAfter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	pageData := &types.PlatformsPageData{
+		Platforms:    platforms,
+		BasePageData: *bpd,
+		TotalCount:   int64(len(platforms)),
+	}
+
+	return pageData, nil
+}
+
+func (s *SiteService) GetApplyContentPatchPageData(ctx context.Context, sid int64) (*types.ApplyContentPatchPageData, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	pgdbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer pgdbs.Rollback()
+
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := &types.SubmissionsFilter{
+		SubmissionIDs: []int64{sid},
+	}
+
+	submissions, _, err := s.dal.SearchSubmissions(dbs, filter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	if len(submissions) == 0 {
+		return nil, perr("submission not found", http.StatusNotFound)
+	}
+
+	submission := submissions[0]
+
+	meta, err := s.dal.GetCurationMetaBySubmissionFileID(dbs, submission.FileID)
+	if err != nil && err != sql.ErrNoRows {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	if meta.UUID == nil || *meta.UUID == "" || !meta.GameExists {
+		return nil, types.NotContentPatch{}
+	}
+
+	game, err := s.pgdal.GetGame(pgdbs, *meta.UUID)
+	if err != nil {
+		return nil, dberr(err)
+	}
+
+	pageData := &types.ApplyContentPatchPageData{
+		BasePageData: *bpd,
+		SubmissionID: submission.SubmissionID,
+		CurationMeta: meta,
+		ExistingMeta: game,
+	}
+
+	return pageData, nil
+}
+
 func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid int64) (*types.ViewSubmissionPageData, error) {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
@@ -216,6 +634,13 @@ func (s *SiteService) GetViewSubmissionPageData(ctx context.Context, uid, sid in
 		return nil, dberr(err)
 	}
 	defer dbs.Rollback()
+
+	pgdbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer pgdbs.Rollback()
 
 	bpd, err := s.GetBasePageData(ctx)
 	if err != nil {
@@ -683,6 +1108,33 @@ func (s *SiteService) SaveUser(ctx context.Context, discordUser *types.DiscordUs
 	}
 
 	return authToken, nil
+}
+
+func (s *SiteService) GenAuthToken(ctx context.Context, uid int64) (map[string]string, error) {
+	dbs, err := s.dal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	authToken, err := s.authTokenProvider.CreateAuthToken(uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	if err = s.dal.StoreSession(dbs, authToken.Secret, uid, s.sessionExpirationSeconds); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	if err := dbs.Commit(); err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+
+	return MapAuthToken(authToken), nil
 }
 
 func (s *SiteService) Logout(ctx context.Context, secret string) error {
@@ -1249,6 +1701,14 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	}
 	defer dbs.Rollback()
 
+	pgdbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		s.SSK.SetFailed(tempName, "internal error")
+		return dberr(err)
+	}
+	defer pgdbs.Rollback()
+
 	userRoles, err := s.dal.GetDiscordUserRoles(dbs, uid)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -1273,7 +1733,7 @@ func (s *SiteService) processReceivedResumableSubmission(ctx context.Context, ui
 	}
 
 	ru := newResumableUpload(uid, resumableParams.ResumableIdentifier, resumableParams.ResumableTotalChunks, s.resumableUploadService)
-	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel, tempName)
+	destinationFilename, ifp, submissionID, err := s.processReceivedSubmission(ctx, dbs, pgdbs, ru, resumableParams.ResumableFilename, resumableParams.ResumableTotalSize, sid, submissionLevel, tempName)
 
 	imageFilePaths = append(imageFilePaths, ifp...)
 
@@ -2480,4 +2940,331 @@ func (s *SiteService) GetFixesFiles(ctx context.Context, ffids []int64) ([]*type
 		return nil, dberr(err)
 	}
 	return ffs, nil
+}
+
+func (s *SiteService) DeveloperTagDescFromValidator(ctx context.Context) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	tagsList, err := s.validator.GetTags(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.pgdal.UpdateTagsFromTagsList(dbs, tagsList)
+	if err != nil {
+		return err
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *SiteService) DeveloperImportDatabaseJson(ctx context.Context, data *types.LauncherDump) error {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	err = s.pgdal.DeveloperImportDatabaseJson(dbs, data)
+	if err != nil {
+		dbs.Rollback()
+		dbs, err := s.pgdal.NewSession(ctx)
+		// Enable triggers
+		_, err = dbs.Tx().Exec(dbs.Ctx(), `SET session_replication_role = DEFAULT`)
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	dbs, err = s.pgdal.NewSession(ctx)
+	// Enable triggers
+	_, err = dbs.Tx().Exec(dbs.Ctx(), `SET session_replication_role = DEFAULT`)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	utils.LogCtx(ctx).Debug("commited database import")
+
+	return nil
+}
+
+func (s *SiteService) SaveGame(ctx context.Context, game *types.Game) error {
+	uid := utils.UserID(ctx)
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+	defer dbs.Rollback()
+
+	err = s.pgdal.SaveGame(dbs, game, uid)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return dberr(err)
+	}
+
+	return nil
+}
+
+func (s *SiteService) GetMetadataStatsPageData(ctx context.Context) (*types.MetadataStatsPageData, error) {
+	bpd, err := s.GetBasePageData(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	memo, err, _ := s.metadataStatsCache.Memoize("metadataStats", func() (interface{}, error) {
+		dbs, err := s.pgdal.NewSession(ctx)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, err
+		}
+		defer dbs.Rollback()
+
+		data, err := s.pgdal.GetMetadataStats(dbs)
+		if err != nil {
+			return nil, err
+		}
+
+		return data, err
+	})
+	if err != nil {
+		return nil, dberr(err)
+	}
+
+	pageData := types.MetadataStatsPageData{
+		BasePageData:              *bpd,
+		MetadataStatsPageDataBare: *memo.(*types.MetadataStatsPageDataBare),
+	}
+
+	return &pageData, nil
+}
+
+func (s *SiteService) GetDeletedGamePageData(ctx context.Context, modifiedAfter *string) ([]*types.DeletedGame, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	games, err := s.pgdal.SearchDeletedGames(dbs, modifiedAfter)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, err
+	}
+
+	return games, nil
+}
+
+func (s *SiteService) GetGameCountSinceDate(ctx context.Context, modifiedAfter *string) (int, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return 0, nil
+	}
+	defer dbs.Rollback()
+
+	total, err := s.pgdal.CountSinceDate(dbs, modifiedAfter)
+	if err != nil {
+		return 0, dberr(err)
+	}
+
+	return total, nil
+}
+
+func (s *SiteService) GetGamesPageData(ctx context.Context, modifierAfter *string, modifiedBefore *string, broad bool, afterId *string) ([]*types.Game, []*types.AdditionalApp, []*types.GameData, [][]string, [][]string, error) {
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, nil, nil, nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	games, addApps, gameData, tagRelations, platformRelations, err := s.pgdal.SearchGames(dbs, modifierAfter, modifiedBefore, broad, afterId)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, nil, nil, nil, nil, dberr(err)
+	}
+
+	return games, addApps, gameData, tagRelations, platformRelations, nil
+}
+
+func (s *SiteService) AddSubmissionToFlashpoint(ctx context.Context, submission *types.ExtendedSubmission, subDirFullPath string, dataPacksDir string, imagesDir string, r *http.Request) (*string, error) {
+	// Lock the database for sequential write
+	utils.MetadataMutex.Lock()
+	defer utils.MetadataMutex.Unlock()
+
+	dbs, err := s.pgdal.NewSession(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		return nil, dberr(err)
+	}
+	defer dbs.Rollback()
+
+	sfs, err := s.GetSubmissionFiles(ctx, []int64{submission.FileID})
+	if err != nil {
+		return nil, err
+	}
+	sf := sfs[0]
+
+	// Repack the curation via the validator and get fresh metadata
+	originalPath := fmt.Sprintf("%s/%s", subDirFullPath, sf.CurrentFilename)
+	vr, err := s.validator.ProvideArchiveForRepacking(originalPath)
+	if err != nil {
+		return nil, err
+	}
+	if vr.Error != nil {
+		return nil, types.RepackError(*vr.Error)
+	}
+	defer RemoveRepackFolder(ctx, *vr.FilePath)
+
+	// If UUID is given, check if game exists alreay
+	var game *types.Game
+	if vr.Meta.UUID != nil {
+		game, _ = s.pgdal.GetGame(dbs, *vr.Meta.UUID)
+		if game != nil {
+			// If body exists, apply patch in metadata
+			if r.ContentLength > 0 {
+				var patch *types.GameContentPatch
+				err = json.NewDecoder(r.Body).Decode(&patch)
+				if err != nil {
+					return nil, err
+				}
+
+				err := s.pgdal.ApplyGamePatch(dbs, utils.UserID(ctx), game, patch, vr.Meta.AdditionalApps)
+				if err != nil {
+					return nil, err
+				}
+			} else if vr.Meta.AdditionalApps != nil {
+				// No body, just patch in add apps
+				err := s.pgdal.ApplyGamePatch(dbs, utils.UserID(ctx), game, nil, vr.Meta.AdditionalApps)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			// Game exists, add new game data instead
+			data, err := s.pgdal.AddGameData(dbs, utils.UserID(ctx), game.ID, vr)
+			if err != nil {
+				return nil, err
+			}
+			game.Data = append(game.Data, data)
+		}
+	}
+
+	if game == nil {
+		game, err = s.pgdal.AddSubmissionFromValidator(dbs, utils.UserID(ctx), vr)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			return nil, err
+		}
+	}
+
+	msTime := game.Data[0].DateAdded.UnixMilli()
+
+	utils.LogCtx(ctx).Debug("Adding sub from validator")
+	// Add game into metadata
+
+	// Get the base name of the data pack file
+	base := filepath.Base(*vr.FilePath)
+
+	// Add date added into filename
+	newBase := fmt.Sprintf("%s-%d%s", game.ID, msTime, filepath.Ext(base))
+	newFileName := filepath.Join(dataPacksDir, newBase)
+	err = os.MkdirAll(dataPacksDir, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy renamed data pack file to data packs folder
+	srcFile, err := os.Open(*vr.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.Create(newFileName) // creates if file doesn't exist
+	if err != nil {
+		return nil, err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, srcFile) // check first var for number of bytes copied
+	if err != nil {
+		return nil, err
+	}
+
+	err = destFile.Sync()
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy image data to new images
+	if len(vr.Images) < 2 {
+		return nil, types.NotEnoughImages(strconv.Itoa(len(vr.Images)))
+	}
+
+	logo := vr.Images[0]
+	logoFilePath := fmt.Sprintf(`%s/Logos/%s/%s/%s.png`, imagesDir, game.ID[0:2], game.ID[2:4], game.ID)
+	decodedLogo, err := base64.StdEncoding.DecodeString(logo.Data)
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(filepath.Dir(logoFilePath), 0777)
+	if err != nil {
+		return nil, err
+	}
+	err = os.WriteFile(logoFilePath, decodedLogo, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ss := vr.Images[1]
+	ssFilePath := fmt.Sprintf(`%s/Screenshots/%s/%s/%s.png`, imagesDir, game.ID[0:2], game.ID[2:4], game.ID)
+	decodedScreenshot, err := base64.StdEncoding.DecodeString(ss.Data)
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(filepath.Dir(ssFilePath), 0777)
+	if err != nil {
+		return nil, err
+	}
+	err = os.WriteFile(ssFilePath, decodedScreenshot, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = dbs.Commit()
+	if err != nil {
+		utils.LogCtx(dbs.Ctx()).Error(err)
+		return nil, err
+	}
+
+	return &game.ID, nil
+}
+
+func RemoveRepackFolder(ctx context.Context, filePath string) {
+	dir := filepath.Dir(filePath)
+	// Remove the directory
+	err := os.RemoveAll(dir)
+
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+	}
 }

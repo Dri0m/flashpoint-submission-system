@@ -1,0 +1,192 @@
+{{define "main"}}
+    {{$tagCategory := .Tag.Category}}
+    <div class="content">
+        <script type="text/javascript">
+            const tagId = {{.Tag.ID}};
+            let storedTagCategory = String({{.Tag.Category}});
+            let storedPrimary = String({{.Tag.Name}})
+            let storedAliases = String({{.Tag.Aliases}}).split(";").map(a => a.trim())
+
+            function submitTagChanges() {
+                console.log('saving');
+                const tagData = {
+                    "id": tagId,
+                    "name": storedPrimary,
+                    "description": document.getElementById("tag-description").value,
+                    "category": storedTagCategory,
+                    "aliases": storedAliases.join("; ")
+                }
+                console.log(tagData);
+                doWaitingSpinner("Submitting Changes...", async () => {
+                    await fetch("/api/tag/" + tagId, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(tagData, undefined, 2)
+                    })
+                        .then((res) => {
+                            if (res.status === 200) {
+                                window.location.pathname = "/web/tag/" + tagId
+                            } else {
+                                alert('Issue: ' + res);
+                            }
+                        })
+                        .catch((err) => {
+                            console.error(err);
+                            alert("Server Error");
+                        })
+                });
+
+            }
+
+            function promoteAlias(alias) {
+                storedPrimary = alias;
+                reloadAliasRows();
+            }
+
+            function deleteAlias(alias) {
+                const idx = storedAliases.findIndex(a => a === alias);
+                if (idx > -1) {
+                    storedAliases.splice(idx, 1);
+                    reloadAliasRows();
+                }
+            }
+
+            function addAlias(newAlias) {
+                if (newAlias === "") {
+                    alert("Empty field");
+                    return;
+                }
+                fetch("/api/tag/" + newAlias)
+                    .then((res) => {
+                        if (res.status === 404) {
+                            // Alias is free to use
+                            storedAliases.push(newAlias.trim())
+                            reloadAliasRows()
+                        } else if (res.status === 200) {
+                            alert("Alias already exists on a tag");
+                        } else {
+                            alert("Unknown error");
+                        }
+                    })
+                    .catch((err) => {
+                        alert(err);
+                    });
+            }
+
+            function reloadAliasRows() {
+                const container = document.getElementById("tag-aliases-container");
+
+                // Clear old children
+                container.innerHTML = '';
+
+                // Create new alias box
+                const newAliasContainer = document.createElement("div");
+                newAliasContainer.className = "tag-edit-alias";
+                const newAliasInput = document.createElement("input");
+                newAliasInput.id = "tag-edit-new-alias";
+                newAliasInput.placeholder = "New Alias...";
+                const newAliasSubmit = document.createElement("button");
+                newAliasSubmit.innerText = "Add Alias";
+                newAliasSubmit.onclick = () => {
+                    const value = document.getElementById("tag-edit-new-alias").value;
+                    addAlias(value);
+                }
+
+                newAliasContainer.appendChild(newAliasInput);
+                newAliasContainer.appendChild(newAliasSubmit);
+                container.appendChild(newAliasContainer);
+
+                // Add new children
+                for (const alias of storedAliases) {
+                    const newBox = document.createElement("div");
+                    newBox.className = "tag-edit-alias";
+
+                    // Create name elem
+                    const nameElem = document.createElement("div");
+                    const isPrimary = alias === storedPrimary;
+                    if (isPrimary) {
+                        nameElem.style.fontWeight = "bold";
+                    }
+                    nameElem.innerText = alias;
+                    newBox.appendChild(nameElem);
+
+                    // Create buttons
+                    const buttonElem = document.createElement("div");
+                    if (!isPrimary) {
+                        const promoteButton = document.createElement("button");
+                        promoteButton.onclick = () => promoteAlias(alias);
+                        promoteButton.innerText = "Promote";
+                        promoteButton.style.marginRight = "0.5rem";
+                        buttonElem.appendChild(promoteButton);
+
+                        const deleteButton = document.createElement("button");
+                        deleteButton.onclick = () => deleteAlias(alias);
+                        deleteButton.innerText = "Delete";
+                        buttonElem.appendChild(deleteButton);
+                    }
+                    newBox.appendChild(buttonElem);
+
+                    container.appendChild(newBox)
+                }
+            }
+
+            function updateSelectedCategory(elem) {
+                storedTagCategory = elem.value;
+            }
+
+            document.addEventListener('DOMContentLoaded', reloadAliasRows);
+        </script>
+        <div hidden>{{.Tag.Aliases}}</div>
+
+        <h3>Tag {{.Tag.ID}}</h3>
+        <h1>{{if .Tag.Deleted}}DELETED - {{end}}{{.Tag.Name}}</h1>
+
+        <table class="pure-table pure-table-bordered meta-table">
+            <tbody>
+            <tr>
+                <td class="meta-property">
+                    <label for="tag-description">Description</label>
+                </td>
+                <td class="break-all">
+                    <textarea id="tag-description" class="tag-edit-description" rows="5" type="text">{{.Tag.Description}}</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Category</td>
+                <td class="break-all">
+                    <select name="category" id="category" onchange="updateSelectedCategory(this)">
+                        {{range .Categories}}
+                            {{ if eq .Name $tagCategory }}
+                                <option value="{{.Name}}" selected="selected">{{.Name}}</option>
+                            {{else}}
+                                <option value="{{.Name}}">{{.Name}}</option>
+                            {{end}}
+                        {{end}}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td class="meta-property">Aliases</td>
+                <td class="break-all">
+                    <div id="tag-aliases-container"></div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <h3>{{.GamesUsing}} games with this tag</h3>
+
+        <div class="game-buttons">
+            <button class="pure-button pure-button-primary"
+                    onclick="submitTagChanges()">
+                Save Changes
+            </button>
+            <a href="/web/tag/{{.Tag.ID}}" class="pure-button button-cancel">
+                Cancel Edit
+            </a>
+        </div>
+
+    </div>
+{{end}}

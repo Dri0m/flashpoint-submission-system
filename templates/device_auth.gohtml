@@ -1,0 +1,22 @@
+{{define "main"}}
+    <div class="content">
+        {{if eq .Token.FlowState .States.Pending}}
+            <h1>Approve Device?</h1>
+            <div>Application will have access to make actions on FPFSS on your behalf.</div>
+            <div>
+                <button class="pure-button pure-button-primary button-approve"
+                    onclick="doDeviceFlowAction({{.Token.UserCode}}, 'approve')">Approve
+                </button>
+                <button class="pure-button pure-button-primary button-cancel">Deny
+                </button>
+            </div>
+        {{else if eq .Token.FlowState .States.Denied}}
+            <h1>Device Denied</h1>
+        {{else if eq .Token.FlowState .States.Complete}}
+            <h1>Device Approved</h1>
+            <p>You can now close this window and return to the application.</p>
+        {{else if eq .Token.FlowState .States.Expired}}
+            <h1>Request Expired</h1>
+        {{end}}
+    </div>
+{{end}}

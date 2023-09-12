@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -27,6 +28,8 @@ const (
 type RealRandomString struct {
 	src rand.Source
 }
+
+var MetadataMutex sync.Mutex
 
 func NewRealRandomStringProvider() *RealRandomString {
 	return &RealRandomString{

@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kofalt/go-memoize"
 	"net/http"
@@ -91,7 +92,7 @@ func (a *App) HandleCommentReceiverBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions); err != nil {
+	if err := a.Service.ReceiveComments(ctx, uid, sids, formAction, formMessage, formIgnoreDupeActions, a.Conf.SubmissionsDirFullPath, a.Conf.DataPacksDir, a.Conf.ImagesDir, r); err != nil {
 		writeError(ctx, w, err)
 		return
 	}
@@ -396,6 +397,422 @@ func (a *App) HandleFixesSubmitGenericPageUploadFilesPage(w http.ResponseWriter,
 	a.RenderTemplates(ctx, w, r, pageData, "templates/fixes-submit-generic-upload-files.gohtml")
 }
 
+func (a *App) HandleMinLauncherVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	writeResponse(ctx, w, map[string]interface{}{"min-version": a.Conf.MinLauncherVersion}, http.StatusOK)
+}
+
+func (a *App) HandleMetadataStats(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetMetadataStatsPageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/metadata-stats.gohtml")
+}
+
+func (a *App) HandleDeletedGames(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter string
+	if ok {
+		modifiedAfter = modifiedAfterRaw[0]
+	} else {
+		modifiedAfter = "1970-01-01"
+	}
+
+	games, err := a.Service.GetDeletedGamePageData(ctx, &modifiedAfter)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	res := types.GamesDeletedSinceDateJSON{
+		Games: games,
+	}
+	writeResponse(ctx, w, res, http.StatusOK)
+}
+
+func (a *App) HandleGameCountSinceDate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter string
+	if ok {
+		modifiedAfter = modifiedAfterRaw[0]
+	} else {
+		modifiedAfter = "1970-01-01"
+	}
+
+	result, err := a.Service.GetGameCountSinceDate(ctx, &modifiedAfter)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	res := types.GameCountSinceDateJSON{
+		Total: result,
+	}
+	writeResponse(ctx, w, res, http.StatusOK)
+}
+
+func (a *App) HandleGamesPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter string
+	if ok {
+		modifiedAfter = modifiedAfterRaw[0]
+	} else {
+		modifiedAfter = "1970-01-01"
+	}
+
+	modifiedBeforeRaw, ok := r.URL.Query()["before"]
+	var modifiedBefore string
+	if ok {
+		modifiedBefore = modifiedBeforeRaw[0]
+	} else {
+		modifiedBefore = "2999-01-01"
+	}
+
+	afterIdRaw, ok := r.URL.Query()["afterId"]
+	var afterId string
+	if ok {
+		afterId = afterIdRaw[0]
+	} else {
+		afterId = ""
+	}
+
+	broadRaw, ok := r.URL.Query()["broad"]
+	broad := false
+	if ok && broadRaw[0] != "false" {
+		broad = true
+	}
+
+	games, addApps, gameData, tagRelations, platformRelations, err := a.Service.GetGamesPageData(ctx, &modifiedAfter, &modifiedBefore, broad, &afterId)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	res := types.GamePageResJSON{
+		Games:             games,
+		AddApps:           addApps,
+		GameData:          gameData,
+		TagRelations:      tagRelations,
+		PlatformRelations: platformRelations,
+	}
+	writeResponse(ctx, w, res, http.StatusOK)
+}
+
+func (a *App) HandleTagsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter *string
+	if ok {
+		modifiedAfter = &modifiedAfterRaw[0]
+	}
+
+	pageData, err := a.Service.GetTagsPageData(ctx, modifiedAfter)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		pageDataJson := types.TagsPageDataJSON{
+			Tags:       pageData.Tags,
+			Categories: pageData.Categories,
+		}
+		writeResponse(ctx, w, pageDataJson, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/tags-table.gohtml",
+		"templates/tags.gohtml")
+}
+
+func (a *App) HandlePlatformsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	modifiedAfterRaw, ok := r.URL.Query()["after"]
+	var modifiedAfter *string
+	if ok {
+		modifiedAfter = &modifiedAfterRaw[0]
+	}
+
+	pageData, err := a.Service.GetPlatformsPageData(ctx, modifiedAfter)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Platforms, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/platforms-table.gohtml",
+		"templates/platforms.gohtml")
+}
+
+func (a *App) HandlePostTag(w http.ResponseWriter, r *http.Request) {
+	// Lock the database for sequential writes
+	utils.MetadataMutex.Lock()
+	defer utils.MetadataMutex.Unlock()
+
+	ctx := r.Context()
+	params := mux.Vars(r)
+	tagIdStr := params[constants.ResourceKeyTagID]
+	tagId, err := strconv.Atoi(tagIdStr)
+	if err != nil {
+		writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var tag types.Tag
+	err = json.NewDecoder(r.Body).Decode(&tag)
+	if err != nil {
+		writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if tag.ID != int64(tagId) {
+		writeResponse(ctx, w, "Tag ID does not match route", http.StatusBadRequest)
+		return
+	}
+
+	err = a.Service.SaveTag(ctx, &tag)
+	if err != nil {
+		writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	pageData, err := a.Service.GetTagPageData(ctx, tagIdStr)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	writeResponse(ctx, w, pageData.Tag, http.StatusOK)
+	return
+}
+
+func (a *App) HandleTagPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	tagID := params[constants.ResourceKeyTagID]
+
+	pageData, err := a.Service.GetTagPageData(ctx, tagID)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if pageData.Tag.Deleted && !constants.IsGodOrColin(pageData.UserRoles, pageData.UserID) {
+		// Prevent non-God users viewing deleted resource
+		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Tag, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/tag.gohtml")
+}
+
+func (a *App) HandleTagEditPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	tagID := params[constants.ResourceKeyTagID]
+
+	pageData, err := a.Service.GetTagPageData(ctx, tagID)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if pageData.Tag.Deleted && !constants.IsAdder(pageData.UserRoles) {
+		// Prevent non-Admins from viewing deleted tags
+		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Tag, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/tag-edit.gohtml")
+}
+
+func (a *App) HandleGamePage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyGameID]
+	revisionDate := params[constants.ResourceKeyGameRevision]
+
+	// Handle POST changes
+	if utils.RequestType(ctx) != constants.RequestWeb && r.Method == "POST" {
+		// Lock the database for sequential write
+		utils.MetadataMutex.Lock()
+		defer utils.MetadataMutex.Unlock()
+
+		var game types.Game
+		err := json.NewDecoder(r.Body).Decode(&game)
+		if err != nil {
+			writeResponse(ctx, w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err = a.Service.SaveGame(ctx, &game)
+		if err != nil {
+			utils.LogCtx(ctx).Error(err)
+			writeResponse(ctx, w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	pageData, err := a.Service.GetGamePageData(ctx, gameId, a.Conf.ImagesCdn, a.Conf.ImagesCdnCompressed, revisionDate)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if pageData.Game.Deleted && !constants.IsDeleter(pageData.UserRoles) {
+		// Prevent non-God users viewing deleted resource
+		writeResponse(ctx, w, map[string]interface{}{"error": "deleted resource"}, http.StatusNotFound)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Game, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/game.gohtml")
+}
+
+func (a *App) HandleGameDataIndexPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyGameID]
+	dateStr := params[constants.ResourceKeyGameDataDate]
+	date, err := strconv.ParseInt(dateStr, 10, 64)
+
+	pageData, err := a.Service.GetGameDataIndexPageData(ctx, gameId, date)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData.Index, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/game-data-index.gohtml")
+}
+
+func (a *App) HandleDeleteGame(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyGameID]
+	query := r.URL.Query()
+	reason := query.Get("reason")
+	validReasons := constants.GetValidDeleteReasons()
+
+	if !isElementExist(validReasons, reason) {
+		writeError(ctx, w,
+			perr(fmt.Sprintf("reason query param must be of [%s], got %s", strings.Join(validReasons, ", "), reason), http.StatusBadRequest))
+		return
+	}
+
+	err := a.Service.DeleteGame(ctx, gameId, reason, a.Conf.ImagesDir, a.Conf.DataPacksDir, a.Conf.DeletedImagesDir, a.Conf.DeletedDataPacksDir)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, map[string]interface{}{"status": "success"}, http.StatusOK)
+}
+
+func (a *App) HandleRestoreGame(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	gameId := params[constants.ResourceKeyGameID]
+	query := r.URL.Query()
+	reason := query.Get("reason")
+	validReasons := constants.GetValidRestoreReasons()
+
+	if !isElementExist(validReasons, reason) {
+		writeError(ctx, w,
+			perr(fmt.Sprintf("reason query param must be of [%s], got %s", strings.Join(validReasons, ", "), reason), http.StatusBadRequest))
+		return
+	}
+
+	err := a.Service.RestoreGame(ctx, gameId, reason, a.Conf.ImagesDir, a.Conf.DataPacksDir, a.Conf.DeletedImagesDir, a.Conf.DeletedDataPacksDir)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode query params", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, map[string]interface{}{"status": "success"}, http.StatusOK)
+}
+
+func (a *App) HandleMatchingIndexHash(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	hashStr := params[constants.ResourceKeyHash]
+
+	var hashType string
+	if len(hashStr) == 8 {
+		hashType = "crc32"
+	} else if len(hashStr) == 32 {
+		hashType = "md5"
+	} else if len(hashStr) == 40 {
+		hashType = "sha1"
+	} else if len(hashStr) == 64 {
+		hashType = "sha256"
+	}
+	if hashType == "" {
+		writeError(ctx, w, perr("not a valid hash", http.StatusBadRequest))
+		return
+	}
+
+	indexMatches, err := a.Service.GetIndexMatchesHash(ctx, hashType, hashStr)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("error checking index", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, indexMatches, http.StatusOK)
+}
+
+func (a *App) HandleGameLogo(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (a *App) HandleGameScreenshot(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func (a *App) HandleSubmissionsPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -475,6 +892,33 @@ func (a *App) HandleMySubmissionsPage(w http.ResponseWriter, r *http.Request) {
 		"templates/submission-pagenav.gohtml",
 		"templates/submission-filter-chunks.gohtml",
 		"templates/comment-form.gohtml")
+}
+
+func (a *App) HandleApplyContentPatchPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := mux.Vars(r)
+	submissionID := params[constants.ResourceKeySubmissionID]
+
+	sid, err := strconv.ParseInt(submissionID, 10, 64)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("invalid submission id", http.StatusBadRequest))
+		return
+	}
+
+	pageData, err := a.Service.GetApplyContentPatchPageData(ctx, sid)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	if utils.RequestType(ctx) != constants.RequestWeb {
+		writeResponse(ctx, w, pageData, http.StatusOK)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData,
+		"templates/submission-content-patch-apply.gohtml")
 }
 
 func (a *App) HandleViewSubmissionPage(w http.ResponseWriter, r *http.Request) {
@@ -1130,4 +1574,69 @@ func (a *App) HandleGetUploadProgress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(ctx, w, data, http.StatusOK)
+}
+
+func (a *App) HandleDeveloperPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	pageData, err := a.Service.GetBasePageData(ctx)
+	if err != nil {
+		writeError(ctx, w, err)
+		return
+	}
+
+	a.RenderTemplates(ctx, w, r, pageData, "templates/developer.gohtml")
+}
+
+func (a *App) HandleDeveloperTagDescFromValidator(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	err := a.Service.DeveloperTagDescFromValidator(ctx)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to populate tags from validator", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, nil, http.StatusNoContent)
+}
+
+func (a *App) HandleDeveloperDumpUpload(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// get file from request body
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to get file from request", http.StatusBadRequest))
+		return
+	}
+	defer file.Close()
+
+	// decode JSON file
+	var jsonData types.LauncherDump
+	err = json.NewDecoder(file).Decode(&jsonData)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to decode JSON file", http.StatusBadRequest))
+		return
+	}
+
+	err = a.Service.DeveloperImportDatabaseJson(ctx, &jsonData)
+	if err != nil {
+		utils.LogCtx(ctx).Error(err)
+		writeError(ctx, w, perr("failed to import", http.StatusInternalServerError))
+		return
+	}
+
+	writeResponse(ctx, w, nil, http.StatusNoContent)
+}
+
+func isElementExist(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }

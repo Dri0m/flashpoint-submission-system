@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -9,29 +10,40 @@ import (
 type CurationMeta struct {
 	SubmissionID        int64
 	SubmissionFileID    int64
-	ApplicationPath     *string `json:"Application Path"`
-	Developer           *string `json:"Developer"`
-	Extreme             *string `json:"Extreme"`
-	GameNotes           *string `json:"Game Notes"`
-	Languages           *string `json:"Languages"`
-	LaunchCommand       *string `json:"Launch Command"`
-	OriginalDescription *string `json:"Original Description"`
-	PlayMode            *string `json:"Play Mode"`
-	Platform            *string `json:"Platform"`
-	Publisher           *string `json:"Publisher"`
-	ReleaseDate         *string `json:"Release Date"`
-	Series              *string `json:"Series"`
-	Source              *string `json:"Source"`
-	Status              *string `json:"Status"`
-	Tags                *string `json:"Tags"`
-	TagCategories       *string `json:"Tag Categories"`
-	Title               *string `json:"Title"`
-	AlternateTitles     *string `json:"Alternate Titles"`
-	Library             *string `json:"Library"`
-	Version             *string `json:"Version"`
-	CurationNotes       *string `json:"Curation Notes"`
-	MountParameters     *string `json:"Mount Parameters"`
-	//AdditionalApplications *CurationFormatAddApps `json:"Additional Applications"`
+	GameExists          bool                     `json:"game_exists"`
+	UUID                *string                  `json:"UUID"`
+	ApplicationPath     *string                  `json:"Application Path"`
+	Developer           *string                  `json:"Developer"`
+	Extreme             *string                  `json:"Extreme"`
+	GameNotes           *string                  `json:"Game Notes"`
+	Languages           *string                  `json:"Languages"`
+	LaunchCommand       *string                  `json:"Launch Command"`
+	OriginalDescription *string                  `json:"Original Description"`
+	PlayMode            *string                  `json:"Play Mode"`
+	PrimaryPlatform     *string                  `json:"Primary Platform"`
+	Platform            *string                  `json:"Platforms"`
+	Publisher           *string                  `json:"Publisher"`
+	ReleaseDate         *string                  `json:"Release Date"`
+	Series              *string                  `json:"Series"`
+	Source              *string                  `json:"Source"`
+	Status              *string                  `json:"Status"`
+	Tags                *string                  `json:"Tags"`
+	TagCategories       *string                  `json:"Tag Categories"`
+	Title               *string                  `json:"Title"`
+	AlternateTitles     *string                  `json:"Alternate Titles"`
+	Library             *string                  `json:"Library"`
+	Version             *string                  `json:"Version"`
+	CurationNotes       *string                  `json:"Curation Notes"`
+	MountParameters     *string                  `json:"Mount Parameters"`
+	Extras              *string                  `json:"Extras"`
+	Message             *string                  `json:"Message"`
+	AdditionalApps      []*CurationAdditionalApp `json:"Additional Applications"`
+}
+
+type CurationAdditionalApp struct {
+	Heading         *string `json:"Heading"`
+	ApplicationPath *string `json:"Application Path"`
+	LaunchCommand   *string `json:"Launch Command"`
 }
 
 type MasterDatabaseGame struct {
@@ -122,6 +134,7 @@ type ExtendedSubmission struct {
 	ApprovedUserIDs             []int64
 	VerifiedUserIDs             []int64
 	DistinctActions             []string
+	GameExists                  bool
 }
 
 type SubmissionsFilter struct {
@@ -163,6 +176,7 @@ type SubmissionsFilter struct {
 	OrderBy                        *string  `schema:"order-by"`
 	AscDesc                        *string  `schema:"asc-desc"`
 	SubscribedMe                   *string  `schema:"subscribed-me"`
+	IsContentChange                *string  `schema:"is-content-change"`
 	ExcludeLegacy                  bool
 	UpdatedByID                    *int64
 }
@@ -367,6 +381,13 @@ type ValidatorResponseImage struct {
 	Data string `json:"data"`
 }
 
+type ValidatorRepackResponse struct {
+	Error    *string                  `json:"error,omitempty"`
+	FilePath *string                  `json:"path,omitempty"`
+	Meta     CurationMeta             `json:"meta"`
+	Images   []ValidatorResponseImage `json:"images"`
+}
+
 type ValidatorResponse struct {
 	Filename         string                   `json:"filename"`
 	Path             string                   `json:"path"`
@@ -396,9 +417,233 @@ type SimilarityAttributes struct {
 	LaunchCommandRatio float64
 }
 
+type DeletedGame struct {
+	ID           string    `json:"id"`
+	DateModified time.Time `json:"date_modified"`
+	Reason       string    `json:"reason"`
+}
+
+type GameDump struct {
+	ID              string           `json:"id"`
+	ParentGameID    *string          `json:"parent_game_id,omitempty"`
+	Title           string           `json:"title"`
+	AlternateTitles string           `json:"alternate_titles"`
+	Series          string           `json:"series"`
+	Developer       string           `json:"developer"`
+	Publisher       string           `json:"publisher"`
+	PrimaryPlatform string           `json:"platform_name,omitempty"`
+	Platforms       []*Platform      `json:"platforms,omitempty"`
+	PlatformsStr    string           `json:"platforms_str"`
+	DateAdded       time.Time        `json:"date_added"`
+	DateModified    time.Time        `json:"date_modified"`
+	PlayMode        string           `json:"play_mode"`
+	Status          string           `json:"status"`
+	Notes           string           `json:"notes"`
+	Tags            []*Tag           `json:"tags,omitempty"`
+	TagsStr         string           `json:"tags_str"`
+	Source          string           `json:"source"`
+	ApplicationPath string           `json:"legacy_application_path"`
+	LaunchCommand   string           `json:"legacy_launch_command"`
+	ReleaseDate     string           `json:"release_date"`
+	Version         string           `json:"version"`
+	OriginalDesc    string           `json:"original_description"`
+	Language        string           `json:"language"`
+	Library         string           `json:"library"`
+	AddApps         []*AdditionalApp `json:"add_apps"`
+	ActiveDataID    *int             `json:"active_data_id,omitempty"`
+	Data            []*GameData      `json:"data,omitempty"`
+	Action          string           `json:"action"`
+	Reason          string           `json:"reason"`
+	Deleted         bool
+	UserID          int64
+}
+
+type Game struct {
+	ID              string           `json:"id"`
+	ParentGameID    *string          `json:"parent_game_id,omitempty"`
+	Title           string           `json:"title"`
+	AlternateTitles string           `json:"alternate_titles"`
+	Series          string           `json:"series"`
+	Developer       string           `json:"developer"`
+	Publisher       string           `json:"publisher"`
+	PrimaryPlatform string           `json:"platform_name,omitempty"`
+	Platforms       []*Platform      `json:"platforms,omitempty"`
+	PlatformsStr    string           `json:"platforms_str"`
+	DateAdded       time.Time        `json:"date_added"`
+	DateModified    time.Time        `json:"date_modified"`
+	PlayMode        string           `json:"play_mode"`
+	Status          string           `json:"status"`
+	Notes           string           `json:"notes"`
+	Tags            []*Tag           `json:"tags,omitempty"`
+	TagsStr         string           `json:"tags_str"`
+	Source          string           `json:"source"`
+	ApplicationPath string           `json:"application_path"`
+	LaunchCommand   string           `json:"launch_command"`
+	ReleaseDate     string           `json:"release_date"`
+	Version         string           `json:"version"`
+	OriginalDesc    string           `json:"original_description"`
+	Language        string           `json:"language"`
+	Library         string           `json:"library"`
+	AddApps         []*AdditionalApp `json:"add_apps"`
+	ActiveDataID    *int             `json:"active_data_id,omitempty"`
+	Data            []*GameData      `json:"data,omitempty"`
+	Action          string           `json:"action"`
+	Reason          string           `json:"reason"`
+	Deleted         bool
+	UserID          int64
+}
+
+type GameData struct {
+	ID              int       `json:"id,omitempty"`
+	GameID          string    `json:"game_id,gameId"`
+	Title           string    `json:"title"`
+	DateAdded       time.Time `json:"date_added,dateAdded"`
+	SHA256          string    `json:"sha_256"`
+	CRC32           int       `json:"crc_32"`
+	Size            int64     `json:"size"`
+	Parameters      *string   `json:"parameters"`
+	ApplicationPath string    `json:"application_path"`
+	LaunchCommand   string    `json:"launch_command"`
+	Indexed         bool      `json:"indexed"`
+	IndexError      bool      `json:"index_error"`
+}
+
+type AdditionalApp struct {
+	ID              string `json:"id,omitempty"`
+	ApplicationPath string `json:"application_path"`
+	AutoRunBefore   bool   `json:"auto_run_before"`
+	LaunchCommand   string `json:"launch_command"`
+	Name            string `json:"name"`
+	WaitForExit     bool   `json:"wait_for_exit"`
+	ParentGameID    string `json:"parent_game_id"`
+}
+
+type Platform struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	DateModified time.Time `json:"date_modified"`
+	Aliases      *string   `json:"aliases,omitempty"`
+	Action       string    `json:"action"`
+	Reason       string    `json:"reason"`
+	Deleted      bool
+	UserID       int64 `json:"user_id"`
+}
+
+type PlatformAlias struct {
+	PlatformID int64  `json:"platform_id"`
+	Name       string `json:"name"`
+}
+
 type Tag struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	DateModified time.Time `json:"date_modified"`
+	Category     string    `json:"category"`
+	Aliases      *string   `json:"aliases,omitempty"`
+	Action       string    `json:"action"`
+	Reason       string    `json:"reason"`
+	Deleted      bool
+	UserID       int64 `json:"user_id"`
+}
+
+type TagAlias struct {
+	TagID int64  `json:"tag_id"`
+	Name  string `json:"name"`
+}
+
+type TagCategory struct {
+	ID          int64  `json:"id"`
 	Name        string `json:"name"`
+	Color       string `json:"color"`
 	Description string `json:"description"`
+}
+
+type LauncherDumpRelation struct {
+	GameID string `json:"g"`
+	Value  int64  `json:"v"`
+}
+
+type LauncherDump struct {
+	Games             LauncherDumpGames      `json:"games"`
+	Tags              LauncherDumpTags       `json:"tags"`
+	Platforms         LauncherDumpPlatforms  `json:"platforms"`
+	TagRelations      []LauncherDumpRelation `json:"tag_relations"`
+	PlatformRelations []LauncherDumpRelation `json:"platform_relations"`
+}
+
+type LauncherDumpGames struct {
+	AddApps  []AdditionalApp `json:"add_apps"`
+	GameData []GameData      `json:"game_data"`
+	Games    []GameDump      `json:"games"`
+}
+
+type LauncherDumpTags struct {
+	Categories []TagCategory         `json:"categories"`
+	Aliases    []TagAlias            `json:"aliases"`
+	Tags       []LauncherDumpTagsTag `json:"tags"`
+}
+
+type LauncherDumpPlatforms struct {
+	Aliases   []PlatformAlias                 `json:"aliases"`
+	Platforms []LauncherDumpPlatformsPlatform `json:"platforms"`
+}
+
+type LauncherDumpTagsAliases struct {
+	TagID int64  `json:"tagId"`
+	Name  string `json:"name"`
+}
+
+type LauncherDumpTagsTag struct {
+	ID           int64  `json:"id"`
+	CategoryID   int64  `json:"category_id"`
+	Description  string `json:"description"`
+	PrimaryAlias string `json:"primary_alias"`
+}
+
+type LauncherDumpPlatformsPlatform struct {
+	ID           int64  `json:"id"`
+	Description  string `json:"description"`
+	PrimaryAlias string `json:"primary_alias"`
+}
+
+func (t *LauncherDumpTagsTag) UnmarshalJSON(data []byte) error {
+	type Alias LauncherDumpTagsTag
+	aux := &struct {
+		*Alias
+		Description *string `json:"description"`
+	}{
+		Alias: (*Alias)(t),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Description != nil {
+		t.Description = *aux.Description
+	} else {
+		t.Description = ""
+	}
+	return nil
+}
+
+func (p *LauncherDumpPlatformsPlatform) UnmarshalJSON(data []byte) error {
+	type Alias LauncherDumpPlatformsPlatform
+	aux := &struct {
+		*Alias
+		Description *string `json:"description"`
+	}{
+		Alias: (*Alias)(p),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Description != nil {
+		p.Description = *aux.Description
+	} else {
+		p.Description = ""
+	}
+	return nil
 }
 
 type ValidatorTagResponse struct {
@@ -635,6 +880,39 @@ type ExtendedFixesItem struct {
 	UploadedAt        *time.Time
 }
 
+type GameContentPatch struct {
+	Title           *string `json:"Title,omitempty"`
+	AlternateTitles *string `json:"AlternateTitles,omitempty"`
+	Series          *string `json:"Series,omitempty"`
+	Developer       *string `json:"Developer,omitempty"`
+	Publisher       *string `json:"Publisher,omitempty"`
+	PlayMode        *string `json:"PlayMode,omitempty"`
+	Status          *string `json:"status,omitempty"`
+	Notes           *string `json:"Notes,omitempty"`
+	Source          *string `json:"Source,omitempty"`
+	ReleaseDate     *string `json:"ReleaseDate,omitempty"`
+	Version         *string `json:"Version,omitempty"`
+	OriginalDesc    *string `json:"OriginalDesc,omitempty"`
+	Language        *string `json:"Language,omitempty"`
+	Library         *string `json:"Library,omitempty"`
+}
+
+type GameCountSinceDateJSON struct {
+	Total int `json:"total"`
+}
+
+type GamesDeletedSinceDateJSON struct {
+	Games []*DeletedGame `json:"games"`
+}
+
+type GamePageResJSON struct {
+	Games             []*Game          `json:"games"`
+	AddApps           []*AdditionalApp `json:"add_apps"`
+	GameData          []*GameData      `json:"game_data"`
+	TagRelations      [][]string       `json:"tag_relations"`
+	PlatformRelations [][]string       `json:"platform_relations"`
+}
+
 type UserStatistics struct {
 	UserID           int64
 	Username         string
@@ -667,4 +945,74 @@ type SubmissionStatus struct {
 	Status       string  `json:"status"`
 	Message      *string `json:"message"`
 	SubmissionID *int64  `json:"submission_id"`
+}
+
+type IndexMatchResult struct {
+	Results []*IndexMatchResultData `json:"results"`
+}
+
+type IndexMatchResultData struct {
+	HashType string            `json:"type"`
+	Hash     string            `json:"hash"`
+	Matches  []*IndexMatchData `json:"data"`
+}
+
+type IndexMatchData struct {
+	SHA256 string `json:"sha256"`
+	SHA1   string `json:"sha1"`
+	CRC32  string `json:"crc32"`
+	MD5    string `json:"md5"`
+	Path   string `json:"path"`
+	Size   int64  `json:"size"`
+	GameID string `json:"game_id"`
+	Date   int64  `json:"date_added"`
+}
+
+type NotContentPatch struct {
+}
+
+func (ncp NotContentPatch) Error() string {
+	return "Not a content patch"
+}
+
+type RepackError string
+
+func (ce RepackError) Error() string {
+	return fmt.Sprintf("Error repacking submission: %s", string(ce))
+}
+
+type NotEnoughImages string
+
+func (nei NotEnoughImages) Error() string {
+	return fmt.Sprintf("Submission does not have 2 images: has %s", string(nei))
+}
+
+type InvalidTagUpdate struct {
+}
+
+func (itu InvalidTagUpdate) Error() string {
+	return "Invalid tag aliases"
+}
+
+type InvalidAddApps struct {
+}
+
+func (iaa InvalidAddApps) Error() string {
+	return "Add app invalid"
+}
+
+type MissingLaunchParams struct {
+}
+
+func (mlp MissingLaunchParams) Error() string {
+	return "Missing application path or launch command"
+}
+
+type RevisionInfo struct {
+	Action    string
+	Reason    string
+	CreatedAt time.Time
+	AvatarURL string
+	AuthorID  int64
+	Username  string
 }

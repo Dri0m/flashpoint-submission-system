@@ -1,3 +1,15 @@
+:root {
+    --approve: #13842D;
+    --reject: rgb(20, 20, 20);
+    --mark-added: rgb(128, 17, 167);
+    --verify: #AF6414;
+    --assign-verification: #744721;
+    --unassign-verification: rgb(135, 115, 91);
+    --assign-testing: #11418E;
+    --unassign-testing: #556B93;
+    --request-changes: rgb(175, 14, 14);
+}
+
 body {
     color: #000;
 }
@@ -101,7 +113,10 @@ textarea {
     border-radius: 4px;
 }
 
-
+.bgr-restore,
+.bgr-create,
+.bgr-update,
+.bgr-delete,
 .bgr-comment,
 .bgr-approve,
 .bgr-request-changes,
@@ -164,52 +179,55 @@ textarea {
     background: rgb(184, 184, 184) !important;
 }
 
+.bgr-create,
 .bgr-approve,
+.bgr-restore,
 .dot-approve,
 .button-approve {
-    background: rgb(28, 184, 65) !important;
+    background: var(--approve) !important;
 }
 
+.bgr-delete,
 .bgr-request-changes,
 .dot-request-changes,
 .button-request-changes {
-    background: rgb(202, 60, 60) !important;
+    background: var(--request-changes) !important;
 }
 
 .bgr-assign-testing,
 .dot-assign-testing,
 .button-assign-testing {
-    background: rgb(24, 83, 175) !important;
+    background: var(--assign-testing) !important;
 }
 
 .bgr-unassign-testing,
 .dot-unassign-testing,
 .button-unassign-testing {
-    background: rgb(98, 122, 165) !important;
+    background: var(--unassign-testing) !important;
 }
 
 .bgr-assign-verification,
 .dot-assign-verification,
 .button-assign-verification {
-    background: rgb(134, 85, 46) !important;
+    background: var(--assign-verification) !important;
 }
 
 .bgr-unassign-verification,
 .dot-unassign-verification,
 .button-unassign-verification {
-    background: rgb(135, 115, 91) !important;
+    background: var(--unassign-verification) !important;
 }
 
 .bgr-mark-added,
 .dot-mark-added,
 .button-mark-added {
-    background: rgb(128, 17, 167) !important;
+    background: var(--mark-added) !important;
 }
 
 .bgr-reject,
 .dot-reject,
 .button-reject {
-    background: rgb(20, 20, 20) !important;
+    background: var(--reject) !important;
 }
 
 .bgr-upload-file,
@@ -218,10 +236,11 @@ textarea {
     background: rgb(14, 175, 175) !important;
 }
 
+.bgr-update,
 .bgr-verify,
 .dot-verify,
 .button-verify {
-    background: rgb(255, 132, 0) !important;
+    background: var(--verify) !important;
 }
 
 .bgr-system,
@@ -231,7 +250,7 @@ textarea {
 }
 
 .button-delete {
-    background: rgb(255, 0, 0) !important;
+    background: var(--request-changes) !important;
 }
 
 .button-pause {
@@ -255,7 +274,7 @@ textarea {
 }
 
 .submissions-table {
-    font-size: 90%;
+    font-size: 0.8em;
 }
 
 .submissions-table td {
@@ -555,4 +574,151 @@ video {
 
 .sortable-table th {
     cursor: pointer;
+}
+
+.tag-list {
+    display: flex;
+    flex-direction: row;
+}
+
+.tag-box {
+    align-items: center;
+    border: 2px solid gray;
+    border-radius: 3px;
+    padding: 0.25rem;
+    margin-right: 0.15rem;
+    display: flex;
+}
+
+.tag-box:hover {
+    background-color: lightgray;
+}
+
+.tag-box_platform-icon {
+    background-repeat: no-repeat;
+    background-size: contain;
+    width: 1.4rem;
+    height: 1.4rem;
+    margin-right: 0.15rem;
+}
+
+/* CSS for overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Overlay background color and opacity */
+    z-index: 9999; /* Overlay z-index to make it on top of other elements */
+}
+
+/* CSS for message box */
+.message-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background-color: #cbcbcb;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.message-box > :not(:last-child) {
+    margin-bottom: 1rem;
+}
+
+.message-box-buttons > :not(:first-child) {
+    margin-left: 1rem;
+}
+
+.message {
+    margin-top: 1rem;
+}
+
+/* CSS for spinner */
+.spinner {
+    /* Example styles for spinner, you can customize as needed */
+    border: 4px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 4px solid #3498db;
+    width: 30px;
+    height: 30px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.game-buttons {
+    display: flex;
+    flex-direction: row;
+}
+
+.game-buttons > * {
+    margin-right: 1rem;
+}
+
+.missing-game-section {
+    color: #5E5E5E !important;
+    font-style: italic;
+}
+
+.stackable-table {
+    margin-bottom: 2rem;
+}
+
+.submission-type-icon {
+    width: 1.25rem;
+    display: block;
+    margin: auto;
+}
+
+.submission-type-icon-new {
+    filter: invert(28%) sepia(85%) saturate(1609%) hue-rotate(116deg) brightness(91%) contrast(85%)
+}
+
+.tag-edit-description {
+    width: 23rem;
+}
+
+.tag-edit-alias {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.1rem;
+    min-width: 23rem;
+    height: 1.5rem;
+}
+
+.metadata-stats {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.metadata-stats-box {
+    min-width: 37vw;
+    height: 10rem;
+    text-align: center;
+    margin: auto;
+}
+
+.metadata-stats-title {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.metadata-stats-value {
+    font-family: monospace;
+    font-size: 2rem;
 }

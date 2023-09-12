@@ -107,10 +107,16 @@
                     {{if not (has "reject" $submission.DistinctActions)}}
                         {{if and (gt (len $submission.ApprovedUserIDs) 0) (gt (len $submission.VerifiedUserIDs) 0)}}
                             {{if not (has "mark-added" $submission.DistinctActions)}}
-                                <button type="button" class="pure-button pure-button button-mark-added"
-                                        onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
-                                    Mark as Added
-                                </button>
+                                {{if $submission.GameExists }}
+                                    <a type="button" class="pure-button pure-button button-mark-added" href="/web/submission/{{$submission.SubmissionID}}/apply">
+                                        Import into Flashpoint
+                                    </a>
+                                {{else}}
+                                    <button type="button" class="pure-button pure-button button-mark-added"
+                                            onclick="doWaitingSpinner('Marking as added...', () => batchComment('submission-checkbox', 'sid', 'mark-added'))">
+                                        Import into Flashpoint
+                                    </button>
+                                {{end}}
                             {{end}}
                         {{end}}
                     {{end}}
@@ -162,12 +168,6 @@
                     <button type="button" class="pure-button pure-button button-verify"
                             onclick="batchComment('submission-checkbox', 'sid', 'verify')">
                         Verify
-                    </button>
-                {{end}}
-                {{if isAdder .UserRoles}}
-                    <button type="button" class="pure-button pure-button button-mark-added"
-                            onclick="batchComment('submission-checkbox', 'sid', 'mark-added')">
-                        Mark as Added
                     </button>
                 {{end}}
             </div>

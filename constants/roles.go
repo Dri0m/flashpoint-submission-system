@@ -10,6 +10,7 @@ const (
 	RoleMechanic      = "Mechanic"
 	RoleHunter        = "Hunter"
 	RoleTrialCurator  = "Trial Curator"
+	RoleTrialEditor   = "Trial Editor"
 	RoleTheBlue       = "The Blue"
 	RoleTheD          = "The D"
 )
@@ -35,6 +36,12 @@ func TrialCuratorRoles() []string {
 	}
 }
 
+func TrialEditorRoles() []string {
+	return []string{
+		RoleTrialEditor,
+	}
+}
+
 func DeleterRoles() []string {
 	return []string{
 		RoleAdministrator,
@@ -51,6 +58,7 @@ func DeciderRoles() []string {
 
 func AdderRoles() []string {
 	return []string{
+		RoleModerator,
 		RoleAdministrator,
 	}
 }
@@ -88,6 +96,10 @@ func IsTrialCurator(roles []string) bool {
 	return HasAnyRole(roles, TrialCuratorRoles())
 }
 
+func isTrialEditor(roles []string) bool {
+	return HasAnyRole(roles, TrialEditorRoles())
+}
+
 // IsDeleter allows users to soft delete things
 func IsDeleter(roles []string) bool {
 	return HasAnyRole(roles, DeleterRoles())
@@ -106,4 +118,8 @@ func IsAdder(roles []string) bool {
 // IsGod allows user to do various things
 func IsGod(roles []string) bool {
 	return HasAnyRole(roles, GodRoles())
+}
+
+func IsGodOrColin(roles []string, uid int64) bool {
+	return HasAnyRole(roles, GodRoles()) || uid == 689080719460663414
 }

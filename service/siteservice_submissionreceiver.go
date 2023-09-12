@@ -25,7 +25,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, fileReadCloserProvider resumableuploadservice.ReadCloserInformerProvider, filename string, filesize int64, sid *int64, submissionLevel string, tempName string) (*string, []string, int64, error) {
+func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs database.DBSession, pgdbs database.PGDBSession, fileReadCloserProvider resumableuploadservice.ReadCloserInformerProvider, filename string, filesize int64, sid *int64, submissionLevel string, tempName string) (*string, []string, int64, error) {
 	uid := utils.UserID(ctx)
 	if uid == 0 {
 		s.SSK.SetFailed(tempName, "internal error")
@@ -147,12 +147,47 @@ func (s *SiteService) processReceivedSubmission(ctx context.Context, dbs databas
 			utils.LogCtx(ctx).Error(err)
 			return perr(fmt.Sprintf("validator bot: %s", err.Error()), http.StatusInternalServerError)
 		}
+		if vr.CurationErrors != nil {
+			for _, curError := range vr.CurationErrors {
+				if curError == "Contains blacklisted tags" {
+					utils.LogCtx(ctx).Error(curError)
+					return perr(fmt.Sprintf("validator bot: %s", curError), http.StatusBadRequest)
+				}
+			}
+		}
 
-		utils.LogCtx(ctx).Debug("computing similarity in goroutine...")
-		msg, err = s.computeSimilarityComment(dbs, sid, &vr.Meta)
-		if err != nil {
-			utils.LogCtx(ctx).Error(err)
-			return err
+		// Check if game exists
+		vr.Meta.GameExists = false
+		if vr.Meta.UUID != nil {
+			existingGame, _ := s.pgdal.GetGame(pgdbs, *vr.Meta.UUID)
+			if existingGame != nil {
+				// Game exists
+				vr.Meta.GameExists = true
+			}
+		}
+
+		if !vr.Meta.GameExists {
+			utils.LogCtx(ctx).Debug("computing similarity in goroutine...")
+			msg, err = s.computeSimilarityComment(dbs, sid, &vr.Meta)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return err
+			}
+		} else {
+			utils.LogCtx(ctx).Debug("removing redunant comment...")
+			// Make sure it's at least set to nothing
+			msgStr := ""
+			msg = &msgStr
+			// Remove identical launch command error
+			filteredStrings := make([]string, 0)
+
+			for _, str := range vr.CurationErrors {
+				if !strings.HasPrefix(str, "Identical launch command") {
+					filteredStrings = append(filteredStrings, str)
+				}
+			}
+
+			vr.CurationErrors = filteredStrings
 		}
 
 		return nil

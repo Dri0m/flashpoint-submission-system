@@ -1,0 +1,1 @@
+ALTER TABLE curation_meta ADD game_exists BOOL NOT NULL DEFAULT FALSE;

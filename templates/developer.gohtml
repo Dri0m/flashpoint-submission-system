@@ -1,0 +1,14 @@
+{{define "main"}}
+    <div class="content">
+        <h1>Developer Tools</h1>
+        <h3>Launcher Database Import</h3>
+        <form enctype="multipart/form-data" action="/api/developer/submit_dump" method="POST">
+            <input id="file" name="file" type="file" accept="*.json">
+            <button>Submit</button>
+        </form>
+        <form enctype="multipart/form-data" action="/api/developer/tag_desc_from_validator" method="GET">
+            <p>Add Tag descriptions from Validator</p>
+            <button>Run</button>
+        </form>
+    </div>
+{{end}}

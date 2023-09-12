@@ -54,3 +54,15 @@ input[type=text], textarea{
 .button-reject {
     border: 1px solid #ccc;
 }
+
+.tag-box:hover {
+    background-color: black;
+}
+
+.message-box {
+    background-color: #5a5a5a;
+}
+
+.submission-type-icon {
+    filter: invert(100%) sepia(0%) saturate(7497%) hue-rotate(130deg) brightness(98%) contrast(106%);
+}

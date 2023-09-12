@@ -1,0 +1,35 @@
+{{define "main"}}
+    <div class="content">
+        <h1>Game Data Index ({{.Index.GameID}}) ({{.Index.Date}})</h1>
+        <div id="table-wrapper">
+            <i>tip: use shift+mousewheel to scroll horizontally</i><br>
+            <div id="table-scroll">
+                <table class="pure-table pure-table-striped submissions-table">
+                    <thead>
+                        <tr>
+                            <th>Path</th>
+                            <th>Size</th>
+                            <th>MD5</th>
+                            <th>SHA1</th>
+                            <th>SHA256</th>
+                            <th>CRC32</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Index.Data}}
+                            <tr>
+                                <td style="white-space: nowrap">{{.Path}}</td>
+                                <td>{{.Size}}</td>
+                                <td>{{.MD5}}</td>
+                                <td>{{.SHA1}}</td>
+                                <td>{{.SHA256}}</td>
+                                <td>{{.CRC32}}</td>
+                            </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <br>
+            </div>
+        </div>
+    </div>
+{{end}}

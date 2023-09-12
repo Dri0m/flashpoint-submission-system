@@ -1,0 +1,13 @@
+{{define "main"}}
+    <div class="content">
+        <h1>Browse Tags</h1>
+
+        {{if eq (len .Tags) 0}}
+            <p>No tags found.</p>
+        {{else}}
+            {{template "tags-table" .}}
+
+            <p>Found {{.TotalCount}} tags</p>
+        {{end}}
+    </div>
+{{end}}

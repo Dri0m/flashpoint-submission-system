@@ -13,6 +13,9 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	isStaff := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.StaffRoles())
 	}
+	isTrialEditor := func(r *http.Request, uid int64) (bool, error) {
+		return a.UserHasAnyRole(r, uid, constants.TrialEditorRoles())
+	}
 	isTrialCurator := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.TrialCuratorRoles())
 	}
@@ -32,6 +35,9 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	}
 	isGod := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserHasAnyRole(r, uid, constants.GodRoles())
+	}
+	isColin := func(r *http.Request, uid int64) (bool, error) {
+		return uid == 689080719460663414, nil
 	}
 	userOwnsSubmission := func(r *http.Request, uid int64) (bool, error) {
 		return a.UserOwnsResource(r, uid, constants.ResourceKeySubmissionID)
@@ -63,6 +69,16 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		"/api/logout",
 		http.HandlerFunc(a.RequestJSON(a.HandleLogout))).
 		Methods("GET")
+
+	// device flow
+	router.Handle(
+		"/auth/token",
+		http.HandlerFunc(a.RequestJSON(a.HandleNewDeviceToken))).
+		Methods("GET", "POST")
+	router.Handle(
+		"/auth/device",
+		http.HandlerFunc(a.UserAuthMux(a.RequestWeb(a.HandleApproveDevice), muxAny(isStaff, isTrialCurator, isInAudit)))).
+		Methods("GET", "POST")
 
 	// pages
 	router.Handle(
@@ -139,6 +155,179 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestJSON(f))).
 		Methods("GET")
 
+	/////////////////////////
+
+	f = a.HandleTagsPage
+
+	router.Handle(
+		"/web/tags",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/tags",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandlePostTag, muxAny(isDeleter))
+
+	router.Handle(
+		fmt.Sprintf("/api/tag/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
+
+	f = a.UserAuthMux(
+		a.HandleTagPage, muxAny(isStaff, isTrialCurator, isInAudit))
+
+	router.Handle(
+		fmt.Sprintf("/web/tag/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/tag/{%s}", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandleTagEditPage, muxAny(isDeleter))
+
+	router.Handle(
+		fmt.Sprintf("/web/tag/{%s}/edit", constants.ResourceKeyTagID),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.HandleMetadataStats
+
+	router.Handle(
+		"/web/metadata-stats",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.HandleMinLauncherVersion
+
+	router.Handle(
+		"/api/min-launcher",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.HandleGameCountSinceDate
+
+	router.Handle(
+		"/api/games/updates",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.HandleGamesPage
+
+	router.Handle(
+		"/api/games",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.HandleDeletedGames
+
+	router.Handle(
+		"/api/games/deleted",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.HandlePlatformsPage
+
+	router.Handle(
+		"/web/platforms",
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/platforms",
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleGamePage, muxAny(isStaff, isTrialEditor))
+
+	router.Handle(
+		fmt.Sprintf("/web/game/{%s}", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/web/game/{%s}/revision/{%s}", constants.ResourceKeyGameID, constants.ResourceKeyGameRevision),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET", "POST")
+
+	f = a.UserAuthMux(
+		a.HandleGameDataIndexPage, muxAny(isTrialCurator, isStaff))
+
+	router.Handle(
+		fmt.Sprintf("/web/game/{%s}/data/{%s}/index", constants.ResourceKeyGameID, constants.ResourceKeyGameDataDate),
+		http.HandlerFunc(a.RequestWeb(f))).
+		Methods("GET")
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}/data/{%s}/index", constants.ResourceKeyGameID, constants.ResourceKeyGameDataDate),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandleDeleteGame, muxAny(isDeleter))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("DELETE")
+
+	f = a.UserAuthMux(
+		a.HandleRestoreGame, muxAny(isDeleter))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}/restore", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandleGameLogo, muxAny(isStaff))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}/logo", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
+
+	f = a.UserAuthMux(
+		a.HandleGameScreenshot, muxAny(isStaff))
+
+	router.Handle(
+		fmt.Sprintf("/api/game/{%s}/screenshot", constants.ResourceKeyGameID),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
+
+	////////////////////////
+
+	f = a.UserAuthMux(
+		a.HandleMatchingIndexHash, muxAny(isStaff, isTrialCurator))
+
+	router.Handle(
+		fmt.Sprintf("/api/index/hash/{%s}", constants.ResourceKeyHash),
+		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("POST")
+
 	////////////////////////
 
 	f = a.UserAuthMux(
@@ -168,6 +357,15 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 	router.Handle(
 		fmt.Sprintf("/api/submission/{%s}", constants.ResourceKeySubmissionID),
 		http.HandlerFunc(a.RequestJSON(f))).
+		Methods("GET")
+
+	f = a.UserAuthMux(
+		a.HandleApplyContentPatchPage,
+		isDeleter)
+
+	router.Handle(
+		fmt.Sprintf("/web/submission/{%s}/apply", constants.ResourceKeySubmissionID),
+		http.HandlerFunc(a.RequestWeb(f))).
 		Methods("GET")
 
 	////////////////////////
@@ -363,6 +561,26 @@ func (a *App) handleRequests(l *logrus.Entry, srv *http.Server, router *mux.Rout
 		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
 			a.HandleReceiveFixesSubmitGeneric, muxAny(isStaff, isTrialCurator, isInAudit))))).
 		Methods("POST")
+
+	////////////////////////
+
+	router.Handle(
+		"/web/developer",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleDeveloperPage, muxAny(isGod, isColin))))).
+		Methods("GET")
+
+	router.Handle(
+		"/api/developer/submit_dump",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleDeveloperDumpUpload, muxAny(isGod, isColin))))).
+		Methods("POST")
+
+	router.Handle(
+		"/api/developer/tag_desc_from_validator",
+		http.HandlerFunc(a.RequestWeb(a.UserAuthMux(
+			a.HandleDeveloperTagDescFromValidator, muxAny(isGod, isColin))))).
+		Methods("GET")
 
 	////////////////////////
 

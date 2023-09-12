@@ -44,6 +44,7 @@
                             {{template "submission-filter-bot-actions" .}}
                             {{template "submission-filter-maturity" .}}
                             {{template "submission-filter-level" .}}
+                            {{template "submission-filter-type" .}}
                         </div>
                     </div>
                     <div class="pure-u-1-2">
@@ -87,6 +88,8 @@
                                        value="{{default "" .Filter.SubmitterUsernamePartial}}">
                             </fieldset>
                         </div>
+                        {{template "submission-filter-type" .}}
+
 
                         {{template "submission-filter-level" .}}
                         {{template "submission-filter-bot-actions" .}}
@@ -184,7 +187,7 @@
                                         <input type="checkbox" name="distinct-action" value="mark-added"
                                                id="distinct-action-mark-added"
                                                {{if has "mark-added" .Filter.DistinctActions}}checked{{end}}>
-                                        Mark as Added</label>
+                                        Import into Flashpoint</label>
                                     <label>
                                         <input type="checkbox" name="distinct-action" value="reject"
                                                id="distinct-action-reject"
@@ -216,7 +219,7 @@
                                         <input type="checkbox" name="distinct-action-not" value="mark-added"
                                                id="distinct-action-not-mark-added"
                                                {{if has "mark-added" .Filter.DistinctActionsNot}}checked{{end}}>
-                                        Mark as Added</label>
+                                        Import into Flashpoint</label>
                                     <label>
                                         <input type="checkbox" name="distinct-action-not" value="reject"
                                                id="distinct-action-not-reject"

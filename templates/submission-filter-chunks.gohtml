@@ -1,3 +1,22 @@
+{{define "submission-filter-type"}}
+    <fieldset>
+        <legend>Filter by type</legend>
+        <div class="pure-g">
+            <div class="pure-u-1-2">
+                <label>
+                    <input type="radio" name="is-content-change" value="no"
+                           {{if eq "no" (unpointify .Filter.IsContentChange)}}checked{{end}}>
+                    Curation</label>
+            </div>
+            <div class="pure-u-1-2">
+                <label>
+                    <input type="radio" name="is-content-change" value="yes"
+                           {{if eq "yes" (unpointify .Filter.IsContentChange)}}checked{{end}}>
+                    Content Change</label>
+            </div>
+        </div>
+    </fieldset>
+{{end}}
 {{define "submission-filter-maturity"}}
     <fieldset>
         <legend>Filter by maturity</legend>

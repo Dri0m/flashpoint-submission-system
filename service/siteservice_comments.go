@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage, formIgnoreDupeActions string) error {
+func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int64, formAction, formMessage, formIgnoreDupeActions, subDirFullPath, dataPacksDir, imagesDir string, r *http.Request) error {
 	dbs, err := s.dal.NewSession(ctx)
 	if err != nil {
 		utils.LogCtx(ctx).Error(err)
@@ -94,6 +94,17 @@ func (s *SiteService) ReceiveComments(ctx context.Context, uid int64, sids []int
 				continue
 			}
 			return err
+		}
+
+		// If marking as added, make sure we update the live metadata before approving the comment
+		if formAction == constants.ActionMarkAdded {
+			gameId, err := s.AddSubmissionToFlashpoint(ctx, submission, subDirFullPath, dataPacksDir, imagesDir, r)
+			if err != nil {
+				utils.LogCtx(ctx).Error(err)
+				return err
+			}
+			addedMessage := fmt.Sprintf("Marked the submission as added to Flashpoint. Game ID: %s", *gameId)
+			message = &addedMessage
 		}
 
 		// actually store the comment

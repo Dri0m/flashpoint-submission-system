@@ -19,13 +19,53 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3306:3306" # TODO unmap in prod
+      - "${DB_PORT}:3306" # TODO unmap in prod
     volumes:
       - fpfssdb_data:/var/lib/mysql
     networks:
       fpfssnetwork:
         ipv4_address: 10.50.0.2
     command: mysqld --max_allowed_packet=256M --sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION" --log_bin_trust_function_creators=1
+  postgres:
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    restart: unless-stopped
+    image: postgres:15
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 4g
+        reservations:
+          memory: 512m
+    volumes:
+      - fpfss_postgres_data:/var/lib/postgresql/data
+      - ./backups/pgdb:/var/lib/postgresql/backups
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    networks:
+      fpfssnetwork:
+        ipv4_address: 10.50.0.3
+  validator:
+    container_name: ${VALIDATOR_CONTAINER_NAME}
+    restart: unless-stopped
+    image: fpfss-validator:latest
+    build:
+      context: ./validator
+      dockerfile: Dockerfile
+    environment:
+      REPACK_DIR: $REPACK_DIR
+    volumes:
+      - $REPACK_DIR:$REPACK_DIR
+      - $SUBMISSIONS_DIR_FULL_PATH:$SUBMISSIONS_DIR_FULL_PATH
+    ports:
+      - "${VALIDATOR_PORT}:8000"
+    networks:
+      fpfssnetwork:
+        ipv4_address: 10.50.0.4
 
 volumes:
   fpfssdb_data:
+  fpfss_postgres_data:

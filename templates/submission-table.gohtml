@@ -10,6 +10,7 @@
                                               onclick="controlAllCheckboxes(this, 'submission-checkbox');"/></th>
                     <th class="center">Files</th>
                     <th class="center">View</th>
+                    <th class="center">Type</th>
                     <th>Title</th>
                     <th>18+</th>
                     {{if $showLaunchCommand}}
@@ -54,6 +55,13 @@
                         <td class="center">
                             {{if not $isLegacy}}
                                 <a href="/web/submission/{{.SubmissionID}}">View</a>
+                            {{end}}
+                        </td>
+                        <td>
+                            {{if .GameExists}}
+                                <img class="submission-type-icon" src="/static/icons/svg/puzzle-piece.svg" alt="Content Change">
+                            {{else}}
+                                <img class="submission-type-icon" src="/static/icons/svg/plus.svg" alt="New Submission">
                             {{end}}
                         </td>
                         <td class="submission-table-title">{{capString 100 .CurationTitle}}</td>

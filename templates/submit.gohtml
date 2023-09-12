@@ -5,7 +5,14 @@
             <h1>Submit curation(s)</h1>
 
             {{if isInAudit .UserRoles}}
-                <p>Max filesize is 500MB. You are not able to submit more than one submission.</p>
+                <p>Max filesize is 500MB. You are not able to submit more than one submission.
+                <br>
+                <br>
+                <b>Make sure to read the Not Accepted Curations list: </b> <a href="https://bluemaxima.org/flashpoint/datahub/Not_Accepted_Curations">Linked Here</a>
+                <br>
+                <br>
+                <b>Intentionally uploading a malicious file or any illegal content will at a minimum
+                    be rewarded with a permanent IP ban.</b><br></p>
             {{else}}
                 <p>
                     Max filesize is 50GB. Note that it may take a long time to process large files after the upload step
@@ -16,8 +23,11 @@
                         closed</b>
                     (the file's name and size must be the same in order to resume).<br>
                     <br>
-                    <b>Intentionally uploading a malicious file or some *very* illegal content will most likely be
-                        rewarded with a permanent IP ban.</b><br>
+                    <b>Make sure to read the Not Accepted Curations list: </b> <a href="https://bluemaxima.org/flashpoint/datahub/Not_Accepted_Curations">Linked Here</a>
+                    <br>
+                    <br>
+                    <b>Intentionally uploading a malicious file or any illegal content will at a minimum
+                        be rewarded with a permanent IP ban.</b><br>
                 </p>
             {{end}}
 

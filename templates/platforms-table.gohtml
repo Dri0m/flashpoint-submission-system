@@ -1,0 +1,35 @@
+{{define "platforms-table"}}
+    <div id="table-wrapper">
+        <i>tip: use shift+mousewheel to scroll horizontally</i><br>
+        <div id="table-scroll">
+            <table class="pure-table pure-table-striped submissions-table">
+                <thead>
+                <tr>
+                    <th class="center">
+                        <input type="checkbox" onclick="controlAllCheckboxes(this, 'submission-checkbox');"/>
+                    </th>
+                    <th class="center">View</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Date Modified</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .Platforms}}
+                    <tr>
+                        <td class="center">
+                            <input type="checkbox" class="submission-checkbox" data-fid="{{.ID}}" data-sid="{{.ID}}"/>
+                        </td>
+                        <td class="center">
+                            <a href="/web/platform/{{.ID}}">View</a>
+                        </td>
+                        <td class="submission-table-title">{{capString 100 .Name}}</td>
+                        <td>{{.Description}}</td>
+                        <td>{{.DateModified.Format "2006-01-02 15:04:05 -0700"}}</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{{end}}

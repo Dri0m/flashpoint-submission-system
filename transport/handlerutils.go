@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 	"syscall"
+	"time"
 
 	"github.com/Dri0m/flashpoint-submission-system/constants"
 	"github.com/Dri0m/flashpoint-submission-system/service"
@@ -44,6 +46,9 @@ func (a *App) RenderTemplates(ctx context.Context, w http.ResponseWriter, r *htt
 		"submissionsShowPreviousButton": submissionsShowPreviousButton,
 		"submissionsShowNextButton":     submissionsShowNextButton,
 		"capString":                     capString,
+		"er":                            equalReference,
+		"ner":                           notEqualReference,
+		"localeNum":                     localeNum,
 	})
 
 	parse := func() (interface{}, error) {
@@ -152,11 +157,11 @@ func writeResponse(ctx context.Context, w http.ResponseWriter, data interface{},
 			if err != nil {
 				utils.LogCtx(ctx).Error(err)
 				if errors.Is(err, syscall.ECONNRESET) {
-    					return
+					return
 				}
 				if errors.Is(err, syscall.EPIPE) {
 					return
-				}	
+				}
 				writeError(ctx, w, err)
 			}
 		}
@@ -240,6 +245,28 @@ func capString(maxLen int, s *string) string {
 		return str
 	}
 	return str[:maxLen-3] + "..."
+}
+
+func equalReference(ref *string, str string) bool {
+	if ref != nil {
+		return *ref == str
+	} else {
+		return str == ""
+	}
+}
+
+func notEqualReference(ref *string, str string) bool {
+	if ref != nil {
+		return *ref != str
+	} else {
+		return str != ""
+	}
+}
+
+func localeNum(ref *int64) string {
+	p := message.NewPrinter(language.English)
+	s := p.Sprintf("%d\n", *ref)
+	return s
 }
 
 func isReturnURLValid(s string) bool {

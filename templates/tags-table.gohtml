@@ -1,0 +1,38 @@
+{{define "tags-table"}}
+    {{ $categories := .Categories }}
+    <div id="table-wrapper">
+        <i>tip: use shift+mousewheel to scroll horizontally</i><br>
+        <div id="table-scroll">
+            <table class="pure-table pure-table-striped submissions-table">
+                <thead>
+                <tr>
+                    <th class="center">
+                        <input type="checkbox" onclick="controlAllCheckboxes(this, 'submission-checkbox');"/>
+                    </th>
+                    <th class="center">View</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Date Modified</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .Tags}}
+                    <tr>
+                        <td class="center">
+                            <input type="checkbox" class="submission-checkbox" data-fid="{{.ID}}" data-sid="{{.ID}}"/>
+                        </td>
+                        <td class="center">
+                            <a href="/web/tag/{{.ID}}">View</a>
+                        </td>
+                        <td class="submission-table-title">{{capString 100 .Name}}</td>
+                        <td>{{.Category}}</td>
+                        <td>{{.Description}}</td>
+                        <td>{{.DateModified.Format "2006-01-02 15:04:05 -0700"}}</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{{end}}
